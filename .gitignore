@@ -1,0 +1,11 @@
+docker/**/log*
+.env*
+!.env.example
+
+.vscode
+.github
+
+.yaak
+
+*ide_helper*php
+/tmp

@@ -1,0 +1,84 @@
+services:
+  www:
+    image: nginx:latest
+    volumes:
+      - ${PWD}/backend/:/var/www
+      - ${PWD}/docker/development/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ${PWD}/docker/development/nginx/log/:/var/log/nginx
+    ports:
+      - "80:80"
+    environment:
+      - NGINX_HOST=localhost
+    networks:
+      - olwu-dev
+    depends_on:
+      php-fpm:
+        condition: service_started
+
+  php-fpm:
+    build:
+      context: ./
+      dockerfile: ${PWD}/docker/common/php-fpm/Dockerfile
+      target: development
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    env_file:
+      - ${PWD}/backend/.env
+    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      XDEBUG_MODE: ${XDEBUG_MODE:-off}
+      XDEBUG_HOST: ${XDEBUG_HOST:-host.docker.internal}
+      XDEBUG_IDE_KEY: ${XDEBUG_IDE_KEY:-DOCKER}
+      XDEBUG_LOG: /dev/stdout
+      XDEBUG_LOG_LEVEL: 0
+    volumes:
+      - ${PWD}/backend:/var/www
+    networks:
+      - olwu-dev
+    depends_on:
+      db:
+        condition: service_started
+
+  db:
+    image: mariadb:12
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-olwu}
+      MYSQL_USER: ${MYSQL_USER:-olwu}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-password}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD:-password}
+    volumes:
+      - olwu-db-dev:/var/lib/mysql
+    networks:
+      - olwu-dev
+
+  workspace:
+    build:
+      context: .
+      dockerfile: ${PWD}/docker/development/workspace/Dockerfile
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    tty: true # Use with 'docker attach'
+    stdin_open: true # Keeps standard input open for 'docker exec'
+    stop_grace_period: 0s # Shut down immediately on SIGTERM
+    env_file:
+      - ${PWD}/.env # TODO: Not sure why ${PWD}/backend/.env does NOT work!
+    environment:
+      XDEBUG_MODE: ${XDEBUG_MODE:-off}
+      XDEBUG_HOST: ${XDEBUG_HOST:-host.docker.internal}
+      XDEBUG_IDE_KEY: ${XDEBUG_IDE_KEY:-DOCKER}
+      XDEBUG_LOG: /dev/stdout
+      XDEBUG_LOG_LEVEL: 0
+    volumes:
+      - ${PWD}/:/var/www
+    networks:
+      - olwu-dev
+
+networks:
+  olwu-dev:
+
+volumes:
+  olwu-db-dev:
