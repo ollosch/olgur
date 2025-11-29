@@ -23,10 +23,6 @@ const onSubmit = handleSubmit(async (values) => {
   if (auth.errors) {
     setErrors(auth.errors)
   }
-
-  if (auth.isAuthenticated) {
-    router.push({ name: 'dashboard' })
-  }
 })
 </script>
 
