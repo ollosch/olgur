@@ -12,3 +12,9 @@ app.use(createPinia())
 app.use(router)
 
 app.mount('#app')
+
+app.config.errorHandler = (err, instance, info) => {
+  if (import.meta.env.VITE_APP_DEBUG === 'true') {
+    console.error('Global error handler:', err, instance, info)
+  }
+}
