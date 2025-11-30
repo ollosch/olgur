@@ -62,6 +62,22 @@ export const useAuthStore = defineStore('auth', () => {
     router.push({ name: 'login' })
   }
 
+  async function verifyEmail(url: string) {
+    await get(url)
+    await fetchUser()
+  }
+
+  async function sendResetLink(credentials: { email: string }) {
+    await post('/forgot-password', credentials)
+  }
+
+  async function resetPassword(
+    credentials: { password: string; password_confirmation: string },
+    params: { token: string; email: string },
+  ) {
+    await post('/reset-password', { ...credentials, ...params })
+  }
+
   async function storeToken(newToken: string) {
     token.value = newToken
     localStorage.setItem('auth_token', newToken)
@@ -69,11 +85,6 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function fetchUser() {
     user.value = await get<User>('/me')
-  }
-
-  async function verifyEmail(url: string) {
-    await get(url)
-    await fetchUser()
   }
 
   async function redirectIfAuthenticated() {
@@ -94,6 +105,8 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     logout,
     register,
+    resetPassword,
+    sendResetLink,
     verifyEmail,
     errors,
     loading,

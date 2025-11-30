@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import router from '@/router'
 import { useForm } from 'vee-validate'
-import { useAuthStore, type LoginRequest } from '@/stores/auth'
+import { useAuthStore } from '@/stores/auth'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,13 +9,12 @@ import { Input } from '@/components/ui/input'
 import AuthLayout from './AuthLayout.vue'
 
 const auth = useAuthStore()
-const { defineField, handleSubmit, errors, setErrors } = useForm<LoginRequest>()
+const { defineField, handleSubmit, errors, setErrors } = useForm<{ email: string }>()
 
 const [email, emailAttrs] = defineField('email')
-const [password, passwordAttrs] = defineField('password')
 
 const onSubmit = handleSubmit(async (values) => {
-  await auth.login(values)
+  await auth.sendResetLink(values)
 
   if (auth.errors) {
     setErrors(auth.errors)
@@ -28,9 +26,9 @@ const onSubmit = handleSubmit(async (values) => {
   <AuthLayout>
     <Card>
       <CardHeader>
-        <CardTitle>Login to Olwu</CardTitle>
+        <CardTitle>Reset Password</CardTitle>
         <CardDescription>
-          Enter your email and password below to login to your account
+          Enter your email below to receive a password reset link.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -49,29 +47,9 @@ const onSubmit = handleSubmit(async (values) => {
               <div v-if="errors.email">{{ errors.email }}</div>
             </Field>
             <Field>
-              <div class="flex items-center">
-                <FieldLabel for="password"> Password </FieldLabel>
-                <router-link
-                  :to="{ name: 'reset-password-request' }"
-                  class="ml-auto inline-block text-sm underline-offset-4 hover:underline"
-                >
-                  Forgot your password?
-                </router-link>
-              </div>
-              <Input
-                v-model="password"
-                v-bind="passwordAttrs"
-                id="password"
-                type="password"
-                required
-              />
-            </Field>
-            <div v-if="errors.password">{{ errors.password }}</div>
-            <Field>
-              <Button :disabled="auth.loading" type="submit"> Login </Button>
+              <Button :disabled="auth.loading" type="submit"> Send Reset Link </Button>
               <FieldDescription class="text-center">
-                Don't have an account?
-                <router-link :to="{ name: 'register' }"> Sign up </router-link>
+                Back to <router-link :to="{ name: 'login' }"> Log in </router-link>
               </FieldDescription>
             </Field>
           </FieldGroup>

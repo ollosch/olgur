@@ -19,4 +19,16 @@ export default [
     meta: { requiresAuth: true },
     component: () => import('@/views/Auth/VerifyEmailView.vue'),
   },
+  {
+    path: '/reset-password-request',
+    name: 'reset-password-request',
+    meta: { requiresGuest: true },
+    component: () => import('@/views/Auth/ResetPasswordRequestView.vue'),
+  },
+  {
+    path: '/reset-password',
+    name: 'reset-password',
+    meta: { requiresGuest: true },
+    component: () => import('@/views/Auth/ResetPasswordView.vue'),
+  },
 ]
