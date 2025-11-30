@@ -1,18 +1,11 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import authRoutes from '@/router/auth.ts'
+import appRoutes from '@/router/app.ts'
 import { useAuthStore } from '@/stores/auth.ts'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [
-    ...authRoutes,
-    {
-      path: '/dashboard',
-      name: 'dashboard',
-      meta: { requiresAuth: true },
-      component: () => import('@/views/DashboardView.vue'),
-    },
-  ],
+  routes: [...authRoutes, ...appRoutes],
 })
 
 /**
@@ -33,24 +26,26 @@ const router = createRouter({
  */
 router.beforeEach(async (to) => {
   const auth = useAuthStore()
+  const requiresAuth = to.meta.requiresAuth
+  const requiresGuest = to.meta.requiresGuest
 
   if (!auth.user && auth.token) {
-    await auth.fetchUser()
-
-    if (!auth.user) {
+    try {
+      await auth.fetchUser()
+    } catch {
+      // Auth failed - clear invalid token to prevent redirect loop
       auth.clear()
     }
   }
-
-  const requiresAuth = to.meta.requiresAuth
-  const requiresGuest = to.meta.requiresGuest
 
   if (requiresAuth && !auth.user) {
     return {
       name: 'login',
       query: { redirect: to.fullPath },
     }
-  } else if (requiresGuest && auth.user) {
+  }
+
+  if (requiresGuest && auth.user) {
     return { name: 'dashboard' }
   }
 })

@@ -85,6 +85,10 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function fetchUser() {
     user.value = await get<User>('/me')
+
+    if (!user.value) {
+      clear()
+    }
   }
 
   async function redirectIfAuthenticated() {
