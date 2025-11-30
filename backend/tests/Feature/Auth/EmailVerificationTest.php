@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Models\User;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
 
 use function Pest\Laravel\actingAs;
@@ -45,7 +46,10 @@ test('email is not verified with invalid hash', function (): void {
 test('cannot access protected routes if not verified', function (): void {
     $user = User::factory()->unverified()->create();
 
+    Route::get('/test-protected', fn () => response()->json(['message' => 'success']))
+        ->middleware(['auth:sanctum', 'verified']);
+
     actingAs($user, 'sanctum')
-        ->getJson(route('me', [], false))
+        ->getJson('/test-protected')
         ->assertForbidden();
 });
