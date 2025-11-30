@@ -38,6 +38,7 @@ final class System extends Model
         ];
     }
 
+    /** @return BelongsTo<User> */
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');

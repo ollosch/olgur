@@ -53,6 +53,7 @@ final class User extends Authenticatable implements MustVerifyEmail
         ];
     }
 
+    /** @return HasMany<System> */
     public function systems(): HasMany
     {
         return $this->hasMany(System::class, 'owner_id');
