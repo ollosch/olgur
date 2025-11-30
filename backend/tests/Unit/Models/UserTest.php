@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\System;
 use App\Models\User;
 
 test('to array', function (): void {
@@ -16,4 +17,11 @@ test('to array', function (): void {
             'created_at',
             'updated_at',
         ]);
+});
+
+test('has many systems', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create(['owner_id' => $user->id]);
+
+    expect($user->systems->contains($system))->toBeTrue();
 });
