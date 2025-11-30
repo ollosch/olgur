@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import router from '@/router'
 import { useForm } from 'vee-validate'
 import { useAuthStore, type RegisterRequest } from '@/stores/auth'
 
