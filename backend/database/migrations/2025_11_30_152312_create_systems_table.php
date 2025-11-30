@@ -19,7 +19,7 @@ return new class extends Migration
                 ->nullOnDelete();
 
             $table->string('name');
-            $table->text('description')->nullable();
+            $table->text('description');
 
             $table->timestamps();
         });
