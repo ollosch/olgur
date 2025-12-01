@@ -9,6 +9,7 @@ use Database\Factories\ModuleFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property-read int $id
@@ -44,5 +45,11 @@ final class Module extends Model
     public function system(): BelongsTo
     {
         return $this->belongsTo(System::class);
+    }
+
+    /** @return HasMany<Rule> */
+    public function rules(): HasMany
+    {
+        return $this->hasMany(Rule::class);
     }
 }

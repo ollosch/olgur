@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\Module;
+use App\Models\Rule;
 use App\Models\System;
 use Carbon\CarbonImmutable;
 
@@ -39,4 +40,15 @@ test('belongs to system', function (): void {
 
     expect($module->system)->toBeInstanceOf(System::class)
         ->and($module->system->id)->toBe($system->id);
+});
+
+test('has many rules', function (): void {
+    $module = Module::factory()->create();
+    $rules = Rule::factory()->count(2)->create(['module_id' => $module->id]);
+
+    expect($module->rules)->toHaveCount(2)
+        ->each
+        ->toBeInstanceOf(Rule::class)
+        ->and($module->rules->modelKeys())
+        ->toEqualCanonicalizing($rules->modelKeys());
 });
