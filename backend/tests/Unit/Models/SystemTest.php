@@ -42,9 +42,17 @@ test('belongs to owner', function (): void {
 
 test('has many modules', function (): void {
     $system = System::factory()->create();
-    $modules = Module::factory()->count(2)->create(['system_id' => $system->id]);
+    $modules = Module::factory()->create(['system_id' => $system->id]);
 
     expect($system->modules->count())->toBe(2)
         ->and($system->modules->pluck('id')->toArray())
         ->toMatchArray($modules->pluck('id')->toArray());
+});
+
+test('creates a \'core\' module when a system is created', function (): void {
+    $system = System::factory()->create()->refresh();
+
+    expect($system->modules)->toHaveCount(1)
+        ->and($system->modules->first())->toBeInstanceOf(Module::class)
+        ->and($system->modules->first()->type)->toBe('core');
 });
