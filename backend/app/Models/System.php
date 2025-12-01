@@ -64,4 +64,10 @@ final class System extends Model
     {
         return $this->hasMany(Module::class);
     }
+
+    /** @return HasMany<SystemIndex> */
+    public function systemIndices(): HasMany
+    {
+        return $this->hasMany(SystemIndex::class);
+    }
 }

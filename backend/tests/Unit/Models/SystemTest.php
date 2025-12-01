@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Models\Module;
 use App\Models\System;
+use App\Models\SystemIndex;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 
@@ -44,9 +45,21 @@ test('has many modules', function (): void {
     $system = System::factory()->create();
     $modules = Module::factory()->create(['system_id' => $system->id]);
 
-    expect($system->modules->count())->toBe(2)
-        ->and($system->modules->pluck('id')->toArray())
-        ->toMatchArray($modules->pluck('id')->toArray());
+    expect($system->modules)->toHaveCount(2)
+        ->and($system->modules->first())->toBeInstanceOf(Module::class)
+        ->and($system->modules->pluck('id')->sort()->all())
+        ->toBe($modules->pluck('id')->sort()->all());
+});
+
+test('has many system indices', function (): void {
+    $system = System::factory()->create();
+    $indexEntries = SystemIndex::factory()->count(2)->create(['system_id' => $system->id]);
+
+    expect($system->systemIndices)->toHaveCount(2)
+        ->each
+        ->toBeInstanceOf(SystemIndex::class)
+        ->and($system->systemIndices->modelKeys())
+        ->toEqualCanonicalizing($indexEntries->modelKeys());
 });
 
 test('creates a \'core\' module when a system is created', function (): void {
