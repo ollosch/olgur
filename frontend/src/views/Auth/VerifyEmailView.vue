@@ -87,7 +87,7 @@ const goToLogin = () => {
               d="M6 18L18 6M6 6l12 12"
             />
           </svg>
-          <Button @click="goToLogin">Go to Dashboard</Button>
+          Back to <Button @click="goToLogin">Log In</Button>
         </div>
       </CardContent>
     </Card>
