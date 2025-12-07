@@ -24,8 +24,8 @@ test('to array', function (): void {
 test('casts attributes correctly', function (): void {
     $rule = Rule::factory()->create();
 
-    expect($rule->id)->toBeInt()
-        ->and($rule->module_id)->toBeInt()
+    expect($rule->id)->toBeString()->toHaveLength(26)
+        ->and($rule->module_id)->toBeString()->toHaveLength(26)
         ->and($rule->mpath)->toBeString()
         ->and($rule->title)->toBeString()
         ->and($rule->content)->toBeString()

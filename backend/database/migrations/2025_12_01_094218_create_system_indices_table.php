@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('system_indices', function (Blueprint $table): void {
-            $table->id();
-            $table->foreignIdFor(System::class)
+            $table->ulid('id')->primary();
+            $table->foreignUlid('system_id')
                 ->constrained()
                 ->cascadeOnDelete();
 

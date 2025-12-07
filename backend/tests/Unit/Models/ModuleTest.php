@@ -25,8 +25,8 @@ test('to array', function (): void {
 test('casts attributes correctly', function (): void {
     $module = Module::factory()->create();
 
-    expect($module->id)->toBeInt()
-        ->and($module->system_id)->toBeInt()
+    expect($module->id)->toBeString()->toHaveLength(26)
+        ->and($module->system_id)->toBeString()->toHaveLength(26)
         ->and($module->type)->toBeString()
         ->and($module->name)->toBeString()
         ->and($module->description)->toBeString()

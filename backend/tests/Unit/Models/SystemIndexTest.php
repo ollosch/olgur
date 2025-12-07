@@ -27,8 +27,8 @@ test('to array', function (): void {
 test('casts attributes correctly', function (): void {
     $systemIndex = SystemIndex::factory()->create();
 
-    expect($systemIndex->id)->toBeInt()
-        ->and($systemIndex->system_id)->toBeInt()
+    expect($systemIndex->id)->toBeString()->toHaveLength(26)
+        ->and($systemIndex->system_id)->toBeString()->toHaveLength(26)
         ->and($systemIndex->term)->toBeString()
         ->and($systemIndex->definition)->toBeString()
         ->and($systemIndex->references)->toBeString()

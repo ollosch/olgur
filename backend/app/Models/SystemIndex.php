@@ -6,13 +6,14 @@ namespace App\Models;
 
 use Carbon\CarbonInterface;
 use Database\Factories\SystemIndexFactory;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * @property-read int $id
- * @property-read int $module_id
+ * @property-read string $id
+ * @property-read string $module_id
  * @property-read string $mpath
  * @property-read string $title
  * @property-read string $content
@@ -22,7 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 final class SystemIndex extends Model
 {
     /** @use HasFactory<SystemIndexFactory> */
-    use HasFactory;
+    use HasFactory, HasUlids;
 
     /**
      * @return array<string, string>
@@ -30,8 +31,8 @@ final class SystemIndex extends Model
     public function casts(): array
     {
         return [
-            'id' => 'integer',
-            'system_id' => 'integer',
+            'id' => 'string',
+            'system_id' => 'string',
             'term' => 'string',
             'definition' => 'string',
             'references' => 'string',

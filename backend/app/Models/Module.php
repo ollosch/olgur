@@ -6,14 +6,15 @@ namespace App\Models;
 
 use Carbon\CarbonInterface;
 use Database\Factories\ModuleFactory;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * @property-read int $id
- * @property-read int $system_id
+ * @property-read string $id
+ * @property-read string $system_id
  * @property-read string $type
  * @property-read string $name
  * @property-read string $description
@@ -23,7 +24,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 final class Module extends Model
 {
     /** @use HasFactory<ModuleFactory> */
-    use HasFactory;
+    use HasFactory, HasUlids;
 
     /**
      * @return array<string, string>
@@ -31,8 +32,8 @@ final class Module extends Model
     public function casts(): array
     {
         return [
-            'id' => 'integer',
-            'system_id' => 'integer',
+            'id' => 'string',
+            'system_id' => 'string',
             'type' => 'string',
             'name' => 'string',
             'description' => 'string',

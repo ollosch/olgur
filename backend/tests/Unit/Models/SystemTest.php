@@ -25,8 +25,8 @@ test('to array', function (): void {
 test('casts attributes correctly', function (): void {
     $system = System::factory()->create();
 
-    expect($system->id)->toBeInt()
-        ->and($system->owner_id)->toBeInt()
+    expect($system->id)->toBeString()->toHaveLength(26)
+        ->and($system->owner_id)->toBeString()->toHaveLength(26)
         ->and($system->name)->toBeString()
         ->and($system->description)->toBeString()
         ->and($system->created_at)->toBeInstanceOf(CarbonImmutable::class)
