@@ -92,4 +92,34 @@ final class User extends Authenticatable implements MustVerifyEmail
 
         $this->roles()->attach($role->id, ['system_id' => $system->id ?? null]);
     }
+
+    public function hasPermissionTo(string $permission, System|Module|null $context = null): bool
+    {
+        $query = DB::table('role_user')->where('user_id', $this->id);
+
+        if ($context === null) {
+            $query->whereNull('role_user.system_id')->whereNull('role_user.module_id');
+        }
+
+        if ($context instanceof System) {
+            $query->where('role_user.system_id', $context->id)->whereNull('role_user.module_id');
+        }
+
+        if ($context instanceof Module) {
+            $query->where('role_user.system_id', $context->system_id)->where('role_user.module_id', $context->id);
+        }
+
+        $permissions = $query
+            ->join('roles', 'role_user.role_id', '=', 'roles.id')
+            ->join('permission_role', 'roles.id', '=', 'permission_role.role_id')
+            ->join('permissions', 'permission_role.permission_id', '=', 'permissions.id')
+            ->select('permissions.name as name')
+            ->pluck('name');
+
+        if ($permissions->contains($permission)) {
+            return true;
+        }
+
+        return false;
+    }
 }
