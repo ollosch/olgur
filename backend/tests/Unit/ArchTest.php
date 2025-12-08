@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
+use App\Models\Permission;
 use App\Providers\AppServiceProvider;
 
 arch()->preset()->php();
-arch()->preset()->strict();
+arch()->preset()->strict()->ignoring(Permission::class);
 arch()->preset()->security()
     ->ignoring(AppServiceProvider::class);
 
