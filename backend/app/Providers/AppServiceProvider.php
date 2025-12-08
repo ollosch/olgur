@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Models\Module;
+use App\Models\System;
+use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
@@ -25,6 +29,8 @@ final class AppServiceProvider extends ServiceProvider
         $this->setEmailVerificationUrl();
 
         $this->setPasswordResetUrl();
+
+        $this->bootAccessControl();
     }
 
     private function bootModelsDefaults(): void
@@ -54,5 +60,18 @@ final class AppServiceProvider extends ServiceProvider
             config('app.frontend_url').
             '/reset-password?token='.$token.
             '&email='.urlencode((string) $notifiable->getEmailForPasswordReset()));
+    }
+
+    private function bootAccessControl(): void
+    {
+        Gate::before(function (User $user, string $ability, array $arguments) {
+            $context = $arguments[0] ?? null;
+
+            if ($context === null || $context instanceof System || $context instanceof Module) {
+                if ($user->hasPermissionTo($ability, $context)) {
+                    return true;
+                }
+            }
+        });
     }
 }
