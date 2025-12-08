@@ -34,7 +34,7 @@ test('casts attributes correctly', function (): void {
         ->and($module->updated_at)->toBeInstanceOf(CarbonImmutable::class);
 });
 
-test('belongs to system', function (): void {
+test('belongs to a system', function (): void {
     $system = System::factory()->create();
     $module = Module::factory()->create(['system_id' => $system->id]);
 
