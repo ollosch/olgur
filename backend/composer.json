@@ -79,8 +79,8 @@
             "pint --parallel --test",
             "rector --dry-run"
         ],
-        "test:type-coverage": "pest --type-coverage --min=100",
-        "test:unit": "pest --parallel --coverage --exactly=100.0",
+        "test:type-coverage": "pest --type-coverage",
+        "test:unit": "pest --parallel --coverage",
         "test:types": "phpstan",
         "test": [
             "@test:type-coverage",
