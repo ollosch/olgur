@@ -8,12 +8,12 @@ use App\Enums\PermissionList;
 use App\Models\Module;
 use App\Models\System;
 use App\Models\User;
-use BackedEnum;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
@@ -27,6 +27,8 @@ final class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->bootModelsDefaults();
+
+        JsonResource::withoutWrapping();
 
         $this->setEmailVerificationUrl();
 
