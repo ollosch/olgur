@@ -23,8 +23,8 @@ final class RuleFactory extends Factory
         return [
             'module_id' => Module::factory(),
             'mpath' => $this->faker->lexify('?')
-                . '.00' . $this->faker->randomDigitNotNull()
-                . '.00' . $this->faker->randomDigitNotNull(),
+                . '.0' . $this->faker->randomNumber(2, true)
+                . '.0' . $this->faker->randomNumber(2, true),
             'title' => $this->faker->words(3, true),
             'content' => $this->faker->paragraphs(3, true),
         ];
