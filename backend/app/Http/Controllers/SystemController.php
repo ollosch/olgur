@@ -44,7 +44,32 @@ final class SystemController
     {
         Gate::authorize('view', $system);
 
-        return response()->json($system);
+        $system->load(['modules' => function ($query) {
+            $query->with(['versions' => function ($query) {
+                $query->latest();
+            }]);
+        }]);
+
+        return response()->json([
+            'id' => $system->id,
+            'name' => $system->name,
+            'description' => $system->description,
+            'modules' => $system->modules->map(function ($module) {
+                return [
+                    'id' => $module->id,
+                    'type' => $module->type,
+                    'name' => $module->name,
+                    'description' => $module->description,
+                    'versions' => $module->versions->map(function ($version) {
+                        return [
+                            'id' => $version->id,
+                            'name' => $version->name,
+                            'url' => $version->getUrl(),
+                        ];
+                    }),
+                ];
+            }),
+        ]);
     }
 
     /**

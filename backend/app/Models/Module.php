@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\ModuleTypes;
 use Carbon\CarbonInterface;
 use Database\Factories\ModuleFactory;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -34,7 +36,7 @@ final class Module extends Model
         return [
             'id' => 'string',
             'system_id' => 'string',
-            'type' => 'string',
+            'type' => ModuleTypes::class,
             'name' => 'string',
             'description' => 'string',
             'created_at' => 'datetime',
@@ -52,5 +54,11 @@ final class Module extends Model
     public function rules(): HasMany
     {
         return $this->hasMany(Rule::class);
+    }
+
+    /** @return HasMany<Version, $this> */
+    public function versions(): HasMany
+    {
+        return $this->hasMany(Version::class);
     }
 }

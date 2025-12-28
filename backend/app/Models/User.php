@@ -37,6 +37,7 @@ final class User extends Authenticatable implements MustVerifyEmail
         parent::boot();
 
         self::created(function (User $user): void {
+            // TODOTODO: This is temporary until I know which roles are available
             $user->assignRole('admin', null);
         });
     }

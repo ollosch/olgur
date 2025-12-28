@@ -3,10 +3,13 @@
 declare(strict_types=1);
 
 use App\Actions\CreateSystem;
+use App\Enums\ModuleTypes;
 use App\Models\Permission;
 use App\Models\Role;
 
 use App\Models\User;
+use App\Services\VersionService;
+
 use function Pest\Laravel\actingAs;
 
 beforeEach(function (): void {
@@ -59,6 +62,44 @@ test('users cannot create systems w/o create.systems', function (): void {
     $response->assertStatus(403);
     $this->assertDatabaseMissing('systems', $payload);
 });
+
+/*----------------------------------------------------------------------
+ * Show
+ *---------------------------------------------------------------------*/
+test('contains filepaths to all modules', function (): void {
+    $module = $this->system->modules()->first();
+
+    new VersionService()->createSnapshot($module, '1.0.0');
+
+    $response = actingAs($this->user, 'sanctum')
+      ->json('GET', '/api/systems/'.$this->system->id);
+
+    $version = $module->versions->first();
+
+    $response
+        ->assertStatus(200)
+        ->assertJson([
+            'id' => $this->system->id,
+            'name' => $this->system->name,
+            'description' => $this->system->description,
+            'modules' => [
+                [
+                    'id' => $module->id,
+                    'type' => $module->type->value,
+                    'name' => $module->name,
+                    'description' => $module->description,
+                    'versions' => [
+                        [
+                            'id' => $version->id,
+                            'name' => $version->name,
+                            'url' => $version->getUrl(),
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+});
+
 
 /*----------------------------------------------------------------------
  * Edit

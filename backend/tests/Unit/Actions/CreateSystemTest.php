@@ -17,5 +17,5 @@ test('creates a \'core\' module when a system is created', function (): void {
 
     expect($system->modules)->toHaveCount(1)
         ->and($system->modules->first())->toBeInstanceOf(Module::class)
-        ->and($system->modules->first()->type)->toBe('core');
+        ->and($system->modules->first()->type->value)->toBe('core');
 });

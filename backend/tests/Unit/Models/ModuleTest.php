@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Enums\ModuleTypes;
 use App\Models\Module;
 use App\Models\Rule;
 use App\Models\System;
@@ -27,7 +28,7 @@ test('casts attributes correctly', function (): void {
 
     expect($module->id)->toBeString()->toHaveLength(26)
         ->and($module->system_id)->toBeString()->toHaveLength(26)
-        ->and($module->type)->toBeString()
+        ->and($module->type)->toBeInstanceOf(ModuleTypes::class)
         ->and($module->name)->toBeString()
         ->and($module->description)->toBeString()
         ->and($module->created_at)->toBeInstanceOf(CarbonImmutable::class)
