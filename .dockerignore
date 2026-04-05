@@ -1,0 +1,34 @@
+# Git metadata
+.git
+.gitignore
+
+# Environment files — never bake secrets into an image
+.env*
+!.env.example
+
+# Editor and IDE config
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Dependency directories — installed inside the container, not copied from host
+backend/vendor
+backend/node_modules
+frontend/node_modules
+
+# Build output
+frontend/dist
+frontend/build
+
+# Log files
+docker/**/log*
+
+# Misc tooling
+.yaak
+.github
+/tmp

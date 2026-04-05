@@ -1,0 +1,15 @@
+docker/**/log*
+.env*
+!.env.example
+
+/tmp
+
+.agents
+.github
+.vscode
+.yaak
+
+/plans
+AGENTS.md
+opencode.json
+skills-lock.json

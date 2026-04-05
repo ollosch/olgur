@@ -1,0 +1,115 @@
+services:
+  www:
+    image: nginx:1
+    volumes:
+      - ${PWD}/backend/:/var/www
+      - ${PWD}/docker/development/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ${PWD}/docker/development/nginx/log/:/var/log/nginx
+    ports:
+      - "80:80"
+    networks:
+      - olgur-dev
+    depends_on:
+      php-fpm:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+          cpus: "0.5"
+
+  php-fpm:
+    build:
+      context: ./
+      dockerfile: ${PWD}/docker/common/php-fpm/Dockerfile
+      target: development
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      XDEBUG_MODE: ${XDEBUG_MODE:-off}
+      XDEBUG_HOST: ${XDEBUG_HOST:-host.docker.internal}
+      XDEBUG_IDE_KEY: ${XDEBUG_IDE_KEY:-DOCKER}
+      XDEBUG_LOG: /dev/stdout
+      XDEBUG_LOG_LEVEL: 0
+    volumes:
+      - ${PWD}/backend:/var/www
+    networks:
+      - olgur-dev
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "php-fpm-healthcheck"]
+      start_period: 10s
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
+
+  db:
+    image: mariadb:12
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-olgur}
+      MYSQL_USER: ${MYSQL_USER:-olgur}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-password}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+    volumes:
+      - olgur-db-dev:/var/lib/mysql
+    networks:
+      - olgur-dev
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      start_period: 10s
+      interval: 2s
+      timeout: 2s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
+
+  workspace:
+    build:
+      context: .
+      dockerfile: ${PWD}/docker/development/workspace/Dockerfile
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    tty: true # Use with 'docker attach'
+    stdin_open: true # Keeps standard input open for 'docker exec'
+    stop_grace_period: 0s # Shut down immediately on SIGTERM
+    env_file:
+      - ${PWD}/backend/.env
+    environment:
+      XDEBUG_MODE: ${XDEBUG_MODE:-off}
+      XDEBUG_HOST: ${XDEBUG_HOST:-host.docker.internal}
+      XDEBUG_IDE_KEY: ${XDEBUG_IDE_KEY:-DOCKER}
+      XDEBUG_LOG: /dev/stdout
+      XDEBUG_LOG_LEVEL: 0
+    volumes:
+      - ${PWD}/:/var/www
+    networks:
+      - olgur-dev
+    depends_on:
+      db:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 4g
+          cpus: "3.0"
+
+networks:
+  olgur-dev:
+
+volumes:
+  olgur-db-dev:
