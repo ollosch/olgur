@@ -46,7 +46,9 @@ test('name is required to register', function (): void {
         'email' => 'jane@example.com',
         'password' => 'password',
         'password_confirmation' => 'password',
-    ])->assertUnprocessable()->assertJsonValidationErrors('name');
+    ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('name');
 });
 
 test('email is required to register', function (): void {
@@ -54,7 +56,9 @@ test('email is required to register', function (): void {
         'name' => 'Jane Doe',
         'password' => 'password',
         'password_confirmation' => 'password',
-    ])->assertUnprocessable()->assertJsonValidationErrors('email');
+    ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('email');
 });
 
 test('email must be a valid email address', function (): void {
@@ -63,7 +67,9 @@ test('email must be a valid email address', function (): void {
         'email' => 'not-an-email',
         'password' => 'password',
         'password_confirmation' => 'password',
-    ])->assertUnprocessable()->assertJsonValidationErrors('email');
+    ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('email');
 });
 
 test('email must be lowercase', function (): void {
@@ -72,7 +78,9 @@ test('email must be lowercase', function (): void {
         'email' => 'Jane@Example.COM',
         'password' => 'password',
         'password_confirmation' => 'password',
-    ])->assertUnprocessable()->assertJsonValidationErrors('email');
+    ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('email');
 });
 
 test('email must be unique', function (): void {
@@ -83,14 +91,18 @@ test('email must be unique', function (): void {
         'email' => 'jane@example.com',
         'password' => 'password',
         'password_confirmation' => 'password',
-    ])->assertUnprocessable()->assertJsonValidationErrors('email');
+    ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('email');
 });
 
 test('password is required to register', function (): void {
     postJson('/api/register', [
         'name' => 'Jane Doe',
         'email' => 'jane@example.com',
-    ])->assertUnprocessable()->assertJsonValidationErrors('password');
+    ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('password');
 });
 
 test('password must be confirmed', function (): void {
@@ -99,7 +111,9 @@ test('password must be confirmed', function (): void {
         'email' => 'jane@example.com',
         'password' => 'password',
         'password_confirmation' => 'different',
-    ])->assertUnprocessable()->assertJsonValidationErrors('password');
+    ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('password');
 });
 
 test('password must be at least 8 characters', function (): void {

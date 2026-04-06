@@ -19,7 +19,8 @@ test('a guest can log in with valid credentials', function (): void {
     postJson('/api/login', [
         'email' => $user->email,
         'password' => 'password',
-    ])->assertNoContent();
+    ])
+        ->assertNoContent();
 
     assertAuthenticated();
 });
@@ -30,26 +31,34 @@ test('invalid password returns a validation error', function (): void {
     postJson('/api/login', [
         'email' => $user->email,
         'password' => 'wrong-password',
-    ])->assertUnprocessable()->assertJsonValidationErrors('email');
+    ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('email');
 });
 
 test('non-existent email returns a validation error', function (): void {
     postJson('/api/login', [
         'email' => 'nobody@example.com',
         'password' => 'password',
-    ])->assertUnprocessable()->assertJsonValidationErrors('email');
+    ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('email');
 });
 
 test('email is required to log in', function (): void {
     postJson('/api/login', [
         'password' => 'password',
-    ])->assertUnprocessable()->assertJsonValidationErrors('email');
+    ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('email');
 });
 
 test('password is required to log in', function (): void {
     postJson('/api/login', [
         'email' => 'jane@example.com',
-    ])->assertUnprocessable()->assertJsonValidationErrors('password');
+    ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('password');
 });
 
 test('rate limiter locks out after 5 failed attempts', function (): void {
@@ -61,17 +70,20 @@ test('rate limiter locks out after 5 failed attempts', function (): void {
         postJson('/api/login', [
             'email' => $user->email,
             'password' => 'wrong-password',
-        ])->assertUnprocessable();
+        ])
+            ->assertUnprocessable();
     }
 
     postJson('/api/login', [
         'email' => $user->email,
         'password' => 'wrong-password',
-    ])->assertUnprocessable()->assertJson(
-        fn (AssertableJson $json): AssertableJson => $json
-            ->where('errors.email.0', fn (string $message): bool => $message !== __('auth.failed'))
-            ->etc()
-    );
+    ])
+        ->assertUnprocessable()
+        ->assertJson(
+            fn (AssertableJson $json): AssertableJson => $json
+                ->where('errors.email.0', fn (string $message): bool => $message !== __('auth.failed'))
+                ->etc()
+        );
 
     Event::assertDispatched(Lockout::class);
 });
@@ -89,9 +101,11 @@ test('rate limiter is cleared after a successful login', function (): void {
     postJson('/api/login', [
         'email' => $user->email,
         'password' => 'password',
-    ])->assertNoContent();
+    ])
+        ->assertNoContent();
 
-    expect(RateLimiter::attempts(Str::transliterate(Str::lower($user->email).'|127.0.0.1')))->toBe(0);
+    $throttleKey = Str::transliterate(Str::lower($user->email).'|'.request()->ip());
+    expect(RateLimiter::attempts($throttleKey))->toBe(0);
 });
 
 test('an authenticated user cannot log in', function (): void {
