@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable(['slug', 'name', 'description', 'config'])]
 final class System extends Model
@@ -17,6 +18,14 @@ final class System extends Model
     use HasFactory;
 
     use HasUlids;
+
+    /**
+     * @return HasMany<Module, $this>
+     */
+    public function modules(): HasMany
+    {
+        return $this->hasMany(Module::class)->orderBy('sort_order');
+    }
 
     /**
      * Get the attributes that should be cast.
