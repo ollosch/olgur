@@ -1,0 +1,33 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Database\Factories;
+
+use App\Models\System;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
+
+/**
+ * @extends Factory<System>
+ */
+final class SystemFactory extends Factory
+{
+    /**
+     * Define the model's default state.
+     *
+     * @return array<string, mixed>
+     */
+    public function definition(): array
+    {
+        /** @var string $name */
+        $name = fake()->unique()->words(3, true);
+
+        return [
+            'slug' => Str::slug($name),
+            'name' => Str::title($name),
+            'description' => fake()->sentence(),
+            'config' => null,
+        ];
+    }
+}
