@@ -28,6 +28,14 @@ final class System extends Model
     }
 
     /**
+     * @return HasMany<Membership, $this>
+     */
+    public function memberships(): HasMany
+    {
+        return $this->hasMany(Membership::class);
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
