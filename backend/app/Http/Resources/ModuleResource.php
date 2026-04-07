@@ -1,0 +1,34 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Resources;
+
+use App\Models\Module;
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+/** @mixin Module */
+final class ModuleResource extends JsonResource
+{
+    /**
+     * Transform the resource into an array.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(Request $request): array
+    {
+        return [
+            'id' => $this->id,
+            'system_id' => $this->system_id,
+            'slug' => $this->slug,
+            'name' => $this->name,
+            'description' => $this->description,
+            'config' => $this->config,
+            'is_core' => $this->is_core,
+            'sort_order' => $this->sort_order,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+        ];
+    }
+}
