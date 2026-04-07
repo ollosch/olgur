@@ -30,4 +30,14 @@ final class SystemFactory extends Factory
             'config' => null,
         ];
     }
+
+    /**
+     * Set a toc_depth config value.
+     */
+    public function withTocDepth(int $depth): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'config' => ['toc_depth' => $depth],
+        ]);
+    }
 }

@@ -30,6 +30,7 @@ final class UpdateSystemRequest extends FormRequest
             'name' => ['sometimes', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'config' => ['nullable', 'array'],
+            'config.toc_depth' => ['nullable', 'integer', 'min:1'],
             'config.cover_image' => ['nullable', 'string', 'url'],
         ];
     }
