@@ -10,6 +10,7 @@ use App\Http\Resources\SystemResource;
 use App\Models\System;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Gate;
 
 final class SystemController
 {
@@ -18,6 +19,8 @@ final class SystemController
      */
     public function index(): AnonymousResourceCollection
     {
+        Gate::authorize('viewAny', System::class);
+
         return SystemResource::collection(
             System::query()->orderBy('name')->get()
         );
@@ -28,6 +31,8 @@ final class SystemController
      */
     public function store(StoreSystemRequest $request): SystemResource
     {
+        Gate::authorize('create', System::class);
+
         $system = System::query()->create($request->validated());
 
         return new SystemResource($system);
@@ -38,6 +43,8 @@ final class SystemController
      */
     public function show(System $system): SystemResource
     {
+        Gate::authorize('view', $system);
+
         return new SystemResource($system);
     }
 
@@ -46,6 +53,8 @@ final class SystemController
      */
     public function update(UpdateSystemRequest $request, System $system): SystemResource
     {
+        Gate::authorize('update', $system);
+
         $system->update($request->validated());
 
         return new SystemResource($system);
@@ -56,6 +65,8 @@ final class SystemController
      */
     public function destroy(System $system): Response
     {
+        Gate::authorize('delete', $system);
+
         $system->delete();
 
         return response()->noContent();
