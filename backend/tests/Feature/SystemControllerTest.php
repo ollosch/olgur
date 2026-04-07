@@ -1,0 +1,202 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Models\System;
+use App\Models\User;
+
+use function Pest\Laravel\actingAs;
+use function Pest\Laravel\assertDatabaseHas;
+use function Pest\Laravel\assertDatabaseMissing;
+use function Pest\Laravel\deleteJson;
+use function Pest\Laravel\getJson;
+use function Pest\Laravel\patchJson;
+use function Pest\Laravel\postJson;
+
+// ── Unauthenticated ──────────────────────────────────────────────────────────
+
+test('unauthenticated requests are rejected', function (string $method, string $path): void {
+    $this->$method($path)->assertUnauthorized();
+})->with([
+    'index' => ['getJson',    '/api/systems'],
+    'store' => ['postJson',   '/api/systems'],
+    'show' => ['getJson',    '/api/systems/fake-id'],
+    'update' => ['patchJson',  '/api/systems/fake-id'],
+    'destroy' => ['deleteJson', '/api/systems/fake-id'],
+]);
+
+// ── index ────────────────────────────────────────────────────────────────────
+
+test('index returns all systems ordered by name', function (): void {
+    $user = User::factory()->create();
+    System::factory()->create(['name' => 'Zebra Game', 'slug' => 'zebra-game']);
+    System::factory()->create(['name' => 'Alpha Game', 'slug' => 'alpha-game']);
+
+    actingAs($user);
+
+    $response = getJson('/api/systems')
+        ->assertSuccessful();
+
+    $names = collect($response->json('data'))->pluck('name')->all();
+    expect($names)->toBe(['Alpha Game', 'Zebra Game']);
+});
+
+test('index returns systems as resource collection', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+
+    actingAs($user);
+
+    $response = getJson('/api/systems')
+        ->assertSuccessful();
+
+    $response->assertJsonStructure([
+        'data' => [['id', 'slug', 'name', 'description', 'config', 'created_at', 'updated_at']],
+    ]);
+
+    expect($response->json('data.0.id'))->toBe($system->id);
+});
+
+// ── store ────────────────────────────────────────────────────────────────────
+
+test('store creates a system', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    actingAs($user);
+
+    $payload = [
+        'slug' => 'asl',
+        'name' => 'Advanced Squad Leader',
+        'description' => 'A tactical wargame.',
+        'config' => ['toc_depth' => 3],
+    ];
+
+    $response = postJson('/api/systems', $payload)
+        ->assertCreated();
+
+    $response->assertJsonPath('data.slug', 'asl');
+    $response->assertJsonPath('data.name', 'Advanced Squad Leader');
+    $response->assertJsonPath('data.config.toc_depth', 3);
+
+    assertDatabaseHas('systems', ['slug' => 'asl']);
+});
+
+test('store requires slug and name', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    actingAs($user);
+
+    postJson('/api/systems', [])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['slug', 'name']);
+});
+
+test('store rejects duplicate slug', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    actingAs($user);
+    System::factory()->create(['slug' => 'taken']);
+
+    postJson('/api/systems', ['slug' => 'taken', 'name' => 'Other'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['slug']);
+});
+
+test('store is forbidden for non-super-admin', function (): void {
+    $user = User::factory()->create();
+    actingAs($user);
+
+    postJson('/api/systems', ['slug' => 'asl', 'name' => 'ASL'])
+        ->assertForbidden();
+});
+
+// ── show ─────────────────────────────────────────────────────────────────────
+
+test('show returns a single system', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    actingAs($user);
+
+    $response = getJson('/api/systems/'.$system->id)
+        ->assertSuccessful()
+        ->assertJsonPath('data.id', $system->id)
+        ->assertJsonPath('data.slug', $system->slug);
+});
+
+test('show returns 404 for unknown system', function (): void {
+    $user = User::factory()->create();
+    actingAs($user);
+
+    getJson('/api/systems/nonexistent-id')
+        ->assertNotFound();
+});
+
+// ── update ───────────────────────────────────────────────────────────────────
+
+test('update modifies a system', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id, ['name' => 'Updated Name'])
+        ->assertSuccessful()
+        ->assertJsonPath('data.name', 'Updated Name');
+
+    assertDatabaseHas('systems', ['id' => $system->id, 'name' => 'Updated Name']);
+});
+
+test('update rejects duplicate slug on another system', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    actingAs($user);
+    System::factory()->create(['slug' => 'taken']);
+    $other = System::factory()->create(['slug' => 'mine']);
+
+    patchJson('/api/systems/'.$other->id, ['slug' => 'taken'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['slug']);
+});
+
+test('update allows same slug on same system', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create(['slug' => 'mine']);
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id, ['slug' => 'mine'])
+        ->assertSuccessful();
+});
+
+test('update is forbidden for non-super-admin', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id, ['name' => 'Hacked'])
+        ->assertForbidden();
+});
+
+// ── destroy ───────────────────────────────────────────────────────────────────
+
+test('destroy deletes a system', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    actingAs($user);
+
+    deleteJson('/api/systems/'.$system->id)
+        ->assertNoContent();
+
+    assertDatabaseMissing('systems', ['id' => $system->id]);
+});
+
+test('destroy returns 404 for unknown system', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    actingAs($user);
+
+    deleteJson('/api/systems/nonexistent-id')
+        ->assertNotFound();
+});
+
+test('destroy is forbidden for non-super-admin', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    actingAs($user);
+
+    deleteJson('/api/systems/'.$system->id)
+        ->assertForbidden();
+});
