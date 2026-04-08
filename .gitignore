@@ -11,5 +11,6 @@ docker/**/log*
 
 /plans
 AGENTS.md
+INSTRUCTIONS.md
 opencode.json
 skills-lock.json
