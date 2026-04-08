@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\MembershipController;
 use App\Http\Controllers\ModuleController;
+use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SystemController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -15,6 +16,10 @@ Route::prefix('api')->group(function (): void {
         Route::apiResource('systems', SystemController::class);
         Route::apiResource('systems.modules', ModuleController::class)->scoped();
         Route::apiResource('systems.memberships', MembershipController::class)->scoped()->except(['show']);
+
+        Route::get('/me/subscriptions', [SubscriptionController::class, 'index']);
+        Route::post('/systems/{system}/modules/{module}/subscribe', [SubscriptionController::class, 'store']);
+        Route::delete('/systems/{system}/modules/{module}/subscribe', [SubscriptionController::class, 'destroy']);
     });
 
     require __DIR__.'/auth.php';
