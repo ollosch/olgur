@@ -135,6 +135,15 @@ test('store returns 404 for unknown system', function (): void {
         ->assertNotFound();
 });
 
+test('store is forbidden for regular user', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    actingAs($user);
+
+    postJson('/api/systems/'.$system->id.'/memberships', ['user_id' => $user->id])
+        ->assertForbidden();
+});
+
 // ── update ───────────────────────────────────────────────────────────────────
 
 test('update promotes a member to admin', function (): void {
@@ -161,6 +170,16 @@ test('update requires admin field', function (): void {
         ->assertJsonValidationErrors(['admin']);
 });
 
+test('update is forbidden for regular user', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $membership = Membership::factory()->for($system)->create();
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id.'/memberships/'.$membership->id, ['admin' => true])
+        ->assertForbidden();
+});
+
 // ── destroy ───────────────────────────────────────────────────────────────────
 
 test('destroy removes a membership', function (): void {
@@ -182,4 +201,14 @@ test('destroy returns 404 for unknown membership', function (): void {
 
     deleteJson('/api/systems/'.$system->id.'/memberships/nonexistent')
         ->assertNotFound();
+});
+
+test('destroy is forbidden for regular user', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $membership = Membership::factory()->for($system)->create();
+    actingAs($user);
+
+    deleteJson('/api/systems/'.$system->id.'/memberships/'.$membership->id)
+        ->assertForbidden();
 });

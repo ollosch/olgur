@@ -30,7 +30,6 @@ test('unauthenticated requests are rejected', function (string $method, string $
     'destroy' => ['deleteJson', '/api/systems/{system}/modules/{module}'],
 ]);
 
-
 // ── authorization ... temporary ───────────────────────────────────────────────
 
 test('regular user cannot create a module', function (): void {
