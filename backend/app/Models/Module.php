@@ -37,6 +37,14 @@ final class Module extends Model
     }
 
     /**
+     * @return HasMany<Rule, $this>
+     */
+    public function rules(): HasMany
+    {
+        return $this->hasMany(Rule::class)->orderBy('sort_order');
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
