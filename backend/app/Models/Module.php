@@ -45,6 +45,14 @@ final class Module extends Model
     }
 
     /**
+     * @return HasMany<IndexEntry, $this>
+     */
+    public function indexEntries(): HasMany
+    {
+        return $this->hasMany(IndexEntry::class);
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
