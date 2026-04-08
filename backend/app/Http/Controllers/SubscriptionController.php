@@ -14,6 +14,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Gate;
 
 final class SubscriptionController
 {
@@ -22,6 +23,8 @@ final class SubscriptionController
      */
     public function index(Request $request): AnonymousResourceCollection
     {
+        Gate::authorize('viewAny', Subscription::class);
+
         /** @var User $user */
         $user = $request->user();
 
@@ -39,6 +42,8 @@ final class SubscriptionController
         Module $module,
         SubscribeToModule $action,
     ): SubscriptionResource {
+        Gate::authorize('create', Subscription::class);
+
         /** @var User $user */
         $user = $request->user();
 
@@ -59,10 +64,12 @@ final class SubscriptionController
         /** @var User $user */
         $user = $request->user();
 
-        Subscription::query()
+        $subscription = Subscription::query()
             ->where('user_id', $user->id)
             ->where('module_id', $module->id)
             ->firstOrFail();
+
+        Gate::authorize('delete', $subscription);
 
         $action->execute($user, $module);
 
