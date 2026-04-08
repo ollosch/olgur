@@ -12,6 +12,7 @@ use App\Models\System;
 use App\Models\User;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Gate;
 
 final class MembershipController
 {
@@ -20,8 +21,10 @@ final class MembershipController
      */
     public function index(System $system): AnonymousResourceCollection
     {
+        Gate::authorize('viewAny', Membership::class);
+
         return MembershipResource::collection(
-            $system->memberships()->latest()->get()
+            $system->memberships()->oldest()->get()
         );
     }
 
@@ -30,6 +33,8 @@ final class MembershipController
      */
     public function store(StoreMembershipRequest $request, System $system): MembershipResource
     {
+        Gate::authorize('create', Membership::class);
+
         $validated = $request->validated();
 
         /** @var User $user */
@@ -48,6 +53,8 @@ final class MembershipController
      */
     public function update(UpdateMembershipRequest $request, System $system, Membership $membership): MembershipResource
     {
+        Gate::authorize('update', $membership);
+
         $membership->update($request->validated());
 
         return new MembershipResource($membership);
@@ -58,6 +65,8 @@ final class MembershipController
      */
     public function destroy(System $system, Membership $membership): Response
     {
+        Gate::authorize('delete', $membership);
+
         $membership->delete();
 
         return response()->noContent();
