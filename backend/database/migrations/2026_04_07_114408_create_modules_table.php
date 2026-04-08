@@ -28,12 +28,4 @@ return new class extends Migration
             $table->unique(['system_id', 'slug']);
         });
     }
-
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        Schema::dropIfExists('modules');
-    }
 };

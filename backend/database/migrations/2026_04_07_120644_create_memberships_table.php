@@ -24,12 +24,4 @@ return new class extends Migration
             $table->unique(['user_id', 'system_id']);
         });
     }
-
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        Schema::dropIfExists('memberships');
-    }
 };
