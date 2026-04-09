@@ -12,6 +12,7 @@ use App\Models\Rule;
 use App\Models\System;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Gate;
 
 final class RuleController
 {
@@ -20,6 +21,8 @@ final class RuleController
      */
     public function index(System $system, Module $module): AnonymousResourceCollection
     {
+        Gate::authorize('viewAny', Rule::class);
+
         return RuleResource::collection($module->rules()->orderBy('sort_order')->get());
     }
 
@@ -28,6 +31,8 @@ final class RuleController
      */
     public function store(StoreRuleRequest $request, System $system, Module $module): RuleResource
     {
+        Gate::authorize('create', Rule::class);
+
         $rule = $module->rules()->create($request->validated());
 
         return new RuleResource($rule);
@@ -38,6 +43,8 @@ final class RuleController
      */
     public function show(System $system, Module $module, Rule $rule): RuleResource
     {
+        Gate::authorize('view', $rule);
+
         return new RuleResource($rule);
     }
 
@@ -46,6 +53,8 @@ final class RuleController
      */
     public function update(UpdateRuleRequest $request, System $system, Module $module, Rule $rule): RuleResource
     {
+        Gate::authorize('update', $rule);
+
         $rule->update($request->validated());
 
         return new RuleResource($rule);
@@ -56,6 +65,8 @@ final class RuleController
      */
     public function destroy(System $system, Module $module, Rule $rule): Response
     {
+        Gate::authorize('delete', $rule);
+
         $rule->delete();
 
         return response()->noContent();
