@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\MembershipController;
 use App\Http\Controllers\ModuleController;
+use App\Http\Controllers\RuleController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SystemController;
 use Illuminate\Http\Request;
@@ -16,6 +17,7 @@ Route::prefix('api')->group(function (): void {
         Route::apiResource('systems', SystemController::class);
         Route::apiResource('systems.modules', ModuleController::class)->scoped();
         Route::apiResource('systems.memberships', MembershipController::class)->scoped()->except(['show']);
+        Route::apiResource('systems.modules.rules', RuleController::class)->scoped();
 
         Route::get('/me/subscriptions', [SubscriptionController::class, 'index']);
         Route::post('/systems/{system}/modules/{module}/subscribe', [SubscriptionController::class, 'store']);
