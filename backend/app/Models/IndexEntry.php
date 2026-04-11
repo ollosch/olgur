@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['module_id', 'parent_id', 'term', 'expansion', 'definition', 'notes', 'rule_refs', 'see_also'])]
+#[Fillable(['module_id', 'parent_id', 'term', 'definition', 'notes', 'relations'])]
 final class IndexEntry extends Model
 {
     /** @use HasFactory<IndexEntryFactory> */
@@ -52,8 +52,7 @@ final class IndexEntry extends Model
     protected function casts(): array
     {
         return [
-            'rule_refs' => 'array',
-            'see_also' => 'array',
+            'relations' => 'array',
         ];
     }
 }

@@ -23,11 +23,9 @@ final class IndexEntryResource extends JsonResource
             'module_id' => $this->module_id,
             'parent_id' => $this->parent_id,
             'term' => $this->term,
-            'expansion' => $this->expansion,
             'definition' => $this->definition,
             'notes' => $this->notes,
-            'rule_refs' => $this->rule_refs,
-            'see_also' => $this->see_also,
+            'relations' => $this->relations,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

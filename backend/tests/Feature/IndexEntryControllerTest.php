@@ -91,7 +91,6 @@ test('store creates an index entry within a module', function (): void {
 
     $payload = [
         'term' => 'Ambush',
-        'expansion' => 'Ambush Attack',
         'definition' => 'A surprise attack.',
     ];
 
@@ -99,7 +98,7 @@ test('store creates an index entry within a module', function (): void {
         ->assertCreated();
 
     $response->assertJsonPath('data.term', 'Ambush');
-    $response->assertJsonPath('data.expansion', 'Ambush Attack');
+    $response->assertJsonPath('data.definition', 'A surprise attack.');
     $response->assertJsonPath('data.module_id', $module->id);
 
     assertDatabaseHas('index_entries', ['term' => 'Ambush', 'module_id' => $module->id]);
@@ -126,12 +125,11 @@ test('store accepts rule_refs and see_also as arrays', function (): void {
 
     $response = postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries', [
         'term' => 'Concept',
-        'rule_refs' => ['A.1', 'B.2'],
-        'see_also' => ['Other Term'],
+        'relations' => ['rule_refs' => ['A.1', 'B.2'], 'see_also' => ['Other Term']]
     ])->assertCreated();
 
-    $response->assertJsonPath('data.rule_refs', ['A.1', 'B.2']);
-    $response->assertJsonPath('data.see_also', ['Other Term']);
+    $response->assertJsonPath('data.relations.rule_refs', ['A.1', 'B.2']);
+    $response->assertJsonPath('data.relations.see_also', ['Other Term']);
 });
 
 test('store rejects invalid parent_id from a different module', function (): void {

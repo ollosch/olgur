@@ -12,9 +12,8 @@ test('an index entry can be created with factory defaults', function (): void {
         ->and($entry->module_id)->toBeString()
         ->and($entry->parent_id)->toBeNull()
         ->and($entry->term)->toBeString()
-        ->and($entry->expansion)->toBeNull()
-        ->and($entry->rule_refs)->toBeNull()
-        ->and($entry->see_also)->toBeNull();
+        ->and($entry->definition)->toBeString()
+        ->and($entry->relations)->toBeNull();
 });
 
 test('index entry uses ulid primary key', function (): void {
@@ -23,16 +22,10 @@ test('index entry uses ulid primary key', function (): void {
     expect($entry->id)->toBeString()->toHaveLength(26);
 });
 
-test('index entry rule_refs is cast to array', function (): void {
-    $entry = IndexEntry::factory()->create(['rule_refs' => ['A.1', 'B.2']]);
+test('index entry relations is cast to array', function (): void {
+    $entry = IndexEntry::factory()->create(['relations' => ['rule_refs' => ['A.1', 'B.2'], 'see_also' => ['DR', 'TEM']]]);
 
-    expect($entry->rule_refs)->toBeArray()->toBe(['A.1', 'B.2']);
-});
-
-test('index entry see_also is cast to array', function (): void {
-    $entry = IndexEntry::factory()->create(['see_also' => ['DR', 'TEM']]);
-
-    expect($entry->see_also)->toBeArray()->toBe(['DR', 'TEM']);
+    expect($entry->relations)->toBeArray()->toBe(['rule_refs' => ['A.1', 'B.2'], 'see_also' => ['DR', 'TEM']]);
 });
 
 test('index entry belongs to a module', function (): void {

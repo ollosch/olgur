@@ -24,11 +24,9 @@ final class IndexEntryFactory extends Factory
             'module_id' => Module::factory(),
             'parent_id' => null,
             'term' => fake()->unique()->word(),
-            'expansion' => null,
             'definition' => fake()->sentence(),
             'notes' => null,
-            'rule_refs' => null,
-            'see_also' => null,
+            'relations' => null,
         ];
     }
 }

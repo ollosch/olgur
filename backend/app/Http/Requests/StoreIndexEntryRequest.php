@@ -32,13 +32,12 @@ final class StoreIndexEntryRequest extends FormRequest
         return [
             'parent_id' => ['nullable', 'string', Rule::exists('index_entries', 'id')->where('module_id', $module->id)],
             'term' => ['required', 'string'],
-            'expansion' => ['nullable', 'string'],
             'definition' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
-            'rule_refs' => ['nullable', 'array'],
-            'rule_refs.*' => ['string'],
-            'see_also' => ['nullable', 'array'],
-            'see_also.*' => ['string'],
+            'relations.rule_refs' => ['nullable', 'array'],
+            'relations.rule_refs.*' => ['string'],
+            'relations.see_also' => ['nullable', 'array'],
+            'relations.see_also.*' => ['string'],
         ];
     }
 }

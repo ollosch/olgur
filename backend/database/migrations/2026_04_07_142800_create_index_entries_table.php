@@ -19,11 +19,9 @@ return new class extends Migration
             $table->ulid('parent_id')->nullable()->index();
 
             $table->string('term');
-            $table->string('expansion')->nullable();
             $table->text('definition')->nullable();
             $table->text('notes')->nullable();
-            $table->json('rule_refs')->nullable();
-            $table->json('see_also')->nullable();
+            $table->json('relations')->nullable();
             $table->timestamps();
         });
     }

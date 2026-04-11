@@ -32,13 +32,12 @@ final class UpdateIndexEntryRequest extends FormRequest
         return [
             'parent_id' => ['sometimes', 'nullable', 'string', Rule::exists('index_entries', 'id')->where('module_id', $module->id)],
             'term' => ['sometimes', 'string'],
-            'expansion' => ['sometimes', 'nullable', 'string'],
             'definition' => ['sometimes', 'nullable', 'string'],
             'notes' => ['sometimes', 'nullable', 'string'],
-            'rule_refs' => ['sometimes', 'nullable', 'array'],
-            'rule_refs.*' => ['string'],
-            'see_also' => ['sometimes', 'nullable', 'array'],
-            'see_also.*' => ['string'],
+            'relations.rule_refs' => ['nullable', 'array'],
+            'relations.rule_refs.*' => ['string'],
+            'relations.see_also' => ['nullable', 'array'],
+            'relations.see_also.*' => ['string'],
         ];
     }
 }
