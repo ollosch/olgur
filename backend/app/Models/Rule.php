@@ -22,9 +22,24 @@ final class Rule extends Model
 
     protected static function booting(): void
     {
-        static::creating(function (Rule $rule): void {
-            $rule->system_id ??= $rule->module->system_id;
+        self::creating(function (Rule $rule): void {
+            /** @var Module $module */
+            $module = $rule->module;
+
+            $rule->system_id ??= $module->system_id;
         });
+    }
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'sort_order' => 'integer',
+        ];
     }
 
     /**
@@ -65,17 +80,5 @@ final class Rule extends Model
     public function ruleVersions(): HasMany
     {
         return $this->hasMany(RuleVersion::class);
-    }
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'sort_order' => 'integer',
-        ];
     }
 }

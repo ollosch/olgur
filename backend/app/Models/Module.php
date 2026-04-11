@@ -21,6 +21,20 @@ final class Module extends Model
     use HasUlids;
 
     /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'config' => 'array',
+            'is_core' => 'boolean',
+            'sort_order' => 'integer',
+        ];
+    }
+
+    /**
      * @return BelongsTo<System, $this>
      */
     public function system(): BelongsTo
@@ -58,19 +72,5 @@ final class Module extends Model
     public function moduleVersions(): HasMany
     {
         return $this->hasMany(ModuleVersion::class);
-    }
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'config' => 'array',
-            'is_core' => 'boolean',
-            'sort_order' => 'integer',
-        ];
     }
 }

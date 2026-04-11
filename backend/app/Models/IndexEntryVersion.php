@@ -21,6 +21,18 @@ final class IndexEntryVersion extends Model
     use HasUlids;
 
     /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'relations' => 'array',
+        ];
+    }
+
+    /**
      * @return BelongsTo<IndexEntry, $this>
      */
     public function indexEntry(): BelongsTo
@@ -50,17 +62,5 @@ final class IndexEntryVersion extends Model
     public function children(): HasMany
     {
         return $this->hasMany(self::class, 'parent_id');
-    }
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'relations' => 'array',
-        ];
     }
 }

@@ -20,6 +20,18 @@ final class Subscription extends Model
     use HasUlids;
 
     /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'editor' => 'boolean',
+        ];
+    }
+
+    /**
      * @return BelongsTo<User, $this>
      */
     public function user(): BelongsTo
@@ -33,17 +45,5 @@ final class Subscription extends Model
     public function module(): BelongsTo
     {
         return $this->belongsTo(Module::class);
-    }
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'editor' => 'boolean',
-        ];
     }
 }

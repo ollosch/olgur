@@ -20,6 +20,18 @@ final class System extends Model
     use HasUlids;
 
     /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'config' => 'array',
+        ];
+    }
+
+    /**
      * @return HasMany<Module, $this>
      */
     public function modules(): HasMany
@@ -33,17 +45,5 @@ final class System extends Model
     public function memberships(): HasMany
     {
         return $this->hasMany(Membership::class);
-    }
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'config' => 'array',
-        ];
     }
 }

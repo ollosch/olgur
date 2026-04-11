@@ -22,6 +22,18 @@ final class Membership extends Model
     protected $table = 'memberships';
 
     /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'admin' => 'boolean',
+        ];
+    }
+
+    /**
      * @return BelongsTo<User, $this>
      */
     public function user(): BelongsTo
@@ -35,17 +47,5 @@ final class Membership extends Model
     public function system(): BelongsTo
     {
         return $this->belongsTo(System::class);
-    }
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'admin' => 'boolean',
-        ];
     }
 }
