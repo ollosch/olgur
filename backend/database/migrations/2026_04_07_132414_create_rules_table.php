@@ -17,7 +17,7 @@ return new class extends Migration
             $table->ulid('id')->primary();
             $table->foreignUlid('system_id')->constrained()->cascadeOnDelete();
             $table->foreignUlid('module_id')->constrained()->cascadeOnDelete();
-            $table->ulid('parent_id')->nullable()->index();
+            $table->ulid('parent_id')->nullable()->index()->references('id')->on('rules')->cascadeOnDelete();
 
             $table->string('number');
             $table->integer('sort_order')->default(0);

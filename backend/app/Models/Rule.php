@@ -60,6 +60,14 @@ final class Rule extends Model
     }
 
     /**
+     * @return HasMany<RuleVersion, $this>
+     */
+    public function ruleVersions(): HasMany
+    {
+        return $this->hasMany(RuleVersion::class);
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>

@@ -45,6 +45,14 @@ final class IndexEntry extends Model
     }
 
     /**
+     * @return HasMany<IndexEntryVersion, $this>
+     */
+    public function indexEntryVersions(): HasMany
+    {
+        return $this->hasMany(IndexEntryVersion::class);
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>

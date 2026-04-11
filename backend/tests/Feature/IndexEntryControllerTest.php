@@ -125,7 +125,7 @@ test('store accepts rule_refs and see_also as arrays', function (): void {
 
     $response = postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries', [
         'term' => 'Concept',
-        'relations' => ['rule_refs' => ['A.1', 'B.2'], 'see_also' => ['Other Term']]
+        'relations' => ['rule_refs' => ['A.1', 'B.2'], 'see_also' => ['Other Term']],
     ])->assertCreated();
 
     $response->assertJsonPath('data.relations.rule_refs', ['A.1', 'B.2']);

@@ -53,6 +53,14 @@ final class Module extends Model
     }
 
     /**
+     * @return HasMany<ModuleVersion, $this>
+     */
+    public function moduleVersions(): HasMany
+    {
+        return $this->hasMany(ModuleVersion::class);
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
