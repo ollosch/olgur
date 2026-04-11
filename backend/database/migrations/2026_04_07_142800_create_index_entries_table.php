@@ -24,13 +24,10 @@ return new class extends Migration
             $table->json('relations')->nullable();
             $table->timestamps();
         });
-    }
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        Schema::dropIfExists('index_entries');
+        // Self-referential FK must be added after the table is created
+        Schema::table('index_entries', function (Blueprint $table): void {
+            $table->foreign('parent_id')->references('id')->on('index_entries')->cascadeOnDelete();
+        });
     }
 };

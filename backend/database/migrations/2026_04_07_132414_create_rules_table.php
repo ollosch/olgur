@@ -17,7 +17,7 @@ return new class extends Migration
             $table->ulid('id')->primary();
             $table->foreignUlid('system_id')->constrained()->cascadeOnDelete();
             $table->foreignUlid('module_id')->constrained()->cascadeOnDelete();
-            $table->ulid('parent_id')->nullable()->index()->references('id')->on('rules')->cascadeOnDelete();
+            $table->ulid('parent_id')->nullable()->index();
 
             $table->string('number');
             $table->integer('sort_order')->default(0);
@@ -26,6 +26,11 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique(['number', 'system_id']);
+        });
+
+        // Self-referential FK must be added after the table is created
+        Schema::table('rules', function (Blueprint $table): void {
+            $table->foreign('parent_id')->references('id')->on('rules')->cascadeOnDelete();
         });
     }
 };
