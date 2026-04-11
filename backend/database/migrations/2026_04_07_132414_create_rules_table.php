@@ -15,6 +15,7 @@ return new class extends Migration
     {
         Schema::create('rules', function (Blueprint $table): void {
             $table->ulid('id')->primary();
+            $table->foreignUlid('system_id')->constrained()->cascadeOnDelete();
             $table->foreignUlid('module_id')->constrained()->cascadeOnDelete();
             $table->ulid('parent_id')->nullable()->index();
 
@@ -24,8 +25,7 @@ return new class extends Migration
             $table->text('content')->nullable();
             $table->timestamps();
 
-            // unique(number, module_id) enforced by the application layer
-            $table->unique(['number', 'module_id']);
+            $table->unique(['number', 'system_id']);
         });
     }
 };

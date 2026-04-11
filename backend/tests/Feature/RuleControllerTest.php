@@ -131,7 +131,7 @@ test('store rejects duplicate number within the same module', function (): void 
         ->assertJsonValidationErrors(['number']);
 });
 
-test('store allows same number in a different module', function (): void {
+test('store rejects duplicate number across modules in the same system', function (): void {
     $user = User::factory()->superAdmin()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
@@ -141,6 +141,21 @@ test('store allows same number in a different module', function (): void {
     actingAs($user);
 
     postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', ['number' => 'A.1', 'title' => 'OK'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['number']);
+});
+
+test('store allows same number in a different system', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $systemA = System::factory()->create();
+    $systemB = System::factory()->create();
+    $moduleA = Module::factory()->for($systemA)->create();
+    $moduleB = Module::factory()->for($systemB)->create();
+    Rule::factory()->for($moduleB)->create(['number' => 'A.1']);
+
+    actingAs($user);
+
+    postJson('/api/systems/'.$systemA->id.'/modules/'.$moduleA->id.'/rules', ['number' => 'A.1', 'title' => 'OK'])
         ->assertCreated();
 });
 
