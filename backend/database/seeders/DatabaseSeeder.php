@@ -25,7 +25,7 @@ final class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        User::factory()->create([
+        User::factory()->superAdmin()->create([
             'name' => 'Admin',
             'email' => 'admin@olgur.de',
         ]);
@@ -46,7 +46,7 @@ final class DatabaseSeeder extends Seeder
         $this->createModuleFor($ollo, $system, 'Modul 2', 'modul-2');
     }
 
-    protected function createModuleFor($user, $system, $name, $slug): Module
+    private function createModuleFor(User $user, System $system, string $name, string $slug): Module
     {
         $module = Module::factory()->create([
             'system_id' => $system->id,
@@ -56,16 +56,14 @@ final class DatabaseSeeder extends Seeder
 
         Subscription::factory()->for($module)->for($user)->editor()->create();
 
-        Rule::factory()->for($system)->for($module)->count(10)->create()->each(fn (Rule $rule) =>
-            Rule::factory()->for($system)->for($module)->count(3)->create([
-                'parent_id' => $rule->id,
-            ]
+        Rule::factory()->for($system)->for($module)->count(10)->create()->each(fn (Rule $rule) => Rule::factory()->for($system)->for($module)->count(3)->create([
+            'parent_id' => $rule->id,
+        ]
         ));
 
-        IndexEntry::factory()->for($module)->count(10)->create()->each(fn (IndexEntry $entry) =>
-            IndexEntry::factory()->for($module)->count(3)->create([
-                'parent_id' => $entry->id,
-            ]
+        IndexEntry::factory()->for($module)->count(10)->create()->each(fn (IndexEntry $entry) => IndexEntry::factory()->for($module)->count(3)->create([
+            'parent_id' => $entry->id,
+        ]
         ));
 
         return $module;
