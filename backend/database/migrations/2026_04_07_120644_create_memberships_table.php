@@ -19,6 +19,7 @@ return new class extends Migration
             $table->foreignUlid('system_id')->constrained()->cascadeOnDelete();
 
             $table->boolean('admin')->default(false);
+            $table->json('config')->nullable();
             $table->timestamps();
 
             $table->unique(['user_id', 'system_id']);

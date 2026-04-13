@@ -25,6 +25,7 @@ final class MembershipFactory extends Factory
             'user_id' => User::factory(),
             'system_id' => System::factory(),
             'admin' => false,
+            'config' => null,
         ];
     }
 

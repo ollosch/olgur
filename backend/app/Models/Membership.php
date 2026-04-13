@@ -11,7 +11,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['user_id', 'system_id', 'admin'])]
+/**
+ * @property array<string, mixed>|null $config
+ */
+#[Fillable(['user_id', 'system_id', 'admin', 'config'])]
 final class Membership extends Model
 {
     /** @use HasFactory<MembershipFactory> */
@@ -30,6 +33,7 @@ final class Membership extends Model
     {
         return [
             'admin' => 'boolean',
+            'config' => 'array',
         ];
     }
 

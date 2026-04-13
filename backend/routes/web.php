@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\IndexEntryController;
 use App\Http\Controllers\MembershipController;
+use App\Http\Controllers\ModuleActivationController;
 use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\ModuleVersionController;
 use App\Http\Controllers\RuleController;
@@ -24,6 +25,9 @@ Route::prefix('api')->group(function (): void {
         Route::apiResource('systems.modules.rules', RuleController::class)->scoped();
         Route::apiResource('systems.modules.index-entries', IndexEntryController::class)->scoped();
         Route::apiResource('systems.modules.versions', ModuleVersionController::class)->scoped()->except(['update', 'destroy']);
+
+        Route::post('/systems/{system}/modules/{module}/activate', [ModuleActivationController::class, 'store']);
+        Route::delete('/systems/{system}/modules/{module}/activate', [ModuleActivationController::class, 'destroy']);
     });
 
     require __DIR__.'/auth.php';
