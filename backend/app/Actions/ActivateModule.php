@@ -50,17 +50,18 @@ final class ActivateModule
         /** @var array<int, string> $activeIds */
         $activeIds = ($membership->config ?? [])['active_module_ids'] ?? [];
 
-        $allowConcurrent = ($module->system->config['allow_concurrent_expansions'] ?? false) === true;
+        $systemConfig = $module->system->config ?? [];
+        $allowConcurrent = ($systemConfig['allow_concurrent_expansions'] ?? false) === true;
 
         if (! $allowConcurrent) {
             $activeIds = [];
         }
 
-        if (! in_array($module->id, $activeIds, true)) {
+        if (! in_array($module->id, $activeIds, strict: true)) {
             $activeIds[] = $module->id;
         }
 
-        $membership->config = ['active_module_ids' => array_values($activeIds)];
+        $membership->config = ['active_module_ids' => $activeIds];
         $membership->save();
 
         return $membership;
