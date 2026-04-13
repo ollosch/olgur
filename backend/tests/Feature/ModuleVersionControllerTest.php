@@ -11,10 +11,15 @@ use App\Models\RuleVersion;
 use App\Models\Subscription;
 use App\Models\System;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\postJson;
+
+beforeEach(function (): void {
+    Storage::fake('local');
+});
 
 // ── Unauthenticated ──────────────────────────────────────────────────────────
 
@@ -292,4 +297,56 @@ test('super_admin can publish a version', function (): void {
     postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/versions', [
         'version_string' => 'v1.0.0',
     ])->assertCreated();
+});
+
+// ── static file generation ────────────────────────────────────────────────────
+
+test('publishing a version generates static rules file', function (): void {
+    Storage::fake('local');
+
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    Rule::factory()->for($module)->create(['number' => '1.0', 'sort_order' => 1]);
+
+    actingAs($user);
+
+    $response = postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/versions', [
+        'version_string' => '1.0',
+    ])->assertCreated();
+
+    $versionId = $response->json('data.id');
+
+    Storage::disk('local')->assertExists(sprintf('versions/%s/rules.json', $versionId));
+
+    $contents = Storage::disk('local')->get(sprintf('versions/%s/rules.json', $versionId));
+    $decoded = json_decode((string) $contents, true);
+
+    expect($decoded)->toBeArray()->not->toBeEmpty()
+        ->and($decoded[0])->toHaveKeys(['id', 'rule_id', 'module_version_id', 'parent_id', 'number', 'title', 'content', 'sort_order']);
+});
+
+test('publishing a version generates static index file', function (): void {
+    Storage::fake('local');
+
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    IndexEntry::factory()->for($module)->create(['term' => 'Alpha']);
+
+    actingAs($user);
+
+    $response = postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/versions', [
+        'version_string' => '1.0',
+    ])->assertCreated();
+
+    $versionId = $response->json('data.id');
+
+    Storage::disk('local')->assertExists(sprintf('versions/%s/index.json', $versionId));
+
+    $contents = Storage::disk('local')->get(sprintf('versions/%s/index.json', $versionId));
+    $decoded = json_decode((string) $contents, true);
+
+    expect($decoded)->toBeArray()->not->toBeEmpty()
+        ->and($decoded[0])->toHaveKeys(['id', 'index_entry_id', 'module_version_id', 'parent_id', 'term', 'definition', 'notes', 'relations']);
 });
