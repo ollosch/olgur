@@ -69,7 +69,7 @@ final class Module extends Model
     /**
      * @return HasMany<ModuleVersion, $this>
      */
-    public function moduleVersions(): HasMany
+    public function versions(): HasMany
     {
         return $this->hasMany(ModuleVersion::class);
     }

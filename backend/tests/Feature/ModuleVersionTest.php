@@ -52,8 +52,8 @@ test('module has many module_versions', function (): void {
     $module = Module::factory()->create();
     ModuleVersion::factory()->for($module)->count(3)->create();
 
-    expect($module->moduleVersions)->toHaveCount(3)
-        ->and($module->moduleVersions->first())->toBeInstanceOf(ModuleVersion::class);
+    expect($module->versions)->toHaveCount(3)
+        ->and($module->versions->first())->toBeInstanceOf(ModuleVersion::class);
 });
 
 test('deleting a module cascades to its module_versions', function (): void {
