@@ -23,7 +23,6 @@ return new class extends Migration
             $table->text('definition')->nullable();
             $table->text('notes')->nullable();
             $table->json('relations')->nullable();
-            $table->timestamps();
         });
 
         // Self-referential FK must be added after the table is created

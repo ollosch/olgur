@@ -23,7 +23,6 @@ return new class extends Migration
             $table->string('title');
             $table->text('content')->nullable();
             $table->integer('sort_order')->default(0);
-            $table->timestamps();
         });
 
         // Self-referential FK must be added after the table is created

@@ -20,6 +20,8 @@ final class RuleVersion extends Model
 
     use HasUlids;
 
+    public $timestamps = false;
+
     /**
      * Get the attributes that should be cast.
      *
