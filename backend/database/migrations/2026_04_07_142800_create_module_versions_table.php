@@ -22,6 +22,8 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->timestamp('released_at')->nullable();
             $table->timestamps();
+
+            $table->unique(['module_id', 'version_string']);
         });
     }
 };
