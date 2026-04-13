@@ -12,7 +12,6 @@ use App\Models\ModuleVersion;
 use App\Models\System;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
 
@@ -22,7 +21,6 @@ final class ModuleVersionController
      * Display a listing of released versions for the given module.
      */
     public function index(
-        Request $request,
         System $system,
         Module $module
     ): AnonymousResourceCollection {
@@ -46,16 +44,24 @@ final class ModuleVersionController
         Module $module,
         PublishModuleVersion $publishModuleVersion
     ): ModuleVersionResource {
-        Gate::authorize('create', ModuleVersion::class);
+        Gate::authorize('create', [ModuleVersion::class, $module]);
 
         /** @var User $user */
         $user = $request->user();
 
+        $validated = $request->validated();
+
+        /** @var string $versionString */
+        $versionString = $validated['version_string'];
+
+        /** @var string|null $notes */
+        $notes = $validated['notes'] ?? null;
+
         $moduleVersion = $publishModuleVersion->execute(
             $module,
             $user,
-            $request->string('version_string')->toString(),
-            $request->string('notes')->toString()
+            $versionString,
+            $notes,
         );
 
         return new ModuleVersionResource($moduleVersion);
@@ -65,12 +71,11 @@ final class ModuleVersionController
      * Display the specified version with its reconstructed snapshot.
      */
     public function show(
-        Request $request,
         System $system,
         Module $module,
         ModuleVersion $version
     ): JsonResponse {
-        Gate::authorize('show', $version);
+        Gate::authorize('view', $version);
 
         abort_if($version->module_id !== $module->id, 404);
 
