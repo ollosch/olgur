@@ -8,6 +8,7 @@ use App\Models\Module;
 use App\Models\ModuleVersion;
 use App\Models\Rule;
 use App\Models\RuleVersion;
+use App\Models\Subscription;
 use App\Models\System;
 use App\Models\User;
 
@@ -127,6 +128,7 @@ test('store publishes a new version', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
+    Subscription::factory()->for($user)->for($module)->editor()->create();
 
     actingAs($user);
 
@@ -147,6 +149,7 @@ test('store snapshots rules including parent-child relationships', function (): 
     $user = User::factory()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
+    Subscription::factory()->for($user)->for($module)->editor()->create();
     $parent = Rule::factory()->for($module)->create(['number' => '1', 'sort_order' => 1]);
     $child = Rule::factory()->for($module)->create(['number' => '1.1', 'sort_order' => 2, 'parent_id' => $parent->id]);
 
@@ -180,6 +183,7 @@ test('store snapshots index entries including parent-child relationships', funct
     $user = User::factory()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
+    Subscription::factory()->for($user)->for($module)->editor()->create();
     $parent = IndexEntry::factory()->for($module)->create(['term' => 'Alpha']);
     $child = IndexEntry::factory()->for($module)->create(['term' => 'Alpha sub', 'parent_id' => $parent->id]);
 
@@ -241,11 +245,51 @@ test('store allows same version_string in a different module', function (): void
     $system = System::factory()->create();
     $moduleA = Module::factory()->for($system)->create();
     $moduleB = Module::factory()->for($system)->create();
+    Subscription::factory()->for($user)->for($moduleA)->editor()->create();
     ModuleVersion::factory()->for($moduleB)->released()->create(['version_string' => 'v1.0.0']);
 
     actingAs($user);
 
     postJson('/api/systems/'.$system->id.'/modules/'.$moduleA->id.'/versions', [
+        'version_string' => 'v1.0.0',
+    ])->assertCreated();
+});
+
+// ── Authorization ─────────────────────────────────────────────────────────────
+
+test('regular user cannot publish a version', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+
+    actingAs($user);
+
+    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/versions', [
+        'version_string' => 'v1.0.0',
+    ])->assertForbidden();
+});
+
+test('system admin can publish a version', function (): void {
+    $admin = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $system->memberships()->create(['user_id' => $admin->id, 'admin' => true]);
+
+    actingAs($admin);
+
+    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/versions', [
+        'version_string' => 'v1.0.0',
+    ])->assertCreated();
+});
+
+test('super_admin can publish a version', function (): void {
+    $superAdmin = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+
+    actingAs($superAdmin);
+
+    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/versions', [
         'version_string' => 'v1.0.0',
     ])->assertCreated();
 });

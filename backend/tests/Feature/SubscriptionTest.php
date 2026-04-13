@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Models\Module;
 use App\Models\Subscription;
+use App\Models\System;
 use App\Models\User;
 use Illuminate\Database\QueryException;
 
@@ -92,4 +93,15 @@ test('deleting a module cascades to its subscriptions', function (): void {
     $module->delete();
 
     expect(Subscription::query()->find($subscription->id))->toBeNull();
+});
+
+// ── Subscription::isSubscriber ──────────────────────────────────────────────────────
+
+test('isSubscriber returns true when user has a subscription', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $subscription = Subscription::factory()->for($user)->for($module)->create();
+
+    expect($subscription->isSubscriber($user))->toBeTrue();
 });

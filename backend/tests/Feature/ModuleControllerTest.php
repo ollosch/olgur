@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Models\Membership;
 use App\Models\Module;
+use App\Models\Subscription;
 use App\Models\System;
 use App\Models\User;
 
@@ -41,6 +43,17 @@ test('regular user cannot create a module', function (): void {
         ->assertForbidden();
 });
 
+test('system admin can create a module', function (): void {
+    $system = System::factory()->create();
+    $admin = User::factory()->create();
+    Membership::factory()->for($admin)->for($system)->admin()->create();
+    actingAs($admin);
+
+    postJson('/api/systems/'.$system->id.'/modules', ['slug' => 'core', 'name' => 'Core Rules'])
+        ->assertCreated()
+        ->assertJsonPath('data.slug', 'core');
+});
+
 test('regular user cannot update a module', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->create();
@@ -51,6 +64,30 @@ test('regular user cannot update a module', function (): void {
         ->assertForbidden();
 });
 
+test('system admin can update a module', function (): void {
+    $system = System::factory()->create();
+    $admin = User::factory()->create();
+    Membership::factory()->for($admin)->for($system)->admin()->create();
+    $module = Module::factory()->for($system)->create();
+    actingAs($admin);
+
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id, ['name' => 'Admin Updated'])
+        ->assertOk()
+        ->assertJsonPath('data.name', 'Admin Updated');
+});
+
+test('module editor can update a module', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    Subscription::factory()->for($user)->for($module)->editor()->create();
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id, ['name' => 'Editor Updated'])
+        ->assertSuccessful()
+        ->assertJsonPath('data.name', 'Editor Updated');
+});
+
 test('regular user cannot delete a module', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->create();
@@ -59,6 +96,19 @@ test('regular user cannot delete a module', function (): void {
 
     deleteJson('/api/systems/'.$system->id.'/modules/'.$module->id)
         ->assertForbidden();
+});
+
+test('system admin can delete a module', function (): void {
+    $system = System::factory()->create();
+    $admin = User::factory()->create();
+    Membership::factory()->for($admin)->for($system)->admin()->create();
+    $module = Module::factory()->for($system)->create();
+    actingAs($admin);
+
+    deleteJson('/api/systems/'.$system->id.'/modules/'.$module->id)
+        ->assertNoContent();
+
+    assertDatabaseMissing('modules', ['id' => $module->id]);
 });
 
 // ── index ────────────────────────────────────────────────────────────────────

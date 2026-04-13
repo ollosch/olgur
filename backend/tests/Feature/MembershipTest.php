@@ -93,3 +93,13 @@ test('deleting a system cascades to its memberships', function (): void {
 
     expect(Membership::query()->find($membership->id))->toBeNull();
 });
+
+// ── Membership::isMember ──────────────────────────────────────────────────────
+
+test('isMember returns true when user has a membership', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $membership = Membership::factory()->for($user)->for($system)->create();
+
+    expect($membership->isMember($user))->toBeTrue();
+});

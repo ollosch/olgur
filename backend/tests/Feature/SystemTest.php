@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Models\Membership;
 use App\Models\System;
+use App\Models\User;
 
 test('a system can be created with factory defaults', function (): void {
     $system = System::factory()->create();
@@ -37,4 +39,38 @@ test('system uses ulid primary key', function (): void {
     $system = System::factory()->create();
 
     expect($system->id)->toBeString()->toHaveLength(26);
+});
+
+// ── System::isMember ──────────────────────────────────────────────────────
+
+test('isMember returns true when user has a membership', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    Membership::factory()->for($user)->for($system)->create();
+
+    expect($system->isMember($user))->toBeTrue();
+});
+
+test('isMember returns false when user has no membership', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+
+    expect($system->isMember($user))->toBeFalse();
+});
+
+// ── System::isAdmin ──────────────────────────────────────────────────────
+
+test('isAdmin returns true when user is an admin', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    Membership::factory()->for($user)->for($system)->admin()->create();
+
+    expect($system->isAdmin($user))->toBeTrue();
+});
+
+test('isAdmin returns false when user is not an admin', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+
+    expect($system->isAdmin($user))->toBeFalse();
 });

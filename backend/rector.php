@@ -43,6 +43,12 @@ return RectorConfig::configure()
     ->withSkip([
         AddOverrideAttributeToOverriddenMethodsRector::class,
         MakeInheritedMethodVisibilitySameAsParentRector::class,
+        Rector\DeadCode\Rector\ClassMethod\RemoveUnusedPublicMethodParameterRector::class => [
+            __DIR__.'/app/Policies/SystemPolicy.php',
+            __DIR__.'/app/Policies/ModulePolicy.php',
+            __DIR__.'/app/Policies/ModuleVersionPolicy.php',
+            __DIR__.'/app/Policies/SubscriptionPolicy.php',
+        ],
     ])
     ->withPreparedSets(
         deadCode: true,

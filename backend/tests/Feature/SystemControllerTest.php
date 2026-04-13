@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\Membership;
 use App\Models\System;
 use App\Models\User;
 
@@ -99,12 +100,12 @@ test('store rejects duplicate slug', function (): void {
         ->assertJsonValidationErrors(['slug']);
 });
 
-test('store is forbidden for non-super-admin', function (): void {
+test('store allows any authenticated user to create a system', function (): void {
     $user = User::factory()->create();
     actingAs($user);
 
     postJson('/api/systems', ['slug' => 'asl', 'name' => 'ASL'])
-        ->assertForbidden();
+        ->assertCreated();
 });
 
 // ── show ─────────────────────────────────────────────────────────────────────
@@ -171,6 +172,17 @@ test('update is forbidden for non-super-admin', function (): void {
         ->assertForbidden();
 });
 
+test('system admin can update their system', function (): void {
+    $system = System::factory()->create();
+    $admin = User::factory()->create();
+    Membership::factory()->for($admin)->for($system)->admin()->create();
+    actingAs($admin);
+
+    patchJson('/api/systems/'.$system->id, ['name' => 'Admin Updated'])
+        ->assertOk()
+        ->assertJsonPath('data.name', 'Admin Updated');
+});
+
 // ── destroy ───────────────────────────────────────────────────────────────────
 
 test('destroy deletes a system', function (): void {
@@ -199,4 +211,16 @@ test('destroy is forbidden for non-super-admin', function (): void {
 
     deleteJson('/api/systems/'.$system->id)
         ->assertForbidden();
+});
+
+test('system admin can delete their system', function (): void {
+    $system = System::factory()->create();
+    $admin = User::factory()->create();
+    Membership::factory()->for($admin)->for($system)->admin()->create();
+    actingAs($admin);
+
+    deleteJson('/api/systems/'.$system->id)
+        ->assertNoContent();
+
+    assertDatabaseMissing('systems', ['id' => $system->id]);
 });

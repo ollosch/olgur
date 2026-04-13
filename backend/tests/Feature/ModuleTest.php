@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use App\Models\Module;
+use App\Models\Subscription;
 use App\Models\System;
+use App\Models\User;
 use Illuminate\Database\QueryException;
 
 test('a module can be created with factory defaults', function (): void {
@@ -74,4 +76,42 @@ test('deleting a system cascades to its modules', function (): void {
     $system->delete();
 
     expect(Module::query()->find($module->id))->toBeNull();
+});
+
+// ── Module::isSubscriber ──────────────────────────────────────────────────────
+
+test('isSubscriber returns true when user has a subscription', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    Subscription::factory()->for($user)->for($module)->create();
+
+    expect($module->isSubscriber($user))->toBeTrue();
+});
+
+test('isSubscriber returns false when user has no subscription', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+
+    expect($module->isSubscriber($user))->toBeFalse();
+});
+
+// ── Module::isEditor ──────────────────────────────────────────────────────
+
+test('isEditor returns true when user is an editor', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    Subscription::factory()->for($user)->for($module)->editor()->create();
+
+    expect($module->isEditor($user))->toBeTrue();
+});
+
+test('isEditor returns false when user is not an editor', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+
+    expect($module->isEditor($user))->toBeFalse();
 });

@@ -31,29 +31,49 @@ test('unauthenticated requests are rejected', function (string $method, string $
 
 // ── index ────────────────────────────────────────────────────────────────────
 
-test('index returns all memberships for a system', function (): void {
-    $user = User::factory()->create();
+test('index returns memberships to system admins', function (): void {
     $system = System::factory()->create();
-    Membership::factory()->for($system)->count(3)->create();
-    actingAs($user);
+    $admin = User::factory()->create();
+    Membership::factory()->for($admin)->for($system)->admin()->create();
+    Membership::factory()->for($system)->count(2)->create();
+    actingAs($admin);
 
     $response = getJson('/api/systems/'.$system->id.'/memberships')
         ->assertSuccessful();
 
-    expect($response->json('data'))->toHaveCount(3);
+    expect($response->json('data'))->toHaveCount(3); // admin + 2 others
+});
+
+test('index is forbidden for non-admin members', function (): void {
+    $system = System::factory()->create();
+    $member = User::factory()->create();
+    Membership::factory()->for($member)->for($system)->create(['admin' => false]);
+    actingAs($member);
+
+    getJson('/api/systems/'.$system->id.'/memberships')
+        ->assertForbidden();
+});
+
+test('index is forbidden for users not in the system', function (): void {
+    $system = System::factory()->create();
+    actingAs(User::factory()->create());
+
+    getJson('/api/systems/'.$system->id.'/memberships')
+        ->assertForbidden();
 });
 
 test('index does not return memberships from other systems', function (): void {
-    $user = User::factory()->create();
     $system = System::factory()->create();
     $other = System::factory()->create();
+    $admin = User::factory()->create();
+    Membership::factory()->for($admin)->for($system)->admin()->create();
     Membership::factory()->for($other)->count(2)->create();
-    actingAs($user);
+    actingAs($admin);
 
     $response = getJson('/api/systems/'.$system->id.'/memberships')
         ->assertSuccessful();
 
-    expect($response->json('data'))->toBeEmpty();
+    expect($response->json('data'))->toHaveCount(1); // only the admin's own membership
 });
 
 test('index returns 404 for unknown system', function (): void {
@@ -64,15 +84,13 @@ test('index returns 404 for unknown system', function (): void {
 
 // ── store ────────────────────────────────────────────────────────────────────
 
-test('store adds a user to a system', function (): void {
-    $admin = User::factory()->superAdmin()->create();
-    $system = System::factory()->create();
+test('user can join a system themselves', function (): void {
     $user = User::factory()->create();
-    actingAs($admin);
+    $system = System::factory()->create();
+    actingAs($user);
 
-    $response = postJson('/api/systems/'.$system->id.'/memberships', [
-        'user_id' => $user->id,
-    ])->assertCreated();
+    $response = postJson('/api/systems/'.$system->id.'/memberships')
+        ->assertCreated();
 
     $response->assertJsonPath('data.user_id', $user->id);
     $response->assertJsonPath('data.system_id', $system->id);
@@ -81,9 +99,39 @@ test('store adds a user to a system', function (): void {
     assertDatabaseHas('memberships', ['user_id' => $user->id, 'system_id' => $system->id]);
 });
 
-test('store can create an admin membership', function (): void {
-    $admin = User::factory()->superAdmin()->create();
+test('regular user cannot self-promote to admin', function (): void {
+    $user = User::factory()->create();
     $system = System::factory()->create();
+    actingAs($user);
+
+    $response = postJson('/api/systems/'.$system->id.'/memberships', [
+        'user_id' => $user->id,
+        'admin' => true,
+    ])->assertCreated();
+
+    $response->assertJsonPath('data.admin', false);
+    assertDatabaseHas('memberships', ['user_id' => $user->id, 'system_id' => $system->id, 'admin' => false]);
+});
+
+test('system admin can add another user to the system', function (): void {
+    $system = System::factory()->create();
+    $admin = User::factory()->create();
+    Membership::factory()->for($admin)->for($system)->admin()->create();
+    $user = User::factory()->create();
+    actingAs($admin);
+
+    $response = postJson('/api/systems/'.$system->id.'/memberships', [
+        'user_id' => $user->id,
+    ])->assertCreated();
+
+    $response->assertJsonPath('data.user_id', $user->id);
+    assertDatabaseHas('memberships', ['user_id' => $user->id, 'system_id' => $system->id]);
+});
+
+test('system admin can add another user as admin', function (): void {
+    $system = System::factory()->create();
+    $admin = User::factory()->create();
+    Membership::factory()->for($admin)->for($system)->admin()->create();
     $user = User::factory()->create();
     actingAs($admin);
 
@@ -95,14 +143,24 @@ test('store can create an admin membership', function (): void {
     $response->assertJsonPath('data.admin', true);
 });
 
-test('store requires user_id', function (): void {
-    $admin = User::factory()->superAdmin()->create();
+test('regular user cannot add another user to the system', function (): void {
     $system = System::factory()->create();
-    actingAs($admin);
+    $user = User::factory()->create();
+    $other = User::factory()->create();
+    actingAs($user);
 
-    postJson('/api/systems/'.$system->id.'/memberships', [])
-        ->assertUnprocessable()
-        ->assertJsonValidationErrors(['user_id']);
+    postJson('/api/systems/'.$system->id.'/memberships', ['user_id' => $other->id])
+        ->assertForbidden();
+});
+
+test('store returns 409 when user is already a member', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    Membership::factory()->for($user)->for($system)->create();
+    actingAs($user);
+
+    postJson('/api/systems/'.$system->id.'/memberships')
+        ->assertStatus(409);
 });
 
 test('store rejects nonexistent user_id', function (): void {
@@ -115,7 +173,7 @@ test('store rejects nonexistent user_id', function (): void {
         ->assertJsonValidationErrors(['user_id']);
 });
 
-test('store rejects duplicate user in same system', function (): void {
+test('store rejects duplicate user_id when provided', function (): void {
     $admin = User::factory()->superAdmin()->create();
     $system = System::factory()->create();
     $user = User::factory()->create();
@@ -128,27 +186,17 @@ test('store rejects duplicate user in same system', function (): void {
 });
 
 test('store returns 404 for unknown system', function (): void {
-    $admin = User::factory()->superAdmin()->create();
-    actingAs($admin);
+    actingAs(User::factory()->superAdmin()->create());
 
-    postJson('/api/systems/nonexistent/memberships', ['user_id' => $admin->id])
-        ->assertNotFound();
-});
-
-test('store is forbidden for regular user', function (): void {
-    $user = User::factory()->create();
-    $system = System::factory()->create();
-    actingAs($user);
-
-    postJson('/api/systems/'.$system->id.'/memberships', ['user_id' => $user->id])
-        ->assertForbidden();
+    postJson('/api/systems/nonexistent/memberships')->assertNotFound();
 });
 
 // ── update ───────────────────────────────────────────────────────────────────
 
-test('update promotes a member to admin', function (): void {
-    $admin = User::factory()->superAdmin()->create();
+test('system admin can promote a member to admin', function (): void {
     $system = System::factory()->create();
+    $admin = User::factory()->create();
+    Membership::factory()->for($admin)->for($system)->admin()->create();
     $membership = Membership::factory()->for($system)->create(['admin' => false]);
     actingAs($admin);
 
@@ -170,11 +218,12 @@ test('update requires admin field', function (): void {
         ->assertJsonValidationErrors(['admin']);
 });
 
-test('update is forbidden for regular user', function (): void {
-    $user = User::factory()->create();
+test('update is forbidden for non-admin members', function (): void {
     $system = System::factory()->create();
+    $member = User::factory()->create();
+    Membership::factory()->for($member)->for($system)->create(['admin' => false]);
     $membership = Membership::factory()->for($system)->create();
-    actingAs($user);
+    actingAs($member);
 
     patchJson('/api/systems/'.$system->id.'/memberships/'.$membership->id, ['admin' => true])
         ->assertForbidden();
@@ -182,9 +231,10 @@ test('update is forbidden for regular user', function (): void {
 
 // ── destroy ───────────────────────────────────────────────────────────────────
 
-test('destroy removes a membership', function (): void {
-    $admin = User::factory()->superAdmin()->create();
+test('system admin can remove a member from the system', function (): void {
     $system = System::factory()->create();
+    $admin = User::factory()->create();
+    Membership::factory()->for($admin)->for($system)->admin()->create();
     $membership = Membership::factory()->for($system)->create();
     actingAs($admin);
 
@@ -194,6 +244,30 @@ test('destroy removes a membership', function (): void {
     assertDatabaseMissing('memberships', ['id' => $membership->id]);
 });
 
+test('user can remove themselves from a system', function (): void {
+    $system = System::factory()->create();
+    $user = User::factory()->create();
+    $membership = Membership::factory()->for($user)->for($system)->create();
+    actingAs($user);
+
+    deleteJson('/api/systems/'.$system->id.'/memberships/'.$membership->id)
+        ->assertNoContent();
+
+    assertDatabaseMissing('memberships', ['id' => $membership->id]);
+});
+
+test('user cannot remove another user from a system', function (): void {
+    $system = System::factory()->create();
+    $user = User::factory()->create();
+    Membership::factory()->for($user)->for($system)->create();
+    $other = User::factory()->create();
+    $otherMembership = Membership::factory()->for($other)->for($system)->create();
+    actingAs($user);
+
+    deleteJson('/api/systems/'.$system->id.'/memberships/'.$otherMembership->id)
+        ->assertForbidden();
+});
+
 test('destroy returns 404 for unknown membership', function (): void {
     $admin = User::factory()->superAdmin()->create();
     $system = System::factory()->create();
@@ -201,14 +275,4 @@ test('destroy returns 404 for unknown membership', function (): void {
 
     deleteJson('/api/systems/'.$system->id.'/memberships/nonexistent')
         ->assertNotFound();
-});
-
-test('destroy is forbidden for regular user', function (): void {
-    $user = User::factory()->create();
-    $system = System::factory()->create();
-    $membership = Membership::factory()->for($system)->create();
-    actingAs($user);
-
-    deleteJson('/api/systems/'.$system->id.'/memberships/'.$membership->id)
-        ->assertForbidden();
 });
