@@ -34,8 +34,8 @@ final class StoreModuleRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'config' => ['nullable', 'array'],
-            'is_core' => ['boolean'],
-            'sort_order' => ['integer', 'min:0'],
+            'is_core' => ['sometimes', 'boolean'],
+            'sort_order' => ['sometimes', 'integer', 'min:0', 'max:65535'],
         ];
     }
 }

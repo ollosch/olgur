@@ -32,10 +32,10 @@ final class UpdateModuleRequest extends FormRequest
         return [
             'slug' => ['sometimes', 'string', 'max:255', 'alpha_dash', Rule::unique('modules', 'slug')->where('system_id', $module->system_id)->ignore($module)],
             'name' => ['sometimes', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'config' => ['nullable', 'array'],
-            'is_core' => ['boolean'],
-            'sort_order' => ['integer', 'min:0'],
+            'description' => ['sometimes', 'nullable', 'string'],
+            'config' => ['sometimes', 'nullable', 'array'],
+            'is_core' => ['sometimes', 'boolean'],
+            'sort_order' => ['sometimes', 'integer', 'min:0', 'max:65535'],
         ];
     }
 }

@@ -4,30 +4,64 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Models\Module;
+use App\Models\Subscription;
+use App\Models\System;
+use App\Models\User;
+
 final class SubscriptionPolicy
 {
     /**
-     * Any authenticated user can list their own subscriptions.
+     * Any authenticated user can view their own subscriptions (no module context).
+     * System admins and module editors can view all subscriptions for a module.
      */
-    public function viewAny(): bool
+    public function viewAny(User $user, ?Module $module = null): bool
     {
+        if (! $module instanceof Module) {
+            return true;
+        }
+
+        /** @var System|null $system */
+        $system = $module->system;
+
+        if ($system instanceof System && $system->isAdmin($user)) {
+            return true;
+        }
+
+        return $module->isEditor($user);
+    }
+
+    /**
+     * System admins can subscribe users to modules in their system.
+     * Users can subscribe themselves to modules.
+     */
+    public function create(User $user, System $system, ?User $member = null): bool
+    {
+        if ($member && $member->id !== $user->id) {
+            return $system->isAdmin($user);
+        }
+
         return true;
     }
 
     /**
-     * Any authenticated user can subscribe to a module.
+     * System admins can promote/demote members in their system.
      */
-    public function create(): bool
+    public function update(User $user, Subscription $subscription, System $system): bool
     {
-        return true;
+        return $system->isAdmin($user);
     }
 
     /**
-     * Users can unsubscribe; ownership is enforced in the controller by querying
-     * subscriptions scoped to the authenticated user. super_admin bypass is handled by Gate::before().
+     * System admins can unsubscribe users from modules in their system.
+     * Users can unsubscribe themselves from modules.
      */
-    public function delete(): bool
+    public function delete(User $user, Subscription $subscription, System $system): bool
     {
-        return true;
+        if ($system->isAdmin($user)) {
+            return true;
+        }
+
+        return $subscription->isSubscriber($user);
     }
 }

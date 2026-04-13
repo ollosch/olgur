@@ -30,7 +30,7 @@ final class ModuleController
      */
     public function store(StoreModuleRequest $request, System $system): ModuleResource
     {
-        Gate::authorize('create', Module::class);
+        Gate::authorize('create', [Module::class, $system]);
 
         $module = $system->modules()->create($request->validated());
 

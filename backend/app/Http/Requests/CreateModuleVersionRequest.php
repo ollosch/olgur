@@ -32,7 +32,7 @@ final class CreateModuleVersionRequest extends FormRequest
             'version_string' => [
                 'required',
                 'string',
-                Rule::unique('module_versions', 'version_string')->where('module_id', $moduleId)
+                Rule::unique('module_versions', 'version_string')->where('module_id', $moduleId),
             ],
             'notes' => ['nullable', 'string'],
         ];

@@ -4,28 +4,36 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Models\Module;
+use App\Models\ModuleVersion;
+use App\Models\User;
+
 final class ModuleVersionPolicy
 {
     /**
      * Any authenticated user can list module versions.
      */
-    public function viewAny(): bool
+    public function viewAny(User $user): bool
     {
         return true;
     }
 
     /**
-     * Any authenticated user can create a module version.
+     * System admins and module editors can publish a new version.
      */
-    public function create(): bool
+    public function create(User $user, Module $module): bool
     {
-        return true;
+        if ($module->system?->isAdmin($user)) {
+            return true;
+        }
+
+        return $module->isEditor($user);
     }
 
     /**
      * Any authenticated user can view a module version.
      */
-    public function show(): bool
+    public function view(User $user, ModuleVersion $version): bool
     {
         return true;
     }

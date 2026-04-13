@@ -6,6 +6,8 @@ namespace App\Http\Controllers;
 
 use App\Actions\SubscribeToModule;
 use App\Actions\UnsubscribeFromModule;
+use App\Http\Requests\StoreSubscriptionRequest;
+use App\Http\Requests\UpdateSubscriptionRequest;
 use App\Http\Resources\SubscriptionResource;
 use App\Models\Module;
 use App\Models\Subscription;
@@ -19,17 +21,29 @@ use Illuminate\Support\Facades\Gate;
 final class SubscriptionController
 {
     /**
-     * List the authenticated user's subscriptions.
+     * List subscriptions.
+     *
+     * When called via GET /me/subscriptions, returns the authenticated user's own subscriptions.
+     * When called via GET /systems/{system}/modules/{module}/subscriptions, returns all
+     * subscriptions for that module (accessible to system admins and module editors).
      */
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(Request $request, ?System $system = null, ?Module $module = null): AnonymousResourceCollection
     {
+        if ($module instanceof Module) {
+            Gate::authorize('viewAny', [Subscription::class, $module]);
+
+            return SubscriptionResource::collection(
+                $module->subscriptions()->with('module')->oldest()->get()
+            );
+        }
+
         Gate::authorize('viewAny', Subscription::class);
 
-        /** @var User $user */
-        $user = $request->user();
+        /** @var User $subscriber */
+        $subscriber = $request->user();
 
         return SubscriptionResource::collection(
-            $user->subscriptions()->with('module')->oldest()->get()
+            $subscriber->subscriptions()->with('module')->oldest()->get()
         );
     }
 
@@ -37,41 +51,57 @@ final class SubscriptionController
      * Subscribe the authenticated user to a module.
      */
     public function store(
-        Request $request,
+        StoreSubscriptionRequest $request,
         System $system,
         Module $module,
-        SubscribeToModule $action,
+        SubscribeToModule $subscribeToModule,
     ): SubscriptionResource {
-        Gate::authorize('create', Subscription::class);
+        $validated = $request->validated();
 
-        /** @var User $user */
-        $user = $request->user();
+        /** @var User $subscriber */
+        $subscriber = isset($validated['user_id'])
+            ? User::query()->findOrFail($validated['user_id'])
+            : $request->user();
 
-        $subscription = $action->execute($user, $module);
+        Gate::authorize('create', [Subscription::class, $system, $subscriber]);
+
+        $subscription = $subscribeToModule->execute($subscriber, $module);
 
         return new SubscriptionResource($subscription);
     }
 
     /**
-     * Unsubscribe the authenticated user from a module.
+     * Update a subscription (e.g. promote/demote editor).
+     */
+    public function update(
+        UpdateSubscriptionRequest $request,
+        System $system,
+        Module $module,
+        Subscription $subscription,
+    ): SubscriptionResource {
+        Gate::authorize('update', [$subscription, $system]);
+
+        $subscription->update($request->validated());
+
+        return new SubscriptionResource($subscription);
+    }
+
+    /**
+     * Unsubscribe a user from a module.
      */
     public function destroy(
         Request $request,
         System $system,
         Module $module,
-        UnsubscribeFromModule $action,
+        Subscription $subscription,
+        UnsubscribeFromModule $unsubscribeFromModule,
     ): Response {
-        /** @var User $user */
-        $user = $request->user();
+        Gate::authorize('delete', [$subscription, $system]);
 
-        $subscription = Subscription::query()
-            ->where('user_id', $user->id)
-            ->where('module_id', $module->id)
-            ->firstOrFail();
+        /** @var User $owner */
+        $owner = $subscription->user ?? $request->user();
 
-        Gate::authorize('delete', $subscription);
-
-        $action->execute($user, $module);
+        $unsubscribeFromModule->execute($owner, $module);
 
         return response()->noContent();
     }

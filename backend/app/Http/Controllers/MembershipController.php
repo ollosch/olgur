@@ -21,7 +21,7 @@ final class MembershipController
      */
     public function index(System $system): AnonymousResourceCollection
     {
-        Gate::authorize('viewAny', Membership::class);
+        Gate::authorize('viewAny', [Membership::class, $system]);
 
         return MembershipResource::collection(
             $system->memberships()->oldest()->get()
@@ -33,15 +33,24 @@ final class MembershipController
      */
     public function store(StoreMembershipRequest $request, System $system): MembershipResource
     {
-        Gate::authorize('create', Membership::class);
-
         $validated = $request->validated();
 
-        /** @var User $user */
-        $user = User::query()->findOrFail($validated['user_id']);
+        /** @var User $member */
+        $member = isset($validated['user_id'])
+            ? User::query()->findOrFail($validated['user_id'])
+            : $request->user();
+
+        // If the user is adding themselves, they cannot self-assign admin
+        if ($member->id === $request->user()?->id) {
+            unset($validated['admin']);
+        }
+
+        Gate::authorize('create', [Membership::class, $system, $member]);
+
+        abort_if($system->isMember($member), 409, 'Already a member.');
 
         $membership = $system->memberships()->create([
-            'user_id' => $user->id,
+            'user_id' => $member->id,
             'admin' => $validated['admin'] ?? false,
         ]);
 

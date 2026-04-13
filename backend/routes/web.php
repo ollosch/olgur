@@ -15,17 +15,15 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('api')->group(function (): void {
     Route::middleware('auth')->group(function (): void {
         Route::get('/me', fn (Request $request) => $request->user());
+        Route::get('/me/subscriptions', [SubscriptionController::class, 'index']);
 
         Route::apiResource('systems', SystemController::class);
-        Route::apiResource('systems.modules', ModuleController::class)->scoped();
         Route::apiResource('systems.memberships', MembershipController::class)->scoped()->except(['show']);
+        Route::apiResource('systems.modules', ModuleController::class)->scoped();
+        Route::apiResource('systems.modules.subscriptions', SubscriptionController::class)->scoped()->except(['show']);
         Route::apiResource('systems.modules.rules', RuleController::class)->scoped();
         Route::apiResource('systems.modules.index-entries', IndexEntryController::class)->scoped();
         Route::apiResource('systems.modules.versions', ModuleVersionController::class)->scoped()->except(['update', 'destroy']);
-
-        Route::get('/me/subscriptions', [SubscriptionController::class, 'index']);
-        Route::post('/systems/{system}/modules/{module}/subscribe', [SubscriptionController::class, 'store']);
-        Route::delete('/systems/{system}/modules/{module}/subscribe', [SubscriptionController::class, 'destroy']);
     });
 
     require __DIR__.'/auth.php';

@@ -30,8 +30,8 @@ final class StoreMembershipRequest extends FormRequest
         $system = $this->route('system');
 
         return [
-            'user_id' => ['required', 'string', 'exists:users,id', Rule::unique('memberships', 'user_id')->where('system_id', $system->id)],
-            'admin' => ['boolean'],
+            'user_id' => ['sometimes', 'string', 'exists:users,id', Rule::unique('memberships', 'user_id')->where('system_id', $system->id)],
+            'admin' => ['exclude_without:user_id', 'boolean'],
         ];
     }
 }

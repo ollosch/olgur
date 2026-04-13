@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Models\System;
+use App\Models\User;
+
 final class SystemPolicy
 {
     /**
      * Any authenticated user can list systems.
      */
-    public function viewAny(): bool
+    public function viewAny(User $user): bool
     {
         return true;
     }
@@ -17,32 +20,32 @@ final class SystemPolicy
     /**
      * Any authenticated user can view a system.
      */
-    public function view(): bool
+    public function view(User $user, System $system): bool
     {
         return true;
     }
 
     /**
-     * Regular users cannot create systems; super_admin bypass is handled by Gate::before().
+     * Any authenticated user can create systems
      */
-    public function create(): bool
+    public function create(User $user): bool
     {
-        return false;
+        return true;
     }
 
     /**
-     * Regular users cannot update systems; super_admin bypass is handled by Gate::before().
+     * System admins (admin membership) can update their own system.
      */
-    public function update(): bool
+    public function update(User $user, System $system): bool
     {
-        return false;
+        return $system->isAdmin($user);
     }
 
     /**
-     * Regular users cannot delete systems; super_admin bypass is handled by Gate::before().
+     * System admins (admin membership) can delete their own system.
      */
-    public function delete(): bool
+    public function delete(User $user, System $system): bool
     {
-        return false;
+        return $system->isAdmin($user);
     }
 }

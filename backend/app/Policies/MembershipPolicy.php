@@ -4,37 +4,51 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Models\Membership;
+use App\Models\System;
+use App\Models\User;
+
 final class MembershipPolicy
 {
     /**
-     * Any authenticated user can list memberships for a system.
+     * System admins can list memberships for their system.
      */
-    public function viewAny(): bool
+    public function viewAny(User $user, System $system): bool
     {
+        return $system->isAdmin($user);
+    }
+
+    /**
+     * System admins can add members to their system.
+     * Users can add themselves to a system.
+     */
+    public function create(User $user, System $system, ?User $member = null): bool
+    {
+        if ($member && $member->id !== $user->id) {
+            return $system->isAdmin($user);
+        }
+
         return true;
     }
 
     /**
-     * Only super_admin can add members; super_admin bypass is handled by Gate::before().
+     * System admins can promote/demote members in their system.
      */
-    public function create(): bool
+    public function update(User $user, Membership $membership): bool
     {
-        return false;
+        return (bool) $membership->system?->isAdmin($user);
     }
 
     /**
-     * Only super_admin can promote/demote members; super_admin bypass is handled by Gate::before().
+     * System admins can remove any member from their system.
+     * Members can remove themselves from a system.
      */
-    public function update(): bool
+    public function delete(User $user, Membership $membership): bool
     {
-        return false;
-    }
+        if ($membership->system?->isAdmin($user)) {
+            return true;
+        }
 
-    /**
-     * Only super_admin can remove members; super_admin bypass is handled by Gate::before().
-     */
-    public function delete(): bool
-    {
-        return false;
+        return $membership->isMember($user);
     }
 }

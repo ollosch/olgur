@@ -28,10 +28,10 @@ final class UpdateSystemRequest extends FormRequest
         return [
             'slug' => ['sometimes', 'string', 'max:255', Rule::unique('systems', 'slug')->ignore($this->route('system')), 'alpha_dash'],
             'name' => ['sometimes', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'config' => ['nullable', 'array'],
-            'config.toc_depth' => ['nullable', 'integer', 'min:1'],
-            'config.cover_image' => ['nullable', 'string', 'url'],
+            'description' => ['sometimes', 'nullable', 'string'],
+            'config' => ['sometimes', 'nullable', 'array'],
+            'config.toc_depth' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'config.cover_image' => ['sometimes', 'nullable', 'string', 'url'],
         ];
     }
 }

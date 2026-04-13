@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Models\Module;
+use App\Models\System;
+use App\Models\User;
+
 final class ModulePolicy
 {
     /**
      * Any authenticated user can list modules.
      */
-    public function viewAny(): bool
+    public function viewAny(User $user): bool
     {
         return true;
     }
@@ -17,32 +21,36 @@ final class ModulePolicy
     /**
      * Any authenticated user can view a module.
      */
-    public function view(): bool
+    public function view(User $user, Module $module): bool
     {
         return true;
     }
 
     /**
-     * Regular users cannot create modules; super_admin bypass is handled by Gate::before().
+     * System admins can create modules within their system.
      */
-    public function create(): bool
+    public function create(User $user, System $system): bool
     {
-        return false;
+        return $system->isAdmin($user);
     }
 
     /**
-     * Regular users cannot update modules; super_admin bypass is handled by Gate::before().
+     * System admins and module editors can update a module.
      */
-    public function update(): bool
+    public function update(User $user, Module $module): bool
     {
-        return false;
+        if ($module->system?->isAdmin($user)) {
+            return true;
+        }
+
+        return $module->isEditor($user);
     }
 
     /**
-     * Regular users cannot delete modules; super_admin bypass is handled by Gate::before().
+     * Only system admins can delete a module.
      */
-    public function delete(): bool
+    public function delete(User $user, Module $module): bool
     {
-        return false;
+        return (bool) $module->system?->isAdmin($user);
     }
 }
