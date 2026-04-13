@@ -46,4 +46,9 @@ final class Subscription extends Model
     {
         return $this->belongsTo(Module::class);
     }
+
+    public function isSubscriber(User $user): bool
+    {
+        return $this->user_id === $user->id;
+    }
 }

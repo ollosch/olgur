@@ -73,4 +73,14 @@ final class Module extends Model
     {
         return $this->hasMany(ModuleVersion::class);
     }
+
+    public function isSubscriber(User $user): bool
+    {
+        return $this->subscriptions()->where('user_id', $user->id)->exists();
+    }
+
+    public function isEditor(User $user): bool
+    {
+        return $this->subscriptions()->where('user_id', $user->id)->where('editor', true)->exists();
+    }
 }

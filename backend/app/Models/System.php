@@ -46,4 +46,14 @@ final class System extends Model
     {
         return $this->hasMany(Membership::class);
     }
+
+    public function isMember(User $user): bool
+    {
+        return $this->memberships()->where('user_id', $user->id)->exists();
+    }
+
+    public function isAdmin(User $user): bool
+    {
+        return $this->memberships()->where('user_id', $user->id)->where('admin', true)->exists();
+    }
 }

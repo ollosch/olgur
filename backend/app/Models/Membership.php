@@ -48,4 +48,9 @@ final class Membership extends Model
     {
         return $this->belongsTo(System::class);
     }
+
+    public function isMember(User $user): bool
+    {
+        return $this->user_id === $user->id;
+    }
 }
