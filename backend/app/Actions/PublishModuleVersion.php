@@ -12,6 +12,7 @@ use App\Models\Rule;
 use App\Models\RuleVersion;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\LazyCollection;
 use Illuminate\Support\Str;
 
@@ -19,7 +20,7 @@ final class PublishModuleVersion
 {
     public function execute(Module $module, User $releasedBy, string $version, ?string $notes = null): ModuleVersion
     {
-        return DB::transaction(function () use ($module, $releasedBy, $version, $notes): ModuleVersion {
+        $version = DB::transaction(function () use ($module, $releasedBy, $version, $notes): ModuleVersion {
 
             $moduleVersion = ModuleVersion::query()->create([
                 'module_id' => $module->id,
@@ -34,6 +35,11 @@ final class PublishModuleVersion
 
             return $moduleVersion;
         });
+
+        $this->generateStaticFiles($version);
+
+        return $version;
+
     }
 
     private function publishRules(Module $module, ModuleVersion $version): void
@@ -128,16 +134,48 @@ final class PublishModuleVersion
         DB::statement(sprintf("UPDATE `%s` SET `parent_id` = CASE `id` %sEND WHERE `id` IN ('%s')", $table, $cases, $idList));
     }
 
-    // public function reconstruct(ModuleVersion $version): ReconstructedSnapshot
-    // {
-    //     $rules = RuleVersion::query()->where('module_version_id', $version->id)
-    //         ->orderBy('sort_order')
-    //         ->get();
+    private function generateStaticFiles(ModuleVersion $version): void
+    {
+        $rules = RuleVersion::query()
+            ->where('module_version_id', $version->id)
+            ->orderBy('sort_order')
+            ->get()
+            ->map(fn (RuleVersion $rv): array => [
+                'id' => $rv->id,
+                'rule_id' => $rv->rule_id,
+                'module_version_id' => $rv->module_version_id,
+                'parent_id' => $rv->parent_id,
+                'number' => $rv->number,
+                'title' => $rv->title,
+                'content' => $rv->content,
+                'sort_order' => $rv->sort_order,
+            ])
+            ->all();
 
-    //     $indexEntries = IndexEntryVersion::query()->where('module_version_id', $version->id)
-    //         ->orderBy('term')
-    //         ->get();
+        Storage::disk('local')->put(
+            sprintf('versions/%s/rules.json', $version->id),
+            (string) json_encode($rules, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+        );
 
-    //     return new ReconstructedSnapshot($rules, $indexEntries);
-    // }
+        $indexEntries = IndexEntryVersion::query()
+            ->where('module_version_id', $version->id)
+            ->orderBy('term')
+            ->get()
+            ->map(fn (IndexEntryVersion $iev): array => [
+                'id' => $iev->id,
+                'index_entry_id' => $iev->index_entry_id,
+                'module_version_id' => $iev->module_version_id,
+                'parent_id' => $iev->parent_id,
+                'term' => $iev->term,
+                'definition' => $iev->definition,
+                'notes' => $iev->notes,
+                'relations' => $iev->relations,
+            ])
+            ->all();
+
+        Storage::disk('local')->put(
+            sprintf('versions/%s/index.json', $version->id),
+            (string) json_encode($indexEntries, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+        );
+    }
 }
