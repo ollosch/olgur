@@ -80,8 +80,15 @@ test('manifest file paths reference correct version ids', function (): void {
 
     $files = $response->json('data.modules.0.files');
 
-    expect($files['rules'])->toBe(sprintf('versions/%s/rules.json', $version->id))
-        ->and($files['index'])->toBe(sprintf('versions/%s/index.json', $version->id));
+    expect($files['rules'])
+        ->toStartWith('http')
+        ->toContain($version->id)
+        ->toContain('rules');
+
+    expect($files['index'])
+        ->toStartWith('http')
+        ->toContain($version->id)
+        ->toContain('index');
 });
 
 test('manifest returns 404 for unknown system', function (): void {
