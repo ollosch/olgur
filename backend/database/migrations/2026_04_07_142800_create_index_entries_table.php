@@ -23,6 +23,8 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->json('relations')->nullable();
             $table->timestamps();
+
+            $table->unique(['module_id', 'term']);
         });
 
         // Self-referential FK must be added after the table is created
