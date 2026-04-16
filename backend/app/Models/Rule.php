@@ -12,23 +12,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['module_id', 'system_id', 'parent_id', 'number', 'title', 'content', 'sort_order'])]
+#[Fillable(['module_id', 'parent_id', 'number', 'title', 'content', 'sort_order'])]
 final class Rule extends Model
 {
     /** @use HasFactory<RuleFactory> */
     use HasFactory;
 
     use HasUlids;
-
-    protected static function booting(): void
-    {
-        self::creating(function (Rule $rule): void {
-            /** @var Module $module */
-            $module = $rule->module;
-
-            $rule->system_id ??= $module->system_id;
-        });
-    }
 
     /**
      * Get the attributes that should be cast.
@@ -40,14 +30,6 @@ final class Rule extends Model
         return [
             'sort_order' => 'integer',
         ];
-    }
-
-    /**
-     * @return BelongsTo<System, $this>
-     */
-    public function system(): BelongsTo
-    {
-        return $this->belongsTo(System::class);
     }
 
     /**

@@ -15,7 +15,6 @@ return new class extends Migration
     {
         Schema::create('rules', function (Blueprint $table): void {
             $table->ulid('id')->primary();
-            $table->foreignUlid('system_id')->constrained()->cascadeOnDelete();
             $table->foreignUlid('module_id')->constrained()->cascadeOnDelete();
             $table->ulid('parent_id')->nullable()->index();
 
@@ -25,7 +24,7 @@ return new class extends Migration
             $table->text('content')->nullable();
             $table->timestamps();
 
-            $table->unique(['number', 'system_id']);
+            $table->unique(['number', 'module_id']);
         });
 
         // Self-referential FK must be added after the table is created

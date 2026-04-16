@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use App\Models\Module;
-use App\Models\System;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -30,12 +29,9 @@ final class StoreRuleRequest extends FormRequest
         /** @var Module $module */
         $module = $this->route('module');
 
-        /** @var System $system */
-        $system = $this->route('system');
-
         return [
             'parent_id' => ['nullable', 'string', Rule::exists('rules', 'id')->where('module_id', $module->id)],
-            'number' => ['required', 'string', Rule::unique('rules', 'number')->where('system_id', $system->id)],
+            'number' => ['required', 'string', Rule::unique('rules', 'number')->where('module_id', $module->id)],
             'title' => ['required', 'string'],
             'content' => ['nullable', 'string'],
             'sort_order' => ['nullable', 'integer'],

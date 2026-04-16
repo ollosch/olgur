@@ -36,13 +36,6 @@ test('rule belongs to a module', function (): void {
     expect($rule->module->id)->toBe($module->id);
 });
 
-test('rule belongs to a system', function (): void {
-    $module = Module::factory()->create();
-    $rule = Rule::factory()->for($module)->create();
-
-    expect($rule->system->id)->toBe($module->system->id);
-});
-
 test('rule can have a parent rule', function (): void {
     $parent = Rule::factory()->create();
     $child = Rule::factory()->create(['parent_id' => $parent->id]);

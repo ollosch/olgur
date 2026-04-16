@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Models\IndexEntry;
 use App\Models\Module;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -29,12 +30,12 @@ final class UpdateIndexEntryRequest extends FormRequest
         /** @var Module $module */
         $module = $this->route('module');
 
-        /** @var \App\Models\IndexEntry $indexEntry */
+        /** @var IndexEntry $indexEntry */
         $indexEntry = $this->route('indexEntry');
 
         return [
             'parent_id' => ['sometimes', 'nullable', 'string', Rule::exists('index_entries', 'id')->where('module_id', $module->id)],
-            'term' => ['required', 'string', Rule::unique('index_entries', 'term')->where('module_id', $module->id)->ignore()],
+            'term' => ['required', 'string', Rule::unique('index_entries', 'term')->where('module_id', $module->id)->ignore($indexEntry)],
             'definition' => ['sometimes', 'nullable', 'string'],
             'notes' => ['sometimes', 'nullable', 'string'],
             'relations.rule_refs' => ['nullable', 'array'],
