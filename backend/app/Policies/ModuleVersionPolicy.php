@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Policies;
 
 use App\Models\Module;
-use App\Models\ModuleVersion;
 use App\Models\User;
 
 final class ModuleVersionPolicy
@@ -28,13 +27,5 @@ final class ModuleVersionPolicy
         }
 
         return $module->isEditor($user);
-    }
-
-    /**
-     * Any authenticated user can view a module version.
-     */
-    public function view(User $user, ModuleVersion $version): bool
-    {
-        return true;
     }
 }

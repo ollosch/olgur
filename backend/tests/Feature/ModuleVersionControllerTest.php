@@ -36,35 +36,6 @@ test('unauthenticated requests are rejected', function (string $method, string $
     'show' => ['getJson',  '/api/systems/{system}/modules/{module}/versions/{version}'],
 ]);
 
-// ── show ─────────────────────────────────────────────────────────────────────
-
-test('show returns the specified version', function (): void {
-    $user = User::factory()->create();
-    $system = System::factory()->create();
-    $module = Module::factory()->for($system)->create();
-    $version = ModuleVersion::factory()->for($module)->released()->create();
-
-    actingAs($user);
-
-    getJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/versions/'.$version->id)
-        ->assertSuccessful()
-        ->assertJsonPath('version.id', $version->id)
-        ->assertJsonPath('version.version_string', $version->version_string);
-});
-
-test('show returns 404 for version belonging to a different module', function (): void {
-    $user = User::factory()->create();
-    $system = System::factory()->create();
-    $moduleA = Module::factory()->for($system)->create();
-    $moduleB = Module::factory()->for($system)->create();
-    $version = ModuleVersion::factory()->for($moduleB)->released()->create();
-
-    actingAs($user);
-
-    getJson('/api/systems/'.$system->id.'/modules/'.$moduleA->id.'/versions/'.$version->id)
-        ->assertNotFound();
-});
-
 // ── index ────────────────────────────────────────────────────────────────────
 
 test('index returns released versions for the module', function (): void {

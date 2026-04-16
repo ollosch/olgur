@@ -11,7 +11,6 @@ use App\Models\Module;
 use App\Models\ModuleVersion;
 use App\Models\System;
 use App\Models\User;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
 
@@ -65,24 +64,5 @@ final class ModuleVersionController
         );
 
         return new ModuleVersionResource($moduleVersion);
-    }
-
-    /**
-     * Display the specified version with its reconstructed snapshot.
-     */
-    public function show(
-        System $system,
-        Module $module,
-        ModuleVersion $version
-    ): JsonResponse {
-        Gate::authorize('view', $version);
-
-        abort_if($version->module_id !== $module->id, 404);
-
-        return response()->json([
-            'version' => new ModuleVersionResource($version),
-            'rules' => $version->ruleVersions->toArray(),
-            'index_entries' => $version->indexEntryVersions->toArray(),
-        ]);
     }
 }
