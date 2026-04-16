@@ -22,7 +22,7 @@ final class SystemManifestController
         $modules = $system->modules()
             ->orderBy('sort_order')
             ->get()
-            ->map(function (Module $module): array {
+            ->map(function (Module $module) use ($system): array {
                 /** @var ModuleVersion|null $latestVersion */
                 $latestVersion = ModuleVersion::query()
                     ->where('module_id', $module->id)
@@ -39,8 +39,8 @@ final class SystemManifestController
                     'version_string' => $latestVersion?->version_string,
                     'released_at' => $latestVersion?->released_at?->toIso8601String(),
                     'files' => $latestVersion !== null ? [
-                        'rules' => sprintf('versions/%s/rules.json', $latestVersion->id),
-                        'index' => sprintf('versions/%s/index.json', $latestVersion->id),
+                        'rules' => route('versions.rules', [$system, $module, $latestVersion]),
+                        'index' => route('versions.index', [$system, $module, $latestVersion]),
                     ] : null,
                 ];
             })
