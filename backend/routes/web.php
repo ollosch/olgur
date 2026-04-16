@@ -7,6 +7,7 @@ use App\Http\Controllers\MembershipController;
 use App\Http\Controllers\ModuleActivationController;
 use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\ModuleVersionController;
+use App\Http\Controllers\ModuleVersionFileController;
 use App\Http\Controllers\RuleController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SystemController;
@@ -36,6 +37,11 @@ Route::prefix('api')->group(function (): void {
             Route::get('/systems/{system}/manifest', SystemManifestController::class);
             Route::post('/systems/{system}/modules/{module}/activate', [ModuleActivationController::class, 'store']);
             Route::delete('/systems/{system}/modules/{module}/activate', [ModuleActivationController::class, 'destroy']);
+
+            Route::get('/systems/{system}/modules/{module}/versions/{version}/rules', [ModuleVersionFileController::class, 'rules'])
+                ->name('versions.rules');
+            Route::get('/systems/{system}/modules/{module}/versions/{version}/index', [ModuleVersionFileController::class, 'index'])
+                ->name('versions.index');
         });
     });
 
