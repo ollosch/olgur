@@ -11,12 +11,13 @@ use App\Http\Controllers\RuleController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SystemController;
 use App\Http\Controllers\SystemManifestController;
+use App\Http\Resources\UserResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('api')->group(function (): void {
     Route::middleware('auth')->group(function (): void {
-        Route::get('/me', fn (Request $request) => $request->user());
+        Route::get('/me', fn (Request $request): UserResource => new UserResource($request->user()));
         Route::get('/me/subscriptions', [SubscriptionController::class, 'index']);
 
         Route::apiResource('systems', SystemController::class);
