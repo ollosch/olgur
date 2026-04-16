@@ -70,9 +70,9 @@ test('index returns versions ordered by latest released_at first', function (): 
     $user = User::factory()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
-    ModuleVersion::factory()->for($module)->released()->create(['version_string' => 'v1.0.0', 'released_at' => now()->subDays(2)]);
-    ModuleVersion::factory()->for($module)->released()->create(['version_string' => 'v3.0.0', 'released_at' => now()]);
-    ModuleVersion::factory()->for($module)->released()->create(['version_string' => 'v2.0.0', 'released_at' => now()->subDay()]);
+    ModuleVersion::factory()->for($module)->released()->create(['version_string' => '1.0.0', 'released_at' => now()->subDays(2)]);
+    ModuleVersion::factory()->for($module)->released()->create(['version_string' => '3.0.0', 'released_at' => now()]);
+    ModuleVersion::factory()->for($module)->released()->create(['version_string' => '2.0.0', 'released_at' => now()->subDay()]);
 
     actingAs($user);
 
@@ -80,7 +80,7 @@ test('index returns versions ordered by latest released_at first', function (): 
         ->assertSuccessful();
 
     $versions = collect($response->json('data'))->pluck('version_string')->all();
-    expect($versions)->toBe(['v3.0.0', 'v2.0.0', 'v1.0.0']);
+    expect($versions)->toBe(['3.0.0', '2.0.0', '1.0.0']);
 });
 
 test('index does not return versions from other modules', function (): void {
@@ -109,11 +109,11 @@ test('store publishes a new version', function (): void {
     actingAs($user);
 
     $response = postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/versions', [
-        'version_string' => 'v1.0.0',
+        'version_string' => '1.0.0',
         'notes' => 'Initial release',
     ])->assertCreated();
 
-    $response->assertJsonPath('data.version_string', 'v1.0.0');
+    $response->assertJsonPath('data.version_string', '1.0.0');
     $response->assertJsonPath('data.notes', 'Initial release');
     $response->assertJsonPath('data.module_id', $module->id);
     $response->assertJsonPath('data.released_by', $user->id);
@@ -132,7 +132,7 @@ test('store snapshots rules including parent-child relationships', function (): 
     actingAs($user);
 
     $response = postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/versions', [
-        'version_string' => 'v1.0.0',
+        'version_string' => '1.0.0',
     ])->assertCreated();
 
     $versionId = $response->json('data.id');
@@ -166,7 +166,7 @@ test('store snapshots index entries including parent-child relationships', funct
     actingAs($user);
 
     $response = postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/versions', [
-        'version_string' => 'v1.0.0',
+        'version_string' => '1.0.0',
     ])->assertCreated();
 
     $versionId = $response->json('data.id');
@@ -205,12 +205,12 @@ test('store rejects duplicate version_string within the same module', function (
     $user = User::factory()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
-    ModuleVersion::factory()->for($module)->released()->create(['version_string' => 'v1.0.0']);
+    ModuleVersion::factory()->for($module)->released()->create(['version_string' => '1.0.0']);
 
     actingAs($user);
 
     postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/versions', [
-        'version_string' => 'v1.0.0',
+        'version_string' => '1.0.0',
     ])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['version_string']);
@@ -222,12 +222,12 @@ test('store allows same version_string in a different module', function (): void
     $moduleA = Module::factory()->for($system)->create();
     $moduleB = Module::factory()->for($system)->create();
     Subscription::factory()->for($user)->for($moduleA)->editor()->create();
-    ModuleVersion::factory()->for($moduleB)->released()->create(['version_string' => 'v1.0.0']);
+    ModuleVersion::factory()->for($moduleB)->released()->create(['version_string' => '1.0.0']);
 
     actingAs($user);
 
     postJson('/api/systems/'.$system->id.'/modules/'.$moduleA->id.'/versions', [
-        'version_string' => 'v1.0.0',
+        'version_string' => '1.0.0',
     ])->assertCreated();
 });
 
@@ -241,7 +241,7 @@ test('regular user cannot publish a version', function (): void {
     actingAs($user);
 
     postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/versions', [
-        'version_string' => 'v1.0.0',
+        'version_string' => '1.0.0',
     ])->assertForbidden();
 });
 
@@ -254,7 +254,7 @@ test('system admin can publish a version', function (): void {
     actingAs($admin);
 
     postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/versions', [
-        'version_string' => 'v1.0.0',
+        'version_string' => '1.0.0',
     ])->assertCreated();
 });
 
@@ -266,7 +266,7 @@ test('super_admin can publish a version', function (): void {
     actingAs($superAdmin);
 
     postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/versions', [
-        'version_string' => 'v1.0.0',
+        'version_string' => '1.0.0',
     ])->assertCreated();
 });
 
