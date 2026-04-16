@@ -168,15 +168,66 @@ test('user can subscribe to an expansion when core is subscribed', function (): 
     assertDatabaseHas('subscriptions', ['user_id' => $user->id, 'module_id' => $expansion->id]);
 });
 
-test('user cannot subscribe to an expansion without a core subscription', function (): void {
+test('subscribing to expansion without core subscription succeeds when require_core_subscription is not set', function (): void {
     $user = User::factory()->create();
-    $system = System::factory()->create();
+    $system = System::factory()->create(); // no require_core_subscription config
     $expansion = Module::factory()->for($system)->create(); // not core
+    actingAs($user);
+
+    postJson(subscriptionUrl($system, $expansion))->assertSuccessful();
+});
+
+test('subscribing to expansion without core subscription fails when require_core_subscription is true and core module exists', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create(['config' => ['require_core_subscription' => true]]);
+    Module::factory()->for($system)->core()->create(); // core module exists
+    $expansion = Module::factory()->for($system)->create();
     actingAs($user);
 
     postJson(subscriptionUrl($system, $expansion))
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['module_id']);
+});
+
+test('subscribing to expansion without core subscription succeeds when require_core_subscription is true but no core module exists', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create(['config' => ['require_core_subscription' => true]]);
+    $expansion = Module::factory()->for($system)->create(); // no core module exists
+    actingAs($user);
+
+    postJson(subscriptionUrl($system, $expansion))->assertSuccessful();
+});
+
+test('subscribing when not a member auto-creates a plain membership', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->core()->create();
+    actingAs($user);
+
+    postJson(subscriptionUrl($system, $module))->assertSuccessful();
+
+    assertDatabaseHas('memberships', [
+        'user_id' => $user->id,
+        'system_id' => $system->id,
+        'admin' => false,
+    ]);
+});
+
+test('subscribing when already a member does not create a duplicate', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->core()->create();
+    Membership::factory()->for($user)->for($system)->create(['admin' => false]);
+    actingAs($user);
+
+    postJson(subscriptionUrl($system, $module))->assertSuccessful();
+
+    expect(
+        Membership::query()
+            ->where('user_id', $user->id)
+            ->where('system_id', $system->id)
+            ->count()
+    )->toBe(1);
 });
 
 test('subscribing twice returns the existing subscription', function (): void {
@@ -369,4 +420,88 @@ test('unsubscribing from core does not cascade when require_core_subscription is
 
     assertDatabaseMissing('subscriptions', ['user_id' => $user->id, 'module_id' => $core->id]);
     assertDatabaseHas('subscriptions', ['user_id' => $user->id, 'module_id' => $expansion->id]);
+});
+
+// ── Feature 10: active_module_ids cleanup on unsubscribe ─────────────────────
+
+test('unsubscribing from an active expansion removes it from active_module_ids', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $core = Module::factory()->for($system)->core()->create();
+    $expansion = Module::factory()->for($system)->create();
+    Subscription::factory()->for($user)->for($core)->create();
+    $expansionSubscription = Subscription::factory()->for($user)->for($expansion)->create();
+    Membership::factory()->for($user)->for($system)->create([
+        'config' => ['active_module_ids' => [$expansion->id]],
+    ]);
+    actingAs($user);
+
+    deleteJson(subscriptionUrl($system, $expansion, $expansionSubscription))->assertNoContent();
+
+    $membership = Membership::query()
+        ->where('user_id', $user->id)
+        ->where('system_id', $system->id)
+        ->first();
+
+    expect($membership)->not->toBeNull();
+    expect(($membership->config ?? [])['active_module_ids'] ?? [])->not->toContain($expansion->id);
+});
+
+test('unsubscribing from an inactive expansion does not crash', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $core = Module::factory()->for($system)->core()->create();
+    $expansion = Module::factory()->for($system)->create();
+    Subscription::factory()->for($user)->for($core)->create();
+    $expansionSubscription = Subscription::factory()->for($user)->for($expansion)->create();
+    Membership::factory()->for($user)->for($system)->create([
+        'config' => ['active_module_ids' => []],
+    ]);
+    actingAs($user);
+
+    deleteJson(subscriptionUrl($system, $expansion, $expansionSubscription))->assertNoContent();
+
+    $membership = Membership::query()
+        ->where('user_id', $user->id)
+        ->where('system_id', $system->id)
+        ->first();
+
+    expect($membership)->not->toBeNull();
+    expect(($membership->config ?? [])['active_module_ids'] ?? [])->toBeEmpty();
+});
+
+test('core cascade unsubscribe clears active_module_ids entirely', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create(['config' => ['require_core_subscription' => true]]);
+    $core = Module::factory()->for($system)->core()->create();
+    $expansionA = Module::factory()->for($system)->create();
+    $expansionB = Module::factory()->for($system)->create();
+    $coreSubscription = Subscription::factory()->for($user)->for($core)->create();
+    Subscription::factory()->for($user)->for($expansionA)->create();
+    Subscription::factory()->for($user)->for($expansionB)->create();
+    Membership::factory()->for($user)->for($system)->create([
+        'config' => ['active_module_ids' => [$expansionA->id, $expansionB->id]],
+    ]);
+    actingAs($user);
+
+    deleteJson(subscriptionUrl($system, $core, $coreSubscription))->assertNoContent();
+
+    $membership = Membership::query()
+        ->where('user_id', $user->id)
+        ->where('system_id', $system->id)
+        ->first();
+
+    expect($membership)->not->toBeNull();
+    expect(($membership->config ?? [])['active_module_ids'] ?? [])->toBeEmpty();
+});
+
+test('unsubscribing when membership does not exist does not throw', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $expansion = Module::factory()->for($system)->create();
+    $subscription = Subscription::factory()->for($user)->for($expansion)->create();
+    // No membership record created
+    actingAs($user);
+
+    deleteJson(subscriptionUrl($system, $expansion, $subscription))->assertNoContent();
 });
