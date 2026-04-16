@@ -80,8 +80,7 @@ test('user cannot activate a module they are not subscribed to', function (): vo
     actingAs($user);
 
     postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/activate')
-        ->assertUnprocessable()
-        ->assertJsonValidationErrors(['module_id']);
+        ->assertForbidden();
 });
 
 test('user cannot activate a module in a system they are not a member of', function (): void {
@@ -93,7 +92,7 @@ test('user cannot activate a module in a system they are not a member of', funct
     actingAs($user);
 
     postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/activate')
-        ->assertNotFound();
+        ->assertForbidden();
 });
 
 // ── DELETE /activate ─────────────────────────────────────────────────────────
@@ -129,6 +128,31 @@ test('user cannot deactivate a core module', function (): void {
     deleteJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/activate')
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['module_id']);
+});
+
+test('member can deactivate a module even without a subscription', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    Membership::factory()->for($user)->for($system)->create([
+        'config' => ['active_module_ids' => [$module->id]],
+    ]);
+    // No subscription
+    actingAs($user);
+
+    deleteJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/activate')
+        ->assertNoContent();
+});
+
+test('non-member cannot deactivate a module', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    // No membership
+    actingAs($user);
+
+    deleteJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/activate')
+        ->assertForbidden();
 });
 
 // ── allow_concurrent_expansions ──────────────────────────────────────────────
