@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use App\Models\IndexEntry;
+use App\Models\Membership;
 use App\Models\Module;
+use App\Models\Subscription;
 use App\Models\System;
 use App\Models\User;
 
@@ -35,7 +37,7 @@ test('unauthenticated requests are rejected', function (string $method, string $
 // ── index ────────────────────────────────────────────────────────────────────
 
 test('index returns index entries for the module', function (): void {
-    $user = User::factory()->create();
+    $user = User::factory()->superAdmin()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
     IndexEntry::factory()->for($module)->count(3)->create();
@@ -49,7 +51,7 @@ test('index returns index entries for the module', function (): void {
 });
 
 test('index returns index entries ordered by term', function (): void {
-    $user = User::factory()->create();
+    $user = User::factory()->superAdmin()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
     IndexEntry::factory()->for($module)->create(['term' => 'Charlie']);
@@ -66,7 +68,7 @@ test('index returns index entries ordered by term', function (): void {
 });
 
 test('index does not return index entries from other modules', function (): void {
-    $user = User::factory()->create();
+    $user = User::factory()->superAdmin()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
     $other = Module::factory()->for($system)->create();
@@ -112,6 +114,19 @@ test('store requires term', function (): void {
     actingAs($user);
 
     postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries', [])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['term']);
+});
+
+test('store rejects duplicate term within the same module', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    IndexEntry::factory()->for($module)->create(['term' => 'Duplicate']);
+
+    actingAs($user);
+
+    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries', ['term' => 'Duplicate'])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['term']);
 });
@@ -168,7 +183,7 @@ test('store accepts valid parent_id within the same module', function (): void {
 // ── show ─────────────────────────────────────────────────────────────────────
 
 test('show returns a single index entry', function (): void {
-    $user = User::factory()->create();
+    $user = User::factory()->superAdmin()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
     $entry = IndexEntry::factory()->for($module)->create();
@@ -183,7 +198,7 @@ test('show returns a single index entry', function (): void {
 });
 
 test('show returns 404 for index entry belonging to a different module', function (): void {
-    $user = User::factory()->create();
+    $user = User::factory()->superAdmin()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
     $other = Module::factory()->for($system)->create();
@@ -256,6 +271,29 @@ test('destroy returns 404 for index entry belonging to a different module', func
 
 // ── authorization ─────────────────────────────────────────────────────────────
 
+test('regular user cannot list index entries', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+
+    actingAs($user);
+
+    getJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries')
+        ->assertForbidden();
+});
+
+test('regular user cannot view an index entry', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $entry = IndexEntry::factory()->for($module)->create();
+
+    actingAs($user);
+
+    getJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries/'.$entry->id)
+        ->assertForbidden();
+});
+
 test('regular user cannot create an index entry', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->create();
@@ -291,34 +329,185 @@ test('regular user cannot delete an index entry', function (): void {
         ->assertForbidden();
 });
 
-test('super_admin can create an index entry', function (): void {
-    $user = User::factory()->superAdmin()->create();
+// ── module subscriber authorization ──────────────────────────────────────────
+
+test('module subscriber can list index entries', function (): void {
+    $user = User::factory()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
+    Subscription::factory()->for($user)->for($module)->create();
 
     actingAs($user);
 
-    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries', ['term' => 'New Entry'])
-        ->assertCreated();
-});
-
-test('super_admin can update an index entry', function (): void {
-    $user = User::factory()->superAdmin()->create();
-    $system = System::factory()->create();
-    $module = Module::factory()->for($system)->create();
-    $entry = IndexEntry::factory()->for($module)->create();
-
-    actingAs($user);
-
-    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries/'.$entry->id, ['term' => 'Updated'])
+    getJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries')
         ->assertSuccessful();
 });
 
-test('super_admin can delete an index entry', function (): void {
-    $user = User::factory()->superAdmin()->create();
+test('module subscriber can view an index entry', function (): void {
+    $user = User::factory()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
     $entry = IndexEntry::factory()->for($module)->create();
+    Subscription::factory()->for($user)->for($module)->create();
+
+    actingAs($user);
+
+    getJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries/'.$entry->id)
+        ->assertSuccessful();
+});
+
+test('module subscriber cannot create an index entry', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    Subscription::factory()->for($user)->for($module)->create();
+
+    actingAs($user);
+
+    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries', ['term' => 'Test'])
+        ->assertForbidden();
+});
+
+test('module subscriber cannot update an index entry', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $entry = IndexEntry::factory()->for($module)->create();
+    Subscription::factory()->for($user)->for($module)->create();
+
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries/'.$entry->id, ['term' => 'Hacked'])
+        ->assertForbidden();
+});
+
+test('module subscriber cannot delete an index entry', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $entry = IndexEntry::factory()->for($module)->create();
+    Subscription::factory()->for($user)->for($module)->create();
+
+    actingAs($user);
+
+    deleteJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries/'.$entry->id)
+        ->assertForbidden();
+});
+
+// ── module editor authorization ──────────────────────────────────────────────
+
+test('module editor can create an index entry in their module', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    Subscription::factory()->for($user)->for($module)->editor()->create();
+
+    actingAs($user);
+
+    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries', ['term' => 'Editor Term'])
+        ->assertCreated();
+});
+
+test('module editor of module A cannot create an index entry in module B', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $moduleA = Module::factory()->for($system)->create();
+    $moduleB = Module::factory()->for($system)->create();
+    Subscription::factory()->for($user)->for($moduleA)->editor()->create();
+
+    actingAs($user);
+
+    postJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/index-entries', ['term' => 'Editor Term'])
+        ->assertForbidden();
+});
+
+test('module editor can update an index entry in their module', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $entry = IndexEntry::factory()->for($module)->create();
+    Subscription::factory()->for($user)->for($module)->editor()->create();
+
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries/'.$entry->id, ['term' => 'Editor Updated'])
+        ->assertSuccessful();
+});
+
+test('module editor cannot update an index entry in another module', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $moduleA = Module::factory()->for($system)->create();
+    $moduleB = Module::factory()->for($system)->create();
+    $entry = IndexEntry::factory()->for($moduleB)->create();
+    Subscription::factory()->for($user)->for($moduleA)->editor()->create();
+
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/index-entries/'.$entry->id, ['term' => 'Hacked'])
+        ->assertForbidden();
+});
+
+test('module editor can delete an index entry in their module', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $entry = IndexEntry::factory()->for($module)->create();
+    Subscription::factory()->for($user)->for($module)->editor()->create();
+
+    actingAs($user);
+
+    deleteJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries/'.$entry->id)
+        ->assertNoContent();
+});
+
+test('module editor cannot delete an index entry in another module', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $moduleA = Module::factory()->for($system)->create();
+    $moduleB = Module::factory()->for($system)->create();
+    $entry = IndexEntry::factory()->for($moduleB)->create();
+    Subscription::factory()->for($user)->for($moduleA)->editor()->create();
+
+    actingAs($user);
+
+    deleteJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/index-entries/'.$entry->id)
+        ->assertForbidden();
+});
+
+// ── system admin authorization ───────────────────────────────────────────────
+
+test('system admin can create an index entry', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    Membership::factory()->for($user)->for($system)->admin()->create();
+
+    actingAs($user);
+
+    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries', ['term' => 'Admin Term'])
+        ->assertCreated();
+});
+
+test('system admin can update an index entry', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $entry = IndexEntry::factory()->for($module)->create();
+    Membership::factory()->for($user)->for($system)->admin()->create();
+
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries/'.$entry->id, ['term' => 'Admin Updated'])
+        ->assertSuccessful();
+});
+
+test('system admin can delete an index entry', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $entry = IndexEntry::factory()->for($module)->create();
+    Membership::factory()->for($user)->for($system)->admin()->create();
 
     actingAs($user);
 

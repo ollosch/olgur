@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+use App\Models\Membership;
 use App\Models\Module;
 use App\Models\Rule;
+use App\Models\Subscription;
 use App\Models\System;
 use App\Models\User;
 
@@ -35,7 +37,7 @@ test('unauthenticated requests are rejected', function (string $method, string $
 // ── index ────────────────────────────────────────────────────────────────────
 
 test('index returns rules for the module', function (): void {
-    $user = User::factory()->create();
+    $user = User::factory()->superAdmin()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
     Rule::factory()->for($module)->count(3)->create();
@@ -49,7 +51,7 @@ test('index returns rules for the module', function (): void {
 });
 
 test('index returns rules ordered by sort_order', function (): void {
-    $user = User::factory()->create();
+    $user = User::factory()->superAdmin()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
     Rule::factory()->for($module)->create(['number' => 'C', 'sort_order' => 30]);
@@ -66,7 +68,7 @@ test('index returns rules ordered by sort_order', function (): void {
 });
 
 test('index does not return rules from other modules', function (): void {
-    $user = User::factory()->create();
+    $user = User::factory()->superAdmin()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
     $other = Module::factory()->for($system)->create();
@@ -197,7 +199,7 @@ test('store accepts valid parent_id within the same module', function (): void {
 // ── show ─────────────────────────────────────────────────────────────────────
 
 test('show returns a single rule', function (): void {
-    $user = User::factory()->create();
+    $user = User::factory()->superAdmin()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
     $rule = Rule::factory()->for($module)->create();
@@ -254,7 +256,7 @@ test('update returns 404 for rule belonging to a different module', function ():
         ->assertNotFound();
 });
 
-// ── destroy ───────────────────────────────────────────────────────────────────
+// ── destroy ──────────────────────────────────────────────────────────────────
 
 test('destroy deletes a rule', function (): void {
     $user = User::factory()->superAdmin()->create();
@@ -283,7 +285,30 @@ test('destroy returns 404 for rule belonging to a different module', function ()
         ->assertNotFound();
 });
 
-// ── authorization ─────────────────────────────────────────────────────────────
+// ── authorization ────────────────────────────────────────────────────────────
+
+test('regular user cannot list rules', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+
+    actingAs($user);
+
+    getJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules')
+        ->assertForbidden();
+});
+
+test('regular user cannot view a rule', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $rule = Rule::factory()->for($module)->create();
+
+    actingAs($user);
+
+    getJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id)
+        ->assertForbidden();
+});
 
 test('regular user cannot create a rule', function (): void {
     $user = User::factory()->create();
@@ -320,34 +345,185 @@ test('regular user cannot delete a rule', function (): void {
         ->assertForbidden();
 });
 
-test('super_admin can create a rule', function (): void {
-    $user = User::factory()->superAdmin()->create();
+// ── module subscriber authorization ──────────────────────────────────────────
+
+test('module subscriber can list rules', function (): void {
+    $user = User::factory()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
+    Subscription::factory()->for($user)->for($module)->create();
 
     actingAs($user);
 
-    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', ['number' => 'A.1', 'title' => 'New Rule'])
-        ->assertCreated();
-});
-
-test('super_admin can update a rule', function (): void {
-    $user = User::factory()->superAdmin()->create();
-    $system = System::factory()->create();
-    $module = Module::factory()->for($system)->create();
-    $rule = Rule::factory()->for($module)->create();
-
-    actingAs($user);
-
-    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id, ['title' => 'Updated'])
+    getJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules')
         ->assertSuccessful();
 });
 
-test('super_admin can delete a rule', function (): void {
-    $user = User::factory()->superAdmin()->create();
+test('module subscriber can view a rule', function (): void {
+    $user = User::factory()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
     $rule = Rule::factory()->for($module)->create();
+    Subscription::factory()->for($user)->for($module)->create();
+
+    actingAs($user);
+
+    getJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id)
+        ->assertSuccessful();
+});
+
+test('module subscriber cannot create a rule', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    Subscription::factory()->for($user)->for($module)->create();
+
+    actingAs($user);
+
+    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', ['number' => 'A.1', 'title' => 'Test'])
+        ->assertForbidden();
+});
+
+test('module subscriber cannot update a rule', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $rule = Rule::factory()->for($module)->create();
+    Subscription::factory()->for($user)->for($module)->create();
+
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id, ['title' => 'Hacked'])
+        ->assertForbidden();
+});
+
+test('module subscriber cannot delete a rule', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $rule = Rule::factory()->for($module)->create();
+    Subscription::factory()->for($user)->for($module)->create();
+
+    actingAs($user);
+
+    deleteJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id)
+        ->assertForbidden();
+});
+
+// ── editor authorization ───────────────────────────────────────────────────────
+
+test('module editor can create a rule in their module', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    Subscription::factory()->for($user)->for($module)->editor()->create();
+
+    actingAs($user);
+
+    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', ['number' => 'E.1', 'title' => 'Editor Rule'])
+        ->assertCreated();
+});
+
+test('module editor of module A cannot create a rule in module B', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $moduleA = Module::factory()->for($system)->create();
+    $moduleB = Module::factory()->for($system)->create();
+    Subscription::factory()->for($user)->for($moduleA)->editor()->create();
+
+    actingAs($user);
+
+    postJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/rules', ['number' => 'E.1', 'title' => 'Editor Rule'])
+        ->assertForbidden();
+});
+
+test('module editor can update a rule in their module', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $rule = Rule::factory()->for($module)->create();
+    Subscription::factory()->for($user)->for($module)->editor()->create();
+
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id, ['title' => 'Editor Updated'])
+        ->assertSuccessful();
+});
+
+test('module editor cannot update a rule in another module', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $moduleA = Module::factory()->for($system)->create();
+    $moduleB = Module::factory()->for($system)->create();
+    $rule = Rule::factory()->for($moduleB)->create();
+    Subscription::factory()->for($user)->for($moduleA)->editor()->create();
+
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/rules/'.$rule->id, ['title' => 'Hacked'])
+        ->assertForbidden();
+});
+
+test('module editor can delete a rule in their module', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $rule = Rule::factory()->for($module)->create();
+    Subscription::factory()->for($user)->for($module)->editor()->create();
+
+    actingAs($user);
+
+    deleteJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id)
+        ->assertNoContent();
+});
+
+test('module editor cannot delete a rule in another module', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $moduleA = Module::factory()->for($system)->create();
+    $moduleB = Module::factory()->for($system)->create();
+    $rule = Rule::factory()->for($moduleB)->create();
+    Subscription::factory()->for($user)->for($moduleA)->editor()->create();
+
+    actingAs($user);
+
+    deleteJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/rules/'.$rule->id)
+        ->assertForbidden();
+});
+
+// ── system admin authorization ───────────────────────────────────────────────
+
+test('system admin can create a rule', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    Membership::factory()->for($user)->for($system)->admin()->create();
+
+    actingAs($user);
+
+    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', ['number' => 'A.1', 'title' => 'Admin Rule'])
+        ->assertCreated();
+});
+
+test('system admin can update a rule', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $rule = Rule::factory()->for($module)->create();
+    Membership::factory()->for($user)->for($system)->admin()->create();
+
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id, ['title' => 'Admin Updated'])
+        ->assertSuccessful();
+});
+
+test('system admin can delete a rule', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $rule = Rule::factory()->for($module)->create();
+    Membership::factory()->for($user)->for($system)->admin()->create();
 
     actingAs($user);
 
