@@ -6,7 +6,6 @@ namespace App\Actions;
 
 use App\Models\Membership;
 use App\Models\Module;
-use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Validation\ValidationException;
 
@@ -28,17 +27,6 @@ final class ActivateModule
         if ($module->is_core) {
             throw ValidationException::withMessages([
                 'module_id' => ['Core modules are always active and cannot be toggled.'],
-            ]);
-        }
-
-        $isSubscribed = Subscription::query()
-            ->where('user_id', $user->id)
-            ->where('module_id', $module->id)
-            ->exists();
-
-        if (! $isSubscribed) {
-            throw ValidationException::withMessages([
-                'module_id' => ['You must be subscribed to this module before activating it.'],
             ]);
         }
 

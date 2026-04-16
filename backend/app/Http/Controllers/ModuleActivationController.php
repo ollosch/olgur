@@ -7,11 +7,13 @@ namespace App\Http\Controllers;
 use App\Actions\ActivateModule;
 use App\Actions\DeactivateModule;
 use App\Models\Module;
+use App\Models\ModuleActivation;
 use App\Models\System;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Gate;
 
 final class ModuleActivationController
 {
@@ -24,6 +26,8 @@ final class ModuleActivationController
         Module $module,
         ActivateModule $activateModule,
     ): JsonResponse {
+        Gate::authorize('create', [ModuleActivation::class, $module]);
+
         /** @var User $user */
         $user = $request->user();
 
@@ -49,6 +53,8 @@ final class ModuleActivationController
         Module $module,
         DeactivateModule $deactivateModule,
     ): Response {
+        Gate::authorize('delete', [ModuleActivation::class, $module]);
+
         /** @var User $user */
         $user = $request->user();
 
