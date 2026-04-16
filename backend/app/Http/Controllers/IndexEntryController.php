@@ -21,7 +21,7 @@ final class IndexEntryController
      */
     public function index(System $system, Module $module): AnonymousResourceCollection
     {
-        Gate::authorize('viewAny', IndexEntry::class);
+        Gate::authorize('viewAny', [IndexEntry::class, $system, $module]);
 
         return IndexEntryResource::collection($module->indexEntries()->orderBy('term')->get());
     }
@@ -31,7 +31,7 @@ final class IndexEntryController
      */
     public function store(StoreIndexEntryRequest $request, System $system, Module $module): IndexEntryResource
     {
-        Gate::authorize('create', IndexEntry::class);
+        Gate::authorize('create', [IndexEntry::class, $system, $module]);
 
         $indexEntry = $module->indexEntries()->create($request->validated());
 
@@ -43,7 +43,7 @@ final class IndexEntryController
      */
     public function show(System $system, Module $module, IndexEntry $indexEntry): IndexEntryResource
     {
-        Gate::authorize('view', $indexEntry);
+        Gate::authorize('view', [IndexEntry::class, $system, $module]);
 
         return new IndexEntryResource($indexEntry);
     }
@@ -53,7 +53,7 @@ final class IndexEntryController
      */
     public function update(UpdateIndexEntryRequest $request, System $system, Module $module, IndexEntry $indexEntry): IndexEntryResource
     {
-        Gate::authorize('update', $indexEntry);
+        Gate::authorize('update', [IndexEntry::class, $system, $module]);
 
         $indexEntry->update($request->validated());
 
@@ -65,7 +65,7 @@ final class IndexEntryController
      */
     public function destroy(System $system, Module $module, IndexEntry $indexEntry): Response
     {
-        Gate::authorize('delete', $indexEntry);
+        Gate::authorize('delete', [IndexEntry::class, $system, $module]);
 
         $indexEntry->delete();
 

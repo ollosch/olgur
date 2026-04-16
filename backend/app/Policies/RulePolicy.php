@@ -4,45 +4,69 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Models\Module;
+use App\Models\System;
+use App\Models\User;
+
 final class RulePolicy
 {
     /**
-     * Any authenticated user can list rules.
+     * Module members
      */
-    public function viewAny(): bool
+    public function viewAny(User $user, System $system, Module $module): bool
     {
-        return true;
+        if ($module->isSubscriber($user)) {
+            return true;
+        }
+
+        return $system->isAdmin($user);
     }
 
     /**
      * Any authenticated user can view a rule.
      */
-    public function view(): bool
+    public function view(User $user, System $system, Module $module): bool
     {
-        return true;
+        if ($module->isSubscriber($user)) {
+            return true;
+        }
+
+        return $system->isAdmin($user);
     }
 
     /**
-     * Regular users cannot create rules; super_admin bypass is handled by Gate::before().
+     * Module editors and system admins can create rules in a module.
      */
-    public function create(): bool
+    public function create(User $user, System $system, Module $module): bool
     {
-        return false;
+        if ($module->isEditor($user)) {
+            return true;
+        }
+
+        return $system->isAdmin($user);
     }
 
     /**
-     * Regular users cannot update rules; super_admin bypass is handled by Gate::before().
+     * Module editors and system admins can update a rule.
      */
-    public function update(): bool
+    public function update(User $user, System $system, Module $module): bool
     {
-        return false;
+        if ($module->isEditor($user)) {
+            return true;
+        }
+
+        return $system->isAdmin($user);
     }
 
     /**
-     * Regular users cannot delete rules; super_admin bypass is handled by Gate::before().
+     * Module editors and system admins can delete a rule.
      */
-    public function delete(): bool
+    public function delete(User $user, System $system, Module $module): bool
     {
-        return false;
+        if ($module->isEditor($user)) {
+            return true;
+        }
+
+        return $system->isAdmin($user);
     }
 }

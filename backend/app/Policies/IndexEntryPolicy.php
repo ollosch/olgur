@@ -4,45 +4,69 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Models\Module;
+use App\Models\System;
+use App\Models\User;
+
 final class IndexEntryPolicy
 {
     /**
      * Any authenticated user can list index entries.
      */
-    public function viewAny(): bool
+    public function viewAny(User $user, System $system, Module $module): bool
     {
-        return true;
+        if ($module->isSubscriber($user)) {
+            return true;
+        }
+
+        return $system->isAdmin($user);
     }
 
     /**
      * Any authenticated user can view an index entry.
      */
-    public function view(): bool
+    public function view(User $user, System $system, Module $module): bool
     {
-        return true;
+        if ($module->isSubscriber($user)) {
+            return true;
+        }
+
+        return $system->isAdmin($user);
     }
 
     /**
-     * Regular users cannot create index entries; super_admin bypass is handled by Gate::before().
+     * Module editors and system admins can create index entries in a module.
      */
-    public function create(): bool
+    public function create(User $user, System $system, Module $module): bool
     {
-        return false;
+        if ($module->isEditor($user)) {
+            return true;
+        }
+
+        return $system->isAdmin($user);
     }
 
     /**
-     * Regular users cannot update index entries; super_admin bypass is handled by Gate::before().
+     * Module editors and system admins can update an index entry.
      */
-    public function update(): bool
+    public function update(User $user, System $system, Module $module): bool
     {
-        return false;
+        if ($module->isEditor($user)) {
+            return true;
+        }
+
+        return $system->isAdmin($user);
     }
 
     /**
-     * Regular users cannot delete index entries; super_admin bypass is handled by Gate::before().
+     * Module editors and system admins can delete an index entry.
      */
-    public function delete(): bool
+    public function delete(User $user, System $system, Module $module): bool
     {
-        return false;
+        if ($module->isEditor($user)) {
+            return true;
+        }
+
+        return $system->isAdmin($user);
     }
 }

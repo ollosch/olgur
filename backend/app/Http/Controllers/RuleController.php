@@ -21,9 +21,11 @@ final class RuleController
      */
     public function index(System $system, Module $module): AnonymousResourceCollection
     {
-        Gate::authorize('viewAny', Rule::class);
+        Gate::authorize('viewAny', [Rule::class, $system, $module]);
 
-        return RuleResource::collection($module->rules()->orderBy('sort_order')->get());
+        return RuleResource::collection(
+            $module->rules()->with('module')->orderBy('sort_order')->get()
+        );
     }
 
     /**
@@ -31,7 +33,7 @@ final class RuleController
      */
     public function store(StoreRuleRequest $request, System $system, Module $module): RuleResource
     {
-        Gate::authorize('create', Rule::class);
+        Gate::authorize('create', [Rule::class, $system, $module]);
 
         $rule = $module->rules()->create($request->validated());
 
@@ -43,7 +45,9 @@ final class RuleController
      */
     public function show(System $system, Module $module, Rule $rule): RuleResource
     {
-        Gate::authorize('view', $rule);
+        Gate::authorize('view', [Rule::class, $system, $module]);
+
+        $rule->setRelation('module', $module);
 
         return new RuleResource($rule);
     }
@@ -53,7 +57,7 @@ final class RuleController
      */
     public function update(UpdateRuleRequest $request, System $system, Module $module, Rule $rule): RuleResource
     {
-        Gate::authorize('update', $rule);
+        Gate::authorize('update', [Rule::class, $system, $module]);
 
         $rule->update($request->validated());
 
@@ -65,7 +69,7 @@ final class RuleController
      */
     public function destroy(System $system, Module $module, Rule $rule): Response
     {
-        Gate::authorize('delete', $rule);
+        Gate::authorize('delete', [Rule::class, $system, $module]);
 
         $rule->delete();
 
