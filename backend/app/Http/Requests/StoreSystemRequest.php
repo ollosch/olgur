@@ -31,6 +31,7 @@ final class StoreSystemRequest extends FormRequest
             'config' => ['nullable', 'array'],
             'config.toc_depth' => ['nullable', 'integer', 'min:1'],
             'config.cover_image' => ['nullable', 'string', 'url'],
+            'config.sort_rules_by' => ['nullable', 'string', 'in:number,sort_order'],
         ];
     }
 }
