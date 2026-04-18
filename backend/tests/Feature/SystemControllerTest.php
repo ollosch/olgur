@@ -227,6 +227,19 @@ test('system admin can delete their system', function (): void {
 
 // ── config fields ─────────────────────────────────────────────────────────────
 
+test('store accepts enforce_system_unique_rule_numbers in config', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    actingAs($user);
+
+    $response = postJson('/api/systems', [
+        'slug' => 'bcs',
+        'name' => 'BCS',
+        'config' => ['enforce_system_unique_rule_numbers' => false],
+    ])->assertCreated();
+
+    expect($response->json('data.config.enforce_system_unique_rule_numbers'))->toBeFalse();
+});
+
 test('store accepts sort_rules_by in config', function (): void {
     $user = User::factory()->superAdmin()->create();
     actingAs($user);

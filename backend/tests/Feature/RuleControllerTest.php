@@ -146,6 +146,33 @@ test('store allows same number in a different module', function (): void {
         ->assertCreated();
 });
 
+test('store rejects cross-module duplicate when enforce_system_unique_rule_numbers is true', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create(['config' => ['enforce_system_unique_rule_numbers' => true]]);
+    $moduleA = Module::factory()->for($system)->create();
+    $moduleB = Module::factory()->for($system)->create();
+    Rule::factory()->for($moduleA)->create(['number' => 'A1.1']);
+
+    actingAs($user);
+
+    postJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/rules', ['number' => 'A1.1', 'title' => 'Dup'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['number']);
+});
+
+test('store accepts cross-module duplicate when system has no enforce config set (defaults to false)', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create(['config' => []]);
+    $moduleA = Module::factory()->for($system)->create();
+    $moduleB = Module::factory()->for($system)->create();
+    Rule::factory()->for($moduleA)->create(['number' => 'A1.1']);
+
+    actingAs($user);
+
+    postJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/rules', ['number' => 'A1.1', 'title' => 'Dup'])
+        ->assertCreated();
+});
+
 test('store rejects invalid parent_id from a different module', function (): void {
     $user = User::factory()->superAdmin()->create();
     $system = System::factory()->create();
@@ -226,6 +253,35 @@ test('update modifies a rule', function (): void {
 
     $response->assertJsonPath('data.title', 'Updated Title');
     assertDatabaseHas('rules', ['id' => $rule->id, 'title' => 'Updated Title']);
+});
+
+test('update rejects cross-module duplicate when enforce_system_unique_rule_numbers is true', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create(['config' => ['enforce_system_unique_rule_numbers' => true]]);
+    $moduleA = Module::factory()->for($system)->create();
+    $moduleB = Module::factory()->for($system)->create();
+    Rule::factory()->for($moduleA)->create(['number' => 'A1.1']);
+    $ruleB = Rule::factory()->for($moduleB)->create(['number' => 'B1.1']);
+
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/rules/'.$ruleB->id, ['number' => 'A1.1'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['number']);
+});
+
+test('update allows cross-module duplicate when enforce_system_unique_rule_numbers is false', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create(['config' => ['enforce_system_unique_rule_numbers' => false]]);
+    $moduleA = Module::factory()->for($system)->create();
+    $moduleB = Module::factory()->for($system)->create();
+    Rule::factory()->for($moduleA)->create(['number' => 'A1.1']);
+    $ruleB = Rule::factory()->for($moduleB)->create(['number' => 'B1.1']);
+
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/rules/'.$ruleB->id, ['number' => 'A1.1'])
+        ->assertOk();
 });
 
 test('update returns 404 for rule belonging to a different module', function (): void {
