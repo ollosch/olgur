@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use App\Models\Module;
+use App\Models\Rule as RuleModel;
+use App\Models\System;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 final class StoreRuleRequest extends FormRequest
 {
@@ -35,6 +38,44 @@ final class StoreRuleRequest extends FormRequest
             'title' => ['required', 'string'],
             'content' => ['nullable', 'string'],
             'sort_order' => ['nullable', 'integer'],
+        ];
+    }
+
+    /**
+     * @return array<int, callable>
+     */
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                /** @var System $system */
+                $system = $this->route('system');
+                $enforce = $system->config['enforce_system_unique_rule_numbers'] ?? false;
+
+                if (! $enforce) {
+                    return;
+                }
+
+                /** @var Module $module */
+                $module = $this->route('module');
+
+                $siblingModuleIds = Module::query()
+                    ->where('system_id', $system->id)
+                    ->whereKeyNot($module->id)
+                    ->pluck('id');
+
+                $exists = RuleModel::query()
+                    ->whereIn('module_id', $siblingModuleIds)
+                    ->where('number', $this->input('number'))
+                    ->exists();
+
+                if ($exists) {
+                    $validator->errors()->add(
+                        'number',
+                        'This rule number already exists in another module of this system.'
+                    );
+                }
+            },
         ];
     }
 }
