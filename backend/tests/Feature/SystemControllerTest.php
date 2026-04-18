@@ -224,3 +224,52 @@ test('system admin can delete their system', function (): void {
 
     assertDatabaseMissing('systems', ['id' => $system->id]);
 });
+
+// ── config fields ─────────────────────────────────────────────────────────────
+
+test('store accepts sort_rules_by in config', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    actingAs($user);
+
+    $response = postJson('/api/systems', [
+        'slug' => 'asl',
+        'name' => 'ASL',
+        'config' => ['sort_rules_by' => 'number'],
+    ])->assertCreated();
+
+    expect($response->json('data.config.sort_rules_by'))->toBe('number');
+});
+
+test('store rejects invalid sort_rules_by value', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    actingAs($user);
+
+    postJson('/api/systems', [
+        'slug' => 'asl',
+        'name' => 'ASL',
+        'config' => ['sort_rules_by' => 'invalid'],
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors(['config.sort_rules_by']);
+});
+
+test('update accepts sort_rules_by in config', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id, [
+        'config' => ['sort_rules_by' => 'sort_order'],
+    ])->assertSuccessful()
+        ->assertJsonPath('data.config.sort_rules_by', 'sort_order');
+});
+
+test('update rejects invalid sort_rules_by value', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id, [
+        'config' => ['sort_rules_by' => 'bad'],
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors(['config.sort_rules_by']);
+});
