@@ -8,7 +8,7 @@ use App\Models\Module;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-final class CreateModuleVersionRequest extends FormRequest
+final class StoreModuleVersionRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.

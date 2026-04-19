@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Actions\PublishModuleVersion;
-use App\Http\Requests\CreateModuleVersionRequest;
+use App\Http\Requests\StoreModuleVersionRequest;
 use App\Http\Resources\ModuleVersionResource;
 use App\Models\Module;
 use App\Models\ModuleVersion;
@@ -38,7 +38,7 @@ final class ModuleVersionController
      * Store a newly created version in storage.
      */
     public function store(
-        CreateModuleVersionRequest $request,
+        StoreModuleVersionRequest $request,
         System $system,
         Module $module,
         PublishModuleVersion $publishModuleVersion
