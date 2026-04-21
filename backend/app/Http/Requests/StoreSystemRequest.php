@@ -33,6 +33,8 @@ final class StoreSystemRequest extends FormRequest
             'config.cover_image' => ['nullable', 'string', 'url'],
             'config.enforce_system_unique_rule_numbers' => ['nullable', 'boolean'],
             'config.sort_rules_by' => ['nullable', 'string', 'in:number,sort_order'],
+            'config.require_core_subscription' => ['nullable', 'boolean'],
+            'config.allow_concurrent_expansions' => ['nullable', 'boolean'],
         ];
     }
 }

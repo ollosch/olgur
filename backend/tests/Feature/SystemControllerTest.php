@@ -286,3 +286,51 @@ test('update rejects invalid sort_rules_by value', function (): void {
     ])->assertUnprocessable()
         ->assertJsonValidationErrors(['config.sort_rules_by']);
 });
+
+test('update accepts require_core_subscription in config', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id, [
+        'config' => ['require_core_subscription' => true],
+    ])->assertSuccessful()
+        ->assertJsonPath('data.config.require_core_subscription', true);
+});
+
+test('store accepts require_core_subscription in config', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    actingAs($user);
+
+    $response = postJson('/api/systems', [
+        'slug' => 'rcs',
+        'name' => 'RCS',
+        'config' => ['require_core_subscription' => true],
+    ])->assertCreated();
+
+    expect($response->json('data.config.require_core_subscription'))->toBeTrue();
+});
+
+test('store accepts allow_concurrent_expansions in config', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    actingAs($user);
+
+    $response = postJson('/api/systems', [
+        'slug' => 'ace',
+        'name' => 'ACE',
+        'config' => ['allow_concurrent_expansions' => true],
+    ])->assertCreated();
+
+    expect($response->json('data.config.allow_concurrent_expansions'))->toBeTrue();
+});
+
+test('update accepts allow_concurrent_expansions in config', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id, [
+        'config' => ['allow_concurrent_expansions' => true],
+    ])->assertSuccessful()
+        ->assertJsonPath('data.config.allow_concurrent_expansions', true);
+});
