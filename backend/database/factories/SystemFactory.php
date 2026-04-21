@@ -40,4 +40,24 @@ final class SystemFactory extends Factory
             'config' => ['toc_depth' => $depth],
         ]);
     }
+
+    /**
+     * Require a core subscription before subscribing to expansion modules.
+     */
+    public function requireCoreSubscription(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'config' => ['require_core_subscription' => true],
+        ]);
+    }
+
+    /**
+     * Allow multiple expansion modules to be active concurrently.
+     */
+    public function allowConcurrentExpansions(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'config' => ['allow_concurrent_expansions' => true],
+        ]);
+    }
 }

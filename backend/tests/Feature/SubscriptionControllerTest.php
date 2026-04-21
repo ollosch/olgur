@@ -179,7 +179,7 @@ test('subscribing to expansion without core subscription succeeds when require_c
 
 test('subscribing to expansion without core subscription fails when require_core_subscription is true and core module exists', function (): void {
     $user = User::factory()->create();
-    $system = System::factory()->create(['config' => ['require_core_subscription' => true]]);
+    $system = System::factory()->requireCoreSubscription()->create();
     Module::factory()->for($system)->core()->create(); // core module exists
     $expansion = Module::factory()->for($system)->create();
     actingAs($user);
@@ -191,7 +191,7 @@ test('subscribing to expansion without core subscription fails when require_core
 
 test('subscribing to expansion without core subscription succeeds when require_core_subscription is true but no core module exists', function (): void {
     $user = User::factory()->create();
-    $system = System::factory()->create(['config' => ['require_core_subscription' => true]]);
+    $system = System::factory()->requireCoreSubscription()->create();
     $expansion = Module::factory()->for($system)->create(); // no core module exists
     actingAs($user);
 
@@ -341,7 +341,7 @@ test('user can unsubscribe themselves from a module', function (): void {
 
 test('unsubscribing from core cascades to expansion subscriptions when require_core_subscription is true', function (): void {
     $user = User::factory()->create();
-    $system = System::factory()->create(['config' => ['require_core_subscription' => true]]);
+    $system = System::factory()->requireCoreSubscription()->create();
     $core = Module::factory()->for($system)->core()->create();
     $expansionA = Module::factory()->for($system)->create();
     $expansionB = Module::factory()->for($system)->create();
@@ -472,7 +472,7 @@ test('unsubscribing from an inactive expansion does not crash', function (): voi
 
 test('core cascade unsubscribe clears active_module_ids entirely', function (): void {
     $user = User::factory()->create();
-    $system = System::factory()->create(['config' => ['require_core_subscription' => true]]);
+    $system = System::factory()->requireCoreSubscription()->create();
     $core = Module::factory()->for($system)->core()->create();
     $expansionA = Module::factory()->for($system)->create();
     $expansionB = Module::factory()->for($system)->create();

@@ -56,7 +56,7 @@ test('user cannot activate a core module', function (): void {
 
 test('activating an already active module is idempotent', function (): void {
     $user = User::factory()->create();
-    $system = System::factory()->create(['config' => ['allow_concurrent_expansions' => true]]);
+    $system = System::factory()->allowConcurrentExpansions()->create();
     $module = Module::factory()->for($system)->create();
     Membership::factory()->for($user)->for($system)->create();
     Subscription::factory()->for($user)->for($module)->create();
@@ -180,7 +180,7 @@ test('activating deactivates other expansions when allow_concurrent_expansions i
 
 test('activating does not deactivate others when allow_concurrent_expansions is true', function (): void {
     $user = User::factory()->create();
-    $system = System::factory()->create(['config' => ['allow_concurrent_expansions' => true]]);
+    $system = System::factory()->allowConcurrentExpansions()->create();
     $moduleA = Module::factory()->for($system)->create();
     $moduleB = Module::factory()->for($system)->create();
     Membership::factory()->for($user)->for($system)->create();
