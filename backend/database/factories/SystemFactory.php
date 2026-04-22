@@ -42,22 +42,34 @@ final class SystemFactory extends Factory
     }
 
     /**
-     * Require a core subscription before subscribing to expansion modules.
+     * CorePlusMany structure: core + multiple expansions simultaneously.
+     * Rule numbers are system-wide unique; subscribing to expansion requires core subscription.
      */
-    public function requireCoreSubscription(): static
+    public function corePlusMany(): static
     {
         return $this->state(fn (array $attributes): array => [
-            'config' => ['require_core_subscription' => true],
+            'config' => ['system_structure' => 'core_plus_many'],
         ]);
     }
 
     /**
-     * Allow multiple expansion modules to be active concurrently.
+     * CorePlusOne structure: core + one expansion at a time.
+     * Subscribing to expansion auto-subscribes to core.
      */
-    public function allowConcurrentExpansions(): static
+    public function corePlusOne(): static
     {
         return $this->state(fn (array $attributes): array => [
-            'config' => ['allow_concurrent_expansions' => true],
+            'config' => ['system_structure' => 'core_plus_one'],
+        ]);
+    }
+
+    /**
+     * GroupingOnly structure: standalone expansions, no subscription mechanics.
+     */
+    public function groupingOnly(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'config' => ['system_structure' => 'grouping_only'],
         ]);
     }
 }

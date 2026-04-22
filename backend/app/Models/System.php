@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Data\SystemConfig;
 use Database\Factories\SystemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * @property array<string, mixed>|null $config
+ * @property SystemConfig|null $config
  */
 #[Fillable(['slug', 'name', 'description', 'config'])]
 final class System extends Model
@@ -30,7 +31,7 @@ final class System extends Model
     protected function casts(): array
     {
         return [
-            'config' => 'array',
+            'config' => SystemConfig::class,
         ];
     }
 

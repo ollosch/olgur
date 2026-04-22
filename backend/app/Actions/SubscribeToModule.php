@@ -4,21 +4,21 @@ declare(strict_types=1);
 
 namespace App\Actions;
 
+use App\Enums\SystemStructure;
 use App\Models\Membership;
 use App\Models\Module;
 use App\Models\Subscription;
 use App\Models\User;
-use Illuminate\Database\Query\Builder;
 use Illuminate\Validation\ValidationException;
 
 final class SubscribeToModule
 {
     /**
-     * Subscribe a user to a module, enforcing the core prerequisite rule.
+     * Subscribe a user to a module, enforcing structure-based rules.
      *
-     * If the system has require_core_subscription = true, the user must already
-     * be subscribed to at least one core module within the same system before
-     * subscribing to an expansion.
+     * - CorePlusMany: user must have a core subscription before subscribing to an expansion (if a core module exists).
+     * - CorePlusOne: auto-subscribes user to the core module if one exists.
+     * - GroupingOnly: no extra mechanics.
      *
      * @throws ValidationException when the core prerequisite is not satisfied
      */
@@ -33,24 +33,17 @@ final class SubscribeToModule
         ]);
 
         if (! $module->is_core) {
-            $systemConfig = $module->system?->config ?? [];  // @phpstan-ignore nullsafe.neverNull
-            $requiresCoreSubscription = ($systemConfig['require_core_subscription'] ?? false) === true;
+            $structure = $module->system?->config?->structure ?? SystemStructure::GroupingOnly;  // @phpstan-ignore nullsafe.neverNull
 
-            if ($requiresCoreSubscription) {
-                // Check if a core module exists for this system
-                $coreModuleExists = Module::query()
+            if ($structure === SystemStructure::CorePlusMany) {
+                $coreModule = Module::query()
                     ->where('system_id', $module->system_id)
                     ->where('is_core', true)
-                    ->exists();
+                    ->first();
 
-                if ($coreModuleExists) {
+                if ($coreModule !== null) {
                     $hasCoreSubscription = Subscription::query()
-                        ->whereIn('module_id', function (Builder $query) use ($module): void {
-                            $query->select('id')
-                                ->from('modules')
-                                ->where('system_id', $module->system_id)
-                                ->where('is_core', true);
-                        })
+                        ->where('module_id', $coreModule->id)
                         ->where('user_id', $user->id)
                         ->exists();
 
@@ -59,6 +52,18 @@ final class SubscribeToModule
                             'module_id' => ['You must subscribe to a core module before subscribing to an expansion.'],
                         ]);
                     }
+                }
+            } elseif ($structure === SystemStructure::CorePlusOne) {
+                $coreModule = Module::query()
+                    ->where('system_id', $module->system_id)
+                    ->where('is_core', true)
+                    ->first();
+
+                if ($coreModule !== null) {
+                    Subscription::query()->firstOrCreate([
+                        'user_id' => $user->id,
+                        'module_id' => $coreModule->id,
+                    ]);
                 }
             }
         }

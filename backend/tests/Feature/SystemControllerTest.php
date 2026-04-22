@@ -71,8 +71,7 @@ test('store creates a system', function (): void {
         'config' => [
             'toc_depth' => 3,
             'sort_rules_by' => 'number',
-            'require_core_subscription' => false,
-            'allow_concurrent_expansions' => false,
+            'system_structure' => 'grouping_only',
         ],
     ];
 
@@ -116,8 +115,7 @@ test('store allows any authenticated user to create a system', function (): void
         'config' => [
             'toc_depth' => 1,
             'sort_rules_by' => 'number',
-            'require_core_subscription' => false,
-            'allow_concurrent_expansions' => false,
+            'system_structure' => 'grouping_only',
         ],
     ])->assertCreated();
 });
@@ -272,8 +270,7 @@ test('store accepts sort_rules_by in config', function (): void {
         'config' => [
             'toc_depth' => 1,
             'sort_rules_by' => 'number',
-            'require_core_subscription' => false,
-            'allow_concurrent_expansions' => false,
+            'system_structure' => 'grouping_only',
         ],
     ])->assertCreated();
 
@@ -290,8 +287,7 @@ test('store rejects invalid sort_rules_by value', function (): void {
         'config' => [
             'toc_depth' => 1,
             'sort_rules_by' => 'invalid',
-            'require_core_subscription' => false,
-            'allow_concurrent_expansions' => false,
+            'system_structure' => 'grouping_only',
         ],
     ])->assertUnprocessable()
         ->assertJsonValidationErrors(['config.sort_rules_by']);
@@ -325,7 +321,7 @@ test('update ignores invalid sort_rules_by — it is not validated', function ()
         ->assertJsonPath('data.config.sort_rules_by', 'number');
 });
 
-test('store accepts require_core_subscription in config', function (): void {
+test('store accepts system_structure in config', function (): void {
     $user = User::factory()->superAdmin()->create();
     actingAs($user);
 
@@ -336,15 +332,14 @@ test('store accepts require_core_subscription in config', function (): void {
         'config' => [
             'toc_depth' => 1,
             'sort_rules_by' => 'number',
-            'require_core_subscription' => true,
-            'allow_concurrent_expansions' => false,
+            'system_structure' => 'core_plus_many',
         ],
     ])->assertCreated();
 
-    expect($response->json('data.config.require_core_subscription'))->toBeTrue();
+    expect($response->json('data.config.system_structure'))->toBe('core_plus_many');
 });
 
-test('store accepts allow_concurrent_expansions when require_core_subscription is true', function (): void {
+test('store accepts core_plus_many structure', function (): void {
     $user = User::factory()->superAdmin()->create();
     actingAs($user);
 
@@ -355,55 +350,40 @@ test('store accepts allow_concurrent_expansions when require_core_subscription i
         'config' => [
             'toc_depth' => 1,
             'sort_rules_by' => 'number',
-            'require_core_subscription' => true,
-            'allow_concurrent_expansions' => true,
+            'system_structure' => 'core_plus_many',
         ],
     ])->assertCreated();
 
-    expect($response->json('data.config.allow_concurrent_expansions'))->toBeTrue();
+    expect($response->json('data.config.system_structure'))->toBe('core_plus_many');
 });
 
-test('store rejects allow_concurrent_expansions when require_core_subscription is false', function (): void {
+test('store rejects invalid system_structure', function (): void {
     $user = User::factory()->superAdmin()->create();
     actingAs($user);
 
     postJson('/api/systems', [
         'slug' => 'bad',
         'name' => 'Bad',
+        'description' => '',
         'config' => [
             'toc_depth' => 1,
             'sort_rules_by' => 'number',
-            'require_core_subscription' => false,
-            'allow_concurrent_expansions' => true,
+            'system_structure' => 'invalid',
         ],
     ])->assertUnprocessable()
-        ->assertJsonValidationErrors(['config.allow_concurrent_expansions']);
+        ->assertJsonValidationErrors(['config.system_structure']);
 });
 
-test('update ignores require_core_subscription — it is immutable', function (): void {
+test('update ignores system_structure — it is immutable', function (): void {
     $user = User::factory()->superAdmin()->create();
-    $system = System::factory()->create(['config' => ['require_core_subscription' => false]]);
+    $system = System::factory()->create(['config' => ['system_structure' => 'grouping_only']]);
     actingAs($user);
 
     patchJson('/api/systems/'.$system->id, [
         'slug' => $system->slug,
         'name' => $system->name,
         'description' => $system->description,
-        'config' => ['require_core_subscription' => true],
+        'config' => ['system_structure' => 'core_plus_many'],
     ])->assertSuccessful()
-        ->assertJsonPath('data.config.require_core_subscription', false);
-});
-
-test('update ignores allow_concurrent_expansions — it is immutable', function (): void {
-    $user = User::factory()->superAdmin()->create();
-    $system = System::factory()->create(['config' => ['allow_concurrent_expansions' => false]]);
-    actingAs($user);
-
-    patchJson('/api/systems/'.$system->id, [
-        'slug' => $system->slug,
-        'name' => $system->name,
-        'description' => $system->description,
-        'config' => ['allow_concurrent_expansions' => true],
-    ])->assertSuccessful()
-        ->assertJsonPath('data.config.allow_concurrent_expansions', false);
+        ->assertJsonPath('data.config.system_structure', 'grouping_only');
 });

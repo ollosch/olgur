@@ -23,7 +23,7 @@ final class SystemResource extends JsonResource
             'slug' => $this->slug,
             'name' => $this->name,
             'description' => $this->description,
-            'config' => $this->config,
+            'config' => $this->config?->toArray(),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

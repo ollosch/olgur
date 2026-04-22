@@ -6,7 +6,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Validator;
+use Illuminate\Validation\Rule;
 
 final class StoreSystemRequest extends FormRequest
 {
@@ -33,28 +33,7 @@ final class StoreSystemRequest extends FormRequest
             'config.toc_depth' => ['required', 'integer', 'min:1'],
             'config.cover_image' => ['nullable', 'string', 'url'],
             'config.sort_rules_by' => ['required', 'string', 'in:number,sort_order'],
-            'config.require_core_subscription' => ['required', 'boolean'],
-            'config.allow_concurrent_expansions' => ['required', 'boolean'],
-        ];
-    }
-
-    /**
-     * @return array<int, callable>
-     */
-    public function after(): array
-    {
-        return [
-            function (Validator $validator): void {
-                $rc = $this->boolean('config.require_core_subscription');
-                $ce = $this->boolean('config.allow_concurrent_expansions');
-
-                if (! $rc && $ce) {
-                    $validator->errors()->add(
-                        'config.allow_concurrent_expansions',
-                        'Concurrent expansions cannot be enabled when require_core_subscription is false.'
-                    );
-                }
-            },
+            'config.system_structure' => ['required', 'string', Rule::in(['core_plus_one', 'core_plus_many', 'grouping_only'])],
         ];
     }
 }

@@ -57,8 +57,7 @@ final class UpdateRuleRequest extends FormRequest
                 /** @var System $system */
                 $system = $this->route('system');
 
-                $enforceSystemWide = $module->is_core
-                    || ($system->config['allow_concurrent_expansions'] ?? false);
+                $enforceSystemWide = $system->config?->enforceSystemWideRuleNumbers($module->is_core) ?? $module->is_core;
 
                 if (! $enforceSystemWide) {
                     return;

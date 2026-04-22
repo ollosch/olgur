@@ -162,7 +162,7 @@ test('store rejects cross-module duplicate for core module', function (): void {
 
 test('store rejects cross-module duplicate when allow_concurrent_expansions is true', function (): void {
     $user = User::factory()->superAdmin()->create();
-    $system = System::factory()->create(['config' => ['require_core_subscription' => true, 'allow_concurrent_expansions' => true]]);
+    $system = System::factory()->create(['config' => ['system_structure' => 'core_plus_many']]);
     $moduleA = Module::factory()->for($system)->create(['is_core' => false]);
     $moduleB = Module::factory()->for($system)->create(['is_core' => false]);
     Rule::factory()->for($moduleA)->create(['number' => 'A1.1']);
@@ -176,7 +176,7 @@ test('store rejects cross-module duplicate when allow_concurrent_expansions is t
 
 test('store accepts cross-module duplicate for non-core module when allow_concurrent_expansions is false', function (): void {
     $user = User::factory()->superAdmin()->create();
-    $system = System::factory()->create(['config' => ['allow_concurrent_expansions' => false]]);
+    $system = System::factory()->create(['config' => ['system_structure' => 'grouping_only']]);
     $moduleA = Module::factory()->for($system)->create(['is_core' => false]);
     $moduleB = Module::factory()->for($system)->create(['is_core' => false]);
     Rule::factory()->for($moduleA)->create(['number' => 'A1.1']);
@@ -294,7 +294,7 @@ test('update rejects cross-module duplicate for core module', function (): void 
 
 test('update rejects cross-module duplicate when allow_concurrent_expansions is true', function (): void {
     $user = User::factory()->superAdmin()->create();
-    $system = System::factory()->create(['config' => ['require_core_subscription' => true, 'allow_concurrent_expansions' => true]]);
+    $system = System::factory()->create(['config' => ['system_structure' => 'core_plus_many']]);
     $moduleA = Module::factory()->for($system)->create(['is_core' => false]);
     $moduleB = Module::factory()->for($system)->create(['is_core' => false]);
     Rule::factory()->for($moduleA)->create(['number' => 'A1.1']);
@@ -309,7 +309,7 @@ test('update rejects cross-module duplicate when allow_concurrent_expansions is 
 
 test('update allows cross-module duplicate for non-core module when allow_concurrent_expansions is false', function (): void {
     $user = User::factory()->superAdmin()->create();
-    $system = System::factory()->create(['config' => ['allow_concurrent_expansions' => false]]);
+    $system = System::factory()->create(['config' => ['system_structure' => 'grouping_only']]);
     $moduleA = Module::factory()->for($system)->create(['is_core' => false]);
     $moduleB = Module::factory()->for($system)->create(['is_core' => false]);
     Rule::factory()->for($moduleA)->create(['number' => 'A1.1']);

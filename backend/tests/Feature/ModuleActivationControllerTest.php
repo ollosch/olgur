@@ -56,7 +56,7 @@ test('user cannot activate a core module', function (): void {
 
 test('activating an already active module is idempotent', function (): void {
     $user = User::factory()->create();
-    $system = System::factory()->allowConcurrentExpansions()->create();
+    $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
     Membership::factory()->for($user)->for($system)->create();
     Subscription::factory()->for($user)->for($module)->create();
@@ -155,32 +155,11 @@ test('non-member cannot deactivate a module', function (): void {
         ->assertForbidden();
 });
 
-// ── allow_concurrent_expansions ──────────────────────────────────────────────
+// ── always appends to active_module_ids ──────────────────────────────────────
 
-test('activating deactivates other expansions when allow_concurrent_expansions is false', function (): void {
+test('activating always appends to active_module_ids without clearing others', function (): void {
     $user = User::factory()->create();
-    $system = System::factory()->create(); // default: allow_concurrent_expansions = false
-    $moduleA = Module::factory()->for($system)->create();
-    $moduleB = Module::factory()->for($system)->create();
-    Membership::factory()->for($user)->for($system)->create();
-    Subscription::factory()->for($user)->for($moduleA)->create();
-    Subscription::factory()->for($user)->for($moduleB)->create();
-    actingAs($user);
-
-    postJson('/api/systems/'.$system->id.'/modules/'.$moduleA->id.'/activate')->assertSuccessful();
-
-    $response = postJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/activate')
-        ->assertSuccessful();
-
-    $activeIds = $response->json('data.active_module_ids');
-    expect($activeIds)
-        ->not->toContain($moduleA->id)
-        ->toContain($moduleB->id);
-});
-
-test('activating does not deactivate others when allow_concurrent_expansions is true', function (): void {
-    $user = User::factory()->create();
-    $system = System::factory()->allowConcurrentExpansions()->create();
+    $system = System::factory()->create();
     $moduleA = Module::factory()->for($system)->create();
     $moduleB = Module::factory()->for($system)->create();
     Membership::factory()->for($user)->for($system)->create();

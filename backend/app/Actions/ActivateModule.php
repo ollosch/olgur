@@ -17,8 +17,7 @@ final class ActivateModule
      * Enforces:
      * - Module must not be a core module (core modules are always active).
      * - User must be subscribed to the module.
-     * - If allow_concurrent_expansions is false (default), deactivates all other active
-     *   expansion modules in the system before activating this one.
+     * - Always appends to active_module_ids (never clears others first).
      *
      * @throws ValidationException when the module is core or the user is not subscribed
      */
@@ -37,13 +36,6 @@ final class ActivateModule
 
         /** @var array<int, string> $activeIds */
         $activeIds = ($membership->config ?? [])['active_module_ids'] ?? [];
-
-        $systemConfig = $module->system->config ?? [];
-        $allowConcurrent = ($systemConfig['allow_concurrent_expansions'] ?? false) === true;
-
-        if (! $allowConcurrent) {
-            $activeIds = [];
-        }
 
         if (! in_array($module->id, $activeIds, strict: true)) {
             $activeIds[] = $module->id;
