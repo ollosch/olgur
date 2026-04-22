@@ -32,10 +32,7 @@ final class UpdateSystemRequest extends FormRequest
             'config' => ['sometimes', 'nullable', 'array'],
             'config.toc_depth' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'config.cover_image' => ['sometimes', 'nullable', 'string', 'url'],
-            'config.enforce_system_unique_rule_numbers' => ['sometimes', 'nullable', 'boolean'],
             'config.sort_rules_by' => ['sometimes', 'string', 'in:number,sort_order'],
-            'config.require_core_subscription' => ['sometimes', 'nullable', 'boolean'],
-            'config.allow_concurrent_expansions' => ['sometimes', 'nullable', 'boolean'],
         ];
     }
 }

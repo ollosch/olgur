@@ -48,16 +48,18 @@ final class StoreRuleRequest extends FormRequest
     {
         return [
             function (Validator $validator): void {
-                /** @var System $system */
-                $system = $this->route('system');
-                $enforce = $system->config['enforce_system_unique_rule_numbers'] ?? false;
-
-                if (! $enforce) {
-                    return;
-                }
-
                 /** @var Module $module */
                 $module = $this->route('module');
+
+                /** @var System $system */
+                $system = $this->route('system');
+
+                $enforceSystemWide = $module->is_core
+                    || ($system->config['allow_concurrent_expansions'] ?? false);
+
+                if (! $enforceSystemWide) {
+                    return;
+                }
 
                 $siblingModuleIds = Module::query()
                     ->where('system_id', $system->id)

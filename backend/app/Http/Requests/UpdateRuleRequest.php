@@ -51,35 +51,38 @@ final class UpdateRuleRequest extends FormRequest
     {
         return [
             function (Validator $validator): void {
-                /** @var System $system */
-                $system = $this->route('system');
-                $enforce = $system->config['enforce_system_unique_rule_numbers'] ?? false;
-
-                if (! $enforce) {
+                if (! $this->has('number')) {
                     return;
                 }
 
                 /** @var Module $module */
                 $module = $this->route('module');
 
-                if ($number = $this->input('number')) {
+                /** @var System $system */
+                $system = $this->route('system');
 
-                    $siblingModuleIds = Module::query()
-                        ->where('system_id', $system->id)
-                        ->whereKeyNot($module->id)
-                        ->pluck('id');
+                $enforceSystemWide = $module->is_core
+                    || ($system->config['allow_concurrent_expansions'] ?? false);
 
-                    $exists = RuleModel::query()
-                        ->whereIn('module_id', $siblingModuleIds)
-                        ->where('number', $number)
-                        ->exists();
+                if (! $enforceSystemWide) {
+                    return;
+                }
 
-                    if ($exists) {
-                        $validator->errors()->add(
-                            'number',
-                            'This rule number already exists in another module of this system.'
-                        );
-                    }
+                $siblingModuleIds = Module::query()
+                    ->where('system_id', $system->id)
+                    ->whereKeyNot($module->id)
+                    ->pluck('id');
+
+                $exists = RuleModel::query()
+                    ->whereIn('module_id', $siblingModuleIds)
+                    ->where('number', $this->input('number'))
+                    ->exists();
+
+                if ($exists) {
+                    $validator->errors()->add(
+                        'number',
+                        'This rule number already exists in another module of this system.'
+                    );
                 }
             },
         ];

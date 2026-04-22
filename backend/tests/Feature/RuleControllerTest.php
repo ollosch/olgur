@@ -146,11 +146,25 @@ test('store allows same number in a different module', function (): void {
         ->assertCreated();
 });
 
-test('store rejects cross-module duplicate when enforce_system_unique_rule_numbers is true', function (): void {
+test('store rejects cross-module duplicate for core module', function (): void {
     $user = User::factory()->superAdmin()->create();
-    $system = System::factory()->create(['config' => ['enforce_system_unique_rule_numbers' => true]]);
-    $moduleA = Module::factory()->for($system)->create();
-    $moduleB = Module::factory()->for($system)->create();
+    $system = System::factory()->create();
+    $coreModule = Module::factory()->for($system)->create(['is_core' => true]);
+    $otherModule = Module::factory()->for($system)->create(['is_core' => false]);
+    Rule::factory()->for($otherModule)->create(['number' => 'A1.1']);
+
+    actingAs($user);
+
+    postJson('/api/systems/'.$system->id.'/modules/'.$coreModule->id.'/rules', ['number' => 'A1.1', 'title' => 'Dup'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['number']);
+});
+
+test('store rejects cross-module duplicate when allow_concurrent_expansions is true', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create(['config' => ['require_core_subscription' => true, 'allow_concurrent_expansions' => true]]);
+    $moduleA = Module::factory()->for($system)->create(['is_core' => false]);
+    $moduleB = Module::factory()->for($system)->create(['is_core' => false]);
     Rule::factory()->for($moduleA)->create(['number' => 'A1.1']);
 
     actingAs($user);
@@ -160,11 +174,11 @@ test('store rejects cross-module duplicate when enforce_system_unique_rule_numbe
         ->assertJsonValidationErrors(['number']);
 });
 
-test('store accepts cross-module duplicate when system has no enforce config set (defaults to false)', function (): void {
+test('store accepts cross-module duplicate for non-core module when allow_concurrent_expansions is false', function (): void {
     $user = User::factory()->superAdmin()->create();
-    $system = System::factory()->create(['config' => []]);
-    $moduleA = Module::factory()->for($system)->create();
-    $moduleB = Module::factory()->for($system)->create();
+    $system = System::factory()->create(['config' => ['allow_concurrent_expansions' => false]]);
+    $moduleA = Module::factory()->for($system)->create(['is_core' => false]);
+    $moduleB = Module::factory()->for($system)->create(['is_core' => false]);
     Rule::factory()->for($moduleA)->create(['number' => 'A1.1']);
 
     actingAs($user);
@@ -255,11 +269,26 @@ test('update modifies a rule', function (): void {
     assertDatabaseHas('rules', ['id' => $rule->id, 'title' => 'Updated Title']);
 });
 
-test('update rejects cross-module duplicate when enforce_system_unique_rule_numbers is true', function (): void {
+test('update rejects cross-module duplicate for core module', function (): void {
     $user = User::factory()->superAdmin()->create();
-    $system = System::factory()->create(['config' => ['enforce_system_unique_rule_numbers' => true]]);
-    $moduleA = Module::factory()->for($system)->create();
-    $moduleB = Module::factory()->for($system)->create();
+    $system = System::factory()->create();
+    $coreModule = Module::factory()->for($system)->create(['is_core' => true]);
+    $otherModule = Module::factory()->for($system)->create(['is_core' => false]);
+    Rule::factory()->for($otherModule)->create(['number' => 'A1.1']);
+    $coreRule = Rule::factory()->for($coreModule)->create(['number' => 'B1.1']);
+
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id.'/modules/'.$coreModule->id.'/rules/'.$coreRule->id, ['number' => 'A1.1'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['number']);
+});
+
+test('update rejects cross-module duplicate when allow_concurrent_expansions is true', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create(['config' => ['require_core_subscription' => true, 'allow_concurrent_expansions' => true]]);
+    $moduleA = Module::factory()->for($system)->create(['is_core' => false]);
+    $moduleB = Module::factory()->for($system)->create(['is_core' => false]);
     Rule::factory()->for($moduleA)->create(['number' => 'A1.1']);
     $ruleB = Rule::factory()->for($moduleB)->create(['number' => 'B1.1']);
 
@@ -270,11 +299,11 @@ test('update rejects cross-module duplicate when enforce_system_unique_rule_numb
         ->assertJsonValidationErrors(['number']);
 });
 
-test('update allows cross-module duplicate when enforce_system_unique_rule_numbers is false', function (): void {
+test('update allows cross-module duplicate for non-core module when allow_concurrent_expansions is false', function (): void {
     $user = User::factory()->superAdmin()->create();
-    $system = System::factory()->create(['config' => ['enforce_system_unique_rule_numbers' => false]]);
-    $moduleA = Module::factory()->for($system)->create();
-    $moduleB = Module::factory()->for($system)->create();
+    $system = System::factory()->create(['config' => ['allow_concurrent_expansions' => false]]);
+    $moduleA = Module::factory()->for($system)->create(['is_core' => false]);
+    $moduleB = Module::factory()->for($system)->create(['is_core' => false]);
     Rule::factory()->for($moduleA)->create(['number' => 'A1.1']);
     $ruleB = Rule::factory()->for($moduleB)->create(['number' => 'B1.1']);
 
