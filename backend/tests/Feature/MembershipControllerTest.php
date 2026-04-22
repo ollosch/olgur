@@ -156,15 +156,14 @@ test('regular user cannot add another user to the system', function (): void {
         ->assertForbidden();
 });
 
-test('store returns 422 when user is already a member', function (): void {
+test('store returns 409 when user is already a member', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->create();
     Membership::factory()->for($user)->for($system)->create();
     actingAs($user);
 
-    postJson('/api/systems/'.$system->id.'/memberships')
-        ->assertUnprocessable()
-        ->assertJsonValidationErrors(['user_id']);
+    postJson('/api/systems/'.$system->id.'/memberships', ['config' => []])
+        ->assertConflict();
 });
 
 test('store rejects nonexistent user_id', function (): void {
@@ -177,16 +176,15 @@ test('store rejects nonexistent user_id', function (): void {
         ->assertJsonValidationErrors(['user_id']);
 });
 
-test('store rejects duplicate user_id when provided', function (): void {
+test('store returns 409 when duplicate user_id is provided', function (): void {
     $admin = User::factory()->superAdmin()->create();
     $system = System::factory()->create();
     $user = User::factory()->create();
     Membership::factory()->for($user)->for($system)->create();
     actingAs($admin);
 
-    postJson('/api/systems/'.$system->id.'/memberships', ['user_id' => $user->id])
-        ->assertUnprocessable()
-        ->assertJsonValidationErrors(['user_id']);
+    postJson('/api/systems/'.$system->id.'/memberships', ['user_id' => $user->id, 'config' => []])
+        ->assertConflict();
 });
 
 test('store returns 404 for unknown system', function (): void {

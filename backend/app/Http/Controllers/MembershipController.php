@@ -45,6 +45,12 @@ final class MembershipController
             unset($validated['admin']);
         }
 
+        abort_if(
+            $system->memberships()->where('user_id', $member->id)->exists(),
+            409,
+            'The user is already a member of this system.',
+        );
+
         Gate::authorize('create', [Membership::class, $system, $member]);
 
         abort_if($system->isMember($member), 409, 'Already a member.');

@@ -63,6 +63,12 @@ final class SubscriptionController
             ? User::query()->findOrFail($validated['user_id'])
             : $request->user();
 
+        abort_if(
+            $module->subscriptions()->where('user_id', $subscriber->id)->exists(),
+            409,
+            'The user is already subscribed to this module.',
+        );
+
         Gate::authorize('create', [Subscription::class, $system, $subscriber]);
 
         $subscription = $subscribeToModule->execute($subscriber, $module);

@@ -230,16 +230,15 @@ test('subscribing when already a member does not create a duplicate', function (
     )->toBe(1);
 });
 
-test('subscribing twice returns the existing subscription', function (): void {
+test('subscribing twice returns 409', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->core()->create();
     $existing = Subscription::factory()->for($user)->for($module)->create();
     actingAs($user);
 
-    $response = postJson(subscriptionUrl($system, $module))->assertSuccessful();
-
-    $response->assertJsonPath('data.id', $existing->id);
+    postJson(subscriptionUrl($system, $module))
+        ->assertConflict();
 });
 
 test('store returns 404 for unknown system', function (): void {
