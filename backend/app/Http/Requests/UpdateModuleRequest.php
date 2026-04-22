@@ -34,7 +34,6 @@ final class UpdateModuleRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'description' => ['present', 'string'],
             'config' => ['present', 'array'],
-            'is_core' => ['required', 'boolean'],
             'sort_order' => ['required', 'integer', 'min:0', 'max:65535'],
         ];
     }
