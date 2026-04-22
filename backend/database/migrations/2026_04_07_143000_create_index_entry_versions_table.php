@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -19,7 +20,11 @@ return new class extends Migration
             $table->foreignUlid('module_version_id')->constrained()->cascadeOnDelete();
             $table->ulid('parent_id')->nullable()->index();
 
-            $table->string('term');
+            $col = $table->string('term');
+            if (DB::getDriverName() !== 'sqlite') {
+                $col->collation('utf8mb4_bin');
+            }
+
             $table->text('definition')->nullable();
             $table->text('notes')->nullable();
             $table->json('relations')->nullable();

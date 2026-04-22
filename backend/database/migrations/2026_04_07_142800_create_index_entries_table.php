@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -18,7 +19,12 @@ return new class extends Migration
             $table->foreignUlid('module_id')->constrained()->cascadeOnDelete();
             $table->ulid('parent_id')->nullable()->index();
 
-            $table->string('term');
+            // utf8mb4_bin = case-sensitive on MariaDB/MySQL; SQLite is already case-sensitive
+            $col = $table->string('term');
+            if (DB::getDriverName() !== 'sqlite') {
+                $col->collation('utf8mb4_bin');
+            }
+
             $table->text('definition')->default('');
             $table->text('notes')->default('');
             $table->json('relations')->default('{}');
