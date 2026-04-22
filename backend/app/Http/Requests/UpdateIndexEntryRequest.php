@@ -35,7 +35,7 @@ final class UpdateIndexEntryRequest extends FormRequest
 
         return [
             'parent_id' => ['sometimes', 'nullable', 'string', Rule::exists('index_entries', 'id')->where('module_id', $module->id)],
-            'term' => ['required', 'string', Rule::unique('index_entries', 'term')->where('module_id', $module->id)->ignore($indexEntry)],
+            'term' => ['sometimes', 'string', Rule::unique('index_entries', 'term')->where('module_id', $module->id)->ignore($indexEntry)],
             'definition' => ['sometimes', 'nullable', 'string'],
             'notes' => ['sometimes', 'nullable', 'string'],
             'relations.rule_refs' => ['nullable', 'array'],
