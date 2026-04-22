@@ -68,7 +68,12 @@ test('store creates a system', function (): void {
         'slug' => 'asl',
         'name' => 'Advanced Squad Leader',
         'description' => 'A tactical wargame.',
-        'config' => ['toc_depth' => 3],
+        'config' => [
+            'toc_depth' => 3,
+            'sort_rules_by' => 'number',
+            'require_core_subscription' => false,
+            'allow_concurrent_expansions' => false,
+        ],
     ];
 
     $response = postJson('/api/systems', $payload)
@@ -104,8 +109,17 @@ test('store allows any authenticated user to create a system', function (): void
     $user = User::factory()->create();
     actingAs($user);
 
-    postJson('/api/systems', ['slug' => 'asl', 'name' => 'ASL'])
-        ->assertCreated();
+    postJson('/api/systems', [
+        'slug' => 'asl',
+        'name' => 'ASL',
+        'description' => '',
+        'config' => [
+            'toc_depth' => 1,
+            'sort_rules_by' => 'number',
+            'require_core_subscription' => false,
+            'allow_concurrent_expansions' => false,
+        ],
+    ])->assertCreated();
 });
 
 // ── show ─────────────────────────────────────────────────────────────────────
@@ -136,7 +150,12 @@ test('update modifies a system', function (): void {
     $system = System::factory()->create();
     actingAs($user);
 
-    patchJson('/api/systems/'.$system->id, ['name' => 'Updated Name'])
+    patchJson('/api/systems/'.$system->id, [
+        'slug' => $system->slug,
+        'name' => 'Updated Name',
+        'description' => $system->description,
+        'config' => $system->config ?? [],
+    ])
         ->assertSuccessful()
         ->assertJsonPath('data.name', 'Updated Name');
 
@@ -159,7 +178,12 @@ test('update allows same slug on same system', function (): void {
     $system = System::factory()->create(['slug' => 'mine']);
     actingAs($user);
 
-    patchJson('/api/systems/'.$system->id, ['slug' => 'mine'])
+    patchJson('/api/systems/'.$system->id, [
+        'slug' => 'mine',
+        'name' => $system->name,
+        'description' => $system->description,
+        'config' => $system->config ?? [],
+    ])
         ->assertSuccessful();
 });
 
@@ -168,7 +192,12 @@ test('update is forbidden for non-super-admin', function (): void {
     $system = System::factory()->create();
     actingAs($user);
 
-    patchJson('/api/systems/'.$system->id, ['name' => 'Hacked'])
+    patchJson('/api/systems/'.$system->id, [
+        'slug' => $system->slug,
+        'name' => 'Hacked',
+        'description' => $system->description,
+        'config' => $system->config ?? [],
+    ])
         ->assertForbidden();
 });
 
@@ -178,7 +207,12 @@ test('system admin can update their system', function (): void {
     Membership::factory()->for($admin)->for($system)->admin()->create();
     actingAs($admin);
 
-    patchJson('/api/systems/'.$system->id, ['name' => 'Admin Updated'])
+    patchJson('/api/systems/'.$system->id, [
+        'slug' => $system->slug,
+        'name' => 'Admin Updated',
+        'description' => $system->description,
+        'config' => $system->config ?? [],
+    ])
         ->assertOk()
         ->assertJsonPath('data.name', 'Admin Updated');
 });
@@ -234,7 +268,13 @@ test('store accepts sort_rules_by in config', function (): void {
     $response = postJson('/api/systems', [
         'slug' => 'asl',
         'name' => 'ASL',
-        'config' => ['sort_rules_by' => 'number'],
+        'description' => '',
+        'config' => [
+            'toc_depth' => 1,
+            'sort_rules_by' => 'number',
+            'require_core_subscription' => false,
+            'allow_concurrent_expansions' => false,
+        ],
     ])->assertCreated();
 
     expect($response->json('data.config.sort_rules_by'))->toBe('number');
@@ -247,31 +287,42 @@ test('store rejects invalid sort_rules_by value', function (): void {
     postJson('/api/systems', [
         'slug' => 'asl',
         'name' => 'ASL',
-        'config' => ['sort_rules_by' => 'invalid'],
+        'config' => [
+            'toc_depth' => 1,
+            'sort_rules_by' => 'invalid',
+            'require_core_subscription' => false,
+            'allow_concurrent_expansions' => false,
+        ],
     ])->assertUnprocessable()
         ->assertJsonValidationErrors(['config.sort_rules_by']);
 });
 
-test('update accepts sort_rules_by in config', function (): void {
+test('update ignores sort_rules_by — it is immutable', function (): void {
     $user = User::factory()->superAdmin()->create();
-    $system = System::factory()->create();
+    $system = System::factory()->create(['config' => ['sort_rules_by' => 'number']]);
     actingAs($user);
 
     patchJson('/api/systems/'.$system->id, [
+        'slug' => $system->slug,
+        'name' => $system->name,
+        'description' => $system->description,
         'config' => ['sort_rules_by' => 'sort_order'],
     ])->assertSuccessful()
-        ->assertJsonPath('data.config.sort_rules_by', 'sort_order');
+        ->assertJsonPath('data.config.sort_rules_by', 'number');
 });
 
-test('update rejects invalid sort_rules_by value', function (): void {
+test('update ignores invalid sort_rules_by — it is not validated', function (): void {
     $user = User::factory()->superAdmin()->create();
-    $system = System::factory()->create();
+    $system = System::factory()->create(['config' => ['sort_rules_by' => 'number']]);
     actingAs($user);
 
     patchJson('/api/systems/'.$system->id, [
+        'slug' => $system->slug,
+        'name' => $system->name,
+        'description' => $system->description,
         'config' => ['sort_rules_by' => 'bad'],
-    ])->assertUnprocessable()
-        ->assertJsonValidationErrors(['config.sort_rules_by']);
+    ])->assertSuccessful()
+        ->assertJsonPath('data.config.sort_rules_by', 'number');
 });
 
 test('store accepts require_core_subscription in config', function (): void {
@@ -281,7 +332,13 @@ test('store accepts require_core_subscription in config', function (): void {
     $response = postJson('/api/systems', [
         'slug' => 'rcs',
         'name' => 'RCS',
-        'config' => ['require_core_subscription' => true],
+        'description' => '',
+        'config' => [
+            'toc_depth' => 1,
+            'sort_rules_by' => 'number',
+            'require_core_subscription' => true,
+            'allow_concurrent_expansions' => false,
+        ],
     ])->assertCreated();
 
     expect($response->json('data.config.require_core_subscription'))->toBeTrue();
@@ -294,7 +351,13 @@ test('store accepts allow_concurrent_expansions when require_core_subscription i
     $response = postJson('/api/systems', [
         'slug' => 'ace',
         'name' => 'ACE',
-        'config' => ['require_core_subscription' => true, 'allow_concurrent_expansions' => true],
+        'description' => '',
+        'config' => [
+            'toc_depth' => 1,
+            'sort_rules_by' => 'number',
+            'require_core_subscription' => true,
+            'allow_concurrent_expansions' => true,
+        ],
     ])->assertCreated();
 
     expect($response->json('data.config.allow_concurrent_expansions'))->toBeTrue();
@@ -307,7 +370,12 @@ test('store rejects allow_concurrent_expansions when require_core_subscription i
     postJson('/api/systems', [
         'slug' => 'bad',
         'name' => 'Bad',
-        'config' => ['require_core_subscription' => false, 'allow_concurrent_expansions' => true],
+        'config' => [
+            'toc_depth' => 1,
+            'sort_rules_by' => 'number',
+            'require_core_subscription' => false,
+            'allow_concurrent_expansions' => true,
+        ],
     ])->assertUnprocessable()
         ->assertJsonValidationErrors(['config.allow_concurrent_expansions']);
 });
@@ -318,6 +386,9 @@ test('update ignores require_core_subscription — it is immutable', function ()
     actingAs($user);
 
     patchJson('/api/systems/'.$system->id, [
+        'slug' => $system->slug,
+        'name' => $system->name,
+        'description' => $system->description,
         'config' => ['require_core_subscription' => true],
     ])->assertSuccessful()
         ->assertJsonPath('data.config.require_core_subscription', false);
@@ -329,6 +400,9 @@ test('update ignores allow_concurrent_expansions — it is immutable', function 
     actingAs($user);
 
     patchJson('/api/systems/'.$system->id, [
+        'slug' => $system->slug,
+        'name' => $system->name,
+        'description' => $system->description,
         'config' => ['allow_concurrent_expansions' => true],
     ])->assertSuccessful()
         ->assertJsonPath('data.config.allow_concurrent_expansions', false);

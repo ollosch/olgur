@@ -89,7 +89,7 @@ test('user can join a system themselves', function (): void {
     $system = System::factory()->create();
     actingAs($user);
 
-    $response = postJson('/api/systems/'.$system->id.'/memberships')
+    $response = postJson('/api/systems/'.$system->id.'/memberships', ['config' => []])
         ->assertCreated();
 
     $response->assertJsonPath('data.user_id', $user->id);
@@ -107,6 +107,7 @@ test('regular user cannot self-promote to admin', function (): void {
     $response = postJson('/api/systems/'.$system->id.'/memberships', [
         'user_id' => $user->id,
         'admin' => true,
+        'config' => [],
     ])->assertCreated();
 
     $response->assertJsonPath('data.admin', false);
@@ -122,6 +123,7 @@ test('system admin can add another user to the system', function (): void {
 
     $response = postJson('/api/systems/'.$system->id.'/memberships', [
         'user_id' => $user->id,
+        'config' => [],
     ])->assertCreated();
 
     $response->assertJsonPath('data.user_id', $user->id);
@@ -138,6 +140,7 @@ test('system admin can add another user as admin', function (): void {
     $response = postJson('/api/systems/'.$system->id.'/memberships', [
         'user_id' => $user->id,
         'admin' => true,
+        'config' => [],
     ])->assertCreated();
 
     $response->assertJsonPath('data.admin', true);
@@ -149,18 +152,19 @@ test('regular user cannot add another user to the system', function (): void {
     $other = User::factory()->create();
     actingAs($user);
 
-    postJson('/api/systems/'.$system->id.'/memberships', ['user_id' => $other->id])
+    postJson('/api/systems/'.$system->id.'/memberships', ['user_id' => $other->id, 'config' => []])
         ->assertForbidden();
 });
 
-test('store returns 409 when user is already a member', function (): void {
+test('store returns 422 when user is already a member', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->create();
     Membership::factory()->for($user)->for($system)->create();
     actingAs($user);
 
     postJson('/api/systems/'.$system->id.'/memberships')
-        ->assertStatus(409);
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['user_id']);
 });
 
 test('store rejects nonexistent user_id', function (): void {
@@ -200,7 +204,7 @@ test('system admin can promote a member to admin', function (): void {
     $membership = Membership::factory()->for($system)->create(['admin' => false]);
     actingAs($admin);
 
-    $response = patchJson('/api/systems/'.$system->id.'/memberships/'.$membership->id, ['admin' => true])
+    $response = patchJson('/api/systems/'.$system->id.'/memberships/'.$membership->id, ['admin' => true, 'config' => []])
         ->assertSuccessful();
 
     $response->assertJsonPath('data.admin', true);
@@ -225,7 +229,7 @@ test('update is forbidden for non-admin members', function (): void {
     $membership = Membership::factory()->for($system)->create();
     actingAs($member);
 
-    patchJson('/api/systems/'.$system->id.'/memberships/'.$membership->id, ['admin' => true])
+    patchJson('/api/systems/'.$system->id.'/memberships/'.$membership->id, ['admin' => true, 'config' => []])
         ->assertForbidden();
 });
 

@@ -29,7 +29,7 @@ final class ModuleFactory extends Factory
             'slug' => Str::slug($name),
             'name' => Str::title($name),
             'description' => fake()->sentence(),
-            'config' => null,
+            'config' => [],
             'is_core' => false,
             'sort_order' => fake()->numberBetween(0, 100),
         ];

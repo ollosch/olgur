@@ -25,8 +25,8 @@ final class IndexEntryFactory extends Factory
             'parent_id' => null,
             'term' => fake()->unique()->word(),
             'definition' => fake()->sentence(),
-            'notes' => null,
-            'relations' => null,
+            'notes' => '',
+            'relations' => [],
         ];
     }
 }

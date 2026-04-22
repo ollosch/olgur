@@ -13,7 +13,7 @@ test('an index entry can be created with factory defaults', function (): void {
         ->and($entry->parent_id)->toBeNull()
         ->and($entry->term)->toBeString()
         ->and($entry->definition)->toBeString()
-        ->and($entry->relations)->toBeNull();
+        ->and($entry->relations)->toBeArray();
 });
 
 test('index entry uses ulid primary key', function (): void {

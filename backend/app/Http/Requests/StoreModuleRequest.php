@@ -32,10 +32,10 @@ final class StoreModuleRequest extends FormRequest
         return [
             'slug' => ['required', 'string', 'max:255', 'alpha_dash', Rule::unique('modules', 'slug')->where('system_id', $system->id)],
             'name' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'config' => ['nullable', 'array'],
-            'is_core' => ['nullable', 'boolean'],
-            'sort_order' => ['nullable', 'integer', 'min:0', 'max:65535'],
+            'description' => ['present', 'string'],
+            'config' => ['present', 'array'],
+            'is_core' => ['required', 'boolean'],
+            'sort_order' => ['required', 'integer', 'min:0', 'max:65535'],
         ];
     }
 }

@@ -19,9 +19,9 @@ return new class extends Migration
             $table->ulid('parent_id')->nullable()->index();
 
             $table->string('term');
-            $table->text('definition')->nullable();
-            $table->text('notes')->nullable();
-            $table->json('relations')->nullable();
+            $table->text('definition')->default('');
+            $table->text('notes')->default('');
+            $table->json('relations')->default('{}');
             $table->timestamps();
 
             $table->unique(['module_id', 'term']);

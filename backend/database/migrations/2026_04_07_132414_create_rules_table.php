@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('number');
             $table->integer('sort_order')->default(0);
             $table->string('title');
-            $table->text('content')->nullable();
+            $table->text('content')->default('');
             $table->timestamps();
 
             $table->unique(['number', 'module_id']);

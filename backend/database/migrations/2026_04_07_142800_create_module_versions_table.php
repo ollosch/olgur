@@ -19,7 +19,7 @@ return new class extends Migration
             $table->foreignUlid('released_by')->nullable()->constrained('users')->nullOnDelete();
 
             $table->string('version_string');
-            $table->text('notes')->nullable();
+            $table->text('notes')->default('');
             $table->timestamp('released_at')->nullable();
             $table->timestamps();
 

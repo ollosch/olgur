@@ -26,13 +26,11 @@ final class UpdateSystemRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'slug' => ['sometimes', 'string', 'max:255', Rule::unique('systems', 'slug')->ignore($this->route('system')), 'alpha_dash'],
-            'name' => ['sometimes', 'string', 'max:255'],
-            'description' => ['sometimes', 'nullable', 'string'],
-            'config' => ['sometimes', 'nullable', 'array'],
-            'config.toc_depth' => ['sometimes', 'nullable', 'integer', 'min:1'],
-            'config.cover_image' => ['sometimes', 'nullable', 'string', 'url'],
-            'config.sort_rules_by' => ['sometimes', 'string', 'in:number,sort_order'],
+            'slug' => ['required', 'string', 'max:255', Rule::unique('systems', 'slug')->ignore($this->route('system')), 'alpha_dash'],
+            'name' => ['required', 'string', 'max:255'],
+            'description' => ['present', 'string'],
+            'config' => ['present', 'array'],
+            'config.cover_image' => ['nullable', 'string', 'url'],
         ];
     }
 }

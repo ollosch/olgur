@@ -34,7 +34,7 @@ final class StoreModuleVersionRequest extends FormRequest
                 'string',
                 Rule::unique('module_versions', 'version_string')->where('module_id', $moduleId),
             ],
-            'notes' => ['nullable', 'string'],
+            'notes' => ['present', 'string'],
         ];
     }
 }

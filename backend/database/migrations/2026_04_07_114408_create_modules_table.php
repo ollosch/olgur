@@ -19,8 +19,8 @@ return new class extends Migration
 
             $table->string('slug');
             $table->string('name');
-            $table->text('description')->nullable();
-            $table->json('config')->nullable();
+            $table->text('description')->default('');
+            $table->json('config')->default('[]');
             $table->boolean('is_core')->default(false);
             $table->unsignedSmallInteger('sort_order')->default(0);
             $table->timestamps();

@@ -39,7 +39,7 @@ test('regular user cannot create a module', function (): void {
     $system = System::factory()->create();
     actingAs($user);
 
-    postJson('/api/systems/'.$system->id.'/modules', ['slug' => 'core', 'name' => 'Core Rules'])
+    postJson('/api/systems/'.$system->id.'/modules', ['slug' => 'core', 'name' => 'Core Rules', 'description' => 'The core rules.', 'config' => [], 'is_core' => false, 'sort_order' => 0])
         ->assertForbidden();
 });
 
@@ -49,7 +49,7 @@ test('system admin can create a module', function (): void {
     Membership::factory()->for($admin)->for($system)->admin()->create();
     actingAs($admin);
 
-    postJson('/api/systems/'.$system->id.'/modules', ['slug' => 'core', 'name' => 'Core Rules'])
+    postJson('/api/systems/'.$system->id.'/modules', ['slug' => 'core', 'name' => 'Core Rules', 'description' => 'The core rules.', 'config' => [], 'is_core' => false, 'sort_order' => 0])
         ->assertCreated()
         ->assertJsonPath('data.slug', 'core');
 });
@@ -60,7 +60,14 @@ test('regular user cannot update a module', function (): void {
     $module = Module::factory()->for($system)->create();
     actingAs($user);
 
-    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id, ['name' => 'Hacked'])
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id, [
+        'slug' => $module->slug,
+        'name' => 'Hacked',
+        'description' => $module->description,
+        'config' => $module->config,
+        'is_core' => $module->is_core,
+        'sort_order' => $module->sort_order,
+    ])
         ->assertForbidden();
 });
 
@@ -71,7 +78,14 @@ test('system admin can update a module', function (): void {
     $module = Module::factory()->for($system)->create();
     actingAs($admin);
 
-    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id, ['name' => 'Admin Updated'])
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id, [
+        'slug' => $module->slug,
+        'name' => 'Admin Updated',
+        'description' => $module->description,
+        'config' => $module->config,
+        'is_core' => $module->is_core,
+        'sort_order' => $module->sort_order,
+    ])
         ->assertOk()
         ->assertJsonPath('data.name', 'Admin Updated');
 });
@@ -83,7 +97,14 @@ test('module editor can update a module', function (): void {
     Subscription::factory()->for($user)->for($module)->editor()->create();
     actingAs($user);
 
-    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id, ['name' => 'Editor Updated'])
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id, [
+        'slug' => $module->slug,
+        'name' => 'Editor Updated',
+        'description' => $module->description,
+        'config' => $module->config,
+        'is_core' => $module->is_core,
+        'sort_order' => $module->sort_order,
+    ])
         ->assertSuccessful()
         ->assertJsonPath('data.name', 'Editor Updated');
 });
@@ -161,6 +182,7 @@ test('store creates a module within a system', function (): void {
         'slug' => 'core',
         'name' => 'Core Rules',
         'description' => 'The base rulebook.',
+        'config' => [],
         'is_core' => true,
         'sort_order' => 0,
     ];
@@ -202,7 +224,7 @@ test('store allows same slug in a different system', function (): void {
     Module::factory()->create(['slug' => 'core']);
     actingAs($user);
 
-    postJson('/api/systems/'.$system->id.'/modules', ['slug' => 'core', 'name' => 'Core Rules'])
+    postJson('/api/systems/'.$system->id.'/modules', ['slug' => 'core', 'name' => 'Core Rules', 'description' => 'The core rules.', 'config' => [], 'is_core' => false, 'sort_order' => 0])
         ->assertCreated();
 });
 
@@ -247,7 +269,14 @@ test('update modifies a module', function (): void {
     $module = Module::factory()->for($system)->create();
     actingAs($user);
 
-    $response = patchJson('/api/systems/'.$system->id.'/modules/'.$module->id, ['name' => 'Updated'])
+    $response = patchJson('/api/systems/'.$system->id.'/modules/'.$module->id, [
+        'slug' => $module->slug,
+        'name' => 'Updated',
+        'description' => $module->description,
+        'config' => $module->config,
+        'is_core' => $module->is_core,
+        'sort_order' => $module->sort_order,
+    ])
         ->assertSuccessful();
 
     $response->assertJsonPath('data.name', 'Updated');
@@ -272,7 +301,14 @@ test('update allows same slug on same module', function (): void {
     $module = Module::factory()->for($system)->create(['slug' => 'mine']);
     actingAs($user);
 
-    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id, ['slug' => 'mine'])
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id, [
+        'slug' => 'mine',
+        'name' => $module->name,
+        'description' => $module->description,
+        'config' => $module->config,
+        'is_core' => $module->is_core,
+        'sort_order' => $module->sort_order,
+    ])
         ->assertSuccessful();
 });
 

@@ -36,11 +36,11 @@ final class UpdateRuleRequest extends FormRequest
         $rule = $this->route('rule');
 
         return [
-            'parent_id' => ['sometimes', 'nullable', 'string', Rule::exists('rules', 'id')->where('module_id', $module->id)],
-            'number' => ['sometimes', 'string', Rule::unique('rules', 'number')->where('module_id', $module->id)->ignore($rule)],
-            'title' => ['sometimes', 'string'],
-            'content' => ['sometimes', 'nullable', 'string'],
-            'sort_order' => ['sometimes', 'nullable', 'integer'],
+            'parent_id' => ['nullable', 'string', Rule::exists('rules', 'id')->where('module_id', $module->id)],
+            'number' => ['required', 'string', Rule::unique('rules', 'number')->where('module_id', $module->id)->ignore($rule)],
+            'title' => ['present', 'string'],
+            'content' => ['present', 'string'],
+            'sort_order' => ['required', 'integer'],
         ];
     }
 
@@ -51,10 +51,6 @@ final class UpdateRuleRequest extends FormRequest
     {
         return [
             function (Validator $validator): void {
-                if (! $this->has('number')) {
-                    return;
-                }
-
                 /** @var Module $module */
                 $module = $this->route('module');
 

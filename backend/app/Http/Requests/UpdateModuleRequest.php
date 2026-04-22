@@ -30,12 +30,12 @@ final class UpdateModuleRequest extends FormRequest
         $module = $this->route('module');
 
         return [
-            'slug' => ['sometimes', 'string', 'max:255', 'alpha_dash', Rule::unique('modules', 'slug')->where('system_id', $module->system_id)->ignore($module)],
-            'name' => ['sometimes', 'string', 'max:255'],
-            'description' => ['sometimes', 'nullable', 'string'],
-            'config' => ['sometimes', 'nullable', 'array'],
-            'is_core' => ['sometimes', 'boolean'],
-            'sort_order' => ['sometimes', 'integer', 'min:0', 'max:65535'],
+            'slug' => ['required', 'string', 'max:255', 'alpha_dash', Rule::unique('modules', 'slug')->where('system_id', $module->system_id)->ignore($module)],
+            'name' => ['required', 'string', 'max:255'],
+            'description' => ['present', 'string'],
+            'config' => ['present', 'array'],
+            'is_core' => ['required', 'boolean'],
+            'sort_order' => ['required', 'integer', 'min:0', 'max:65535'],
         ];
     }
 }

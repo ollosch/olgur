@@ -32,7 +32,7 @@ final class StoreMembershipRequest extends FormRequest
         return [
             'user_id' => ['sometimes', 'string', 'exists:users,id', Rule::unique('memberships', 'user_id')->where('system_id', $system->id)],
             'admin' => ['exclude_without:user_id', 'boolean'],
-            'config' => ['sometimes', 'nullable', 'array'],
+            'config' => ['present', 'array'],
         ];
     }
 }

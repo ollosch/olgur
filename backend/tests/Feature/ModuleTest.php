@@ -15,7 +15,7 @@ test('a module can be created with factory defaults', function (): void {
         ->and($module->slug)->toBeString()
         ->and($module->name)->toBeString()
         ->and($module->is_core)->toBeFalse()
-        ->and($module->config)->toBeNull();
+        ->and($module->config)->toBeArray();
 });
 
 test('module uses ulid primary key', function (): void {

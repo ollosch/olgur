@@ -142,7 +142,7 @@ test('store allows same number in a different module', function (): void {
 
     actingAs($user);
 
-    postJson('/api/systems/'.$system->id.'/modules/'.$moduleA->id.'/rules', ['number' => 'A.1', 'title' => 'OK'])
+    postJson('/api/systems/'.$system->id.'/modules/'.$moduleA->id.'/rules', ['number' => 'A.1', 'title' => 'OK', 'content' => 'Rule content.', 'sort_order' => 1])
         ->assertCreated();
 });
 
@@ -183,7 +183,7 @@ test('store accepts cross-module duplicate for non-core module when allow_concur
 
     actingAs($user);
 
-    postJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/rules', ['number' => 'A1.1', 'title' => 'Dup'])
+    postJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/rules', ['number' => 'A1.1', 'title' => 'Dup', 'content' => 'Rule content.', 'sort_order' => 1])
         ->assertCreated();
 });
 
@@ -217,6 +217,8 @@ test('store accepts valid parent_id within the same module', function (): void {
         'number' => 'A.1.1',
         'title' => 'Child Rule',
         'parent_id' => $parent->id,
+        'content' => 'Child rule content.',
+        'sort_order' => 1,
     ])
         ->assertCreated()
         ->assertJsonPath('data.parent_id', $parent->id);
@@ -262,7 +264,13 @@ test('update modifies a rule', function (): void {
 
     actingAs($user);
 
-    $response = patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id, ['title' => 'Updated Title'])
+    $response = patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id, [
+        'parent_id' => $rule->parent_id,
+        'number' => $rule->number,
+        'title' => 'Updated Title',
+        'content' => $rule->content,
+        'sort_order' => $rule->sort_order,
+    ])
         ->assertSuccessful();
 
     $response->assertJsonPath('data.title', 'Updated Title');
@@ -309,7 +317,13 @@ test('update allows cross-module duplicate for non-core module when allow_concur
 
     actingAs($user);
 
-    patchJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/rules/'.$ruleB->id, ['number' => 'A1.1'])
+    patchJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/rules/'.$ruleB->id, [
+        'parent_id' => $ruleB->parent_id,
+        'number' => 'A1.1',
+        'title' => $ruleB->title,
+        'content' => $ruleB->content,
+        'sort_order' => $ruleB->sort_order,
+    ])
         ->assertOk();
 });
 
@@ -387,7 +401,7 @@ test('regular user cannot create a rule', function (): void {
 
     actingAs($user);
 
-    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', ['number' => 'A.1', 'title' => 'Test'])
+    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', ['number' => 'A.1', 'title' => 'Test', 'content' => 'Content.', 'sort_order' => 1])
         ->assertForbidden();
 });
 
@@ -399,7 +413,13 @@ test('regular user cannot update a rule', function (): void {
 
     actingAs($user);
 
-    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id, ['title' => 'Hacked'])
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id, [
+        'parent_id' => $rule->parent_id,
+        'number' => $rule->number,
+        'title' => 'Hacked',
+        'content' => $rule->content,
+        'sort_order' => $rule->sort_order,
+    ])
         ->assertForbidden();
 });
 
@@ -450,7 +470,7 @@ test('module subscriber cannot create a rule', function (): void {
 
     actingAs($user);
 
-    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', ['number' => 'A.1', 'title' => 'Test'])
+    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', ['number' => 'A.1', 'title' => 'Test', 'content' => 'Content.', 'sort_order' => 1])
         ->assertForbidden();
 });
 
@@ -463,7 +483,13 @@ test('module subscriber cannot update a rule', function (): void {
 
     actingAs($user);
 
-    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id, ['title' => 'Hacked'])
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id, [
+        'parent_id' => $rule->parent_id,
+        'number' => $rule->number,
+        'title' => 'Hacked',
+        'content' => $rule->content,
+        'sort_order' => $rule->sort_order,
+    ])
         ->assertForbidden();
 });
 
@@ -490,7 +516,7 @@ test('module editor can create a rule in their module', function (): void {
 
     actingAs($user);
 
-    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', ['number' => 'E.1', 'title' => 'Editor Rule'])
+    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', ['number' => 'E.1', 'title' => 'Editor Rule', 'content' => 'Editor rule content.', 'sort_order' => 1])
         ->assertCreated();
 });
 
@@ -503,7 +529,7 @@ test('module editor of module A cannot create a rule in module B', function (): 
 
     actingAs($user);
 
-    postJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/rules', ['number' => 'E.1', 'title' => 'Editor Rule'])
+    postJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/rules', ['number' => 'E.1', 'title' => 'Editor Rule', 'content' => 'Editor rule content.', 'sort_order' => 1])
         ->assertForbidden();
 });
 
@@ -516,7 +542,13 @@ test('module editor can update a rule in their module', function (): void {
 
     actingAs($user);
 
-    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id, ['title' => 'Editor Updated'])
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id, [
+        'parent_id' => $rule->parent_id,
+        'number' => $rule->number,
+        'title' => 'Editor Updated',
+        'content' => $rule->content,
+        'sort_order' => $rule->sort_order,
+    ])
         ->assertSuccessful();
 });
 
@@ -530,7 +562,13 @@ test('module editor cannot update a rule in another module', function (): void {
 
     actingAs($user);
 
-    patchJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/rules/'.$rule->id, ['title' => 'Hacked'])
+    patchJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/rules/'.$rule->id, [
+        'parent_id' => $rule->parent_id,
+        'number' => $rule->number,
+        'title' => 'Hacked',
+        'content' => $rule->content,
+        'sort_order' => $rule->sort_order,
+    ])
         ->assertForbidden();
 });
 
@@ -571,7 +609,7 @@ test('system admin can create a rule', function (): void {
 
     actingAs($user);
 
-    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', ['number' => 'A.1', 'title' => 'Admin Rule'])
+    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', ['number' => 'A.1', 'title' => 'Admin Rule', 'content' => 'Admin rule content.', 'sort_order' => 1])
         ->assertCreated();
 });
 
@@ -584,7 +622,13 @@ test('system admin can update a rule', function (): void {
 
     actingAs($user);
 
-    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id, ['title' => 'Admin Updated'])
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id, [
+        'parent_id' => $rule->parent_id,
+        'number' => $rule->number,
+        'title' => 'Admin Updated',
+        'content' => $rule->content,
+        'sort_order' => $rule->sort_order,
+    ])
         ->assertSuccessful();
 });
 

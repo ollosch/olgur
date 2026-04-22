@@ -24,7 +24,7 @@ final class ModuleVersionFactory extends Factory
         return [
             'module_id' => Module::factory(),
             'version_string' => fake()->bothify('v#.#.#'),
-            'notes' => fake()->optional(0.5)->sentence(),
+            'notes' => fake()->sentence(),
             'released_at' => null,
             'released_by' => null,
         ];

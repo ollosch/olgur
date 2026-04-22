@@ -28,13 +28,13 @@ final class StoreSystemRequest extends FormRequest
         return [
             'slug' => ['required', 'string', 'max:255', 'unique:systems,slug', 'alpha_dash'],
             'name' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'config' => ['nullable', 'array'],
-            'config.toc_depth' => ['nullable', 'integer', 'min:1'],
+            'description' => ['present', 'string'],
+            'config' => ['required', 'array'],
+            'config.toc_depth' => ['required', 'integer', 'min:1'],
             'config.cover_image' => ['nullable', 'string', 'url'],
-            'config.sort_rules_by' => ['nullable', 'string', 'in:number,sort_order'],
-            'config.require_core_subscription' => ['nullable', 'boolean'],
-            'config.allow_concurrent_expansions' => ['nullable', 'boolean'],
+            'config.sort_rules_by' => ['required', 'string', 'in:number,sort_order'],
+            'config.require_core_subscription' => ['required', 'boolean'],
+            'config.allow_concurrent_expansions' => ['required', 'boolean'],
         ];
     }
 

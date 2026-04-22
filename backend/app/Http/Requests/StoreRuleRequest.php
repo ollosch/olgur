@@ -35,9 +35,9 @@ final class StoreRuleRequest extends FormRequest
         return [
             'parent_id' => ['nullable', 'string', Rule::exists('rules', 'id')->where('module_id', $module->id)],
             'number' => ['required', 'string', Rule::unique('rules', 'number')->where('module_id', $module->id)],
-            'title' => ['required', 'string'],
-            'content' => ['nullable', 'string'],
-            'sort_order' => ['nullable', 'integer'],
+            'title' => ['present', 'string'],
+            'content' => ['present', 'string'],
+            'sort_order' => ['required', 'integer'],
         ];
     }
 

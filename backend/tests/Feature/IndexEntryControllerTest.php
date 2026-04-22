@@ -94,6 +94,8 @@ test('store creates an index entry within a module', function (): void {
     $payload = [
         'term' => 'Ambush',
         'definition' => 'A surprise attack.',
+        'notes' => 'See also: Flanking.',
+        'relations' => ['rule_refs' => [], 'see_also' => []],
     ];
 
     $response = postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries', $payload)
@@ -140,6 +142,8 @@ test('store accepts rule_refs and see_also as arrays', function (): void {
 
     $response = postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries', [
         'term' => 'Concept',
+        'definition' => 'A core concept.',
+        'notes' => 'Related concepts apply.',
         'relations' => ['rule_refs' => ['A.1', 'B.2'], 'see_also' => ['Other Term']],
     ])->assertCreated();
 
@@ -175,6 +179,9 @@ test('store accepts valid parent_id within the same module', function (): void {
     postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries', [
         'term' => 'Child Entry',
         'parent_id' => $parent->id,
+        'definition' => 'A child entry.',
+        'notes' => 'Inherits from parent.',
+        'relations' => ['rule_refs' => [], 'see_also' => []],
     ])
         ->assertCreated()
         ->assertJsonPath('data.parent_id', $parent->id);
@@ -220,7 +227,13 @@ test('update modifies an index entry', function (): void {
 
     actingAs($user);
 
-    $response = patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries/'.$entry->id, ['term' => 'Updated Term'])
+    $response = patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries/'.$entry->id, [
+        'parent_id' => $entry->parent_id,
+        'term' => 'Updated Term',
+        'definition' => $entry->definition,
+        'notes' => $entry->notes,
+        'relations' => ['rule_refs' => $entry->relations['rule_refs'] ?? [], 'see_also' => $entry->relations['see_also'] ?? []],
+    ])
         ->assertSuccessful();
 
     $response->assertJsonPath('data.term', 'Updated Term');
@@ -301,7 +314,7 @@ test('regular user cannot create an index entry', function (): void {
 
     actingAs($user);
 
-    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries', ['term' => 'Test'])
+    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries', ['term' => 'Test', 'definition' => 'Def.', 'notes' => 'Notes.', 'relations' => ['rule_refs' => [], 'see_also' => []]])
         ->assertForbidden();
 });
 
@@ -313,7 +326,13 @@ test('regular user cannot update an index entry', function (): void {
 
     actingAs($user);
 
-    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries/'.$entry->id, ['term' => 'Hacked'])
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries/'.$entry->id, [
+        'parent_id' => $entry->parent_id,
+        'term' => 'Hacked',
+        'definition' => $entry->definition,
+        'notes' => $entry->notes,
+        'relations' => ['rule_refs' => $entry->relations['rule_refs'] ?? [], 'see_also' => $entry->relations['see_also'] ?? []],
+    ])
         ->assertForbidden();
 });
 
@@ -364,7 +383,7 @@ test('module subscriber cannot create an index entry', function (): void {
 
     actingAs($user);
 
-    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries', ['term' => 'Test'])
+    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries', ['term' => 'Test', 'definition' => 'Def.', 'notes' => 'Notes.', 'relations' => ['rule_refs' => [], 'see_also' => []]])
         ->assertForbidden();
 });
 
@@ -377,7 +396,13 @@ test('module subscriber cannot update an index entry', function (): void {
 
     actingAs($user);
 
-    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries/'.$entry->id, ['term' => 'Hacked'])
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries/'.$entry->id, [
+        'parent_id' => $entry->parent_id,
+        'term' => 'Hacked',
+        'definition' => $entry->definition,
+        'notes' => $entry->notes,
+        'relations' => ['rule_refs' => $entry->relations['rule_refs'] ?? [], 'see_also' => $entry->relations['see_also'] ?? []],
+    ])
         ->assertForbidden();
 });
 
@@ -404,7 +429,7 @@ test('module editor can create an index entry in their module', function (): voi
 
     actingAs($user);
 
-    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries', ['term' => 'Editor Term'])
+    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries', ['term' => 'Editor Term', 'definition' => 'Editor definition.', 'notes' => 'Editor notes.', 'relations' => ['rule_refs' => [], 'see_also' => []]])
         ->assertCreated();
 });
 
@@ -417,7 +442,7 @@ test('module editor of module A cannot create an index entry in module B', funct
 
     actingAs($user);
 
-    postJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/index-entries', ['term' => 'Editor Term'])
+    postJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/index-entries', ['term' => 'Editor Term', 'definition' => 'Def.', 'notes' => 'Notes.', 'relations' => ['rule_refs' => [], 'see_also' => []]])
         ->assertForbidden();
 });
 
@@ -430,7 +455,13 @@ test('module editor can update an index entry in their module', function (): voi
 
     actingAs($user);
 
-    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries/'.$entry->id, ['term' => 'Editor Updated'])
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries/'.$entry->id, [
+        'parent_id' => $entry->parent_id,
+        'term' => 'Editor Updated',
+        'definition' => $entry->definition,
+        'notes' => $entry->notes,
+        'relations' => ['rule_refs' => $entry->relations['rule_refs'] ?? [], 'see_also' => $entry->relations['see_also'] ?? []],
+    ])
         ->assertSuccessful();
 });
 
@@ -444,7 +475,13 @@ test('module editor cannot update an index entry in another module', function ()
 
     actingAs($user);
 
-    patchJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/index-entries/'.$entry->id, ['term' => 'Hacked'])
+    patchJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/index-entries/'.$entry->id, [
+        'parent_id' => $entry->parent_id,
+        'term' => 'Hacked',
+        'definition' => $entry->definition,
+        'notes' => $entry->notes,
+        'relations' => ['rule_refs' => $entry->relations['rule_refs'] ?? [], 'see_also' => $entry->relations['see_also'] ?? []],
+    ])
         ->assertForbidden();
 });
 
@@ -485,7 +522,7 @@ test('system admin can create an index entry', function (): void {
 
     actingAs($user);
 
-    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries', ['term' => 'Admin Term'])
+    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries', ['term' => 'Admin Term', 'definition' => 'Admin definition.', 'notes' => 'Admin notes.', 'relations' => ['rule_refs' => [], 'see_also' => []]])
         ->assertCreated();
 });
 
@@ -498,7 +535,13 @@ test('system admin can update an index entry', function (): void {
 
     actingAs($user);
 
-    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries/'.$entry->id, ['term' => 'Admin Updated'])
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries/'.$entry->id, [
+        'parent_id' => $entry->parent_id,
+        'term' => 'Admin Updated',
+        'definition' => $entry->definition,
+        'notes' => $entry->notes,
+        'relations' => ['rule_refs' => $entry->relations['rule_refs'] ?? [], 'see_also' => $entry->relations['see_also'] ?? []],
+    ])
         ->assertSuccessful();
 });
 
