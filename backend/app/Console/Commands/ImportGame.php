@@ -64,7 +64,14 @@ final class ImportGame extends Command
         /** @var array<string, mixed> $manifest */
         $manifest = $this->readJson($indexJsonPath) ?? [];
 
-        $structureValue = is_string($this->option('structure')) ? $this->option('structure') : 'core_plus_many';
+        $structureValue = (is_string($manifest['structure'] ?? null) && $manifest['structure'] !== ''
+            ? $manifest['structure']
+            : (
+                is_string($this->option('structure'))
+                    ? $this->option('structure')
+                    : 'core_plus_many')
+        );
+
         $fresh = (bool) $this->option('fresh');
 
         // Determine system slug: index.json slug → fallback to directory basename
