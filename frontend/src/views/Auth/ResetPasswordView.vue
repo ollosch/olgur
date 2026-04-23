@@ -60,8 +60,6 @@ const goToLogin = () => {
 
 <template>
   <AuthLayout>
-    {{ errors }}
-    {{ auth.errors }}
     <Card>
       <CardHeader>
         <CardTitle>Reset Password</CardTitle>
