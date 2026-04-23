@@ -1,10 +1,5 @@
 import axios from 'axios'
-import type {
-  AxiosError,
-  AxiosRequestConfig,
-  AxiosRequestHeaders,
-  InternalAxiosRequestConfig,
-} from 'axios'
+import type { AxiosError, AxiosRequestConfig } from 'axios'
 
 export interface ResponseErrors {
   [key: string]: string
@@ -14,36 +9,21 @@ export type ApiError =
   | { type: 'validation'; errors: ResponseErrors }
   | { type: 'auth'; message?: string }
   | { type: 'forbidden'; message?: string }
+  | { type: 'conflict'; message?: string }
   | { type: 'network'; message?: string }
   | { type: 'unknown'; original?: unknown }
 
 export type LaravelErrors = Record<string, string[] | string>
 
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost/api',
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
   },
-  // withCredentials: true,
+  withCredentials: true,
+  withXSRFToken: true,
 })
-
-axiosInstance.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('auth_token')
-
-    if (!config.headers) {
-      config.headers = {} as AxiosRequestHeaders
-    }
-
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-
-    return config
-  },
-  (error) => Promise.reject(error),
-)
 
 axiosInstance.interceptors.response.use(
   (response) => response,
@@ -73,7 +53,12 @@ export function handleHttpErrors(
     case 401:
       return { type: 'auth', message }
     case 403:
+      if (message === 'Already authenticated.') {
+        return { type: 'auth', message }
+      }
       return { type: 'forbidden', message }
+    case 409:
+      return { type: 'conflict', message }
     case 422: {
       if (data.errors) {
         return { type: 'validation', errors: mapLaravelErrors(data.errors) }
