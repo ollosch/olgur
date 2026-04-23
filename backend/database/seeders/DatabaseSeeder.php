@@ -56,7 +56,7 @@ final class DatabaseSeeder extends Seeder
 
         Subscription::factory()->for($module)->for($user)->editor()->create();
 
-        Rule::factory()->for($system)->for($module)->count(10)->create()->each(fn (Rule $rule) => Rule::factory()->for($system)->for($module)->count(3)->create([
+        Rule::factory()->for($module)->count(10)->create()->each(fn (Rule $rule) => Rule::factory()->for($module)->count(3)->create([
             'parent_id' => $rule->id,
         ]
         ));
