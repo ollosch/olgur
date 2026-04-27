@@ -9,16 +9,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 
-const auth = useAuthStore()
+const authStore = useAuthStore()
 const { defineField, handleSubmit, errors, setErrors } = useForm<ResetPasswordRequest>()
 
 const [email, emailAttrs] = defineField('email')
 
 const onSubmit = handleSubmit(async (values) => {
-  await auth.sendResetLink(values)
+  await authStore.sendResetLink(values)
 
-  if (auth.errors) {
-    setErrors(auth.errors)
+  if (authStore.errors) {
+    setErrors(authStore.errors)
   }
 })
 </script>
@@ -48,7 +48,7 @@ const onSubmit = handleSubmit(async (values) => {
               <div v-if="errors.email">{{ errors.email }}</div>
             </Field>
             <Field>
-              <Button :disabled="auth.loading" type="submit"> Send Reset Link </Button>
+              <Button :disabled="authStore.loading" type="submit"> Send Reset Link </Button>
               <FieldDescription class="text-center">
                 Back to <router-link :to="{ name: 'login' }"> Log in </router-link>
               </FieldDescription>

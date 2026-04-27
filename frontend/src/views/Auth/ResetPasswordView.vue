@@ -16,7 +16,7 @@ import { toast } from 'vue-sonner'
 const status = ref<'success' | 'error'>('success')
 
 const route = useRoute()
-const auth = useAuthStore()
+const authStore = useAuthStore()
 const { defineField, handleSubmit, errors, setErrors } = useForm<UpdatePasswordRequest>()
 
 const [password, passwordAttrs] = defineField('password')
@@ -41,10 +41,10 @@ const onSubmit = handleSubmit(async (values) => {
   const token = route.query.token as string
   const email = route.query.email as string
 
-  await auth.resetPassword(values, { token, email })
+  await authStore.resetPassword(values, { token, email })
 
-  if (auth.errors) {
-    setErrors(auth.errors)
+  if (authStore.errors) {
+    setErrors(authStore.errors)
     return
   }
 
@@ -82,7 +82,7 @@ const goToLogin = () => {
                 type="password"
                 required
               />
-              <div v-if="auth.errors?.email">{{ auth.errors.email }}</div>
+              <div v-if="authStore.errors?.email">{{ authStore.errors.email }}</div>
               <div v-if="errors.password">{{ errors.password }}</div>
               <FieldDescription>Must be at least 8 characters long.</FieldDescription>
             </Field>
@@ -98,7 +98,7 @@ const goToLogin = () => {
               <FieldDescription>Please confirm your password.</FieldDescription>
             </Field>
             <Field class="mt-4">
-              <Button :disabled="auth.loading" type="submit"> Reset Password </Button>
+              <Button :disabled="authStore.loading" type="submit"> Reset Password </Button>
               <FieldDescription class="px-6 text-center">
                 Back to
                 <router-link :to="{ name: 'login' }">Sign in</router-link>

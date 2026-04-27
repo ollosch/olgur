@@ -13,10 +13,10 @@ const app = createApp(App)
 
 app.use(createPinia())
 
-const auth = useAuthStore()
+const authStore = useAuthStore()
 
-await auth.fetchCsrfCookie()
-await auth.fetchUser().catch(() => {})
+await authStore.fetchCsrfCookie()
+await authStore.fetchUser().catch(() => {})
 
 app.use(router)
 app.mount('#app')
@@ -39,8 +39,8 @@ app.config.errorHandler = async (err, instance, info) => {
         return
       }
 
-      const wasAuthenticated = auth.user !== null
-      auth.clear()
+      const wasAuthenticated = authStore.user !== null
+      authStore.clear()
 
       if (wasAuthenticated) {
         toast.error('Your session has expired. Please log in again.')

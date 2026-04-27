@@ -15,18 +15,18 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
-  const auth = useAuthStore()
+  const authStore = useAuthStore()
   const requiresAuth = to.meta.requiresAuth
   const requiresGuest = to.meta.requiresGuest
 
-  if (requiresAuth && !auth.user) {
+  if (requiresAuth && !authStore.user) {
     return {
       name: 'login',
       query: { redirect: to.fullPath },
     }
   }
 
-  if (requiresGuest && auth.user) {
+  if (requiresGuest && authStore.user) {
     return { name: 'home' }
   }
 })

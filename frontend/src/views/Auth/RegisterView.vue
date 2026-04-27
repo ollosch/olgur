@@ -11,7 +11,7 @@ import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui
 import { Input } from '@/components/ui/input'
 import { toast } from 'vue-sonner'
 
-const auth = useAuthStore()
+const authStore = useAuthStore()
 const { defineField, handleSubmit, errors, setErrors } = useForm<RegisterRequest>()
 
 const [name, nameAttrs] = defineField('name')
@@ -20,10 +20,10 @@ const [password, passwordAttrs] = defineField('password')
 const [passwordConfirmation, passwordConfirmationAttrs] = defineField('password_confirmation')
 
 const onSubmit = handleSubmit(async (values) => {
-  await auth.register(values)
+  await authStore.register(values)
 
-  if (auth.errors) {
-    setErrors(auth.errors)
+  if (authStore.errors) {
+    setErrors(authStore.errors)
     return
   }
 
@@ -85,7 +85,7 @@ const onSubmit = handleSubmit(async (values) => {
             </Field>
             <FieldGroup>
               <Field>
-                <Button :disabled="auth.loading" type="submit"> Create Account </Button>
+                <Button :disabled="authStore.loading" type="submit"> Create Account </Button>
                 <FieldDescription class="px-6 text-center">
                   Already have an account?
                   <router-link :to="{ name: 'login' }">Sign in</router-link>

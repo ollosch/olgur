@@ -10,17 +10,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 
-const auth = useAuthStore()
+const authStore = useAuthStore()
 const { defineField, handleSubmit, errors, setErrors } = useForm<LoginRequest>()
 
 const [email, emailAttrs] = defineField('email')
 const [password, passwordAttrs] = defineField('password')
 
 const onSubmit = handleSubmit(async (values) => {
-  await auth.login(values)
+  await authStore.login(values)
 
-  if (auth.errors) {
-    setErrors(auth.errors)
+  if (authStore.errors) {
+    setErrors(authStore.errors)
     return
   }
 
@@ -72,7 +72,7 @@ const onSubmit = handleSubmit(async (values) => {
             </Field>
             <div v-if="errors.password">{{ errors.password }}</div>
             <Field>
-              <Button :disabled="auth.loading" type="submit"> Login </Button>
+              <Button :disabled="authStore.loading" type="submit"> Login </Button>
               <FieldDescription class="text-center">
                 Don't have an account?
                 <router-link :to="{ name: 'register' }"> Sign up </router-link>
