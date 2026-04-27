@@ -233,6 +233,10 @@ export const useSystemStore = defineStore('system', () => {
     return result?.data ?? null
   }
 
+  function setMembership(systemId: string, membership: Membership): void {
+    membershipsBySystem.value[systemId] = membership
+  }
+
   return {
     // state
     systems,
@@ -271,5 +275,6 @@ export const useSystemStore = defineStore('system', () => {
     updateMembershipAdmin,
     fetchModuleSubscriptions,
     updateSubscriptionEditor,
+    setMembership,
   }
 })

@@ -48,7 +48,7 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
     )
 
     if (result) {
-      systemStore.membershipsBySystem[systemId] = result.data
+      systemStore.setMembership(systemId, result.data)
     }
   }
 
