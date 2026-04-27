@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use App\Models\System;
+use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -34,7 +35,15 @@ final class StoreModuleRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'description' => ['present', 'string'],
             'config' => ['present', 'array'],
-            'is_core' => ['required', 'boolean'],
+            'is_core' => [
+                'required',
+                'boolean',
+                function (string $attribute, mixed $value, Closure $fail) use ($system): void {
+                    if ($value && $system->modules()->where('is_core', true)->exists()) {
+                        $fail('This system already has a core module.');
+                    }
+                },
+            ],
             'sort_order' => ['required', 'integer', 'min:0', 'max:65535'],
         ];
     }

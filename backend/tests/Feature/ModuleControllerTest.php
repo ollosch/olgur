@@ -333,3 +333,89 @@ test('destroy returns 404 for unknown module', function (): void {
     deleteJson('/api/systems/'.$system->id.'/modules/nonexistent-id')
         ->assertNotFound();
 });
+
+test('store rejects a second core module in the same system', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    Module::factory()->for($system)->create(['is_core' => true]);
+    actingAs($user);
+
+    postJson('/api/systems/'.$system->id.'/modules', [
+        'slug' => 'second-core',
+        'name' => 'Second Core',
+        'description' => '',
+        'config' => [],
+        'is_core' => true,
+        'sort_order' => 1,
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors(['is_core']);
+});
+
+test('store allows a second core module in a different system', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    $otherSystem = System::factory()->create();
+    Module::factory()->for($otherSystem)->create(['is_core' => true]);
+    actingAs($user);
+
+    postJson('/api/systems/'.$system->id.'/modules', [
+        'slug' => 'core',
+        'name' => 'Core Rules',
+        'description' => '',
+        'config' => [],
+        'is_core' => true,
+        'sort_order' => 0,
+    ])->assertCreated();
+});
+
+// ── creator auto-subscription ─────────────────────────────────────────────────
+
+test('store creates an editor subscription for the creator', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    actingAs($user);
+
+    $response = postJson('/api/systems/'.$system->id.'/modules', [
+        'slug' => 'core',
+        'name' => 'Core Rules',
+        'description' => '',
+        'config' => [],
+        'is_core' => true,
+        'sort_order' => 0,
+    ])->assertCreated();
+
+    $moduleId = $response->json('data.id');
+
+    assertDatabaseHas('subscriptions', [
+        'user_id' => $user->id,
+        'module_id' => $moduleId,
+        'editor' => true,
+    ]);
+});
+
+test('store creates a membership for the creator if one does not exist', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    Membership::factory()->for($user)->for($system)->create(['admin' => true]);
+    actingAs($user);
+
+    $response = postJson('/api/systems/'.$system->id.'/modules', [
+        'slug' => 'core',
+        'name' => 'Core Rules',
+        'description' => '',
+        'config' => [],
+        'is_core' => true,
+        'sort_order' => 0,
+    ])->assertCreated();
+
+    $moduleId = $response->json('data.id');
+
+    assertDatabaseHas('subscriptions', [
+        'user_id' => $user->id,
+        'module_id' => $moduleId,
+        'editor' => true,
+    ]);
+
+    // Existing membership was not duplicated
+    expect(Membership::query()->where('user_id', $user->id)->where('system_id', $system->id)->count())->toBe(1);
+});
