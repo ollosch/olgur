@@ -40,9 +40,13 @@ export function useApi() {
     return request(() => api.request<T>({ url, method: 'PUT', data, ...config }))
   }
 
+  function patch<T, D = unknown>(url: string, data: D, config?: AxiosRequestConfig) {
+    return request(() => api.request<T>({ url, method: 'PATCH', data, ...config }))
+  }
+
   function del<T>(url: string, config?: AxiosRequestConfig) {
     return request(() => api.request<T>({ url, method: 'DELETE', ...config }))
   }
 
-  return { get, post, put, del, loading, errors }
+  return { get, post, put, patch, del, loading, errors }
 }
