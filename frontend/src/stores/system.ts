@@ -8,6 +8,7 @@ import type {
   MembershipWithUser,
   Subscription,
   SubscriptionWithUser,
+  UserSubscription,
   CreateSystemRequest,
   CreateModuleRequest,
 } from '@/types/domain'
@@ -23,7 +24,7 @@ export const useSystemStore = defineStore('system', () => {
   const membershipsBySystem = ref<Record<string, Membership | null>>({})
 
   // ── Flat subscription map (all user subscriptions, keyed by moduleId) ───────
-  const subscriptions = ref<Record<string, { id: string; editor: boolean } | null>>({})
+  const subscriptions = ref<Record<string, UserSubscription | null>>({})
 
   // ── Current system context ───────────────────────────────────────────────────
   const currentSystem = ref<System | null>(null)
@@ -75,7 +76,7 @@ export const useSystemStore = defineStore('system', () => {
   async function fetchUserSubscriptions() {
     const result = await get<{ data: Subscription[] }>('/me/subscriptions')
     if (result) {
-      const map: Record<string, { id: string; editor: boolean } | null> = {}
+      const map: Record<string, UserSubscription | null> = {}
       for (const s of result.data) {
         map[s.module_id] = { id: s.id, editor: s.editor }
       }

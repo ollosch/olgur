@@ -61,6 +61,11 @@ export interface BookmarkEntry {
   id: string
 }
 
+export interface UserSubscription {
+  id: string
+  editor: boolean
+}
+
 export interface MembershipConfig {
   active_module_ids: string[]
   bookmarks?: BookmarkEntry[]
