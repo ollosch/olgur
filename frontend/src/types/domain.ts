@@ -7,6 +7,12 @@ export interface User {
   updated_at: string
 }
 
+export interface Subscription {
+  id: string
+  module_id: string
+  user_id: string
+}
+
 export type SystemStructure = 'core_plus_many' | 'core_plus_one' | 'grouping_only'
 
 export interface SystemConfig {
@@ -39,8 +45,14 @@ export interface Module {
   updated_at: string
 }
 
+export interface BookmarkEntry {
+  type: 'rule'
+  id: string
+}
+
 export interface MembershipConfig {
   active_module_ids: string[]
+  bookmarks?: BookmarkEntry[]
 }
 
 export interface Membership {
@@ -51,12 +63,6 @@ export interface Membership {
   config: MembershipConfig | null
   created_at: string
   updated_at: string
-}
-
-export interface Subscription {
-  id: string
-  module_id: string
-  user_id: string
 }
 
 export interface Rule {
@@ -101,11 +107,6 @@ export interface RegisterRequest {
   password_confirmation: string
 }
 
-export interface UpdateProfileRequest {
-  name: string
-  email: string
-}
-
 export interface ResetPasswordRequest {
   email: string
 }
@@ -113,6 +114,11 @@ export interface ResetPasswordRequest {
 export interface UpdatePasswordRequest {
   password: string
   password_confirmation: string
+}
+
+export interface UpdateProfileRequest {
+  name: string
+  email: string
 }
 
 export interface CreateSystemRequest {
