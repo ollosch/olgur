@@ -5,6 +5,7 @@ import { setActivePinia, createPinia } from 'pinia'
 // ─── Mock useApi composable ───────────────────────────────────────────────────
 const mockGet = vi.fn()
 const mockPost = vi.fn()
+const mockPatch = vi.fn()
 const mockLoading = ref(false)
 const mockErrors = ref<Record<string, string> | null>(null)
 
@@ -12,6 +13,7 @@ vi.mock('@/composables/useApi', () => ({
   useApi: vi.fn(() => ({
     get: mockGet,
     post: mockPost,
+    patch: mockPatch,
     loading: mockLoading,
     errors: mockErrors,
   })),
@@ -32,6 +34,7 @@ describe('useAuthStore', () => {
     setActivePinia(createPinia())
     mockGet.mockReset()
     mockPost.mockReset()
+    mockPatch.mockReset()
     mockLoading.value = false
     mockErrors.value = null
   })
@@ -49,14 +52,14 @@ describe('useAuthStore', () => {
   // ── fetchUser ─────────────────────────────────────────────────────────────────
   describe('fetchUser', () => {
     it('sets user on success', async () => {
-      mockGet.mockResolvedValue(mockUser)
+      mockGet.mockResolvedValue({ data: mockUser })
       const auth = useAuthStore()
       await auth.fetchUser()
       expect(auth.user).toEqual(mockUser)
     })
 
     it('calls /me endpoint', async () => {
-      mockGet.mockResolvedValue(mockUser)
+      mockGet.mockResolvedValue({ data: mockUser })
       const auth = useAuthStore()
       await auth.fetchUser()
       expect(mockGet).toHaveBeenCalledWith('/me')
@@ -75,7 +78,7 @@ describe('useAuthStore', () => {
   describe('login', () => {
     it('posts to /login and fetches user on success', async () => {
       mockPost.mockResolvedValue(null)
-      mockGet.mockResolvedValue(mockUser)
+      mockGet.mockResolvedValue({ data: mockUser })
 
       const auth = useAuthStore()
       await auth.login({ email: 'a@b.com', password: 'secret' })
@@ -102,7 +105,7 @@ describe('useAuthStore', () => {
   describe('register', () => {
     it('posts to /register and fetches user on success', async () => {
       mockPost.mockResolvedValue(null)
-      mockGet.mockResolvedValue(mockUser)
+      mockGet.mockResolvedValue({ data: mockUser })
 
       const auth = useAuthStore()
       await auth.register({
@@ -169,7 +172,7 @@ describe('useAuthStore', () => {
     it('calls get with the verification url and then fetches user', async () => {
       mockGet
         .mockResolvedValueOnce(null) // verifyEmail GET
-        .mockResolvedValueOnce(mockUser) // fetchUser GET /me
+        .mockResolvedValueOnce({ data: mockUser }) // fetchUser GET /me
 
       const auth = useAuthStore()
       await auth.verifyEmail('/verify-email/abc?expires=123&signature=xyz')
