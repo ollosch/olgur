@@ -9,6 +9,7 @@ const router = createRouter({
     {
       name: 'home',
       path: '/',
+      meta: { requiresAuth: true },
       component: HomeView,
     }
   ],
