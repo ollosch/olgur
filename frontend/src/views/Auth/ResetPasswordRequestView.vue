@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useForm } from 'vee-validate'
 import { useAuthStore } from '@/stores/auth'
+import type { ResetPasswordRequest } from '@/types/domain'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import AuthLayout from './AuthLayout.vue'
 
 const auth = useAuthStore()
-const { defineField, handleSubmit, errors, setErrors } = useForm<{ email: string }>()
+const { defineField, handleSubmit, errors, setErrors } = useForm<ResetPasswordRequest>()
 
 const [email, emailAttrs] = defineField('email')
 

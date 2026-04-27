@@ -10,15 +10,13 @@ import AuthLayout from './AuthLayout.vue'
 import { useRoute } from 'vue-router'
 import router from '@/router'
 import { ref, onMounted } from 'vue'
+import type { UpdatePasswordRequest } from '@/types/domain'
 
 const status = ref<'success' | 'error'>('success')
 
 const route = useRoute()
 const auth = useAuthStore()
-const { defineField, handleSubmit, errors, setErrors } = useForm<{
-  password: string
-  password_confirmation: string
-}>()
+const { defineField, handleSubmit, errors, setErrors } = useForm<UpdatePasswordRequest>()
 
 const [password, passwordAttrs] = defineField('password')
 const [passwordConfirmation, passwordConfirmationAttrs] = defineField('password_confirmation')

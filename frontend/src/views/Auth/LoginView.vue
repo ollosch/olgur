@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import router from '@/router'
-import { useAuthStore, type LoginRequest } from '@/stores/auth'
+import { useAuthStore } from '@/stores/auth'
 import { useForm } from 'vee-validate'
+import type { LoginRequest } from '@/types/domain'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'

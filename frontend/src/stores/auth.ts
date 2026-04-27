@@ -2,27 +2,7 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 
 import { useApi } from '@/composables/useApi'
-
-interface User {
-  id: string
-  name: string
-  email: string
-  email_verified_at?: string
-  created_at: string
-  updated_at: string
-}
-
-export interface LoginRequest {
-  email: string
-  password: string
-}
-
-export interface RegisterRequest {
-  name: string
-  email: string
-  password: string
-  password_confirmation: string
-}
+import type { User, LoginRequest, RegisterRequest } from '@/types/domain'
 
 export const useAuthStore = defineStore('auth', () => {
   const { get, post, loading, errors } = useApi()
