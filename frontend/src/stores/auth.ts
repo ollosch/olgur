@@ -2,10 +2,10 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 
 import { useApi } from '@/composables/useApi'
-import type { User, LoginRequest, RegisterRequest } from '@/types/domain'
+import type { User, LoginRequest, RegisterRequest, UpdateProfileRequest } from '@/types/domain'
 
 export const useAuthStore = defineStore('auth', () => {
-  const { get, post, loading, errors } = useApi()
+  const { get, post, patch, loading, errors } = useApi()
 
   const user = ref<User | null>(null)
 
@@ -61,6 +61,13 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function updateProfile(data: UpdateProfileRequest) {
+    const updated = await patch<User, UpdateProfileRequest>('/me', data)
+    if (updated) {
+      user.value = updated
+    }
+  }
+
   function clear() {
     user.value = null
   }
@@ -74,6 +81,7 @@ export const useAuthStore = defineStore('auth', () => {
     register,
     resetPassword,
     sendResetLink,
+    updateProfile,
     verifyEmail,
     errors,
     loading,

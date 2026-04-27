@@ -101,6 +101,11 @@ export interface RegisterRequest {
   password_confirmation: string
 }
 
+export interface UpdateProfileRequest {
+  name: string
+  email: string
+}
+
 export interface ResetPasswordRequest {
   email: string
 }
