@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useSystemStore } from '@/stores/system'
 import { useContentStore } from '@/stores/content'
@@ -40,7 +40,6 @@ const bookmarkStore = useBookmarkStore()
 
 const systemId = computed(() => route.params['systemId'] as string)
 const loading = ref(true)
-const expandedModules = ref<Set<string>>(new Set())
 const pinned = ref(localStorage.getItem('system-panel-pinned') === 'true')
 
 // ---------------------------------------------------------------------------
@@ -92,7 +91,7 @@ onMounted(async () => {
   ])
 
   for (const m of activeModuleList) {
-    expandedModules.value.add(m.id)
+    panelStore.expandedModuleIds.add(m.id)
   }
 
   loading.value = false
@@ -207,6 +206,42 @@ watch(navStore, () => {
 })
 
 // ---------------------------------------------------------------------------
+// Tree tab focus: expand ancestors of selected rule when 't' shortcut fires
+// ---------------------------------------------------------------------------
+
+watch(
+  () => panelStore.treeActivatedTick,
+  async () => {
+    const rule = selectedRule.value
+    if (!rule) {
+      // No rule selected — focus first tree node (handled by LeftPanelContent)
+      panelStore.pendingFocusRuleId = '__first__'
+      return
+    }
+
+    // Expand all ancestor rule nodes up to the root
+    let current: typeof rule | undefined = rule
+    while (current !== undefined) {
+      const parentId = current.parent_id
+      if (parentId === null) break
+      panelStore.expandedRuleIds.add(parentId)
+      current = rulesById.value.get(parentId)
+    }
+
+    // Ensure the module containing the rule is expanded
+    const module = activeModules.value.find((m) =>
+      (contentStore.rulesByModule[m.id] ?? []).some((r) => r.id === rule.id),
+    )
+    if (module) {
+      panelStore.expandedModuleIds.add(module.id)
+    }
+
+    await nextTick()
+    panelStore.pendingFocusRuleId = rule.id
+  },
+)
+
+// ---------------------------------------------------------------------------
 // Actions
 // ---------------------------------------------------------------------------
 
@@ -216,10 +251,10 @@ function togglePin() {
 }
 
 function toggleModule(moduleId: string) {
-  if (expandedModules.value.has(moduleId)) {
-    expandedModules.value.delete(moduleId)
+  if (panelStore.expandedModuleIds.has(moduleId)) {
+    panelStore.expandedModuleIds.delete(moduleId)
   } else {
-    expandedModules.value.add(moduleId)
+    panelStore.expandedModuleIds.add(moduleId)
   }
 }
 
@@ -266,7 +301,7 @@ useRulePopup().registerNavigate(selectRule, () => rulesByNumber.value, () => ind
           <SheetContent side="left" class="w-72 p-0 flex flex-col">
             <LeftPanelContent
               :active-modules="activeModules"
-              :expanded-modules="expandedModules"
+              :expanded-modules="panelStore.expandedModuleIds"
               :selected-rule="selectedRule"
               :all-index-entries="allIndexEntries"
               :rules-by-number="rulesByNumber"
@@ -327,7 +362,7 @@ useRulePopup().registerNavigate(selectRule, () => rulesByNumber.value, () => ind
       <div :class="['w-72 border-r border-border shrink-0 h-full flex-col', pinned ? 'flex' : 'hidden md:flex']">
         <LeftPanelContent
           :active-modules="activeModules"
-          :expanded-modules="expandedModules"
+          :expanded-modules="panelStore.expandedModuleIds"
           :selected-rule="selectedRule"
           :all-index-entries="allIndexEntries"
           :rules-by-number="rulesByNumber"

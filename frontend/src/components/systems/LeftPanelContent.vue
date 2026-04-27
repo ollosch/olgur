@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { nextTick, ref, watch } from 'vue'
 import type { Module, Rule, IndexEntry } from '@/types/domain'
 import { useLeftPanelStore, type PanelTab } from '@/stores/leftPanel'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -28,6 +29,63 @@ const emit = defineEmits<{
 }>()
 
 const panelStore = useLeftPanelStore()
+
+// ---------------------------------------------------------------------------
+// Tree container ref for focus/scroll queries
+// ---------------------------------------------------------------------------
+
+const treeContainerRef = ref<HTMLElement | null>(null)
+
+function getTreeNodes(): HTMLElement[] {
+  if (!treeContainerRef.value) return []
+  return Array.from(treeContainerRef.value.querySelectorAll<HTMLElement>('button[data-tree-node]'))
+}
+
+// ---------------------------------------------------------------------------
+// ↑ / ↓ keyboard navigation within the tree
+// ---------------------------------------------------------------------------
+
+function onTreeKeyDown(e: KeyboardEvent): void {
+  if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return
+  const nodes = getTreeNodes()
+  if (nodes.length === 0) return
+  const focused = document.activeElement as HTMLElement | null
+  const idx = focused ? nodes.indexOf(focused) : -1
+  if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    const target = idx > 0 ? nodes[idx - 1] : nodes[nodes.length - 1]
+    target?.focus()
+  } else {
+    e.preventDefault()
+    const target = idx < nodes.length - 1 ? nodes[idx + 1] : nodes[0]
+    target?.focus()
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Focus on pending request (set by SystemView after expanding ancestors)
+// ---------------------------------------------------------------------------
+
+watch(
+  () => panelStore.pendingFocusRuleId,
+  async (ruleId) => {
+    if (ruleId === null) return
+    // Clear immediately so repeated same-rule focus still triggers a re-watch
+    panelStore.pendingFocusRuleId = null
+    await nextTick()
+    const nodes = getTreeNodes()
+    if (nodes.length === 0) return
+    if (ruleId === '__first__') {
+      nodes[0]?.focus()
+      return
+    }
+    const target = nodes.find((n) => n.dataset['ruleId'] === ruleId)
+    if (target) {
+      target.focus()
+      target.scrollIntoView({ block: 'nearest' })
+    }
+  },
+)
 </script>
 
 <template>
@@ -61,7 +119,13 @@ const panelStore = useLeftPanelStore()
     <!-- Tree tab -->
     <TabsContent value="tree" class="flex-1 overflow-hidden mt-0">
       <ScrollArea class="h-full">
-        <div class="py-4">
+        <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
+        <div
+          ref="treeContainerRef"
+          class="py-4"
+          data-tree-container
+          @keydown="onTreeKeyDown"
+        >
           <div v-for="mod in activeModules" :key="mod.id" class="mb-2">
             <button
               class="w-full flex items-center gap-2 px-4 py-2 hover:bg-muted/30 transition-colors text-left"

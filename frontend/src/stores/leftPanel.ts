@@ -7,10 +7,36 @@ export const useLeftPanelStore = defineStore('leftPanel', () => {
   const activeTab = ref<PanelTab>('tree')
   const mobileOpen = ref(false)
 
+  /** Module accordion state — which module sections are expanded in the tree */
+  const expandedModuleIds = ref<Set<string>>(new Set())
+
+  /** Rule node state — which rule nodes are expanded in the tree */
+  const expandedRuleIds = ref<Set<string>>(new Set())
+
+  /**
+   * When set, the tree tab should scroll to and focus the node with this rule ID.
+   * Consumers clear this after focusing.
+   */
+  const pendingFocusRuleId = ref<string | null>(null)
+
+  /**
+   * Incremented each time the `t` shortcut fires. Watched by SystemView to
+   * expand ancestors of the selected rule before setting pendingFocusRuleId.
+   */
+  const treeActivatedTick = ref(0)
+
   function openToTab(tab: PanelTab): void {
     activeTab.value = tab
     mobileOpen.value = true
   }
 
-  return { activeTab, mobileOpen, openToTab }
+  return {
+    activeTab,
+    mobileOpen,
+    expandedModuleIds,
+    expandedRuleIds,
+    pendingFocusRuleId,
+    treeActivatedTick,
+    openToTab,
+  }
 })

@@ -51,6 +51,7 @@ export function useGlobalShortcuts(): void {
       case 't':
         e.preventDefault()
         panelStore.openToTab('tree')
+        panelStore.treeActivatedTick++
         break
     }
   }
