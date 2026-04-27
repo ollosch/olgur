@@ -90,8 +90,7 @@ async function handleSubscribe(moduleId: string) {
 }
 
 async function handleUnsubscribe(moduleId: string) {
-  const subId = subscriptions.value[moduleId]
-  if (subId) await unsubscribe(props.system.id, moduleId)
+  if (subscriptions.value[moduleId]) await unsubscribe(props.system.id, moduleId)
 }
 
 function openSystem() {
@@ -150,6 +149,7 @@ function openSystem() {
           >
             <span class="flex-1 text-foreground">{{ mod.name }}</span>
             <Badge v-if="mod.is_core" variant="secondary" class="text-xs">core</Badge>
+            <Badge v-if="subscriptions[mod.id]?.editor" variant="outline" class="text-xs text-amber-600 border-amber-400/50">editor</Badge>
             <template v-if="isMember">
               <template v-if="mod.is_core">
                 <Badge variant="outline" class="text-xs text-primary border-primary/40">

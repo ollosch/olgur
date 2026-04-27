@@ -23,7 +23,7 @@ export const useSystemStore = defineStore('system', () => {
   const membershipsBySystem = ref<Record<string, Membership | null>>({})
 
   // ── Flat subscription map (all user subscriptions, keyed by moduleId) ───────
-  const subscriptions = ref<Record<string, string | null>>({})
+  const subscriptions = ref<Record<string, { id: string; editor: boolean } | null>>({})
 
   // ── Current system context ───────────────────────────────────────────────────
   const currentSystem = ref<System | null>(null)
@@ -75,9 +75,9 @@ export const useSystemStore = defineStore('system', () => {
   async function fetchUserSubscriptions() {
     const result = await get<{ data: Subscription[] }>('/me/subscriptions')
     if (result) {
-      const map: Record<string, string | null> = {}
+      const map: Record<string, { id: string; editor: boolean } | null> = {}
       for (const s of result.data) {
-        map[s.module_id] = s.id
+        map[s.module_id] = { id: s.id, editor: s.editor }
       }
       subscriptions.value = map
     }
@@ -107,9 +107,9 @@ export const useSystemStore = defineStore('system', () => {
     }
 
     if (subscriptionsResult) {
-      const map: Record<string, string | null> = {}
+      const map: Record<string, { id: string; editor: boolean } | null> = {}
       for (const s of subscriptionsResult.data) {
-        map[s.module_id] = s.id
+        map[s.module_id] = { id: s.id, editor: s.editor }
       }
       subscriptions.value = map
     }
@@ -185,16 +185,16 @@ export const useSystemStore = defineStore('system', () => {
       {},
     )
     if (result) {
-      subscriptions.value[moduleId] = result.data.id
+      subscriptions.value[moduleId] = { id: result.data.id, editor: result.data.editor }
       await fetchUserMemberships()
     }
   }
 
   async function unsubscribe(systemId: string, moduleId: string) {
-    const subscriptionId = subscriptions.value[moduleId]
-    if (!subscriptionId) return
+    const sub = subscriptions.value[moduleId]
+    if (!sub) return
 
-    await del(`/systems/${systemId}/modules/${moduleId}/subscriptions/${subscriptionId}`)
+    await del(`/systems/${systemId}/modules/${moduleId}/subscriptions/${sub.id}`)
     subscriptions.value[moduleId] = null
     await fetchUserMemberships()
   }
