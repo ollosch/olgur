@@ -6,12 +6,13 @@ import type { Rule, IndexEntry } from '@/types/domain'
 
 export const useContentStore = defineStore('content', () => {
   const { get, loading } = useApi()
+  const systemStore = useSystemStore()
 
   const rulesByModule = ref<Record<string, Rule[]>>({})
   const indexEntriesByModule = ref<Record<string, IndexEntry[]>>({})
 
   async function fetchRules(moduleId: string) {
-    const systemId = useSystemStore().currentSystem?.id
+    const systemId = systemStore.currentSystem?.id
     if (!systemId) return
 
     const result = await get<{ data: Rule[] }>(`/systems/${systemId}/modules/${moduleId}/rules`)
@@ -21,7 +22,7 @@ export const useContentStore = defineStore('content', () => {
   }
 
   async function fetchIndexEntries(moduleId: string) {
-    const systemId = useSystemStore().currentSystem?.id
+    const systemId = systemStore.currentSystem?.id
     if (!systemId) return
 
     const result = await get<{ data: IndexEntry[] }>(
