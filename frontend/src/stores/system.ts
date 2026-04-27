@@ -85,11 +85,9 @@ export const useSystemStore = defineStore('system', () => {
 
   // ── System entry / exit ──────────────────────────────────────────────────────
   async function enterSystem(systemId: string) {
-    const [systemResult, modulesResult, membershipsResult, subscriptionsResult] = await Promise.all([
+    const [systemResult, modulesResult] = await Promise.all([
       get<{ data: System }>(`/systems/${systemId}`),
       get<{ data: Module[] }>(`/systems/${systemId}/modules`),
-      get<{ data: Membership[] }>('/me/memberships'),
-      get<{ data: Subscription[] }>('/me/subscriptions'),
     ])
 
     if (systemResult) {
@@ -98,20 +96,6 @@ export const useSystemStore = defineStore('system', () => {
 
     if (modulesResult) {
       modulesBySystem.value[systemId] = modulesResult.data
-    }
-
-    if (membershipsResult) {
-      for (const m of membershipsResult.data) {
-        membershipsBySystem.value[m.system_id] = m
-      }
-    }
-
-    if (subscriptionsResult) {
-      const map: Record<string, { id: string; editor: boolean } | null> = {}
-      for (const s of subscriptionsResult.data) {
-        map[s.module_id] = { id: s.id, editor: s.editor }
-      }
-      subscriptions.value = map
     }
   }
 

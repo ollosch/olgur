@@ -14,7 +14,7 @@ const showCreateDialog = ref(false)
 const initialLoading = ref(true)
 
 onMounted(async () => {
-  await Promise.all([systemStore.fetchSystems(), systemStore.fetchUserMemberships(), systemStore.fetchUserSubscriptions()])
+  await systemStore.fetchSystems()
   initialLoading.value = false
 })
 

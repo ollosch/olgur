@@ -9,6 +9,7 @@ import { toast } from 'vue-sonner'
 import '@/styles.css'
 import { useAuthStore } from './stores/auth'
 import { useAppSettingsStore } from './stores/appSettings'
+import { useSystemStore } from './stores/system'
 
 const app = createApp(App)
 
@@ -21,6 +22,14 @@ appSettings.init()
 
 await authStore.fetchCsrfCookie()
 await authStore.fetchUser().catch(() => {})
+
+if (authStore.user) {
+  const systemStore = useSystemStore()
+  await Promise.all([
+    systemStore.fetchUserMemberships(),
+    systemStore.fetchUserSubscriptions()
+  ])
+}
 
 app.use(router)
 app.mount('#app')
