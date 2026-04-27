@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
+import { generateSlug } from '@/lib/utils'
 
 interface Props {
   systemId: string
@@ -36,13 +37,6 @@ const { createModule } = systemStore
 const name = ref('')
 const slug = ref('')
 const isCore = ref(false)
-
-function generateSlug(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-]/g, '')
-}
 
 watch(name, (val) => {
   slug.value = generateSlug(val)

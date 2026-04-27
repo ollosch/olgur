@@ -13,6 +13,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
+import { generateSlug } from '@/lib/utils'
 
 interface Props {
   open: boolean
@@ -33,13 +34,6 @@ const description = ref('')
 const structure = ref<SystemStructure>('core_plus_many')
 const tocDepth = ref(1)
 const sortRulesBy = ref<'number' | 'sort_order'>('sort_order')
-
-function generateSlug(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-]/g, '')
-}
 
 watch(name, (val) => {
   slug.value = generateSlug(val)
