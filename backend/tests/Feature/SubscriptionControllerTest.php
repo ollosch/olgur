@@ -39,34 +39,11 @@ test('unauthenticated requests are rejected', function (string $method, string $
 
     $this->$method($url)->assertUnauthorized();
 })->with([
-    'me index' => ['getJson',    '/api/me/subscriptions'],
     'index' => ['getJson',    '/api/systems/{system}/modules/{module}/subscriptions'],
     'store' => ['postJson',   '/api/systems/{system}/modules/{module}/subscriptions'],
     'update' => ['patchJson',  '/api/systems/{system}/modules/{module}/subscriptions/{subscription}'],
     'destroy' => ['deleteJson', '/api/systems/{system}/modules/{module}/subscriptions/{subscription}'],
 ]);
-
-// ── /me/subscriptions index ──────────────────────────────────────────────────
-
-test('me index returns the authenticated user subscriptions', function (): void {
-    $user = User::factory()->create();
-    Subscription::factory()->for($user)->count(3)->create();
-    // Another user's subscriptions should not appear
-    Subscription::factory()->count(2)->create();
-    actingAs($user);
-
-    $response = getJson('/api/me/subscriptions')->assertSuccessful();
-
-    expect($response->json('data'))->toHaveCount(3);
-});
-
-test('me index returns empty when user has no subscriptions', function (): void {
-    actingAs(User::factory()->create());
-
-    $response = getJson('/api/me/subscriptions')->assertSuccessful();
-
-    expect($response->json('data'))->toBeEmpty();
-});
 
 // ── module subscriptions index ───────────────────────────────────────────────
 

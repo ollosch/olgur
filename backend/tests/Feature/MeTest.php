@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Models\Membership;
+use App\Models\Subscription;
+use App\Models\System;
 use App\Models\User;
 
 use function Pest\Laravel\actingAs;
@@ -54,4 +57,59 @@ it('returns super_admin as false for a regular user', function (): void {
     getJson('/api/me')
         ->assertSuccessful()
         ->assertJsonPath('data.super_admin', false);
+});
+
+// ── /me/memberships ───────────────────────────────────────────────────────────
+
+it('returns 401 for unauthenticated users on memberships endpoint', function (): void {
+    getJson('/api/me/memberships')->assertUnauthorized();
+});
+
+it('returns only the authenticated user memberships', function (): void {
+    $user = User::factory()->create();
+    $systemA = System::factory()->create();
+    $systemB = System::factory()->create();
+    Membership::factory()->for($user)->for($systemA)->create();
+    Membership::factory()->for($user)->for($systemB)->create();
+    // Another user's memberships should not appear
+    Membership::factory()->for($systemA)->count(2)->create();
+    actingAs($user);
+
+    $response = getJson('/api/me/memberships')->assertSuccessful();
+
+    expect($response->json('data'))->toHaveCount(2);
+});
+
+it('returns empty memberships when user has none', function (): void {
+    actingAs(User::factory()->create());
+
+    $response = getJson('/api/me/memberships')->assertSuccessful();
+
+    expect($response->json('data'))->toBeEmpty();
+});
+
+// ── /me/subscriptions ─────────────────────────────────────────────────────────
+
+it('returns 401 for unauthenticated users on subscriptions endpoint', function (): void {
+    getJson('/api/me/subscriptions')->assertUnauthorized();
+});
+
+it('returns only the authenticated user subscriptions', function (): void {
+    $user = User::factory()->create();
+    Subscription::factory()->for($user)->count(3)->create();
+    // Another user's subscriptions should not appear
+    Subscription::factory()->count(2)->create();
+    actingAs($user);
+
+    $response = getJson('/api/me/subscriptions')->assertSuccessful();
+
+    expect($response->json('data'))->toHaveCount(3);
+});
+
+it('returns empty subscriptions when user has none', function (): void {
+    actingAs(User::factory()->create());
+
+    $response = getJson('/api/me/subscriptions')->assertSuccessful();
+
+    expect($response->json('data'))->toBeEmpty();
 });

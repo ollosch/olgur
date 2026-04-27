@@ -12,15 +12,10 @@ use App\Models\User;
 final class SubscriptionPolicy
 {
     /**
-     * Any authenticated user can view their own subscriptions (no module context).
      * System admins and module editors can view all subscriptions for a module.
      */
-    public function viewAny(User $user, ?Module $module = null): bool
+    public function viewAny(User $user, Module $module): bool
     {
-        if (! $module instanceof Module) {
-            return true;
-        }
-
         /** @var System|null $system */
         $system = $module->system;
 
