@@ -15,10 +15,6 @@ const children = computed(() => props.childrenMap.get(props.rule.id) ?? [])
 
 <template>
   <div>
-    <p v-if="rule.content" class="text-foreground/80 text-sm leading-relaxed mb-6 whitespace-pre-wrap">
-      {{ rule.content }}
-    </p>
-
     <div v-if="children.length > 0">
       <button
         v-for="child in children"
