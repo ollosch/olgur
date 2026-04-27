@@ -18,6 +18,7 @@ export function useRuleDelegation(
   getIndexEntriesMap?: () => Map<string, IndexEntry>,
 ) {
   const { state, hide, keepOpen } = useRulePopup()
+  const appSettings = useAppSettingsStore()
   let showTimer: ReturnType<typeof setTimeout> | null = null
   let activeEl: HTMLElement | null = null
 
@@ -72,7 +73,7 @@ export function useRuleDelegation(
         }
       }, 150)
     } else if (trigger.dataset['acronymTerm'] !== undefined) {
-      if (!useAppSettingsStore().acronymPopups) return
+      if (!appSettings.acronymPopups) return
       const term = trigger.dataset['acronymTerm'] ?? ''
       showTimer = setTimeout(() => {
         showTimer = null
