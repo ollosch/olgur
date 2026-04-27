@@ -21,6 +21,7 @@ Route::prefix('api')->group(function (): void {
         Route::patch('/me', [MeController::class, 'update']);
         Route::get('/me/memberships', [MeController::class, 'memberships']);
         Route::get('/me/subscriptions', [MeController::class, 'subscriptions']);
+        Route::patch('/me/memberships/{system}', [MeController::class, 'updateMembership']);
 
         Route::apiResource('systems', SystemController::class);
 

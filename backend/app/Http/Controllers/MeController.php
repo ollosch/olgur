@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpdateMembershipConfigRequest;
 use App\Http\Requests\UpdateProfileRequest;
 use App\Http\Resources\MembershipResource;
 use App\Http\Resources\SubscriptionResource;
 use App\Http\Resources\UserResource;
+use App\Models\Membership;
+use App\Models\System;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -57,5 +60,23 @@ final class MeController
         $user = $request->user();
 
         return SubscriptionResource::collection($user->subscriptions()->with('module')->oldest()->get());
+    }
+
+    /**
+     * Update the authenticated user's membership config for a system.
+     */
+    public function updateMembership(UpdateMembershipConfigRequest $request, System $system): MembershipResource
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        /** @var Membership $membership */
+        $membership = $system->memberships()
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+
+        $membership->update(['config' => $request->validated('config')]);
+
+        return new MembershipResource($membership);
     }
 }

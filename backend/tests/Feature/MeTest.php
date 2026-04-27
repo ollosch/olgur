@@ -174,3 +174,70 @@ it('allows updating profile with the same email', function (): void {
     patchJson('/api/me', ['name' => $user->name, 'email' => $user->email])
         ->assertSuccessful();
 });
+
+// ── PATCH /me/memberships/{system} ────────────────────────────────────────────
+
+it('returns 401 for unauthenticated users on update membership config endpoint', function (): void {
+    $system = System::factory()->create();
+
+    patchJson('/api/me/memberships/'.$system->id, ['config' => []])
+        ->assertUnauthorized();
+});
+
+it('member can update their own membership config', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $membership = Membership::factory()->for($user)->for($system)->create();
+    actingAs($user);
+
+    $config = [
+        'active_module_ids' => ['mod-1', 'mod-2'],
+        'bookmarks' => [
+            ['type' => 'rule', 'id' => 'abcdefghijklmnopqrstuvwxyz'],
+        ],
+    ];
+
+    $response = patchJson('/api/me/memberships/'.$system->id, ['config' => $config])
+        ->assertSuccessful();
+
+    $response->assertJsonPath('data.id', $membership->id);
+
+    expect($membership->fresh()->config)->toBe($config);
+});
+
+it('returns 404 when user has no membership for the system', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    actingAs($user);
+
+    patchJson('/api/me/memberships/'.$system->id, ['config' => ['active_module_ids' => []]])
+        ->assertNotFound();
+});
+
+it('requires config field on update membership config', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    Membership::factory()->for($user)->for($system)->create();
+    actingAs($user);
+
+    patchJson('/api/me/memberships/'.$system->id, [])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['config']);
+});
+
+it('rejects unknown bookmark types on update membership config', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    Membership::factory()->for($user)->for($system)->create();
+    actingAs($user);
+
+    patchJson('/api/me/memberships/'.$system->id, [
+        'config' => [
+            'bookmarks' => [
+                ['type' => 'unknown', 'id' => 'abc123'],
+            ],
+        ],
+    ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['config.bookmarks.0.type']);
+});
