@@ -16,6 +16,12 @@ const emit = defineEmits<{ selectRule: [rule: Rule] }>()
 
 const appSettings = useAppSettingsStore()
 
+const entriesById = computed(() => {
+  const map = new Map<string, IndexEntry>()
+  for (const e of props.entries) map.set(e.id, e)
+  return map
+})
+
 const search = ref('')
 const activeLetter = ref<string | null>(null)
 
@@ -96,7 +102,11 @@ function onSearch() {
         :key="entry.id"
         class="py-2 border-b border-border/50 last:border-0"
       >
-        <p class="text-xs font-semibold text-foreground">{{ entry.term }}</p>
+        <p class="text-xs font-semibold text-foreground">
+          <span v-if="entry.parent_id" class="text-xs text-muted-foreground">
+            {{ entriesById.get(entry.parent_id)?.term }} ›
+          </span>{{ entry.term }}
+        </p>
         <p
           class="text-xs text-foreground/70 leading-relaxed mt-0.5"
           v-html="renderContent(entry.definition, { acronymPopups: appSettings.acronymPopups })"
@@ -109,18 +119,17 @@ function onSearch() {
 
         <!-- rule_refs: data attribute only, delegation handles hover + click -->
         <div v-if="entry.relations?.rule_refs?.length" class="mt-1 flex flex-wrap gap-1.5 items-center">
-          <span class="text-xs text-muted-foreground">Rules:</span>
           <a
             v-for="ref in entry.relations.rule_refs"
             :key="ref"
             :data-rule-number="ref"
-            class="font-mono text-xs text-primary underline decoration-dotted hover:text-primary/80 transition-colors cursor-pointer"
+            class=" ml-2 font-mono text-xs text-primary underline decoration-dotted hover:text-primary/80 transition-colors cursor-pointer"
           >{{ ref }}</a>
         </div>
 
         <!-- see_also -->
         <div v-if="entry.relations?.see_also?.length" class="mt-1 flex flex-wrap gap-1.5 items-center">
-          <span class="text-xs text-muted-foreground">See also:</span>
+          <span class=" ml-2 text-xs text-muted-foreground">See also:</span>
           <span
             v-for="term in entry.relations.see_also"
             :key="term"
