@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Rule } from '@/types/domain'
 import { renderContent } from '@/lib/renderContent'
+import { useAppSettingsStore } from '@/stores/appSettings'
 
 interface Props {
   rule: Rule
@@ -10,6 +11,8 @@ interface Props {
 
 const props = defineProps<Props>()
 const emit = defineEmits<{ selectRule: [rule: Rule] }>()
+
+const appSettings = useAppSettingsStore()
 
 function children(parentId: string): Rule[] {
   return props.childrenMap.get(parentId) ?? []
@@ -30,7 +33,7 @@ function children(parentId: string): Rule[] {
       <!-- eslint-disable-next-line vue/no-v-html -->
       <p
         class="text-foreground/70 text-sm leading-relaxed mb-2 whitespace-pre-wrap"
-        v-html="renderContent(child.content)"
+        v-html="renderContent(child.content, { acronymPopups: appSettings.acronymPopups })"
       />
       <RuleDetailChildren
         :rule="child"

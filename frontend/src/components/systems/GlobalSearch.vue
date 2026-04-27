@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { Search, ChevronDown, ChevronRight } from 'lucide-vue-next'
 import { renderContent } from '@/lib/renderContent'
+import { useAppSettingsStore } from '@/stores/appSettings'
 
 interface Props {
   rules: Rule[]
@@ -15,6 +16,7 @@ interface Props {
 const props = defineProps<Props>()
 const emit = defineEmits<{ selectRule: [rule: Rule] }>()
 
+const appSettings = useAppSettingsStore()
 const query = ref('')
 const open = ref(false)
 const containerRef = ref<HTMLElement | null>(null)
@@ -205,7 +207,7 @@ function handleSelectRule(rule: Rule) {
             <!-- eslint-disable-next-line vue/no-v-html -->
             <p
               class="text-foreground/70 text-xs leading-relaxed mt-0.5"
-              v-html="renderContent(entry.definition)"
+              v-html="renderContent(entry.definition, { acronymPopups: appSettings.acronymPopups })"
             />
 
             <!-- Line 3: see also (always) -->
@@ -226,7 +228,7 @@ function handleSelectRule(rule: Rule) {
             <p
               v-if="entry.notes && expandedNotes.has(entry.id)"
               class="text-muted-foreground text-xs italic mt-0.5"
-              v-html="renderContent(entry.notes)"
+              v-html="renderContent(entry.notes, { acronymPopups: appSettings.acronymPopups })"
             />
           </div>
 

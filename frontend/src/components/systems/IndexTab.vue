@@ -4,6 +4,7 @@ import type { IndexEntry, Rule } from '@/types/domain'
 import { Input } from '@/components/ui/input'
 import { renderContent } from '@/lib/renderContent'
 import { useRuleDelegation } from '@/composables/useRuleDelegation'
+import { useAppSettingsStore } from '@/stores/appSettings'
 
 interface Props {
   entries: IndexEntry[]
@@ -12,6 +13,8 @@ interface Props {
 
 const props = defineProps<Props>()
 const emit = defineEmits<{ selectRule: [rule: Rule] }>()
+
+const appSettings = useAppSettingsStore()
 
 useRuleDelegation(
   () => props.rulesByNumber,
@@ -109,12 +112,12 @@ function onSearch() {
         <p class="text-xs font-semibold text-foreground">{{ entry.term }}</p>
         <p
           class="text-xs text-foreground/70 leading-relaxed mt-0.5"
-          v-html="renderContent(entry.definition)"
+          v-html="renderContent(entry.definition, { acronymPopups: appSettings.acronymPopups })"
         />
         <p
           v-if="entry.notes"
           class="text-xs text-muted-foreground italic mt-0.5"
-          v-html="renderContent(entry.notes)"
+          v-html="renderContent(entry.notes, { acronymPopups: appSettings.acronymPopups })"
         />
 
         <!-- rule_refs: data attribute only, delegation handles hover + click -->
