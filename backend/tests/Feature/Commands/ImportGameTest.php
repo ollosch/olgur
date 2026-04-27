@@ -551,3 +551,28 @@ test('no core module in manifest skips index import with warning', function () u
 
     removeGameDir($dir);
 });
+
+test('structure key in manifest takes precedence over cli option', function () use ($simpleGameRules): void {
+    $dir = makeGameDir(
+        [
+            'name' => 'Structure Override Game',
+            'slug' => 'structure-override',
+            'structure' => 'grouping_only',
+            'modules' => [
+                ['type' => 'core', 'name' => 'Core', 'slug' => 'core', 'path' => 'rules.json'],
+            ],
+            'index' => 'idx.json',
+        ],
+        [
+            'rules.json' => $simpleGameRules,
+            'idx.json' => [],
+        ]
+    );
+
+    artisan('import:game', ['path' => $dir, '--structure' => 'core_plus_many'])->assertSuccessful();
+
+    $system = System::query()->where('slug', 'structure-override')->first();
+    expect($system->config?->structure->value)->toBe('grouping_only');
+
+    removeGameDir($dir);
+});
