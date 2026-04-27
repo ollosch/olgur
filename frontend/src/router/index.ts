@@ -30,6 +30,10 @@ const router = createRouter({
       meta: { requiresAuth: true },
       component: () => import('@/views/SystemView.vue'),
     },
+    {
+      path: '/:pathMatch(.*)*',
+      redirect: { name: 'home' },
+    },
   ],
 })
 
