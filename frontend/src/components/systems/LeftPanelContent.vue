@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import type { Module, Rule, IndexEntry } from '@/types/domain'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { ChevronRight, ChevronDown, Bookmark, History, Pin, PinOff } from 'lucide-vue-next'
+import RuleTreeNode from '@/components/systems/RuleTreeNode.vue'
 
 interface Props {
   activeModules: Module[]
@@ -45,11 +48,42 @@ const emit = defineEmits<{
       </button>
     </TabsList>
 
-    <!-- Treetab -->
+    <!-- Tree tab -->
     <TabsContent value="tree" class="flex-1 overflow-hidden mt-0">
-      <div class="flex items-center justify-center h-full text-xs text-muted-foreground">
-        Tree coming soon.
-      </div>
+      <ScrollArea class="h-full">
+        <div class="py-4">
+          <div v-for="mod in activeModules" :key="mod.id" class="mb-2">
+            <button
+              class="w-full flex items-center gap-2 px-4 py-2 hover:bg-muted/30 transition-colors text-left"
+              @click="emit('toggleModule', mod.id)"
+            >
+              <component
+                :is="expandedModules.has(mod.id) ? ChevronDown : ChevronRight"
+                class="w-3.5 h-3.5 text-muted-foreground shrink-0"
+              />
+              <span class="text-xs text-primary font-semibold uppercase tracking-wide">
+                {{ mod.name }}
+              </span>
+            </button>
+
+            <div v-if="expandedModules.has(mod.id)">
+              <RuleTreeNode
+                v-for="rule in buildTopLevelRules(getModuleRules(mod))"
+                :key="rule.id"
+                :rule="rule"
+                :all-rules="getModuleRules(mod)"
+                :selected-id="selectedRule?.id ?? null"
+                :depth="1"
+                @select="emit('select', $event)"
+              />
+            </div>
+          </div>
+
+          <div v-if="activeModules.length === 0" class="px-4 text-xs text-muted-foreground">
+            No active modules.
+          </div>
+        </div>
+      </ScrollArea>
     </TabsContent>
 
     <!-- Index tab -->
