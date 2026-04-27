@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Enums\SystemStructure;
 use App\Models\System;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -39,7 +40,17 @@ final class StoreModuleRequest extends FormRequest
                 'required',
                 'boolean',
                 function (string $attribute, mixed $value, Closure $fail) use ($system): void {
-                    if ($value && $system->modules()->where('is_core', true)->exists()) {
+                    if (! $value) {
+                        return;
+                    }
+
+                    if ($system->config?->structure === SystemStructure::GroupingOnly) {
+                        $fail('Grouping-only systems cannot have a core module.');
+
+                        return;
+                    }
+
+                    if ($system->modules()->where('is_core', true)->exists()) {
                         $fail('This system already has a core module.');
                     }
                 },

@@ -413,3 +413,95 @@ test('store creates an admin membership for the creator', function (): void {
         'admin' => true,
     ]);
 });
+
+// ── auto core module ──────────────────────────────────────────────────────────
+
+test('store auto-creates a core module for core_plus_one systems', function (): void {
+    $user = User::factory()->create();
+    actingAs($user);
+
+    $response = postJson('/api/systems', [
+        'slug' => 'my-system',
+        'name' => 'My System',
+        'description' => '',
+        'config' => [
+            'system_structure' => 'core_plus_one',
+            'toc_depth' => 1,
+            'sort_rules_by' => 'sort_order',
+        ],
+    ])->assertCreated();
+
+    $systemId = $response->json('data.id');
+    $system = System::query()->find($systemId);
+
+    expect($system)->not->toBeNull();
+
+    /** @var System $system */
+    $coreModule = $system->modules()->where('is_core', true)->first();
+
+    expect($coreModule)->not->toBeNull()
+        ->and($coreModule->name)->toBe('Core')
+        ->and($coreModule->slug)->toBe('core');
+
+    assertDatabaseHas('subscriptions', [
+        'user_id' => $user->id,
+        'module_id' => $coreModule->id,
+        'editor' => true,
+    ]);
+});
+
+test('store auto-creates a core module for core_plus_many systems', function (): void {
+    $user = User::factory()->create();
+    actingAs($user);
+
+    $response = postJson('/api/systems', [
+        'slug' => 'my-system',
+        'name' => 'My System',
+        'description' => '',
+        'config' => [
+            'system_structure' => 'core_plus_many',
+            'toc_depth' => 1,
+            'sort_rules_by' => 'sort_order',
+        ],
+    ])->assertCreated();
+
+    $systemId = $response->json('data.id');
+    $system = System::query()->find($systemId);
+
+    expect($system)->not->toBeNull();
+
+    /** @var System $system */
+    $coreModule = $system->modules()->where('is_core', true)->first();
+
+    expect($coreModule)->not->toBeNull();
+
+    assertDatabaseHas('subscriptions', [
+        'user_id' => $user->id,
+        'module_id' => $coreModule->id,
+        'editor' => true,
+    ]);
+});
+
+test('store does not auto-create a core module for grouping_only systems', function (): void {
+    $user = User::factory()->create();
+    actingAs($user);
+
+    $response = postJson('/api/systems', [
+        'slug' => 'my-system',
+        'name' => 'My System',
+        'description' => '',
+        'config' => [
+            'system_structure' => 'grouping_only',
+            'toc_depth' => 1,
+            'sort_rules_by' => 'sort_order',
+        ],
+    ])->assertCreated();
+
+    $systemId = $response->json('data.id');
+    $system = System::query()->find($systemId);
+
+    expect($system)->not->toBeNull();
+
+    /** @var System $system */
+    expect($system->modules()->where('is_core', true)->exists())->toBeFalse();
+});
