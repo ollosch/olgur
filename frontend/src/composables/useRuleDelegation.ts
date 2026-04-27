@@ -1,5 +1,6 @@
 import { onMounted, onUnmounted } from 'vue'
 import { useRulePopup } from '@/composables/useRulePopup'
+import { useAppSettingsStore } from '@/stores/appSettings'
 import type { Rule, IndexEntry } from '@/types/domain'
 
 /**
@@ -71,6 +72,7 @@ export function useRuleDelegation(
         }
       }, 150)
     } else if (trigger.dataset['acronymTerm'] !== undefined) {
+      if (!useAppSettingsStore().acronymPopups) return
       const term = trigger.dataset['acronymTerm'] ?? ''
       showTimer = setTimeout(() => {
         showTimer = null
