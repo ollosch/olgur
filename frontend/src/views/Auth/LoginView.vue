@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import router from '@/router'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useForm } from 'vee-validate'
 import type { LoginRequest } from '@/types/domain'
@@ -11,6 +11,7 @@ import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui
 import { Input } from '@/components/ui/input'
 
 const authStore = useAuthStore()
+const router = useRouter()
 const { defineField, handleSubmit, errors, setErrors } = useForm<LoginRequest>()
 
 const [email, emailAttrs] = defineField('email')

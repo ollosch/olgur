@@ -5,17 +5,12 @@ import { createRouter, createMemoryHistory } from 'vue-router'
 import { defineComponent } from 'vue'
 
 // ─── Hoisted mocks ────────────────────────────────────────────────────────────
-const { mockLogin, mockRouterPush } = vi.hoisted(() => ({
+const { mockLogin } = vi.hoisted(() => ({
   mockLogin: vi.fn(),
-  mockRouterPush: vi.fn(),
 }))
 
 vi.mock('@/stores/auth', () => ({
   useAuthStore: vi.fn(() => mockAuthStore),
-}))
-
-vi.mock('@/router', () => ({
-  default: { push: mockRouterPush },
 }))
 
 vi.mock('@/components/ui/button', () => ({
@@ -74,10 +69,11 @@ function buildRouter() {
 }
 
 describe('LoginView', () => {
+  let mockRouterPush: ReturnType<typeof vi.fn>
+
   beforeEach(() => {
     setActivePinia(createPinia())
     mockLogin.mockReset()
-    mockRouterPush.mockReset()
     mockAuthStore.errors = null
     mockAuthStore.loading = false
     mockAuthStore.user = null
@@ -85,6 +81,7 @@ describe('LoginView', () => {
 
   function mountView() {
     const router = buildRouter()
+    mockRouterPush = vi.spyOn(router, 'push')
     return mount(LoginView, {
       global: {
         plugins: [router],
