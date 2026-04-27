@@ -1,0 +1,38 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+import type { Rule } from '@/types/domain'
+
+interface Props {
+  rule: Rule
+  childrenMap: Map<string | null, Rule[]>
+}
+
+const props = defineProps<Props>()
+const emit = defineEmits<{ select: [rule: Rule] }>()
+
+const children = computed(() => props.childrenMap.get(props.rule.id) ?? [])
+</script>
+
+<template>
+  <div>
+    <p v-if="rule.content" class="text-foreground/80 text-sm leading-relaxed mb-6 whitespace-pre-wrap">
+      {{ rule.content }}
+    </p>
+
+    <div v-if="children.length > 0">
+      <button
+        v-for="child in children"
+        :key="child.id"
+        class="w-full flex items-baseline gap-3 px-3 py-2.5 rounded-md hover:bg-muted/40 transition-colors text-left group"
+        @click="emit('select', child)"
+      >
+        <span class="font-mono text-sm text-primary font-semibold shrink-0 w-16 text-right">
+          {{ child.number }}
+        </span>
+        <span class="text-foreground/90 text-sm group-hover:text-foreground transition-colors">
+          {{ child.title }}
+        </span>
+      </button>
+    </div>
+  </div>
+</template>

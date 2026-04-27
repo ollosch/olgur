@@ -92,7 +92,7 @@ async function handleUnsubscribe(moduleId: string) {
 }
 
 function openSystem() {
-  // TODO: router.push({ name: 'system', params: { systemId: props.system.id } })
+  router.push({ name: 'system', params: { systemId: props.system.id } })
 }
 </script>
 

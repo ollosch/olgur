@@ -11,7 +11,13 @@ const router = createRouter({
       path: '/',
       meta: { requiresAuth: true },
       component: HomeView,
-    }
+    },
+    {
+      name: 'system',
+      path: '/systems/:systemId',
+      meta: { requiresAuth: true },
+      component: () => import('@/views/SystemView.vue'),
+    },
   ],
 })
 
