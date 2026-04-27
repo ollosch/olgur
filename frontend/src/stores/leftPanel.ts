@@ -1,9 +1,11 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { useAppSettingsStore } from '@/stores/appSettings'
 
 export type PanelTab = 'tree' | 'index' | 'bookmarks' | 'history'
 
 export const useLeftPanelStore = defineStore('leftPanel', () => {
+  const appSettings = useAppSettingsStore()
   const activeTab = ref<PanelTab>('tree')
   const mobileOpen = ref(false)
 
@@ -27,7 +29,9 @@ export const useLeftPanelStore = defineStore('leftPanel', () => {
 
   function openToTab(tab: PanelTab): void {
     activeTab.value = tab
-    mobileOpen.value = true
+    if (!appSettings.sidebarPinned) {
+      mobileOpen.value = true
+    }
   }
 
   return {

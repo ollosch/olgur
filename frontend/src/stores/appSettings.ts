@@ -33,8 +33,10 @@ function loadNumber(key: string, defaultValue: number): number {
 export const useAppSettingsStore = defineStore('appSettings', () => {
   const acronymPopups = ref(loadBool('settings.acronymPopups', true))
   const themeHue = ref(loadNumber('settings.themeHue', 142))
+  const sidebarPinned = ref(loadBool('settings.sidebarPinned', false))
 
   watch(acronymPopups, (val) => localStorage.setItem('settings.acronymPopups', String(val)))
+  watch(sidebarPinned, (val) => localStorage.setItem('settings.sidebarPinned', String(val)))
   watch(themeHue, (val) => {
     localStorage.setItem('settings.themeHue', String(val))
     applyTheme(val)
@@ -85,6 +87,7 @@ export const useAppSettingsStore = defineStore('appSettings', () => {
   return {
     acronymPopups,
     themeHue,
+    sidebarPinned,
     init,
   }
 })

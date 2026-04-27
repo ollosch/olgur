@@ -41,7 +41,6 @@ const bookmarkStore = useBookmarkStore()
 
 const systemId = computed(() => route.params['systemId'] as string)
 const loading = ref(true)
-const pinned = ref(localStorage.getItem('system-panel-pinned') === 'true')
 const manageMembersOpen = ref(false)
 
 // ---------------------------------------------------------------------------
@@ -248,8 +247,7 @@ watch(
 // ---------------------------------------------------------------------------
 
 function togglePin() {
-  pinned.value = !pinned.value
-  localStorage.setItem('system-panel-pinned', String(pinned.value))
+  appSettings.sidebarPinned = !appSettings.sidebarPinned
 }
 
 function toggleModule(moduleId: string) {
@@ -296,7 +294,7 @@ useRulePopup().registerNavigate(selectRule, () => rulesByNumber.value, () => ind
         <!-- Mobile panel toggle: hidden when panel is pinned -->
         <Sheet v-model:open="panelStore.mobileOpen">
           <SheetTrigger as-child>
-            <Button variant="ghost" size="icon" :class="['w-8 h-8', pinned ? 'hidden' : 'md:hidden']">
+            <Button variant="ghost" size="icon" :class="['w-8 h-8', appSettings.sidebarPinned ? 'hidden' : 'md:hidden']">
               <Menu class="w-4 h-4" />
             </Button>
           </SheetTrigger>
@@ -307,7 +305,7 @@ useRulePopup().registerNavigate(selectRule, () => rulesByNumber.value, () => ind
               :selected-rule="selectedRule"
               :all-index-entries="allIndexEntries"
               :rules-by-number="rulesByNumber"
-              :pinned="pinned"
+              :pinned="appSettings.sidebarPinned"
               :get-module-rules="getModuleRules"
               :build-top-level-rules="buildTopLevelRules"
               @toggle-module="toggleModule"
@@ -368,14 +366,14 @@ useRulePopup().registerNavigate(selectRule, () => rulesByNumber.value, () => ind
     <!-- Two-panel layout -->
     <div v-else class="flex-1 flex overflow-hidden" style="height: calc(100vh - 53px)">
       <!-- Left panel: always visible when pinned, otherwise hidden on mobile -->
-      <div :class="['w-72 border-r border-border shrink-0 h-full flex-col', pinned ? 'flex' : 'hidden md:flex']">
+      <div :class="['w-72 border-r border-border shrink-0 h-full flex-col', appSettings.sidebarPinned ? 'flex' : 'hidden md:flex']">
         <LeftPanelContent
           :active-modules="activeModules"
           :expanded-modules="panelStore.expandedModuleIds"
           :selected-rule="selectedRule"
           :all-index-entries="allIndexEntries"
           :rules-by-number="rulesByNumber"
-          :pinned="pinned"
+          :pinned="appSettings.sidebarPinned"
           :get-module-rules="getModuleRules"
           :build-top-level-rules="buildTopLevelRules"
           @toggle-module="toggleModule"
