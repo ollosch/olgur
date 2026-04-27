@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useSystemStore } from '@/stores/system'
 import { useContentStore } from '@/stores/content'
 import { useAuthStore } from '@/stores/auth'
 import { useSystemNavStore } from '@/stores/systemNav'
+import { useLeftPanelStore } from '@/stores/leftPanel'
+import { useHistoryStore } from '@/stores/history'
+import { useBookmarkStore } from '@/stores/bookmarks'
 import type { Rule, Module, IndexEntry } from '@/types/domain'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
@@ -15,14 +18,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Menu, MoreVertical, ArrowLeft } from 'lucide-vue-next'
+import { Menu, MoreVertical, ArrowLeft, Star } from 'lucide-vue-next'
 import RuleDetailChildren from '@/components/systems/RuleDetailChildren.vue'
 import RuleTocView from '@/components/systems/RuleTocView.vue'
 import LeftPanelContent from '@/components/systems/LeftPanelContent.vue'
-import GlobalSearch from '@/components/systems/GlobalSearch.vue'
 import { useRuleDelegation } from '@/composables/useRuleDelegation'
 import { useRulePopup } from '@/composables/useRulePopup'
 import { renderContent } from '@/lib/renderContent'
+import { useAppSettingsStore } from '@/stores/appSettings'
 
 const route = useRoute()
 const router = useRouter()
@@ -30,11 +33,14 @@ const systemStore = useSystemStore()
 const contentStore = useContentStore()
 const authStore = useAuthStore()
 const navStore = useSystemNavStore()
+const appSettings = useAppSettingsStore()
+const panelStore = useLeftPanelStore()
+const historyStore = useHistoryStore()
+const bookmarkStore = useBookmarkStore()
 
 const systemId = computed(() => route.params['systemId'] as string)
 const loading = ref(true)
 const expandedModules = ref<Set<string>>(new Set())
-const mobileOpen = ref(false)
 const pinned = ref(localStorage.getItem('system-panel-pinned') === 'true')
 
 // ---------------------------------------------------------------------------
@@ -94,6 +100,8 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('popstate', handlePopState)
+  const systemId = systemStore.currentSystem?.id
+  if (systemId) historyStore.clearSystem(systemId)
 })
 
 // ---------------------------------------------------------------------------
@@ -186,6 +194,19 @@ const showToc = computed(() => {
 })
 
 // ---------------------------------------------------------------------------
+// History recording
+// ---------------------------------------------------------------------------
+
+watch(navStore, () => {
+  const entry = navStore.current
+  if (!entry || entry.view !== 'rule') return
+  const rule = rulesById.value.get(entry.ruleId)
+  const systemId = systemStore.currentSystem?.id
+  if (!rule || !systemId) return
+  historyStore.record({ type: 'rule', id: rule.id, systemId, title: rule.title, number: rule.number })
+})
+
+// ---------------------------------------------------------------------------
 // Actions
 // ---------------------------------------------------------------------------
 
@@ -214,7 +235,7 @@ function getModuleRules(mod: Module): Rule[] {
 
 function selectRule(rule: Rule) {
   navStore.navigate({ view: 'rule', ruleId: rule.id })
-  mobileOpen.value = false
+  panelStore.mobileOpen = false
 }
 
 async function logout() {
@@ -236,7 +257,7 @@ useRulePopup().registerNavigate(selectRule, () => rulesByNumber.value, () => ind
       <!-- Left: mobile toggle + system name -->
       <div class="flex items-center gap-2 shrink-0">
         <!-- Mobile panel toggle: hidden when panel is pinned -->
-        <Sheet v-model:open="mobileOpen">
+        <Sheet v-model:open="panelStore.mobileOpen">
           <SheetTrigger as-child>
             <Button variant="ghost" size="icon" :class="['w-8 h-8', pinned ? 'hidden' : 'md:hidden']">
               <Menu class="w-4 h-4" />
@@ -264,14 +285,8 @@ useRulePopup().registerNavigate(selectRule, () => rulesByNumber.value, () => ind
         </span>
       </div>
 
-      <!-- Center: global search -->
-      <div class="flex-1 flex justify-center">
-        <GlobalSearch
-          :rules="allRules"
-          :index-entries="allIndexEntries"
-          @select-rule="selectRule"
-        />
-      </div>
+      <!-- Center: empty space -->
+      <div class="flex-1" />
 
       <!-- Right: dropdown menu -->
       <DropdownMenu>
@@ -344,6 +359,18 @@ useRulePopup().registerNavigate(selectRule, () => rulesByNumber.value, () => ind
                 {{ selectedRule.number }}
               </span>
               <h2 class="text-foreground text-xl font-semibold">{{ selectedRule.title }}</h2>
+              <button
+                class="ml-auto shrink-0 p-1 rounded hover:bg-muted/40 transition-colors"
+                :title="bookmarkStore.isBookmarked('rule', selectedRule.id) ? 'Remove bookmark' : 'Bookmark rule'"
+                @click="bookmarkStore.isBookmarked('rule', selectedRule.id)
+                  ? bookmarkStore.removeBookmark('rule', selectedRule.id)
+                  : bookmarkStore.addBookmark('rule', selectedRule.id)"
+              >
+                <Star
+                  class="w-4 h-4 transition-colors"
+                  :class="bookmarkStore.isBookmarked('rule', selectedRule.id) ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'"
+                />
+              </button>
             </div>
           </div>
 
@@ -360,13 +387,14 @@ useRulePopup().registerNavigate(selectRule, () => rulesByNumber.value, () => ind
             <!-- eslint-disable-next-line vue/no-v-html -->
             <p
               class="text-foreground/80 text-sm leading-relaxed mb-6 whitespace-pre-wrap"
-              v-html="renderContent(selectedRule.content)"
+              v-html="renderContent(selectedRule.content, { acronymPopups: appSettings.acronymPopups })"
             />
 
             <RuleDetailChildren
               :rule="selectedRule"
               :children-map="childrenMap"
-              :depth="0"
+              :depth="ruleDepth(selectedRule) - 1"
+              :toc-depth="tocDepth"
               @select-rule="selectRule"
             />
           </template>

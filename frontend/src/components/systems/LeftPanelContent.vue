@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import type { Module, Rule, IndexEntry } from '@/types/domain'
+import { useLeftPanelStore, type PanelTab } from '@/stores/leftPanel'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { ChevronRight, ChevronDown, Bookmark, History, Pin, PinOff } from 'lucide-vue-next'
 import RuleTreeNode from '@/components/systems/RuleTreeNode.vue'
 import IndexTab from '@/components/systems/IndexTab.vue'
+import HistoryTab from '@/components/systems/HistoryTab.vue'
+import BookmarksTab from '@/components/systems/BookmarksTab.vue'
 
 interface Props {
   activeModules: Module[]
@@ -23,10 +26,16 @@ const emit = defineEmits<{
   select: [rule: Rule]
   togglePin: []
 }>()
+
+const panelStore = useLeftPanelStore()
 </script>
 
 <template>
-  <Tabs default-value="tree" class="flex flex-col h-full">
+  <Tabs
+    :model-value="panelStore.activeTab"
+    class="flex flex-col h-full"
+    @update:model-value="(v) => { panelStore.activeTab = v as PanelTab }"
+  >
     <TabsList
       class="shrink-0 w-full rounded-none border-b border-border justify-start px-2 gap-1 h-9"
     >
@@ -96,18 +105,14 @@ const emit = defineEmits<{
       />
     </TabsContent>
 
-    <!-- Bookmarks tab (stub) -->
+    <!-- Bookmarks tab -->
     <TabsContent value="bookmarks" class="flex-1 overflow-hidden mt-0">
-      <div class="flex items-center justify-center h-full text-xs text-muted-foreground">
-        Bookmarks coming soon.
-      </div>
+      <BookmarksTab />
     </TabsContent>
 
-    <!-- History tab (stub) -->
+    <!-- History tab -->
     <TabsContent value="history" class="flex-1 overflow-hidden mt-0">
-      <div class="flex items-center justify-center h-full text-xs text-muted-foreground">
-        History coming soon.
-      </div>
+      <HistoryTab />
     </TabsContent>
   </Tabs>
 </template>
