@@ -28,7 +28,7 @@ export type SystemStructure = 'core_plus_many' | 'core_plus_one' | 'grouping_onl
 
 export interface SystemConfig {
   system_structure: SystemStructure
-  sort_rules_by: string
+  sort_rules_by: 'number' | 'sort_order'
   toc_depth: number
   cover_image: string | null
 }
