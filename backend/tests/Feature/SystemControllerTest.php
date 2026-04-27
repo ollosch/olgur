@@ -387,3 +387,29 @@ test('update ignores system_structure — it is immutable', function (): void {
     ])->assertSuccessful()
         ->assertJsonPath('data.config.system_structure', 'grouping_only');
 });
+
+// ── creator auto-membership ───────────────────────────────────────────────────
+
+test('store creates an admin membership for the creator', function (): void {
+    $user = User::factory()->create();
+    actingAs($user);
+
+    $response = postJson('/api/systems', [
+        'slug' => 'my-system',
+        'name' => 'My System',
+        'description' => '',
+        'config' => [
+            'system_structure' => 'grouping_only',
+            'toc_depth' => 1,
+            'sort_rules_by' => 'sort_order',
+        ],
+    ])->assertCreated();
+
+    $systemId = $response->json('data.id');
+
+    assertDatabaseHas('memberships', [
+        'user_id' => $user->id,
+        'system_id' => $systemId,
+        'admin' => true,
+    ]);
+});

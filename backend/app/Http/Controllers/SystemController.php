@@ -8,6 +8,7 @@ use App\Http\Requests\StoreSystemRequest;
 use App\Http\Requests\UpdateSystemRequest;
 use App\Http\Resources\SystemResource;
 use App\Models\System;
+use App\Models\User;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
@@ -34,6 +35,13 @@ final class SystemController
         Gate::authorize('create', System::class);
 
         $system = System::query()->create($request->validated());
+
+        /** @var User $creator */
+        $creator = $request->user();
+        $system->memberships()->create([
+            'user_id' => $creator->id,
+            'admin' => true,
+        ]);
 
         return new SystemResource($system);
     }

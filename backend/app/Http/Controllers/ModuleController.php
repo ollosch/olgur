@@ -7,8 +7,10 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreModuleRequest;
 use App\Http\Requests\UpdateModuleRequest;
 use App\Http\Resources\ModuleResource;
+use App\Models\Membership;
 use App\Models\Module;
 use App\Models\System;
+use App\Models\User;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
@@ -33,6 +35,23 @@ final class ModuleController
         Gate::authorize('create', [Module::class, $system]);
 
         $module = $system->modules()->create($request->validated());
+
+        /** @var User $creator */
+        $creator = $request->user();
+
+        // Ensure the creator is a system member (they should already be, but guard just in case)
+        Membership::query()->firstOrCreate(
+            ['user_id' => $creator->id, 'system_id' => $system->id],
+            ['admin' => false],
+        );
+
+        // Auto-subscribe the creator as an editor of the new module.
+        // We bypass SubscribeToModule to avoid structure-based prerequisite checks —
+        // the person creating a module is always entitled to edit it.
+        $module->subscriptions()->updateOrCreate(
+            ['user_id' => $creator->id],
+            ['editor' => true],
+        );
 
         return new ModuleResource($module);
     }
