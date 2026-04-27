@@ -26,7 +26,6 @@ final class UpdateMembershipRequest extends FormRequest
     {
         return [
             'admin' => ['required', 'boolean'],
-            'config' => ['present', 'array'],
         ];
     }
 }

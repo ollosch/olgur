@@ -5,17 +5,32 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreMembershipRequest;
+use App\Http\Requests\UpdateMembershipConfigRequest;
 use App\Http\Requests\UpdateMembershipRequest;
 use App\Http\Resources\MembershipResource;
 use App\Models\Membership;
 use App\Models\System;
 use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 
 final class MembershipController
 {
+    /**
+     * Display all memberships for the authenticated user.
+     */
+    public function indexForCurrentUser(Request $request): AnonymousResourceCollection
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        return MembershipResource::collection(
+            $user->memberships()->oldest()->get()
+        );
+    }
+
     /**
      * Display all memberships for a system.
      */
@@ -24,7 +39,7 @@ final class MembershipController
         Gate::authorize('viewAny', [Membership::class, $system]);
 
         return MembershipResource::collection(
-            $system->memberships()->oldest()->get()
+            $system->memberships()->with('user')->oldest()->get()
         );
     }
 
@@ -71,6 +86,24 @@ final class MembershipController
         Gate::authorize('update', $membership);
 
         $membership->update($request->validated());
+
+        return new MembershipResource($membership);
+    }
+
+    /**
+     * Update the authenticated user's membership config for a system.
+     */
+    public function updateConfig(UpdateMembershipConfigRequest $request, System $system): MembershipResource
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        /** @var Membership $membership */
+        $membership = $system->memberships()
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+
+        $membership->update(['config' => $request->validated('config')]);
 
         return new MembershipResource($membership);
     }

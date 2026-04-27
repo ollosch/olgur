@@ -21,14 +21,29 @@ use Illuminate\Support\Facades\Gate;
 final class SubscriptionController
 {
     /**
-     * List all subscriptions for a module.
+     * List subscriptions.
+     *
+     * When called via GET /me/subscriptions, returns the authenticated user's own subscriptions.
+     * When called via GET /systems/{system}/modules/{module}/subscriptions, returns all
+     * subscriptions for that module (accessible to system admins and module editors).
      */
-    public function index(System $system, Module $module): AnonymousResourceCollection
+    public function index(Request $request, ?System $system = null, ?Module $module = null): AnonymousResourceCollection
     {
-        Gate::authorize('viewAny', [Subscription::class, $module]);
+        if ($module instanceof Module) {
+            Gate::authorize('viewAny', [Subscription::class, $module]);
+
+            return SubscriptionResource::collection(
+                $module->subscriptions()->with('user')->oldest()->get()
+            );
+        }
+
+        Gate::authorize('viewAny', Subscription::class);
+
+        /** @var User $subscriber */
+        $subscriber = $request->user();
 
         return SubscriptionResource::collection(
-            $module->subscriptions()->with('module')->oldest()->get()
+            $subscriber->subscriptions()->with('module')->oldest()->get()
         );
     }
 

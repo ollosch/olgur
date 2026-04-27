@@ -21,6 +21,8 @@ final class SubscriptionResource extends JsonResource
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
+            'user_name' => $this->whenLoaded('user', fn () => $this->user?->name),
+            'user_email' => $this->whenLoaded('user', fn () => $this->user?->email),
             'module_id' => $this->module_id,
             'editor' => $this->editor,
             'created_at' => $this->created_at,

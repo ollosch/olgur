@@ -22,6 +22,8 @@ final class MembershipResource extends JsonResource
             'id' => $this->id,
             'system_id' => $this->system_id,
             'user_id' => $this->user_id,
+            'user_name' => $this->whenLoaded('user', fn () => $this->user?->name),
+            'user_email' => $this->whenLoaded('user', fn () => $this->user?->email),
             'admin' => $this->admin,
             'config' => $this->config,
             'created_at' => $this->created_at,
