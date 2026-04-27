@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import type { IndexEntry, Rule } from '@/types/domain'
 import { Input } from '@/components/ui/input'
 import { renderContent } from '@/lib/renderContent'
+import { rankMatch } from '@/lib/utils'
 import { useAppSettingsStore } from '@/stores/appSettings'
 
 interface Props {
@@ -31,17 +32,9 @@ const filtered = computed(() => {
   const q = search.value.trim().toLowerCase()
 
   if (q) {
-    const rank = (e: (typeof props.entries)[number]): number => {
-      const t = e.term.toLowerCase()
-      if (t === q) return 0
-      if (t.startsWith(q)) return 1
-      if (t.includes(q)) return 2
-      return 3
-    }
-
     return props.entries
       .filter((e) => e.term.toLowerCase().includes(q) || e.definition.toLowerCase().includes(q))
-      .sort((a, b) => rank(a) - rank(b))
+      .sort((a, b) => rankMatch(a.term, q) - rankMatch(b.term, q))
   }
 
   if (activeLetter.value) {

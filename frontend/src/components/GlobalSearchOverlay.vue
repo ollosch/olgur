@@ -9,10 +9,10 @@ import { useSystemStore } from '@/stores/system'
 import { useSystemNavStore } from '@/stores/systemNav'
 import { useAppSettingsStore } from '@/stores/appSettings'
 import { renderContent } from '@/lib/renderContent'
+import { rankMatch } from '@/lib/utils'
 import type { Rule, IndexEntry } from '@/types/domain'
 
 const DEFAULT_CAP = 10
-
 const shortcutStore = useShortcutStore()
 const contentStore = useContentStore()
 const systemStore = useSystemStore()
@@ -73,14 +73,6 @@ const entriesById = computed((): Map<string, IndexEntry> => {
 
 // ── Ranking + search ─────────────────────────────────────────────────────────
 
-function rank(field: string, q: string): number {
-  const f = field.toLowerCase()
-  if (f === q) return 0
-  if (f.startsWith(q)) return 1
-  if (f.includes(q)) return 2
-  return 3
-}
-
 interface RuleResult {
   rule: Rule
   rank: number
@@ -96,7 +88,7 @@ const entryResults = computed((): EntryResult[] => {
   if (!q) return []
   const results: EntryResult[] = []
   for (const entry of allEntries.value) {
-    const r = rank(entry.term, q)
+    const r = rankMatch(entry.term, q)
     if (r < 3) results.push({ entry, rank: r })
   }
   results.sort((a, b) => {
@@ -114,7 +106,7 @@ const ruleResults = computed((): RuleResult[] => {
   if (!q) return []
   const results: RuleResult[] = []
   for (const rule of allRules.value) {
-    const best = Math.min(rank(rule.number, q), rank(rule.title, q))
+    const best = Math.min(rankMatch(rule.number, q), rankMatch(rule.title, q))
     if (best < 3) results.push({ rule, rank: best })
   }
   results.sort((a, b) => {
