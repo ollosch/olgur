@@ -54,9 +54,11 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function fetchUser() {
-    user.value = await get<User>('/me')
+    const result = await get<{ data: User }>('/me')
 
-    if (!user.value) {
+    if (result) {
+      user.value = result.data
+    } else {
       clear()
     }
   }

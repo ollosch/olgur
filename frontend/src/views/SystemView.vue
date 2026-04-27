@@ -278,7 +278,9 @@ useRulePopup().registerNavigate(selectRule, () => rulesByNumber.value, () => ind
             Exit System
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem disabled> User Profile </DropdownMenuItem>
+          <DropdownMenuItem @click="router.push({ name: 'profile' })">
+            User Profile
+          </DropdownMenuItem>
           <DropdownMenuItem disabled> System Settings </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem class="text-destructive" @click="logout">
