@@ -59,18 +59,19 @@ function handlePopState(event: PopStateEvent): void {
 }
 
 onMounted(async () => {
-  navStore.reset()
-
   // Push the sentinel before loading so any early back press is caught
   window.history.pushState({ sentinel: true }, '')
   window.addEventListener('popstate', handlePopState)
 
-  // Skip fetching if this system is already loaded in the store
+  // Skip fetching if this system is already loaded in the store.
+  // Do NOT reset nav — the user may be returning from /profile or /settings.
   if (systemStore.currentSystem?.id === systemId.value) {
     loading.value = false
     return
   }
 
+  // Entering a new system — reset nav history first
+  navStore.reset()
   loading.value = true
 
   await systemStore.enterSystem(systemId.value)
