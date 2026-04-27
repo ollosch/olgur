@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useSystemStore } from '@/stores/system'
 import { Button } from '@/components/ui/button'
@@ -16,12 +16,18 @@ import {
 interface Props {
   systemId: string
   open: boolean
+  systemStructure?: string
+  hasCoreModule?: boolean
 }
 
 const props = defineProps<Props>()
 const emit = defineEmits<{
   'update:open': [value: boolean]
 }>()
+
+const showCoreCheckbox = computed(
+  () => props.systemStructure !== 'grouping_only' && !props.hasCoreModule,
+)
 
 const systemStore = useSystemStore()
 const { modulesBySystem, errors, loading } = storeToRefs(systemStore)
@@ -93,7 +99,7 @@ async function submit() {
           </p>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div v-if="showCoreCheckbox" class="flex items-center gap-2">
           <input
             id="mod-core"
             v-model="isCore"
@@ -102,6 +108,9 @@ async function submit() {
           />
           <Label for="mod-core">Core module</Label>
         </div>
+        <p v-if="errors?.is_core" class="text-destructive text-xs">
+          {{ errors.is_core }}
+        </p>
 
         <DialogFooter>
           <Button variant="ghost" type="button" @click="emit('update:open', false)">

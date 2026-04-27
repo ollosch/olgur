@@ -48,7 +48,7 @@ export const useSystemStore = defineStore('system', () => {
     const result = await post<{ data: System }, CreateSystemRequest>('/systems', data)
     if (result) {
       systems.value.push(result.data)
-      await fetchUserMemberships()
+      await Promise.all([fetchUserMemberships(), fetchUserSubscriptions()])
     }
     return result?.data ?? null
   }
@@ -132,6 +132,7 @@ export const useSystemStore = defineStore('system', () => {
     if (result) {
       const existing = modulesBySystem.value[systemId] ?? []
       modulesBySystem.value[systemId] = [...existing, result.data]
+      await fetchUserSubscriptions()
     }
     return result?.data ?? null
   }

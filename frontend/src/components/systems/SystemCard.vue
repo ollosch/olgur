@@ -35,6 +35,9 @@ const isMember = computed(() => !!props.membership)
 
 const activeModuleIds = computed(() => props.membership?.config?.active_module_ids ?? [])
 
+const hasCoreModule = computed(() => modules.value.some((m) => m.is_core))
+const systemStructure = computed(() => props.system.config?.system_structure ?? '')
+
 const hasCoreSubscription = computed(() =>
   modules.value.some((m) => m.is_core && !!subscriptions.value[m.id]),
 )
@@ -154,6 +157,7 @@ function openSystem() {
                 </Badge>
               </template>
               <template v-else>
+                <template v-if="subscriptions[mod.id]">
                 <Badge
                   v-if="activeModuleIds.includes(mod.id)"
                   variant="outline"
@@ -184,6 +188,7 @@ function openSystem() {
                 >
                   Activate
                 </Button>
+                </template>
               </template>
             </template>
             <Button
@@ -231,6 +236,8 @@ function openSystem() {
   <CreateModuleDialog
     v-if="showCreateModule"
     :system-id="system.id"
+    :system-structure="systemStructure"
+    :has-core-module="hasCoreModule"
     :open="showCreateModule"
     @update:open="showCreateModule = $event"
   />
