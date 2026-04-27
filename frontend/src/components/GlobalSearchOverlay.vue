@@ -9,7 +9,7 @@ import { useSystemStore } from '@/stores/system'
 import { useSystemNavStore } from '@/stores/systemNav'
 import { useAppSettingsStore } from '@/stores/appSettings'
 import { renderContent } from '@/lib/renderContent'
-import { rankMatch } from '@/lib/utils'
+import { rankMatch, compareIndexEntries } from '@/lib/utils'
 import type { Rule, IndexEntry } from '@/types/domain'
 
 const DEFAULT_CAP = 10
@@ -91,13 +91,7 @@ const entryResults = computed((): EntryResult[] => {
     const r = rankMatch(entry.term, q)
     if (r < 3) results.push({ entry, rank: r })
   }
-  results.sort((a, b) => {
-    const aNested = a.entry.parent_id !== null ? 1 : 0
-    const bNested = b.entry.parent_id !== null ? 1 : 0
-    if (aNested !== bNested) return aNested - bNested
-    if (a.rank !== b.rank) return a.rank - b.rank
-    return a.entry.term.localeCompare(b.entry.term)
-  })
+  results.sort((a, b) => compareIndexEntries(a.entry, b.entry, q))
   return results
 })
 

@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import type { IndexEntry, Rule } from '@/types/domain'
 import { Input } from '@/components/ui/input'
 import { renderContent } from '@/lib/renderContent'
-import { rankMatch } from '@/lib/utils'
+import { rankMatch, compareIndexEntries } from '@/lib/utils'
 import { useAppSettingsStore } from '@/stores/appSettings'
 
 interface Props {
@@ -40,7 +40,7 @@ const filtered = computed(() => {
   if (q) {
     return props.entries
       .filter((e) => e.term.toLowerCase().includes(q) || e.definition.toLowerCase().includes(q))
-      .sort((a, b) => rankMatch(a.term, q) - rankMatch(b.term, q))
+      .sort((a, b) => compareIndexEntries(a, b, q))
   }
 
   if (activeLetter.value) {
