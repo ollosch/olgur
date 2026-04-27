@@ -160,10 +160,8 @@ function selectRule(rule: Rule): void {
   shortcutStore.overlayOpen = false
 }
 
-function selectEntry(entry: IndexEntry): void {
-  const ruleRef = entry.relations?.rule_refs?.[0]
-  if (!ruleRef) return
-  const rule = allRules.value.find((r) => r.number === ruleRef)
+function selectRuleByNumber(number: string): void {
+  const rule = allRules.value.find((r) => r.number === number)
   if (rule) selectRule(rule)
 }
 </script>
@@ -204,11 +202,7 @@ function selectEntry(entry: IndexEntry): void {
             <div
               v-for="{ entry } in visibleEntries"
               :key="entry.id"
-              class="mx-2 px-2 py-1.5 rounded cursor-pointer hover:bg-accent transition-colors"
-              role="button"
-              tabindex="0"
-              @click="selectEntry(entry)"
-              @keydown.enter="selectEntry(entry)"
+              class="mx-2 px-2 py-1.5 rounded transition-colors"
             >
               <!-- Term line -->
               <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
@@ -228,11 +222,13 @@ function selectEntry(entry: IndexEntry): void {
                 <span v-else class="text-xs font-semibold text-foreground">{{ entry.term }}</span>
 
                 <template v-if="entry.relations?.rule_refs?.length">
-                  <span
+                  <button
                     v-for="ruleRef in entry.relations.rule_refs"
                     :key="ruleRef"
+                    type="button"
                     class="font-mono text-xs text-primary underline decoration-dotted hover:text-primary/80 transition-colors cursor-pointer"
-                  >{{ ruleRef }}</span>
+                    @click.stop="selectRuleByNumber(ruleRef)"
+                  >{{ ruleRef }}</button>
                 </template>
               </div>
 
