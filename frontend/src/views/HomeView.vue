@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import router from '@/router'
 import { useAuthStore } from '@/stores/auth'
 
 import { Button } from '@/components/ui/button'
-import router from '@/router'
 
 const auth = useAuthStore()
 

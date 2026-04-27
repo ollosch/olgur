@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { useForm } from 'vee-validate'
+import { ref, onMounted } from 'vue'
+import router from '@/router'
+import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useForm } from 'vee-validate'
+import type { UpdatePasswordRequest } from '@/types/domain'
 
+import AuthLayout from './AuthLayout.vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import AuthLayout from './AuthLayout.vue'
-import { useRoute } from 'vue-router'
-import router from '@/router'
-import { ref, onMounted } from 'vue'
-import type { UpdatePasswordRequest } from '@/types/domain'
 
 const status = ref<'success' | 'error'>('success')
 

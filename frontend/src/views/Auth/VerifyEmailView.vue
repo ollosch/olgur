@@ -2,9 +2,10 @@
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+
+import AuthLayout from './AuthLayout.vue'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import AuthLayout from './AuthLayout.vue'
 
 const route = useRoute()
 const router = useRouter()

@@ -4,12 +4,12 @@ import { useAuthStore } from '@/stores/auth'
 import { useForm } from 'vee-validate'
 import type { RegisterRequest } from '@/types/domain'
 
+import AuthLayout from './AuthLayout.vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { toast } from 'vue-sonner'
-import AuthLayout from './AuthLayout.vue'
 
 const auth = useAuthStore()
 const { defineField, handleSubmit, errors, setErrors } = useForm<RegisterRequest>()
