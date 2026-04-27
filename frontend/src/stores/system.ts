@@ -48,6 +48,7 @@ export const useSystemStore = defineStore('system', () => {
     const result = await post<{ data: System }, CreateSystemRequest>('/systems', data)
     if (result) {
       systems.value.push(result.data)
+      await fetchUserMemberships()
     }
     return result?.data ?? null
   }
