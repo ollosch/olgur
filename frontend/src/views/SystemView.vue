@@ -6,6 +6,7 @@ import { useContentStore } from '@/stores/content'
 import { useAuthStore } from '@/stores/auth'
 import { useSystemNavStore } from '@/stores/systemNav'
 import { useLeftPanelStore } from '@/stores/leftPanel'
+import { useShortcutStore } from '@/stores/shortcut'
 import { useHistoryStore } from '@/stores/history'
 import { useBookmarkStore } from '@/stores/bookmarks'
 import type { Rule, Module, IndexEntry } from '@/types/domain'
@@ -18,7 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Menu, MoreVertical, ArrowLeft, Star } from 'lucide-vue-next'
+import { Menu, MoreVertical, ArrowLeft, Star, Search } from 'lucide-vue-next'
 import RuleDetailChildren from '@/components/systems/RuleDetailChildren.vue'
 import RuleTocView from '@/components/systems/RuleTocView.vue'
 import LeftPanelContent from '@/components/systems/LeftPanelContent.vue'
@@ -36,6 +37,7 @@ const authStore = useAuthStore()
 const navStore = useSystemNavStore()
 const appSettings = useAppSettingsStore()
 const panelStore = useLeftPanelStore()
+const shortcutStore = useShortcutStore()
 const historyStore = useHistoryStore()
 const bookmarkStore = useBookmarkStore()
 
@@ -248,6 +250,9 @@ watch(
 
 function togglePin() {
   appSettings.sidebarPinned = !appSettings.sidebarPinned
+  if (appSettings.sidebarPinned) {
+    panelStore.mobileOpen = false
+  }
 }
 
 function toggleModule(moduleId: string) {
@@ -320,8 +325,18 @@ useRulePopup().registerNavigate(selectRule, () => rulesByNumber.value, () => ind
         </span>
       </div>
 
-      <!-- Center: empty space -->
-      <div class="flex-1" />
+      <!-- Center: search trigger -->
+      <div class="flex-1 flex justify-center">
+        <Button
+          variant="outline"
+          class="h-8 w-full max-w-xs text-xs text-muted-foreground justify-start gap-2 px-3"
+          @click="shortcutStore.overlayOpen = true"
+        >
+          <Search class="w-3.5 h-3.5 shrink-0" />
+          <span>Search…</span>
+          <kbd class="ml-auto text-[10px] text-muted-foreground/60 font-mono">⌘K</kbd>
+        </Button>
+      </div>
 
       <!-- Right: dropdown menu -->
       <DropdownMenu>
