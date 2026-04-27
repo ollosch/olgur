@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpdateProfileRequest;
 use App\Http\Resources\MembershipResource;
 use App\Http\Resources\SubscriptionResource;
 use App\Http\Resources\UserResource;
@@ -22,6 +23,18 @@ final class MeController
         $user = $request->user();
 
         return new UserResource($user);
+    }
+
+    /**
+     * Update the authenticated user's profile.
+     */
+    public function update(UpdateProfileRequest $request): UserResource
+    {
+        /** @var User $user */
+        $user = $request->user();
+        $user->update($request->validated());
+
+        return new UserResource($user->fresh() ?? $user);
     }
 
     /**

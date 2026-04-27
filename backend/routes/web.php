@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('api')->group(function (): void {
     Route::middleware('auth')->group(function (): void {
         Route::get('/me', [MeController::class, 'show']);
+        Route::patch('/me', [MeController::class, 'update']);
         Route::get('/me/memberships', [MeController::class, 'memberships']);
         Route::get('/me/subscriptions', [MeController::class, 'subscriptions']);
 

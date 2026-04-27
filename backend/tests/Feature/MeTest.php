@@ -9,6 +9,7 @@ use App\Models\User;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\getJson;
+use function Pest\Laravel\patchJson;
 
 // ── Unauthenticated ──────────────────────────────────────────────────────────
 
@@ -112,4 +113,64 @@ it('returns empty subscriptions when user has none', function (): void {
     $response = getJson('/api/me/subscriptions')->assertSuccessful();
 
     expect($response->json('data'))->toBeEmpty();
+});
+
+// ── PATCH /me ─────────────────────────────────────────────────────────────────
+
+it('requires auth to update profile', function (): void {
+    patchJson('/api/me', ['name' => 'New Name', 'email' => 'new@example.com'])
+        ->assertUnauthorized();
+});
+
+it('updates the authenticated user profile', function (): void {
+    $user = User::factory()->create();
+    actingAs($user);
+
+    $response = patchJson('/api/me', [
+        'name' => 'Updated Name',
+        'email' => 'updated@example.com',
+    ])->assertSuccessful();
+
+    $response->assertJsonPath('data.name', 'Updated Name');
+    $response->assertJsonPath('data.email', 'updated@example.com');
+
+    expect($user->fresh())
+        ->name->toBe('Updated Name')
+        ->email->toBe('updated@example.com');
+});
+
+it('validates name is required on profile update', function (): void {
+    $user = User::factory()->create();
+    actingAs($user);
+
+    patchJson('/api/me', ['name' => '', 'email' => $user->email])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['name']);
+});
+
+it('validates email is required on profile update', function (): void {
+    $user = User::factory()->create();
+    actingAs($user);
+
+    patchJson('/api/me', ['name' => $user->name, 'email' => ''])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['email']);
+});
+
+it('validates email is unique on profile update', function (): void {
+    $other = User::factory()->create();
+    $user = User::factory()->create();
+    actingAs($user);
+
+    patchJson('/api/me', ['name' => $user->name, 'email' => $other->email])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['email']);
+});
+
+it('allows updating profile with the same email', function (): void {
+    $user = User::factory()->create();
+    actingAs($user);
+
+    patchJson('/api/me', ['name' => $user->name, 'email' => $user->email])
+        ->assertSuccessful();
 });
