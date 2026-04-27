@@ -19,6 +19,7 @@ import { Menu, MoreVertical, ArrowLeft } from 'lucide-vue-next'
 import RuleDetailChildren from '@/components/systems/RuleDetailChildren.vue'
 import RuleTocView from '@/components/systems/RuleTocView.vue'
 import LeftPanelContent from '@/components/systems/LeftPanelContent.vue'
+import GlobalSearch from '@/components/systems/GlobalSearch.vue'
 import { useRuleDelegation } from '@/composables/useRuleDelegation'
 import { useRulePopup } from '@/composables/useRulePopup'
 import { renderContent } from '@/lib/renderContent'
@@ -254,6 +255,15 @@ useRulePopup().registerNavigate(selectRule, () => rulesByNumber.value, () => ind
         <span class="text-foreground font-semibold text-sm">
           {{ systemStore.currentSystem?.name }}
         </span>
+      </div>
+
+      <!-- Center: global search -->
+      <div class="flex-1 flex justify-center">
+        <GlobalSearch
+          :rules="allRules"
+          :index-entries="allIndexEntries"
+          @select-rule="selectRule"
+        />
       </div>
 
       <!-- Right: dropdown menu -->
