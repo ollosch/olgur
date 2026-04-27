@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { ChevronRight, ChevronDown, Bookmark, History, Pin, PinOff } from 'lucide-vue-next'
 import RuleTreeNode from '@/components/systems/RuleTreeNode.vue'
+import IndexTab from '@/components/systems/IndexTab.vue'
 
 interface Props {
   activeModules: Module[]
@@ -88,9 +89,11 @@ const emit = defineEmits<{
 
     <!-- Index tab -->
     <TabsContent value="index" class="flex-1 overflow-hidden mt-0">
-      <div class="flex items-center justify-center h-full text-xs text-muted-foreground">
-        Index coming soon.
-      </div>
+      <IndexTab
+        :entries="allIndexEntries"
+        :rules-by-number="rulesByNumber"
+        @select-rule="emit('select', $event)"
+      />
     </TabsContent>
 
     <!-- Bookmarks tab (stub) -->
