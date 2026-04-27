@@ -11,6 +11,17 @@ export interface Subscription {
   id: string
   module_id: string
   user_id: string
+  editor: boolean
+}
+
+export interface MembershipWithUser extends Membership {
+  user_name: string
+  user_email: string
+}
+
+export interface SubscriptionWithUser extends Subscription {
+  user_name: string
+  user_email: string
 }
 
 export type SystemStructure = 'core_plus_many' | 'core_plus_one' | 'grouping_only'
@@ -124,7 +135,12 @@ export interface UpdateProfileRequest {
 export interface CreateSystemRequest {
   name: string
   slug: string
-  config: { system_structure: SystemStructure }
+  description: string
+  config: {
+    system_structure: SystemStructure
+    toc_depth: number
+    sort_rules_by: 'number' | 'sort_order'
+  }
 }
 
 export interface CreateModuleRequest {

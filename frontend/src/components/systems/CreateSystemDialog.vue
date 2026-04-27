@@ -29,7 +29,10 @@ const { createSystem } = systemStore
 
 const name = ref('')
 const slug = ref('')
+const description = ref('')
 const structure = ref<SystemStructure>('core_plus_many')
+const tocDepth = ref(1)
+const sortRulesBy = ref<'number' | 'sort_order'>('sort_order')
 
 function generateSlug(value: string) {
   return value
@@ -48,7 +51,10 @@ watch(
     if (val) {
       name.value = ''
       slug.value = ''
+      description.value = ''
       structure.value = 'core_plus_many'
+      tocDepth.value = 1
+      sortRulesBy.value = 'sort_order'
     }
   },
 )
@@ -57,7 +63,12 @@ async function submit() {
   const result = await createSystem({
     name: name.value,
     slug: slug.value,
-    config: { system_structure: structure.value },
+    description: description.value,
+    config: {
+      system_structure: structure.value,
+      toc_depth: tocDepth.value,
+      sort_rules_by: sortRulesBy.value,
+    },
   })
   if (result) {
     emit('update:open', false)
@@ -90,6 +101,14 @@ async function submit() {
         </div>
 
         <div class="space-y-1.5">
+          <Label for="sys-description">Description</Label>
+          <Input id="sys-description" v-model="description" placeholder="A short description (optional)" />
+          <p v-if="errors?.description" class="text-destructive text-xs">
+            {{ errors.description }}
+          </p>
+        </div>
+
+        <div class="space-y-1.5">
           <Label for="sys-structure">Structure</Label>
           <select
             id="sys-structure"
@@ -105,6 +124,38 @@ async function submit() {
             class="text-destructive text-xs"
           >
             {{ errors['config.system_structure'] }}
+          </p>
+        </div>
+
+        <div class="space-y-1.5">
+          <Label for="sys-sort-rules-by">Sort Rules By</Label>
+          <select
+            id="sys-sort-rules-by"
+            v-model="sortRulesBy"
+            class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          >
+            <option value="sort_order">Manual order</option>
+            <option value="number">Rule number</option>
+          </select>
+          <p
+            v-if="errors?.['config.sort_rules_by']"
+            class="text-destructive text-xs"
+          >
+            {{ errors['config.sort_rules_by'] }}
+          </p>
+        </div>
+
+        <div class="space-y-1.5">
+          <Label for="sys-toc-depth">Table of Contents Depth</Label>
+          <Input
+            id="sys-toc-depth"
+            v-model.number="tocDepth"
+            type="number"
+            min="1"
+            placeholder="1"
+          />
+          <p v-if="errors?.['config.toc_depth']" class="text-destructive text-xs">
+            {{ errors['config.toc_depth'] }}
           </p>
         </div>
 
