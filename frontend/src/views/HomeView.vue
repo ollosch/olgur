@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useSystemStore } from '@/stores/system'
 import { useAuthStore } from '@/stores/auth'
+import { useSystemStore } from '@/stores/system'
+
 import { Button } from '@/components/ui/button'
-import CreateSystemDialog from '@/components/systems/CreateSystemDialog.vue'
 import SystemCard from '@/components/systems/SystemCard.vue'
+import CreateSystemDialog from '@/components/systems/CreateSystemDialog.vue'
 
 const systemStore = useSystemStore()
 const authStore = useAuthStore()

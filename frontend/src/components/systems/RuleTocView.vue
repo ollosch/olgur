@@ -19,7 +19,7 @@ const children = computed(() => props.childrenMap.get(props.rule.id) ?? [])
       <button
         v-for="child in children"
         :key="child.id"
-        class="w-full flex items-baseline gap-3 px-3 py-2.5 rounded-md hover:bg-muted/40 transition-colors text-left group"
+        class="w-full flex items-baseline gap-3 py-1 rounded-md hover:bg-muted/40 transition-colors text-left group"
         @click="emit('select', child)"
       >
         <span class="font-mono text-sm text-primary font-semibold shrink-0 w-16 text-right">

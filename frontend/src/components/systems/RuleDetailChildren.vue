@@ -42,18 +42,18 @@ function headingClass(level: number): string {
     <div
       v-for="child in children(rule.id)"
       :key="child.id"
-      class="mt-3"
+      class="mt-4"
     >
       <component
         :is="`h${headingLevel(depth + 1, tocDepth)}`"
         :class="headingClass(headingLevel(depth + 1, tocDepth))"
       >
-        <span class="font-mono text-primary">{{ child.number }}</span>
+        <span class="font-mono text-primary pr-1">{{ child.number }}</span>
         {{ child.title }}
       </component>
       <!-- eslint-disable-next-line vue/no-v-html -->
       <p
-        class="text-foreground/70 text-sm leading-relaxed mb-2 whitespace-pre-wrap"
+        class="text-foreground/75 text-sm leading-relaxed mb-2 whitespace-pre-wrap"
         v-html="renderContent(child.content, { acronymPopups: appSettings.acronymPopups })"
       />
       <RuleDetailChildren

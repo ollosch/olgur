@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useAppSettingsStore, THEME_PRESETS } from '@/stores/appSettings'
+import { useRouter } from 'vue-router'
+import { cn } from '@/lib/utils'
+
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { useRouter } from 'vue-router'
 import { ArrowLeft, Check } from 'lucide-vue-next'
-import { cn } from '@/lib/utils'
 
 const settings = useAppSettingsStore()
 const router = useRouter()

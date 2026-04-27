@@ -1,15 +1,20 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useSystemStore } from '@/stores/system'
-import { useContentStore } from '@/stores/content'
+import { useAppSettingsStore } from '@/stores/appSettings'
 import { useAuthStore } from '@/stores/auth'
-import { useSystemNavStore } from '@/stores/systemNav'
+import { useBookmarkStore } from '@/stores/bookmarks'
+import { useContentStore } from '@/stores/content'
+import { useHistoryStore } from '@/stores/history'
 import { useLeftPanelStore } from '@/stores/leftPanel'
 import { useShortcutStore } from '@/stores/shortcut'
-import { useHistoryStore } from '@/stores/history'
-import { useBookmarkStore } from '@/stores/bookmarks'
+import { useSystemStore } from '@/stores/system'
+import { useSystemNavStore } from '@/stores/systemNav'
+import { useRuleDelegation } from '@/composables/useRuleDelegation'
+import { useRulePopup } from '@/composables/useRulePopup'
+import { renderContent } from '@/lib/renderContent'
 import type { Rule, Module, IndexEntry } from '@/types/domain'
+
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import {
@@ -24,10 +29,6 @@ import RuleDetailChildren from '@/components/systems/RuleDetailChildren.vue'
 import RuleTocView from '@/components/systems/RuleTocView.vue'
 import LeftPanelContent from '@/components/systems/LeftPanelContent.vue'
 import ManageMembersDialog from '@/components/systems/ManageMembersDialog.vue'
-import { useRuleDelegation } from '@/composables/useRuleDelegation'
-import { useRulePopup } from '@/composables/useRulePopup'
-import { renderContent } from '@/lib/renderContent'
-import { useAppSettingsStore } from '@/stores/appSettings'
 
 const route = useRoute()
 const router = useRouter()

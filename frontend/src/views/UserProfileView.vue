@@ -1,13 +1,14 @@
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
 import { useForm } from 'vee-validate'
 import { useAuthStore } from '@/stores/auth'
 import type { UpdateProfileRequest } from '@/types/domain'
+
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { toast } from 'vue-sonner'
-import { useRouter } from 'vue-router'
 import { ArrowLeft } from 'lucide-vue-next'
 
 const authStore = useAuthStore()
