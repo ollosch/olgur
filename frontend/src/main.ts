@@ -67,7 +67,13 @@ app.config.errorHandler = async (err, instance, info) => {
       break
 
     case 'validation':
-      // Laravel 422 errors have already been handled in useApi
+      // This is a safety net in case useApi is not used properly in some component.
+      // Ideally, all API calls should be made through useApi which handles validation errors locally.
+      // Shows the first error message as a toast.
+      const firstMessage = Object.values(error.errors)[0]
+      if (firstMessage) {
+        toast.error(firstMessage)
+      }
       break
   }
 }
