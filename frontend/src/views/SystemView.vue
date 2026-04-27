@@ -65,6 +65,12 @@ onMounted(async () => {
   window.history.pushState({ sentinel: true }, '')
   window.addEventListener('popstate', handlePopState)
 
+  // Skip fetching if this system is already loaded in the store
+  if (systemStore.currentSystem?.id === systemId.value) {
+    loading.value = false
+    return
+  }
+
   loading.value = true
 
   await systemStore.enterSystem(systemId.value)
