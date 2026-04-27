@@ -3,7 +3,6 @@ import { ref, computed } from 'vue'
 import type { IndexEntry, Rule } from '@/types/domain'
 import { Input } from '@/components/ui/input'
 import { renderContent } from '@/lib/renderContent'
-import { useRuleDelegation } from '@/composables/useRuleDelegation'
 import { useAppSettingsStore } from '@/stores/appSettings'
 
 interface Props {
@@ -15,11 +14,6 @@ const props = defineProps<Props>()
 const emit = defineEmits<{ selectRule: [rule: Rule] }>()
 
 const appSettings = useAppSettingsStore()
-
-useRuleDelegation(
-  () => props.rulesByNumber,
-  (rule) => emit('selectRule', rule),
-)
 
 const search = ref('')
 const activeLetter = ref<string | null>(null)
