@@ -22,6 +22,7 @@ import { Menu, MoreVertical, ArrowLeft, Star } from 'lucide-vue-next'
 import RuleDetailChildren from '@/components/systems/RuleDetailChildren.vue'
 import RuleTocView from '@/components/systems/RuleTocView.vue'
 import LeftPanelContent from '@/components/systems/LeftPanelContent.vue'
+import ManageMembersDialog from '@/components/systems/ManageMembersDialog.vue'
 import { useRuleDelegation } from '@/composables/useRuleDelegation'
 import { useRulePopup } from '@/composables/useRulePopup'
 import { renderContent } from '@/lib/renderContent'
@@ -41,6 +42,7 @@ const bookmarkStore = useBookmarkStore()
 const systemId = computed(() => route.params['systemId'] as string)
 const loading = ref(true)
 const pinned = ref(localStorage.getItem('system-panel-pinned') === 'true')
+const manageMembersOpen = ref(false)
 
 // ---------------------------------------------------------------------------
 // Popstate trap
@@ -330,14 +332,21 @@ useRulePopup().registerNavigate(selectRule, () => rulesByNumber.value, () => ind
             <MoreVertical class="w-4 h-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" class="w-48">
-          <DropdownMenuItem @click="router.push({ name: 'home' })">
-            Exit System
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem @click="router.push({ name: 'profile' })">
-            User Profile
-          </DropdownMenuItem>
+          <DropdownMenuContent align="end" class="w-48">
+            <DropdownMenuItem @click="router.push({ name: 'home' })">
+              Exit System
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              v-if="systemStore.membership?.admin"
+              @click="manageMembersOpen = true"
+            >
+              Manage Members
+            </DropdownMenuItem>
+            <DropdownMenuSeparator v-if="systemStore.membership?.admin" />
+            <DropdownMenuItem @click="router.push({ name: 'profile' })">
+              User Profile
+            </DropdownMenuItem>
           <DropdownMenuItem @click="router.push({ name: 'settings' })">
             App Settings
           </DropdownMenuItem>
@@ -463,5 +472,11 @@ useRulePopup().registerNavigate(selectRule, () => rulesByNumber.value, () => ind
         </div>
       </div>
     </div>
+
+    <ManageMembersDialog
+      v-if="systemStore.currentSystem"
+      v-model:open="manageMembersOpen"
+      :system-id="systemStore.currentSystem.id"
+    />
   </div>
 </template>

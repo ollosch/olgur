@@ -1,10 +1,19 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { useApi } from '@/composables/useApi'
-import type { System, Module, Membership, Subscription, CreateSystemRequest, CreateModuleRequest } from '@/types/domain'
+import type {
+  System,
+  Module,
+  Membership,
+  MembershipWithUser,
+  Subscription,
+  SubscriptionWithUser,
+  CreateSystemRequest,
+  CreateModuleRequest,
+} from '@/types/domain'
 
 export const useSystemStore = defineStore('system', () => {
-  const { get, post, del, loading, errors } = useApi()
+  const { get, post, put, del, loading, errors } = useApi()
 
   // ── Systems list (home/browse view) ─────────────────────────────────────────
   const systems = ref<System[]>([])
@@ -188,6 +197,40 @@ export const useSystemStore = defineStore('system', () => {
     await fetchUserMemberships()
   }
 
+  // ── Admin management ─────────────────────────────────────────────────────────
+  async function fetchSystemMemberships(systemId: string) {
+    const result = await get<{ data: MembershipWithUser[] }>(`/systems/${systemId}/memberships`)
+    return result?.data ?? []
+  }
+
+  async function updateMembershipAdmin(systemId: string, membershipId: string, admin: boolean) {
+    const result = await put<{ data: MembershipWithUser }, { admin: boolean }>(
+      `/systems/${systemId}/memberships/${membershipId}`,
+      { admin },
+    )
+    return result?.data ?? null
+  }
+
+  async function fetchModuleSubscriptions(systemId: string, moduleId: string) {
+    const result = await get<{ data: SubscriptionWithUser[] }>(
+      `/systems/${systemId}/modules/${moduleId}/subscriptions`,
+    )
+    return result?.data ?? []
+  }
+
+  async function updateSubscriptionEditor(
+    systemId: string,
+    moduleId: string,
+    subscriptionId: string,
+    editor: boolean,
+  ) {
+    const result = await put<{ data: SubscriptionWithUser }, { editor: boolean }>(
+      `/systems/${systemId}/modules/${moduleId}/subscriptions/${subscriptionId}`,
+      { editor },
+    )
+    return result?.data ?? null
+  }
+
   return {
     // state
     systems,
@@ -221,5 +264,10 @@ export const useSystemStore = defineStore('system', () => {
     // subscriptions
     subscribe,
     unsubscribe,
+    // admin management
+    fetchSystemMemberships,
+    updateMembershipAdmin,
+    fetchModuleSubscriptions,
+    updateSubscriptionEditor,
   }
 })
