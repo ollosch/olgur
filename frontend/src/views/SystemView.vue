@@ -281,7 +281,9 @@ useRulePopup().registerNavigate(selectRule, () => rulesByNumber.value, () => ind
           <DropdownMenuItem @click="router.push({ name: 'profile' })">
             User Profile
           </DropdownMenuItem>
-          <DropdownMenuItem disabled> System Settings </DropdownMenuItem>
+          <DropdownMenuItem @click="router.push({ name: 'settings' })">
+            App Settings
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem class="text-destructive" @click="logout">
             Logout

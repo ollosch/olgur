@@ -5,7 +5,7 @@ import { Toaster } from '@/components/ui/sonner'
 
 <template>
   <div>
-    <router-view class="dark bg-background text-foreground" />
+    <router-view class="bg-background text-foreground" />
     <Toaster />
   </div>
 </template>

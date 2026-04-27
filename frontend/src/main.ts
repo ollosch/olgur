@@ -8,12 +8,16 @@ import { toast } from 'vue-sonner'
 
 import '@/styles.css'
 import { useAuthStore } from './stores/auth'
+import { useAppSettingsStore } from './stores/appSettings'
 
 const app = createApp(App)
 
 app.use(createPinia())
 
 const authStore = useAuthStore()
+
+const appSettings = useAppSettingsStore()
+appSettings.init()
 
 await authStore.fetchCsrfCookie()
 await authStore.fetchUser().catch(() => {})
