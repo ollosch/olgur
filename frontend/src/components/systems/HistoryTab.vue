@@ -36,7 +36,7 @@ function relativeTime(date: Date): string {
 <template>
   <ScrollArea class="h-full">
     <div class="py-2">
-      <div v-if="entries.length === 0" class="px-4 py-8 text-xs text-muted-foreground text-center">
+      <div v-if="entries.length === 0" class="px-4 py-4 text-xs text-muted-foreground text-center">
         No history yet.
       </div>
       <button
