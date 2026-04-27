@@ -33,12 +33,20 @@ const onSubmit = handleSubmit(async (values) => {
 
   toast.success('Profile updated.')
 })
+
+function goBack(): void {
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push({ name: 'home' })
+  }
+}
 </script>
 
 <template>
   <div class="min-h-screen bg-background">
     <header class="border-b border-border px-6 py-3 flex items-center gap-3">
-      <Button variant="ghost" size="icon" class="w-8 h-8" @click="router.back()">
+      <Button variant="ghost" size="icon" class="w-8 h-8" @click="goBack()">
         <ArrowLeft class="w-4 h-4" />
       </Button>
       <span class="text-foreground font-semibold text-sm">User Profile</span>
