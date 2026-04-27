@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { toast } from 'vue-sonner'
 
 const status = ref<'success' | 'error'>('success')
 
@@ -47,7 +48,7 @@ const onSubmit = handleSubmit(async (values) => {
     return
   }
 
-  // TODO: toast('Password reset successfully. You can now log in.')
+  toast('Password reset successfully. You can now log in.')
   goToLogin()
 })
 
