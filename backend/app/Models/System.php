@@ -11,9 +11,16 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 /**
+ * @property string $id
+ * @property string $slug
+ * @property string $name
+ * @property string|null $description
  * @property SystemConfig|null $config
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
 #[Fillable(['slug', 'name', 'description', 'config'])]
 final class System extends Model

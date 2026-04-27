@@ -11,7 +11,19 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property string $id
+ * @property string $module_id
+ * @property string|null $parent_id
+ * @property string $term
+ * @property string $definition
+ * @property string $notes
+ * @property array<int|string, mixed> $relations
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ */
 #[Fillable(['module_id', 'parent_id', 'term', 'definition', 'notes', 'relations'])]
 final class IndexEntry extends Model
 {

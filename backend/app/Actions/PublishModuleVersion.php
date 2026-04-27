@@ -97,7 +97,7 @@ final class PublishModuleVersion
                 'term' => $indexEntry->term,
                 'definition' => $indexEntry->definition,
                 'notes' => $indexEntry->notes,
-                'relations' => json_encode($indexEntry->relations ?? []),
+                'relations' => json_encode($indexEntry->relations),
             ];
         })->chunk(500)->each(fn (LazyCollection $chunk) => IndexEntryVersion::query()->insert($chunk->values()->all()));
 

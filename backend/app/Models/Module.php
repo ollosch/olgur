@@ -11,7 +11,20 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property string $id
+ * @property string $system_id
+ * @property string $slug
+ * @property string $name
+ * @property string $description
+ * @property array<string, mixed> $config
+ * @property bool $is_core
+ * @property int $sort_order
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ */
 #[Fillable(['system_id', 'slug', 'name', 'description', 'config', 'is_core', 'sort_order'])]
 final class Module extends Model
 {

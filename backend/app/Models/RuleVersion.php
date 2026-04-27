@@ -12,6 +12,16 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property string $id
+ * @property string|null $rule_id
+ * @property string $module_version_id
+ * @property string|null $parent_id
+ * @property string $number
+ * @property string $title
+ * @property string $content
+ * @property int $sort_order
+ */
 #[Fillable(['rule_id', 'module_version_id', 'parent_id', 'number', 'title', 'content', 'sort_order'])]
 final class RuleVersion extends Model
 {

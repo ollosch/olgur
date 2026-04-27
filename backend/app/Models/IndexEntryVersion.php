@@ -12,6 +12,16 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property string $id
+ * @property string|null $index_entry_id
+ * @property string $module_version_id
+ * @property string|null $parent_id
+ * @property string $term
+ * @property string|null $definition
+ * @property string|null $notes
+ * @property array<int|string, mixed>|null $relations
+ */
 #[Fillable(['index_entry_id', 'module_version_id', 'parent_id', 'term', 'definition', 'notes', 'relations'])]
 final class IndexEntryVersion extends Model
 {

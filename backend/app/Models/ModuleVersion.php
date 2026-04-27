@@ -14,7 +14,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
+ * @property string $id
+ * @property string $module_id
+ * @property string|null $released_by
+ * @property string $version_string
+ * @property string $notes
  * @property Carbon|null $released_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
 #[Fillable(['module_id', 'version_string', 'notes', 'released_at', 'released_by'])]
 final class ModuleVersion extends Model
