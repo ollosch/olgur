@@ -129,12 +129,14 @@ function onSearch() {
 
         <!-- see_also -->
         <div v-if="entry.relations?.see_also?.length" class="mt-1 flex flex-wrap gap-1.5 items-center">
-          <span class=" ml-2 text-xs text-muted-foreground">See also:</span>
-          <span
+          <span class="ml-2 text-xs text-muted-foreground">See also:</span>
+          <button
             v-for="term in entry.relations.see_also"
             :key="term"
-            class="text-xs text-foreground/60 italic"
-          >{{ term }}</span>
+            type="button"
+            class="text-xs text-primary underline decoration-dotted hover:text-primary/80 italic transition-colors cursor-pointer"
+            @click="search = term; activeLetter = null"
+          >{{ term }}</button>
         </div>
       </div>
     </div>
