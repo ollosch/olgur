@@ -22,7 +22,7 @@ const props = defineProps<Props>()
 const router = useRouter()
 const systemStore = useSystemStore()
 const { modulesBySystem, subscriptions, loading } = storeToRefs(systemStore)
-const { fetchModules, deleteSystem, deleteModule, activateModule, deactivateModule, subscribe, unsubscribe } = systemStore
+const { fetchModules, deleteSystem, deleteModule, activateModule, deactivateModule, subscribe, unsubscribe, canSubscribeToModule } = systemStore
 
 const expanded = ref(false)
 const showCreateModule = ref(false)
@@ -37,16 +37,6 @@ const activeModuleIds = computed(() => props.membership?.config?.active_module_i
 
 const hasCoreModule = computed(() => modules.value.some((m) => m.is_core))
 const systemStructure = computed(() => props.system.config?.system_structure ?? '')
-
-const hasCoreSubscription = computed(() =>
-  modules.value.some((m) => m.is_core && !!subscriptions.value[m.id]),
-)
-
-function canSubscribeToModule(mod: { is_core: boolean }): boolean {
-  if (mod.is_core) return true
-  if (props.system.config?.system_structure === 'core_plus_many') return hasCoreSubscription.value
-  return true
-}
 
 function structureLabel(s: string | undefined) {
   if (s === 'core_plus_many') return 'Core + Many'
@@ -82,11 +72,6 @@ async function handleDeactivate(moduleId: string) {
 
 async function handleSubscribe(moduleId: string) {
   await subscribe(props.system.id, moduleId)
-  // Auto-activate the module so its rules appear in the rules tree immediately.
-  const mod = modules.value.find((m) => m.id === moduleId)
-  if (mod && !mod.is_core) {
-    await activateModule(props.system.id, moduleId)
-  }
 }
 
 async function handleUnsubscribe(moduleId: string) {
@@ -205,8 +190,8 @@ function openSystem() {
               variant="ghost"
               size="sm"
               class="text-xs h-6"
-              :disabled="loading || !canSubscribeToModule(mod)"
-              :title="!canSubscribeToModule(mod) ? 'Subscribe to the core module first' : undefined"
+              :disabled="loading || !canSubscribeToModule(props.system.id, mod.id)"
+              :title="!canSubscribeToModule(props.system.id, mod.id) ? 'Subscribe to the core module first' : undefined"
               @click="handleSubscribe(mod.id)"
             >
               Subscribe

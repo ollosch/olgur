@@ -164,6 +164,22 @@ export const useSystemStore = defineStore('system', () => {
   }
 
   // ── Subscription actions ─────────────────────────────────────────────────────
+  /**
+   * Returns true if the user can subscribe to the given module.
+   * For `core_plus_many` systems, non-core modules require an active core subscription first.
+   */
+  function canSubscribeToModule(systemId: string, moduleId: string): boolean {
+    const system = systems.value.find((s) => s.id === systemId) ?? currentSystem.value
+    const mods = modulesBySystem.value[systemId] ?? []
+    const mod = mods.find((m) => m.id === moduleId)
+    if (!mod) return false
+    if (mod.is_core) return true
+    if (system?.config?.system_structure === 'core_plus_many') {
+      return mods.some((m) => m.is_core && !!subscriptions.value[m.id])
+    }
+    return true
+  }
+
   async function subscribe(systemId: string, moduleId: string) {
     const result = await post<{ data: Subscription }>(
       `/systems/${systemId}/modules/${moduleId}/subscriptions`,
@@ -172,6 +188,11 @@ export const useSystemStore = defineStore('system', () => {
     if (result) {
       subscriptions.value[moduleId] = { id: result.data.id, editor: result.data.editor }
       await fetchUserMemberships()
+      // Auto-activate non-core modules so their rules appear immediately.
+      const mod = (modulesBySystem.value[systemId] ?? []).find((m) => m.id === moduleId)
+      if (mod && !mod.is_core) {
+        await activateModule(systemId, moduleId)
+      }
     }
   }
 
@@ -253,6 +274,7 @@ export const useSystemStore = defineStore('system', () => {
     activateModule,
     deactivateModule,
     // subscriptions
+    canSubscribeToModule,
     subscribe,
     unsubscribe,
     // admin management
