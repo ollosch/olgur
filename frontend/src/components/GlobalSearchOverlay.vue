@@ -2,7 +2,6 @@
 import { ref, computed, watch, nextTick, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
 import { Search } from 'lucide-vue-next'
 import { useShortcutStore } from '@/stores/shortcut'
 import { useContentStore } from '@/stores/content'
@@ -75,6 +74,12 @@ const childrenByParent = computed((): Map<string | null, IndexEntry[]> => {
       m.set(key, [e])
     }
   }
+  return m
+})
+
+const entriesById = computed((): Map<string, IndexEntry> => {
+  const m = new Map<string, IndexEntry>()
+  for (const e of allEntries.value) m.set(e.id, e)
   return m
 })
 
@@ -191,11 +196,12 @@ function onKeyDown(e: KeyboardEvent): void {
       <!-- Search input -->
       <div class="flex items-center gap-2 border-b border-border px-4 py-3 shrink-0">
         <Search class="w-4 h-4 text-muted-foreground shrink-0" />
-        <Input
+        <input
           ref="inputRef"
           v-model="query"
+          type="text"
           placeholder="Search rules &amp; index…"
-          class="border-0 bg-transparent shadow-none focus-visible:ring-0 text-sm h-8 px-0"
+          class="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground"
           @input="onQueryInput"
           @keydown="onKeyDown"
         />
@@ -227,6 +233,8 @@ function onKeyDown(e: KeyboardEvent): void {
                 :children-by-parent="childrenByParent"
                 :expanded-ids="expandedEntryIds"
                 :depth="0"
+                :entries-by-id="entriesById"
+                :show-ancestors="true"
                 @toggle="toggleEntryExpand"
               />
             </div>
