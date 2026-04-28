@@ -122,3 +122,9 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .example-block {
+    @apply block text-[0.8em] text-foreground/50 leading-relaxed mt-2;
+  }
+}

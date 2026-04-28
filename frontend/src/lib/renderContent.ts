@@ -5,6 +5,9 @@
  */
 export function renderContent(content: string, options?: { acronymPopups?: boolean }): string {
   return content
+    .replace(/<ex>([\s\S]*?)<\/ex>/g, (_match, inner: string) => {
+      return `<span class="example-block">EX: ${inner.trim()}</span>`
+    })
     .replace(/\{\{([A-Z]):([^}]+)\}\}/g, (_match, prefix: string, key: string) => {
       if (prefix === 'A') {
         if (options?.acronymPopups === false) {
