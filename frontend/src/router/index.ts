@@ -29,6 +29,14 @@ const router = createRouter({
       path: '/systems/:systemId',
       meta: { requiresAuth: true },
       component: () => import('@/views/SystemView.vue'),
+      children: [
+        // Rule detail view
+        {
+          path: 'rule/:ruleId',
+          name: 'system-rule',
+          component: () => import('@/views/RuleDetailView.vue'),
+        },
+      ],
     },
     {
       path: '/:pathMatch(.*)*',

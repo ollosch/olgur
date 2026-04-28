@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useHistoryStore } from '@/stores/history'
 import { useSystemStore } from '@/stores/system'
-import { useSystemNavStore } from '@/stores/systemNav'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Clock } from 'lucide-vue-next'
 
+const router = useRouter()
+const route = useRoute()
 const historyStore = useHistoryStore()
 const systemStore = useSystemStore()
-const navStore = useSystemNavStore()
 
 const entries = computed(() => {
   const systemId = systemStore.currentSystem?.id
@@ -17,8 +18,9 @@ const entries = computed(() => {
 })
 
 function open(entry: (typeof entries.value)[number]): void {
+  const systemId = route.params['systemId'] as string
   if (entry.type === 'rule') {
-    navStore.navigate({ view: 'rule', ruleId: entry.id })
+    router.push({ name: 'system-rule', params: { systemId, ruleId: entry.id } })
   }
 }
 

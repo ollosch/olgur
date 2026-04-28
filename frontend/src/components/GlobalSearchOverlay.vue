@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { ChevronDown, ChevronRight, Search } from 'lucide-vue-next'
 import { useShortcutStore } from '@/stores/shortcut'
 import { useContentStore } from '@/stores/content'
 import { useSystemStore } from '@/stores/system'
-import { useSystemNavStore } from '@/stores/systemNav'
 import { useAppSettingsStore } from '@/stores/appSettings'
 import { renderContent } from '@/lib/renderContent'
 import { rankMatch, compareIndexEntries } from '@/lib/utils'
@@ -16,7 +16,8 @@ const DEFAULT_CAP = 10
 const shortcutStore = useShortcutStore()
 const contentStore = useContentStore()
 const systemStore = useSystemStore()
-const navStore = useSystemNavStore()
+const router = useRouter()
+const route = useRoute()
 const appSettings = useAppSettingsStore()
 
 // Persistent state — survives open/close cycles
@@ -150,7 +151,10 @@ function toggleNotes(id: string): void {
 }
 
 function selectRule(rule: Rule): void {
-  navStore.navigate({ view: 'rule', ruleId: rule.id })
+  const systemId = route.params['systemId'] as string | undefined
+  if (systemId) {
+    router.push({ name: 'system-rule', params: { systemId, ruleId: rule.id } })
+  }
   shortcutStore.overlayOpen = false
 }
 

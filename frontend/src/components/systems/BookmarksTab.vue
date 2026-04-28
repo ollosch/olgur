@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useBookmarkStore } from '@/stores/bookmarks'
 import { useContentStore } from '@/stores/content'
-import { useSystemNavStore } from '@/stores/systemNav'
 import { useLeftPanelStore } from '@/stores/leftPanel'
 import type { BookmarkEntry } from '@/types/domain'
 
 const bookmarkStore = useBookmarkStore()
 const contentStore = useContentStore()
-const navStore = useSystemNavStore()
 const panelStore = useLeftPanelStore()
+const router = useRouter()
+const route = useRoute()
 
 interface ResolvedBookmark {
   entry: BookmarkEntry
@@ -43,8 +44,9 @@ const resolvedBookmarks = computed((): ResolvedBookmark[] => {
 })
 
 function navigate(bookmark: ResolvedBookmark) {
+  const systemId = route.params['systemId'] as string
   if (bookmark.entry.type === 'rule') {
-    navStore.navigate({ view: 'rule', ruleId: bookmark.entry.id })
+    router.push({ name: 'system-rule', params: { systemId, ruleId: bookmark.entry.id } })
     panelStore.mobileOpen = false
   }
 }
