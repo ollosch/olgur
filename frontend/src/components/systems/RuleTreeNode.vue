@@ -7,7 +7,7 @@ import { useLeftPanelStore } from '@/stores/leftPanel'
 
 interface Props {
   rule: Rule
-  allRules: Rule[]
+  childrenMap: Map<string | null, Rule[]>
   selectedId: string | null
   depth: number
 }
@@ -19,13 +19,9 @@ const panelStore = useLeftPanelStore()
 
 const open = computed(() => panelStore.expandedRuleIds.has(props.rule.id))
 
-const hasChildren = computed(() => props.allRules.some((r) => r.parent_id === props.rule.id))
+const children = computed((): Rule[] => props.childrenMap.get(props.rule.id) ?? [])
 
-function children(parentId: string): Rule[] {
-  return props.allRules
-    .filter((r) => r.parent_id === parentId)
-    .sort((a, b) => a.sort_order - b.sort_order)
-}
+const hasChildren = computed(() => children.value.length > 0)
 
 function toggle(): void {
   if (hasChildren.value) {
@@ -114,10 +110,10 @@ function onKeyDown(e: KeyboardEvent): void {
     <!-- children -->
     <template v-if="open && hasChildren">
       <RuleTreeNode
-        v-for="child in children(rule.id)"
+        v-for="child in children"
         :key="child.id"
         :rule="child"
-        :all-rules="allRules"
+        :children-map="childrenMap"
         :selected-id="selectedId"
         :depth="depth + 1"
         @select="emit('select', $event)"

@@ -16,6 +16,7 @@ interface Props {
   selectedRule: Rule | null
   allIndexEntries: IndexEntry[]
   rulesByNumber: Map<string, Rule>
+  childrenMap: Map<string | null, Rule[]>
   pinned: boolean
   getModuleRules: (mod: Module) => Rule[]
   buildTopLevelRules: (rules: Rule[]) => Rule[]
@@ -145,7 +146,7 @@ watch(
                 v-for="rule in buildTopLevelRules(getModuleRules(mod))"
                 :key="rule.id"
                 :rule="rule"
-                :all-rules="getModuleRules(mod)"
+                :children-map="childrenMap"
                 :selected-id="selectedRule?.id ?? null"
                 :depth="1"
                 @select="emit('select', $event)"
