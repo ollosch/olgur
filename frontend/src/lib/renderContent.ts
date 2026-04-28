@@ -3,10 +3,18 @@
  * Uses data-rule-number on links so the parent container's event delegation handles
  * hover popups and click navigation without any per-link Vue listeners.
  */
+
+const apiBase: string =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost/api'
+
 export function renderContent(content: string, options?: { acronymPopups?: boolean }): string {
   return content
     .replace(/<ex>([\s\S]*?)<\/ex>/g, (_match, inner: string) => {
       return `<span class="example-block">EX: ${inner.trim()}</span>`
+    })
+    .replace(/\{\{I:([^}]+)\}\}/g, (_match, key: string) => {
+      const src = `${apiBase}/rules/images/${encodeURIComponent(key)}.png`
+      return `<img src="${escapeHtml(src)}" alt="${escapeHtml(key)}" class="rule-image float-left mr-2" />`
     })
     .replace(/\{\{([A-Z]):([^}]+)\}\}/g, (_match, prefix: string, key: string) => {
       if (prefix === 'A') {
