@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -77,6 +78,7 @@ async function submit() {
     <DialogContent class="sm:max-w-md">
       <DialogHeader>
         <DialogTitle>New Module</DialogTitle>
+        <DialogDescription class="sr-only">Create a new module within this system</DialogDescription>
       </DialogHeader>
 
       <form class="space-y-4" @submit.prevent="submit">

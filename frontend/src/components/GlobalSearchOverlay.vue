@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Search } from 'lucide-vue-next'
 import { useShortcutStore } from '@/stores/shortcut'
 import { useContentStore } from '@/stores/content'
@@ -193,6 +193,8 @@ function onKeyDown(e: KeyboardEvent): void {
       :show-close-button="false"
       class="top-16 translate-y-0 max-w-2xl p-0 gap-0 overflow-hidden flex flex-col"
     >
+      <DialogTitle class="sr-only">Search</DialogTitle>
+      <DialogDescription class="sr-only">Search rules and index entries</DialogDescription>
       <!-- Search input -->
       <div class="flex items-center gap-2 border-b border-border px-4 py-3 shrink-0">
         <Search class="w-4 h-4 text-muted-foreground shrink-0" />

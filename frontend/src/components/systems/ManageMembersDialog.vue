@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -91,6 +92,7 @@ const modules = () => systemStore.modulesBySystem[props.systemId] ?? []
     <DialogContent class="sm:max-w-lg max-h-[80vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle>Manage Members</DialogTitle>
+        <DialogDescription class="sr-only">Add or remove system members and manage their roles</DialogDescription>
       </DialogHeader>
 
       <div v-if="loadingMemberships" class="text-sm text-muted-foreground py-4 text-center">
