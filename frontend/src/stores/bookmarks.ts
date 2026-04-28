@@ -43,7 +43,7 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
     }
 
     const result = await patch<{ data: Membership }, { config: typeof newConfig }>(
-      `/systems/${systemId}/membership-config`,
+      `/me/memberships/${systemId}`,
       { config: newConfig },
     )
 
