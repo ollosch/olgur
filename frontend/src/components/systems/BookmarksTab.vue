@@ -5,6 +5,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { useBookmarkStore } from '@/stores/bookmarks'
 import { useContentStore } from '@/stores/content'
 import { useLeftPanelStore } from '@/stores/leftPanel'
+import { X } from 'lucide-vue-next'
 import type { BookmarkEntry } from '@/types/domain'
 
 const bookmarkStore = useBookmarkStore()
@@ -64,20 +65,31 @@ function navigate(bookmark: ResolvedBookmark) {
       </div>
 
       <!-- Bookmark list -->
-      <button
+      <div
         v-for="bookmark in resolvedBookmarks"
         :key="bookmark.entry.id"
-        class="w-full flex items-baseline gap-2 px-4 py-2 hover:bg-muted/30 transition-colors text-left"
-        @click="navigate(bookmark)"
+        class="w-full flex items-center gap-1 px-2 py-1.5 hover:bg-muted/30 transition-colors group"
       >
-        <span
-          v-if="bookmark.sublabel"
-          class="font-mono text-xs text-primary font-semibold shrink-0 w-12 text-right"
+        <button
+          class="flex items-baseline gap-2 flex-1 min-w-0 text-left"
+          @click="navigate(bookmark)"
         >
-          {{ bookmark.sublabel }}
-        </span>
-        <span class="text-xs text-foreground/80 truncate">{{ bookmark.label.replace(bookmark.sublabel ? bookmark.sublabel + ' ' : '', '') }}</span>
-      </button>
+          <span
+            v-if="bookmark.sublabel"
+            class="font-mono text-xs text-primary font-semibold shrink-0 w-12 text-right"
+          >
+            {{ bookmark.sublabel }}
+          </span>
+          <span class="text-xs text-foreground/80 truncate">{{ bookmark.label.replace(bookmark.sublabel ? bookmark.sublabel + ' ' : '', '') }}</span>
+        </button>
+        <button
+          class="shrink-0 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all"
+          :title="`Remove bookmark`"
+          @click.stop="bookmarkStore.removeBookmark(bookmark.entry.type as 'rule', bookmark.entry.id)"
+        >
+          <X class="w-3 h-3" />
+        </button>
+      </div>
     </div>
   </ScrollArea>
 </template>
