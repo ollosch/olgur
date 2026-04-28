@@ -122,7 +122,7 @@ final class ModuleDataImporter
     public function insertChunked(string $table, array $rows): void
     {
         foreach (array_chunk($rows, 500) as $chunk) {
-            DB::table($table)->insertOrIgnore($chunk);
+            DB::table($table)->insert($chunk);
         }
     }
 }
