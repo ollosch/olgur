@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -22,7 +22,7 @@ const route = useRoute()
 const query = ref('')
 const showAllRules = ref(false)
 const showAllEntries = ref(false)
-const expandedEntryIds = ref<Set<string>>(new Set())
+const expandedEntryIds = reactive(new Set<string>())
 
 const listRef = ref<HTMLElement | null>(null)
 const inputRef = ref<HTMLInputElement | null>(null)
@@ -143,17 +143,15 @@ const hasResults = computed(
 function onQueryInput(): void {
   showAllRules.value = false
   showAllEntries.value = false
-  expandedEntryIds.value = new Set()
+  expandedEntryIds.clear()
 }
 
 function toggleEntryExpand(id: string): void {
-  const s = new Set(expandedEntryIds.value)
-  if (s.has(id)) {
-    s.delete(id)
+  if (expandedEntryIds.has(id)) {
+    expandedEntryIds.delete(id)
   } else {
-    s.add(id)
+    expandedEntryIds.add(id)
   }
-  expandedEntryIds.value = s
 }
 
 function selectRule(rule: Rule): void {

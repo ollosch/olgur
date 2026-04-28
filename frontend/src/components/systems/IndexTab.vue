@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, reactive } from 'vue'
 import type { IndexEntry, Rule } from '@/types/domain'
 import { Input } from '@/components/ui/input'
 import { renderContent } from '@/lib/renderContent'
@@ -41,7 +41,7 @@ const childrenByParent = computed((): Map<string | null, IndexEntry[]> => {
 const search = ref('')
 const activeLetter = ref<string | null>(null)
 /** Tracks which entries are expanded to show their children */
-const expandedIds = ref<Set<string>>(new Set())
+const expandedIds = reactive(new Set<string>())
 
 const availableLetters = computed(() => {
   const set = new Set<string>()
@@ -82,17 +82,15 @@ function toggleLetter(letter: string): void {
 
 function onSearch(): void {
   activeLetter.value = null
-  expandedIds.value = new Set()
+  expandedIds.clear()
 }
 
 function toggleExpand(id: string): void {
-  const next = new Set(expandedIds.value)
-  if (next.has(id)) {
-    next.delete(id)
+  if (expandedIds.has(id)) {
+    expandedIds.delete(id)
   } else {
-    next.add(id)
+    expandedIds.add(id)
   }
-  expandedIds.value = next
 }
 </script>
 
