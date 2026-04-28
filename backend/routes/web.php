@@ -10,12 +10,16 @@ use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\ModuleVersionController;
 use App\Http\Controllers\ModuleVersionFileController;
 use App\Http\Controllers\RuleController;
+use App\Http\Controllers\RuleImageController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SystemController;
 use App\Http\Controllers\SystemManifestController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('api')->group(function (): void {
+    Route::get('/rules/images/{filename}', [RuleImageController::class, 'show'])
+        ->where('filename', '.+');
+
     Route::middleware('auth')->group(function (): void {
         Route::get('/me', [MeController::class, 'show']);
         Route::patch('/me', [MeController::class, 'update']);
