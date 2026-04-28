@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppSettingsStore } from '@/stores/appSettings'
 import { useBookmarkStore } from '@/stores/bookmarks'
@@ -9,7 +9,7 @@ import { renderContent } from '@/lib/renderContent'
 import type { Rule, Module } from '@/types/domain'
 
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Star } from 'lucide-vue-next'
+import { ArrowLeft, ArrowUp, Star } from 'lucide-vue-next'
 import RuleDetailChildren from '@/components/systems/RuleDetailChildren.vue'
 import RuleTocView from '@/components/systems/RuleTocView.vue'
 
@@ -66,6 +66,10 @@ const tocDepth = computed(() => systemStore.currentSystem?.config?.toc_depth ?? 
 
 const selectedRule = computed((): Rule | null => rulesById.value.get(ruleId.value) ?? null)
 
+const parentRule = computed((): Rule | null =>
+  selectedRule.value?.parent_id ? (rulesById.value.get(selectedRule.value.parent_id) ?? null) : null,
+)
+
 function ruleDepth(rule: Rule): number {
   let depth = 1
   let current: Rule = rule
@@ -90,10 +94,20 @@ const showToc = computed(() => {
 function selectRule(rule: Rule): void {
   router.push({ name: 'system-rule', params: { systemId: systemId.value, ruleId: rule.id } })
 }
+
+// ---------------------------------------------------------------------------
+// Scroll to top when navigating to a different rule
+// ---------------------------------------------------------------------------
+
+const scrollEl = ref<HTMLElement | null>(null)
+
+watch(ruleId, () => {
+  scrollEl.value?.scrollTo({ top: 0 })
+})
 </script>
 
 <template>
-  <div class="overflow-auto p-6 h-full">
+  <div ref="scrollEl" class="overflow-auto p-6 h-full">
     <div v-if="selectedRule">
       <div class="mb-4">
         <Button
@@ -104,6 +118,16 @@ function selectRule(rule: Rule): void {
         >
           <ArrowLeft class="w-3.5 h-3.5" />
           Back
+        </Button>
+        <Button
+          v-if="parentRule"
+          variant="ghost"
+          size="sm"
+          class="mb-3 h-7 text-xs text-muted-foreground hover:text-foreground gap-1.5"
+          @click="selectRule(parentRule)"
+        >
+          <ArrowUp class="w-3.5 h-3.5" />
+          <span class="font-mono">{{ parentRule.number }}</span>
         </Button>
         <div class="flex items-baseline gap-3">
           <span class="text-primary font-mono text-lg font-bold">
