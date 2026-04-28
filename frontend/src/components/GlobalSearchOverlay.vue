@@ -3,14 +3,13 @@ import { ref, computed, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { ChevronDown, ChevronRight, Search } from 'lucide-vue-next'
+import { Search } from 'lucide-vue-next'
 import { useShortcutStore } from '@/stores/shortcut'
 import { useContentStore } from '@/stores/content'
 import { useSystemStore } from '@/stores/system'
-import { useAppSettingsStore } from '@/stores/appSettings'
-import { renderContent } from '@/lib/renderContent'
 import { rankMatch, compareIndexEntries } from '@/lib/utils'
 import type { Rule, IndexEntry } from '@/types/domain'
+import IndexEntryNode from '@/components/systems/IndexEntryNode.vue'
 
 const DEFAULT_CAP = 10
 const shortcutStore = useShortcutStore()
@@ -18,13 +17,12 @@ const contentStore = useContentStore()
 const systemStore = useSystemStore()
 const router = useRouter()
 const route = useRoute()
-const appSettings = useAppSettingsStore()
 
 // Persistent state — survives open/close cycles
 const query = ref('')
 const showAllRules = ref(false)
 const showAllEntries = ref(false)
-const expandedNotes = ref<Set<string>>(new Set())
+const expandedEntryIds = ref<Set<string>>(new Set())
 
 const listRef = ref<HTMLElement | null>(null)
 const inputRef = ref<HTMLInputElement | null>(null)
@@ -66,9 +64,17 @@ const allEntries = computed((): IndexEntry[] =>
   searchableModules.value.flatMap((m) => contentStore.indexEntriesByModule[m.id] ?? []),
 )
 
-const entriesById = computed((): Map<string, IndexEntry> => {
-  const m = new Map<string, IndexEntry>()
-  for (const e of allEntries.value) m.set(e.id, e)
+const childrenByParent = computed((): Map<string | null, IndexEntry[]> => {
+  const m = new Map<string | null, IndexEntry[]>()
+  for (const e of allEntries.value) {
+    const key = e.parent_id
+    const bucket = m.get(key)
+    if (bucket) {
+      bucket.push(e)
+    } else {
+      m.set(key, [e])
+    }
+  }
   return m
 })
 
@@ -137,17 +143,17 @@ const hasResults = computed(
 function onQueryInput(): void {
   showAllRules.value = false
   showAllEntries.value = false
-  expandedNotes.value = new Set()
+  expandedEntryIds.value = new Set()
 }
 
-function toggleNotes(id: string): void {
-  const s = new Set(expandedNotes.value)
+function toggleEntryExpand(id: string): void {
+  const s = new Set(expandedEntryIds.value)
   if (s.has(id)) {
     s.delete(id)
   } else {
     s.add(id)
   }
-  expandedNotes.value = s
+  expandedEntryIds.value = s
 }
 
 function selectRule(rule: Rule): void {
@@ -161,6 +167,20 @@ function selectRule(rule: Rule): void {
 function selectRuleByNumber(number: string): void {
   const rule = allRules.value.find((r) => r.number === number)
   if (rule) selectRule(rule)
+}
+
+function handleEntryClick(e: MouseEvent): void {
+  const anchor = (e.target as HTMLElement).closest('[data-rule-number]') as HTMLElement | null
+  if (anchor?.dataset['ruleNumber']) {
+    selectRuleByNumber(anchor.dataset['ruleNumber'])
+  }
+}
+
+function onKeyDown(e: KeyboardEvent): void {
+  if (e.key === 'Enter' && ruleResults.value.length > 0) {
+    e.preventDefault()
+    selectRule(ruleResults.value[0].rule)
+  }
 }
 </script>
 
@@ -179,6 +199,7 @@ function selectRuleByNumber(number: string): void {
           placeholder="Search rules &amp; index…"
           class="border-0 bg-transparent shadow-none focus-visible:ring-0 text-sm h-8 px-0"
           @input="onQueryInput"
+          @keydown="onKeyDown"
         />
       </div>
 
@@ -198,64 +219,17 @@ function selectRuleByNumber(number: string): void {
             </div>
 
             <div
-              v-for="{ entry } in visibleEntries"
-              :key="entry.id"
-              class="mx-2 px-2 py-1.5 rounded transition-colors"
+              class="mx-2"
+              @click="handleEntryClick"
             >
-              <!-- Term line -->
-              <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                <span v-if="entry.parent_id" class="text-xs text-muted-foreground">
-                  {{ entriesById.get(entry.parent_id)?.term }} ›
-                </span>
-                <button
-                  v-if="entry.notes"
-                  type="button"
-                  class="flex items-center gap-0.5 text-xs font-semibold text-foreground hover:text-primary transition-colors"
-                  @click.stop="toggleNotes(entry.id)"
-                >
-                  <ChevronDown v-if="expandedNotes.has(entry.id)" class="w-3 h-3 shrink-0" />
-                  <ChevronRight v-else class="w-3 h-3 shrink-0" />
-                  {{ entry.term }}
-                </button>
-                <span v-else class="text-xs font-semibold text-foreground">{{ entry.term }}</span>
-
-                <template v-if="entry.relations?.rule_refs?.length">
-                  <button
-                    v-for="ruleRef in entry.relations.rule_refs"
-                    :key="ruleRef"
-                    type="button"
-                    class="font-mono text-xs text-primary underline decoration-dotted hover:text-primary/80 transition-colors cursor-pointer"
-                    @click.stop="selectRuleByNumber(ruleRef)"
-                  >{{ ruleRef }}</button>
-                </template>
-              </div>
-
-              <!-- Definition -->
-              <!-- eslint-disable-next-line vue/no-v-html -->
-              <p
-                class="text-foreground/70 text-xs leading-relaxed mt-0.5"
-                v-html="renderContent(entry.definition, { acronymPopups: appSettings.acronymPopups })"
-              />
-
-              <!-- See also -->
-              <div
-                v-if="entry.relations?.see_also?.length"
-                class="flex flex-wrap gap-1.5 items-center mt-0.5"
-              >
-                <span class="text-xs text-muted-foreground">See also:</span>
-                <span
-                  v-for="term in entry.relations.see_also"
-                  :key="term"
-                  class="text-xs text-foreground/60 italic"
-                >{{ term }}</span>
-              </div>
-
-              <!-- Notes (expandable) -->
-              <!-- eslint-disable-next-line vue/no-v-html -->
-              <p
-                v-if="entry.notes && expandedNotes.has(entry.id)"
-                class="text-muted-foreground text-xs italic mt-0.5"
-                v-html="renderContent(entry.notes, { acronymPopups: appSettings.acronymPopups })"
+              <IndexEntryNode
+                v-for="{ entry } in visibleEntries"
+                :key="entry.id"
+                :entry="entry"
+                :children-by-parent="childrenByParent"
+                :expanded-ids="expandedEntryIds"
+                :depth="0"
+                @toggle="toggleEntryExpand"
               />
             </div>
 
@@ -291,7 +265,7 @@ function selectRuleByNumber(number: string): void {
               @click="selectRule(rule)"
               @keydown.enter="selectRule(rule)"
             >
-              <span class="font-mono text-xs text-primary font-semibold shrink-0">{{ rule.number }}</span>
+              <span :data-rule-number="rule.number" class="font-mono text-xs text-primary font-semibold shrink-0">{{ rule.number }}</span>
               <span class="text-foreground text-xs truncate">{{ rule.title }}</span>
             </div>
 
