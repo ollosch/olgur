@@ -8,6 +8,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
+import { useModalShortcutGuard } from '@/composables/useModalShortcutGuard'
 
 interface Props {
   open: boolean
@@ -21,6 +22,8 @@ const emit = defineEmits<{
   confirm: []
   cancel: []
 }>()
+
+useModalShortcutGuard(() => props.open)
 </script>
 
 <template>

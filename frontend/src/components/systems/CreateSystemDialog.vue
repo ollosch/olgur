@@ -14,6 +14,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { generateSlug } from '@/lib/utils'
+import { useModalShortcutGuard } from '@/composables/useModalShortcutGuard'
 
 interface Props {
   open: boolean
@@ -27,6 +28,8 @@ const emit = defineEmits<{
 const systemStore = useSystemStore()
 const { errors, loading } = storeToRefs(systemStore)
 const { createSystem } = systemStore
+
+useModalShortcutGuard(() => props.open)
 
 const name = ref('')
 const slug = ref('')

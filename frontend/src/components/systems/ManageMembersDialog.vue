@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useModalShortcutGuard } from '@/composables/useModalShortcutGuard'
 
 interface Props {
   open: boolean
@@ -21,6 +22,8 @@ const emit = defineEmits<{
 }>()
 
 const systemStore = useSystemStore()
+
+useModalShortcutGuard(() => props.open)
 
 const memberships = ref<MembershipWithUser[]>([])
 const subscriptionsByModule = ref<Record<string, SubscriptionWithUser[]>>({})

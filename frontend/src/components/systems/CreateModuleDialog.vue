@@ -13,6 +13,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { generateSlug } from '@/lib/utils'
+import { useModalShortcutGuard } from '@/composables/useModalShortcutGuard'
 
 interface Props {
   systemId: string
@@ -33,6 +34,8 @@ const showCoreCheckbox = computed(
 const systemStore = useSystemStore()
 const { modulesBySystem, errors, loading } = storeToRefs(systemStore)
 const { createModule } = systemStore
+
+useModalShortcutGuard(() => props.open)
 
 const name = ref('')
 const slug = ref('')
