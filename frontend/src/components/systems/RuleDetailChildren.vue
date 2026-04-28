@@ -48,7 +48,7 @@ function headingClass(level: number): string {
         :is="`h${headingLevel(depth + 1, tocDepth)}`"
         :class="headingClass(headingLevel(depth + 1, tocDepth))"
       >
-        <span class="font-mono text-primary pr-1">{{ child.number }}</span>
+        <span class="font-mono text-primary pr-1 cursor-pointer hover:underline" @click="emit('selectRule', child)">{{ child.number }}</span>
         {{ child.title }}
       </component>
       <!-- eslint-disable-next-line vue/no-v-html -->
