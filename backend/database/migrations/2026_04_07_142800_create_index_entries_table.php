@@ -30,7 +30,11 @@ return new class extends Migration
             $table->json('relations')->default('{}');
             $table->timestamps();
 
-            $table->unique(['module_id', 'term']);
+            // Unique per (module, parent, term)
+            // The same term may appear under different parents.
+            // On MariaDB, NULLs are not considered equal in unique indexes,
+            // so two distinct root entries with the same term would both be inserted.
+            $table->unique(['module_id', 'parent_id', 'term']);
         });
 
         // Self-referential FK must be added after the table is created
