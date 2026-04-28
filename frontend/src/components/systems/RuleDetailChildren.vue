@@ -42,7 +42,7 @@ function headingClass(level: number): string {
     <div
       v-for="child in children(rule.id)"
       :key="child.id"
-      class="mt-4"
+      class="mt-4 flow-root"
     >
       <component
         :is="`h${headingLevel(depth + 1, tocDepth)}`"
