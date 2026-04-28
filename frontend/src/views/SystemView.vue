@@ -2,44 +2,27 @@
 import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppSettingsStore } from '@/stores/appSettings'
-import { useAuthStore } from '@/stores/auth'
-import { useBookmarkStore } from '@/stores/bookmarks'
 import { useContentStore } from '@/stores/content'
 import { useHistoryStore } from '@/stores/history'
 import { useLeftPanelStore } from '@/stores/leftPanel'
-import { useShortcutStore } from '@/stores/shortcut'
 import { useSystemStore } from '@/stores/system'
 import { useRuleDelegation } from '@/composables/useRuleDelegation'
 import { useRulePopup } from '@/composables/useRulePopup'
 import type { Rule, Module, IndexEntry } from '@/types/domain'
 
-import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Menu, MoreVertical, Search } from 'lucide-vue-next'
 import LeftPanelContent from '@/components/systems/LeftPanelContent.vue'
-import ManageMembersDialog from '@/components/systems/ManageMembersDialog.vue'
+import SystemHeader from '@/components/systems/SystemHeader.vue'
 
 const route = useRoute()
 const router = useRouter()
 const systemStore = useSystemStore()
 const contentStore = useContentStore()
-const authStore = useAuthStore()
 const appSettings = useAppSettingsStore()
 const panelStore = useLeftPanelStore()
-const shortcutStore = useShortcutStore()
 const historyStore = useHistoryStore()
-const bookmarkStore = useBookmarkStore()
 
 const systemId = computed(() => route.params['systemId'] as string)
 const loading = ref(true)
-const manageMembersOpen = ref(false)
 
 // ---------------------------------------------------------------------------
 // System loading
@@ -156,6 +139,32 @@ const selectedRule = computed((): Rule | null => {
 })
 
 // ---------------------------------------------------------------------------
+// Merge-load newly activated modules
+//
+// When the user activates an expansion from the home screen and then returns
+// to an already-loaded system, the new module's content is missing.
+// Watch activeIds and fetch any module whose content hasn't been loaded yet.
+// ---------------------------------------------------------------------------
+
+watch(
+  activeIds,
+  async (newIds) => {
+    const modules = systemStore.modules
+    const toLoad = modules.filter(
+      (m) => !m.is_core && newIds.includes(m.id) && !contentStore.rulesByModule[m.id],
+    )
+    if (toLoad.length === 0) return
+    await Promise.all([
+      ...toLoad.map((m) => contentStore.fetchRules(m.id)),
+      ...toLoad.map((m) => contentStore.fetchIndexEntries(m.id)),
+    ])
+    for (const m of toLoad) {
+      panelStore.expandedModuleIds.add(m.id)
+    }
+  },
+)
+
+// ---------------------------------------------------------------------------
 // History recording
 // ---------------------------------------------------------------------------
 
@@ -237,11 +246,6 @@ function getModuleRules(mod: Module): Rule[] {
   return contentStore.rulesByModule[mod.id] ?? []
 }
 
-async function logout(): Promise<void> {
-  await authStore.logout()
-  await router.push({ name: 'login' })
-}
-
 useRuleDelegation(() => rulesByNumber.value, selectRule, () => indexEntriesByTerm.value)
 useRulePopup().registerNavigate(selectRule, () => rulesByNumber.value, () => indexEntriesByTerm.value)
 </script>
@@ -249,85 +253,18 @@ useRulePopup().registerNavigate(selectRule, () => rulesByNumber.value, () => ind
 <template>
   <div class="h-screen bg-background flex flex-col overflow-hidden">
     <!-- Header -->
-    <header
-      class="border-b border-border px-3 py-2 flex items-center gap-2 shrink-0 h-[53px]"
-    >
-      <!-- Left: mobile toggle + system name -->
-      <div class="flex items-center gap-2 shrink-0">
-        <Sheet v-model:open="panelStore.mobileOpen">
-          <SheetTrigger as-child>
-            <Button variant="ghost" size="icon" :class="['w-8 h-8', appSettings.sidebarPinned ? 'hidden' : 'md:hidden']">
-              <Menu class="w-4 h-4" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" class="w-72 p-0 flex flex-col">
-            <LeftPanelContent
-              :active-modules="activeModules"
-              :expanded-modules="panelStore.expandedModuleIds"
-              :selected-rule="selectedRule"
-              :all-index-entries="allIndexEntries"
-              :rules-by-number="rulesByNumber"
-              :children-map="childrenMap"
-              :pinned="appSettings.sidebarPinned"
-              :get-module-rules="getModuleRules"
-              :build-top-level-rules="buildTopLevelRules"
-              @toggle-module="toggleModule"
-              @select="selectRule"
-              @toggle-pin="togglePin"
-            />
-          </SheetContent>
-        </Sheet>
-
-        <span class="text-foreground font-semibold text-sm">
-          {{ systemStore.currentSystem?.name }}
-        </span>
-      </div>
-
-      <!-- Center: search trigger -->
-      <div class="flex-1 flex justify-center">
-        <Button
-          variant="outline"
-          class="h-8 w-full max-w-xs text-xs text-muted-foreground justify-start gap-2 px-3"
-          @click="shortcutStore.overlayOpen = true"
-        >
-          <Search class="w-3.5 h-3.5 shrink-0" />
-          <span>Search…</span>
-          <kbd class="ml-auto text-[10px] text-muted-foreground/60 font-mono">⌘K</kbd>
-        </Button>
-      </div>
-
-      <!-- Right: dropdown menu -->
-      <DropdownMenu>
-        <DropdownMenuTrigger as-child>
-          <Button variant="ghost" size="icon" class="w-8 h-8">
-            <MoreVertical class="w-4 h-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" class="w-48">
-          <DropdownMenuItem @click="router.push({ name: 'home' })">
-            Exit System
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            v-if="systemStore.membership?.admin"
-            @click="manageMembersOpen = true"
-          >
-            Manage Members
-          </DropdownMenuItem>
-          <DropdownMenuSeparator v-if="systemStore.membership?.admin" />
-          <DropdownMenuItem @click="router.push({ name: 'profile' })">
-            User Profile
-          </DropdownMenuItem>
-          <DropdownMenuItem @click="router.push({ name: 'settings' })">
-            App Settings
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem class="text-destructive" @click="logout">
-            Logout
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </header>
+    <SystemHeader
+      :active-modules="activeModules"
+      :all-index-entries="allIndexEntries"
+      :rules-by-number="rulesByNumber"
+      :children-map="childrenMap"
+      :selected-rule="selectedRule"
+      :get-module-rules="getModuleRules"
+      :build-top-level-rules="buildTopLevelRules"
+      @select="selectRule"
+      @toggle-module="toggleModule"
+      @toggle-pin="togglePin"
+    />
 
     <div
       v-if="loading"
@@ -390,11 +327,5 @@ useRulePopup().registerNavigate(selectRule, () => rulesByNumber.value, () => ind
         </RouterView>
       </div>
     </div>
-
-    <ManageMembersDialog
-      v-if="systemStore.currentSystem"
-      v-model:open="manageMembersOpen"
-      :system-id="systemStore.currentSystem.id"
-    />
   </div>
 </template>
