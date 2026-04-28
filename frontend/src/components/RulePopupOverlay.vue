@@ -33,7 +33,14 @@ function onClick(e: MouseEvent) {
       >
         <!-- Rule popup -->
         <template v-if="state.content.type === 'rule'">
-          <p class="font-mono text-primary font-bold mb-0.5">{{ state.content.rule.number }}</p>
+          <div class="flex items-baseline justify-between gap-2 mb-0.5">
+            <p class="font-mono text-primary font-bold">{{ state.content.rule.number }}</p>
+            <button
+              type="button"
+              class="text-[10px] text-primary underline decoration-dotted hover:text-primary/80 transition-colors shrink-0"
+              @click.stop="navigateToNumber(state.content.rule.number)"
+            >Open rule</button>
+          </div>
           <p class="font-semibold text-foreground mb-1">{{ state.content.rule.title }}</p>
           <!-- eslint-disable-next-line vue/no-v-html -->
           <p
