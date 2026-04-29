@@ -1,17 +1,48 @@
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
 import { useSystemStore } from '@/stores/system'
+import { useContentStore } from '@/stores/content'
 import { useApi } from '@/composables/useApi'
 import type { BookmarkEntry, Membership, ApiResource } from '@/types/domain'
 
+export interface ResolvedBookmark {
+  entry: BookmarkEntry
+  label: string
+  sublabel: string | null
+  sortKey: string
+}
+
 export const useBookmarkStore = defineStore('bookmarks', () => {
   const systemStore = useSystemStore()
+  const contentStore = useContentStore()
   const { patch } = useApi()
 
   /** Current bookmarks from the active membership config */
   const bookmarks = computed((): BookmarkEntry[] =>
     systemStore.membership?.config?.bookmarks ?? [],
   )
+
+  const resolvedBookmarks = computed((): ResolvedBookmark[] => {
+    return bookmarks.value
+      .map((b): ResolvedBookmark => {
+        if (b.type === 'rule') {
+          const rule = contentStore.rulesById.get(b.id)
+          return {
+            entry: b,
+            label: rule ? `${rule.number} ${rule.title}` : b.id,
+            sublabel: rule ? rule.number : null,
+            sortKey: rule ? rule.number : b.id,
+          }
+        }
+        return {
+          entry: b,
+          label: b.id,
+          sublabel: null,
+          sortKey: b.id,
+        }
+      })
+      .sort((a, b) => a.sortKey.localeCompare(b.sortKey))
+  })
 
   function isBookmarked(type: string, id: string): boolean {
     return bookmarks.value.some((b) => b.type === type && b.id === id)
@@ -52,5 +83,5 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
     }
   }
 
-  return { bookmarks, isBookmarked, addBookmark, removeBookmark }
+  return { bookmarks, resolvedBookmarks, isBookmarked, addBookmark, removeBookmark }
 })

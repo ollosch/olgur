@@ -1,50 +1,17 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useBookmarkStore } from '@/stores/bookmarks'
-import { useContentStore } from '@/stores/content'
 import { useLeftPanelStore } from '@/stores/leftPanel'
 import { X } from 'lucide-vue-next'
-import type { BookmarkEntry } from '@/types/domain'
+import type { ResolvedBookmark } from '@/stores/bookmarks'
 
 const bookmarkStore = useBookmarkStore()
-const contentStore = useContentStore()
 const panelStore = useLeftPanelStore()
 const router = useRouter()
 const route = useRoute()
 
-interface ResolvedBookmark {
-  entry: BookmarkEntry
-  label: string
-  sublabel: string | null
-  sortKey: string
-}
-
-const resolvedBookmarks = computed((): ResolvedBookmark[] => {
-  return bookmarkStore.bookmarks
-    .map((b): ResolvedBookmark => {
-      if (b.type === 'rule') {
-        const allRules = Object.values(contentStore.rulesByModule).flat()
-        const rule = allRules.find((r) => r.id === b.id)
-        return {
-          entry: b,
-          label: rule ? `${rule.number} ${rule.title}` : b.id,
-          sublabel: rule ? rule.number : null,
-          sortKey: rule ? rule.number : b.id,
-        }
-      }
-      return {
-        entry: b,
-        label: b.id,
-        sublabel: null,
-        sortKey: b.id,
-      }
-    })
-    .sort((a, b) => a.sortKey.localeCompare(b.sortKey))
-})
-
-function navigate(bookmark: ResolvedBookmark) {
+function navigate(bookmark: ResolvedBookmark): void {
   const systemId = route.params['systemId'] as string
   if (bookmark.entry.type === 'rule') {
     router.push({ name: 'system-rule', params: { systemId, ruleId: bookmark.entry.id } })
@@ -58,7 +25,7 @@ function navigate(bookmark: ResolvedBookmark) {
     <div class="py-2">
       <!-- Empty state -->
       <div
-        v-if="resolvedBookmarks.length === 0"
+        v-if="bookmarkStore.resolvedBookmarks.length === 0"
         class="px-4 py-4 text-xs text-muted-foreground text-center"
       >
         No bookmarks yet.
@@ -66,7 +33,7 @@ function navigate(bookmark: ResolvedBookmark) {
 
       <!-- Bookmark list -->
       <div
-        v-for="bookmark in resolvedBookmarks"
+        v-for="bookmark in bookmarkStore.resolvedBookmarks"
         :key="bookmark.entry.id"
         class="w-full flex items-center gap-1 px-2 py-1.5 hover:bg-muted/30 transition-colors group"
       >
