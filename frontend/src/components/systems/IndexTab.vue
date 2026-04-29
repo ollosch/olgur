@@ -3,7 +3,7 @@ import { ref, computed, reactive } from 'vue'
 import type { IndexEntry, Rule } from '@/types/domain'
 import { Input } from '@/components/ui/input'
 import { renderContent } from '@/lib/renderContent'
-import { rankMatch, compareIndexEntries } from '@/lib/utils'
+import { compareIndexEntries } from '@/lib/utils'
 import { useAppSettingsStore } from '@/stores/appSettings'
 import IndexEntryNode from '@/components/systems/IndexEntryNode.vue'
 
