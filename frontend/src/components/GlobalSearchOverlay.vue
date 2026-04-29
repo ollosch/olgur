@@ -182,7 +182,9 @@ function handleEntryClick(e: MouseEvent): void {
 function onKeyDown(e: KeyboardEvent): void {
   if (e.key === 'Enter' && ruleResults.value.length > 0) {
     e.preventDefault()
-    selectRule(ruleResults.value[0].rule)
+    if (ruleResults.value[0]) {
+      selectRule(ruleResults.value[0].rule)
+    }
   }
 }
 </script>

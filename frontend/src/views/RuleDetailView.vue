@@ -171,8 +171,8 @@ watch(ruleId, () => {
                 v-if="!seg.isCurrent && seg.rule"
                 class="text-muted-foreground hover:text-primary transition-colors"
                 @click="selectRule(seg.rule)"
-              >{{ seg.label.split('.').at(-1) }}</button>
-              <span v-else class="text-muted-foreground/40">{{ seg.label.split('.').at(-1) }}</span>
+              >{{ seg.label.split('.').pop() }}</button>
+              <span v-else class="text-muted-foreground/40">{{ seg.label.split('.').pop() }}</span>
             </template>
           </nav>
 
