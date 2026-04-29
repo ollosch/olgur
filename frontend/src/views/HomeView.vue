@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useSystemStore } from '@/stores/system'
@@ -18,23 +18,6 @@ onMounted(async () => {
   await systemStore.fetchSystems()
   initialLoading.value = false
 })
-
-const sortedSystems = computed(() => {
-  return [...systemStore.systems].sort((a, b) => {
-    const aMember = !!systemStore.membershipsBySystem[a.id]
-    const bMember = !!systemStore.membershipsBySystem[b.id]
-    if (aMember && !bMember) return -1
-    if (!aMember && bMember) return 1
-    return 0
-  })
-})
-
-const memberSystems = computed(() =>
-  sortedSystems.value.filter((s) => !!systemStore.membershipsBySystem[s.id]),
-)
-const otherSystems = computed(() =>
-  sortedSystems.value.filter((s) => !systemStore.membershipsBySystem[s.id]),
-)
 
 const router = useRouter()
 
@@ -66,13 +49,13 @@ async function logout() {
 
       <div v-else class="space-y-6">
         <!-- Your Systems -->
-        <div v-if="memberSystems.length > 0">
+        <div v-if="systemStore.memberSystems.length > 0">
           <div class="text-xs text-muted-foreground uppercase tracking-widest mb-3">
             Your Systems
           </div>
           <div class="space-y-2">
             <SystemCard
-              v-for="system in memberSystems"
+              v-for="system in systemStore.memberSystems"
               :key="system.id"
               :system="system"
               :membership="systemStore.membershipsBySystem[system.id]"
@@ -81,13 +64,13 @@ async function logout() {
         </div>
 
         <!-- Other Systems -->
-        <div v-if="otherSystems.length > 0">
+        <div v-if="systemStore.otherSystems.length > 0">
           <div class="text-xs text-muted-foreground uppercase tracking-widest mb-3">
             Other Systems
           </div>
           <div class="space-y-2">
             <SystemCard
-              v-for="system in otherSystems"
+              v-for="system in systemStore.otherSystems"
               :key="system.id"
               :system="system"
               :membership="systemStore.membershipsBySystem[system.id]"

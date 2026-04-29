@@ -39,6 +39,25 @@ export const useSystemStore = defineStore('system', () => {
     currentSystem.value ? (membershipsBySystem.value[currentSystem.value.id] ?? null) : null,
   )
 
+  // ── Computed shortcuts for home view ────────────────────────────────────────
+  const sortedSystems = computed((): System[] =>
+    [...systems.value].sort((a, b) => {
+      const aMember = !!membershipsBySystem.value[a.id]
+      const bMember = !!membershipsBySystem.value[b.id]
+      if (aMember && !bMember) return -1
+      if (!aMember && bMember) return 1
+      return 0
+    }),
+  )
+
+  const memberSystems = computed((): System[] =>
+    sortedSystems.value.filter((s) => !!membershipsBySystem.value[s.id]),
+  )
+
+  const otherSystems = computed((): System[] =>
+    sortedSystems.value.filter((s) => !membershipsBySystem.value[s.id]),
+  )
+
   // ── Systems list actions ─────────────────────────────────────────────────────
   async function fetchSystems() {
     const result = await get<ApiCollection<System>>('/systems')
@@ -208,24 +227,37 @@ export const useSystemStore = defineStore('system', () => {
   }
 
   // ── Admin management ─────────────────────────────────────────────────────────
-  async function fetchSystemMemberships(systemId: string) {
+  const adminMemberships = ref<MembershipWithUser[]>([])
+  const adminSubscriptionsByModule = ref<Record<string, SubscriptionWithUser[]>>({})
+  const adminLoading = ref(false)
+
+  async function fetchSystemMemberships(systemId: string): Promise<void> {
     const result = await get<ApiCollection<MembershipWithUser>>(`/systems/${systemId}/memberships`)
-    return result?.data ?? []
+    if (result) {
+      adminMemberships.value = result.data
+    }
   }
 
-  async function updateMembershipAdmin(systemId: string, membershipId: string, admin: boolean) {
+  async function updateMembershipAdmin(systemId: string, membershipId: string, admin: boolean): Promise<void> {
     const result = await put<ApiResource<MembershipWithUser>, { admin: boolean }>(
       `/systems/${systemId}/memberships/${membershipId}`,
       { admin },
     )
-    return result?.data ?? null
+    if (result) {
+      const idx = adminMemberships.value.findIndex((m) => m.id === membershipId)
+      if (idx !== -1) {
+        adminMemberships.value[idx] = { ...adminMemberships.value[idx]!, admin: result.data.admin }
+      }
+    }
   }
 
-  async function fetchModuleSubscriptions(systemId: string, moduleId: string) {
+  async function fetchModuleSubscriptions(systemId: string, moduleId: string): Promise<void> {
     const result = await get<ApiCollection<SubscriptionWithUser>>(
       `/systems/${systemId}/modules/${moduleId}/subscriptions`,
     )
-    return result?.data ?? []
+    if (result) {
+      adminSubscriptionsByModule.value[moduleId] = result.data
+    }
   }
 
   async function updateSubscriptionEditor(
@@ -233,12 +265,28 @@ export const useSystemStore = defineStore('system', () => {
     moduleId: string,
     subscriptionId: string,
     editor: boolean,
-  ) {
+  ): Promise<void> {
     const result = await put<ApiResource<SubscriptionWithUser>, { editor: boolean }>(
       `/systems/${systemId}/modules/${moduleId}/subscriptions/${subscriptionId}`,
       { editor },
     )
-    return result?.data ?? null
+    if (result) {
+      const list = adminSubscriptionsByModule.value[moduleId] ?? []
+      const idx = list.findIndex((s) => s.id === subscriptionId)
+      if (idx !== -1) {
+        list[idx] = { ...list[idx]!, editor: result.data.editor }
+      }
+    }
+  }
+
+  async function loadAdminData(systemId: string): Promise<void> {
+    adminLoading.value = true
+    const modules = modulesBySystem.value[systemId] ?? []
+    await Promise.all([
+      fetchSystemMemberships(systemId),
+      ...modules.map((m) => fetchModuleSubscriptions(systemId, m.id)),
+    ])
+    adminLoading.value = false
   }
 
   function setMembership(systemId: string, membership: Membership): void {
@@ -255,6 +303,9 @@ export const useSystemStore = defineStore('system', () => {
     // computed
     modules,
     membership,
+    sortedSystems,
+    memberSystems,
+    otherSystems,
     // api state
     loading,
     errors,
@@ -280,6 +331,10 @@ export const useSystemStore = defineStore('system', () => {
     subscribe,
     unsubscribe,
     // admin management
+    adminMemberships,
+    adminSubscriptionsByModule,
+    adminLoading,
+    loadAdminData,
     fetchSystemMemberships,
     updateMembershipAdmin,
     fetchModuleSubscriptions,

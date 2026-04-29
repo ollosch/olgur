@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { watch } from 'vue'
 import { useSystemStore } from '@/stores/system'
-import type { MembershipWithUser, SubscriptionWithUser } from '@/types/domain'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -26,63 +25,13 @@ const systemStore = useSystemStore()
 
 useModalShortcutGuard(() => props.open)
 
-const memberships = ref<MembershipWithUser[]>([])
-const subscriptionsByModule = ref<Record<string, SubscriptionWithUser[]>>({})
-const loadingMemberships = ref(false)
-const togglingId = ref<string | null>(null)
-
 watch(
   () => props.open,
   async (val) => {
     if (!val) return
-    loadingMemberships.value = true
-    memberships.value = await systemStore.fetchSystemMemberships(props.systemId)
-
-    const modules = systemStore.modulesBySystem[props.systemId] ?? []
-    const results = await Promise.all(
-      modules.map((m) =>
-        systemStore.fetchModuleSubscriptions(props.systemId, m.id).then((subs) => ({
-          moduleId: m.id,
-          subs,
-        })),
-      ),
-    )
-    for (const { moduleId, subs } of results) {
-      subscriptionsByModule.value[moduleId] = subs
-    }
-
-    loadingMemberships.value = false
+    await systemStore.loadAdminData(props.systemId)
   },
 )
-
-async function toggleAdmin(membership: MembershipWithUser) {
-  togglingId.value = membership.id
-  const updated = await systemStore.updateMembershipAdmin(
-    props.systemId,
-    membership.id,
-    !membership.admin,
-  )
-  if (updated) {
-    const idx = memberships.value.findIndex((m) => m.id === membership.id)
-    if (idx !== -1) {
-      memberships.value[idx] = { ...memberships.value[idx]!, admin: updated.admin }
-    }
-  }
-  togglingId.value = null
-}
-
-async function toggleEditor(systemId: string, moduleId: string, sub: SubscriptionWithUser) {
-  togglingId.value = sub.id
-  const updated = await systemStore.updateSubscriptionEditor(systemId, moduleId, sub.id, !sub.editor)
-  if (updated) {
-    const list = subscriptionsByModule.value[moduleId] ?? []
-    const idx = list.findIndex((s) => s.id === sub.id)
-    if (idx !== -1) {
-      list[idx] = { ...list[idx]!, editor: updated.editor }
-    }
-  }
-  togglingId.value = null
-}
 
 const modules = () => systemStore.modulesBySystem[props.systemId] ?? []
 </script>
@@ -95,7 +44,7 @@ const modules = () => systemStore.modulesBySystem[props.systemId] ?? []
         <DialogDescription class="sr-only">Add or remove system members and manage their roles</DialogDescription>
       </DialogHeader>
 
-      <div v-if="loadingMemberships" class="text-sm text-muted-foreground py-4 text-center">
+      <div v-if="systemStore.adminLoading" class="text-sm text-muted-foreground py-4 text-center">
         Loading…
       </div>
 
@@ -106,7 +55,7 @@ const modules = () => systemStore.modulesBySystem[props.systemId] ?? []
             Members
           </h3>
           <div
-            v-for="m in memberships"
+            v-for="m in systemStore.adminMemberships"
             :key="m.id"
             class="flex items-center justify-between rounded-md px-3 py-2 hover:bg-muted/30"
           >
@@ -117,14 +66,14 @@ const modules = () => systemStore.modulesBySystem[props.systemId] ?? []
             <Button
               variant="outline"
               size="sm"
-              :disabled="togglingId === m.id"
+              :disabled="systemStore.loading"
               class="ml-4 shrink-0 text-xs"
-              @click="toggleAdmin(m)"
+              @click="systemStore.updateMembershipAdmin(props.systemId, m.id, !m.admin)"
             >
               {{ m.admin ? 'Remove Admin' : 'Make Admin' }}
             </Button>
           </div>
-          <p v-if="memberships.length === 0" class="text-sm text-muted-foreground px-3 py-2">
+          <p v-if="systemStore.adminMemberships.length === 0" class="text-sm text-muted-foreground px-3 py-2">
             No members yet.
           </p>
         </section>
@@ -135,7 +84,7 @@ const modules = () => systemStore.modulesBySystem[props.systemId] ?? []
             {{ mod.name }} — Editors
           </h3>
           <div
-            v-for="sub in subscriptionsByModule[mod.id] ?? []"
+            v-for="sub in systemStore.adminSubscriptionsByModule[mod.id] ?? []"
             :key="sub.id"
             class="flex items-center justify-between rounded-md px-3 py-2 hover:bg-muted/30"
           >
@@ -146,15 +95,15 @@ const modules = () => systemStore.modulesBySystem[props.systemId] ?? []
             <Button
               variant="outline"
               size="sm"
-              :disabled="togglingId === sub.id"
+              :disabled="systemStore.loading"
               class="ml-4 shrink-0 text-xs"
-              @click="toggleEditor(props.systemId, mod.id, sub)"
+              @click="systemStore.updateSubscriptionEditor(props.systemId, mod.id, sub.id, !sub.editor)"
             >
               {{ sub.editor ? 'Remove Editor' : 'Make Editor' }}
             </Button>
           </div>
           <p
-            v-if="(subscriptionsByModule[mod.id] ?? []).length === 0"
+            v-if="(systemStore.adminSubscriptionsByModule[mod.id] ?? []).length === 0"
             class="text-sm text-muted-foreground px-3 py-2"
           >
             No subscribers yet.
