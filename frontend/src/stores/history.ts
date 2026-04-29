@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useSystemStore } from '@/stores/system'
 
 export interface HistoryEntry {
   type: 'rule' // extensible later: | 'table' | 'vehicle'
@@ -13,6 +14,7 @@ export interface HistoryEntry {
 const MAX_HISTORY = 20
 
 export const useHistoryStore = defineStore('history', () => {
+  const systemStore = useSystemStore()
   const entries = ref<HistoryEntry[]>([])
 
   /**
@@ -42,5 +44,12 @@ export const useHistoryStore = defineStore('history', () => {
     return entries.value.filter((e) => e.systemId === systemId)
   }
 
-  return { entries, record, clearSystem, forSystem }
+  /** History entries for the currently active system, newest first. */
+  const currentSystemEntries = computed((): HistoryEntry[] => {
+    const systemId = systemStore.currentSystem?.id
+    if (!systemId) return []
+    return forSystem(systemId)
+  })
+
+  return { entries, record, clearSystem, forSystem, currentSystemEntries }
 })

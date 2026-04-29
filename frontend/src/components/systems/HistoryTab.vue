@@ -1,23 +1,14 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useHistoryStore } from '@/stores/history'
-import { useSystemStore } from '@/stores/system'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Clock } from 'lucide-vue-next'
 
 const router = useRouter()
 const route = useRoute()
 const historyStore = useHistoryStore()
-const systemStore = useSystemStore()
 
-const entries = computed(() => {
-  const systemId = systemStore.currentSystem?.id
-  if (!systemId) return []
-  return historyStore.forSystem(systemId)
-})
-
-function open(entry: (typeof entries.value)[number]): void {
+function open(entry: (typeof historyStore.currentSystemEntries)[number]): void {
   const systemId = route.params['systemId'] as string
   if (entry.type === 'rule') {
     router.push({ name: 'system-rule', params: { systemId, ruleId: entry.id } })
@@ -38,11 +29,11 @@ function relativeTime(date: Date): string {
 <template>
   <ScrollArea class="h-full">
     <div class="py-2">
-      <div v-if="entries.length === 0" class="px-4 py-4 text-xs text-muted-foreground text-center">
+      <div v-if="historyStore.currentSystemEntries.length === 0" class="px-4 py-4 text-xs text-muted-foreground text-center">
         No history yet.
       </div>
       <button
-        v-for="entry in entries"
+        v-for="entry in historyStore.currentSystemEntries"
         :key="entry.id + entry.viewedAt.getTime()"
         class="w-full flex items-start gap-2 px-3 py-2 hover:bg-muted/30 transition-colors text-left"
         @click="open(entry)"
