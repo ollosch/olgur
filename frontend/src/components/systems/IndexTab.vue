@@ -1,42 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, reactive } from 'vue'
-import type { IndexEntry, Rule } from '@/types/domain'
 import { Input } from '@/components/ui/input'
 import { renderContent } from '@/lib/renderContent'
 import { compareIndexEntries } from '@/lib/utils'
 import { useAppSettingsStore } from '@/stores/appSettings'
+import { useContentStore } from '@/stores/content'
 import IndexEntryNode from '@/components/systems/IndexEntryNode.vue'
 
-interface Props {
-  entries: IndexEntry[]
-  rulesByNumber: Map<string, Rule>
-}
-
-const props = defineProps<Props>()
-const emit = defineEmits<{ selectRule: [rule: Rule] }>()
-
 const appSettings = useAppSettingsStore()
-
-const entriesById = computed(() => {
-  const map = new Map<string, IndexEntry>()
-  for (const e of props.entries) map.set(e.id, e)
-  return map
-})
-
-/** O(1) children lookup for hierarchical display */
-const childrenByParent = computed((): Map<string | null, IndexEntry[]> => {
-  const map = new Map<string | null, IndexEntry[]>()
-  for (const e of props.entries) {
-    const key = e.parent_id
-    const bucket = map.get(key)
-    if (bucket) {
-      bucket.push(e)
-    } else {
-      map.set(key, [e])
-    }
-  }
-  return map
-})
+const contentStore = useContentStore()
 
 const search = ref('')
 const activeLetter = ref<string | null>(null)
@@ -45,7 +17,7 @@ const expandedIds = reactive(new Set<string>())
 
 const availableLetters = computed(() => {
   const set = new Set<string>()
-  for (const e of props.entries) {
+  for (const e of contentStore.allIndexEntries) {
     if (e.parent_id !== null) continue // letters only for top-level terms
     const first = e.term.charAt(0).toUpperCase()
     if (first) set.add(first)
@@ -54,19 +26,19 @@ const availableLetters = computed(() => {
 })
 
 /** Entries to display at the top level based on active filter */
-const filtered = computed((): IndexEntry[] => {
+const filtered = computed(() => {
   const q = search.value.trim().toLowerCase()
 
   if (q) {
     // Flat search — show all matching entries regardless of hierarchy
-    return props.entries
+    return contentStore.allIndexEntries
       .filter((e) => e.term.toLowerCase().includes(q) || e.definition.toLowerCase().includes(q))
       .sort((a, b) => compareIndexEntries(a, b, q))
   }
 
   if (activeLetter.value) {
     // Show only top-level entries for the active letter
-    return props.entries.filter(
+    return contentStore.allIndexEntries.filter(
       (e) => e.parent_id === null && e.term.charAt(0).toUpperCase() === activeLetter.value,
     )
   }
@@ -138,7 +110,7 @@ function toggleExpand(id: string): void {
         >
           <p class="text-xs font-semibold text-foreground">
             <span v-if="entry.parent_id" class="text-xs text-muted-foreground">
-              {{ entriesById.get(entry.parent_id)?.term }} ›
+              {{ contentStore.indexEntriesById.get(entry.parent_id)?.term }} ›
             </span>{{ entry.term }}
           </p>
           <!-- eslint-disable-next-line vue/no-v-html -->
@@ -179,7 +151,7 @@ function toggleExpand(id: string): void {
           v-for="entry in filtered"
           :key="entry.id"
           :entry="entry"
-          :children-by-parent="childrenByParent"
+          :children-by-parent="contentStore.indexEntriesByParent"
           :expanded-ids="expandedIds"
           :depth="0"
           @toggle="toggleExpand"

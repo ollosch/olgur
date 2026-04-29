@@ -8,7 +8,7 @@ import { useLeftPanelStore } from '@/stores/leftPanel'
 import { useSystemStore } from '@/stores/system'
 import { useRuleDelegation } from '@/composables/useRuleDelegation'
 import { useRulePopup } from '@/composables/useRulePopup'
-import type { Rule, Module, IndexEntry } from '@/types/domain'
+import type { Rule, Module } from '@/types/domain'
 
 import LeftPanelContent from '@/components/systems/LeftPanelContent.vue'
 import SystemHeader from '@/components/systems/SystemHeader.vue'
@@ -42,9 +42,7 @@ async function loadSystem(id: string): Promise<void> {
 
   await systemStore.enterSystem(id)
 
-  const activeModuleList = systemStore.modules.filter(
-    (m) => m.is_core || (systemStore.membership?.config?.active_module_ids ?? []).includes(m.id),
-  )
+  const activeModuleList = contentStore.activeModules
 
   await Promise.all([
     ...activeModuleList.map((m) => contentStore.fetchRules(m.id)),
@@ -72,62 +70,6 @@ onUnmounted(() => {
 // Derived state
 // ---------------------------------------------------------------------------
 
-const activeIds = computed((): string[] => systemStore.membership?.config?.active_module_ids ?? [])
-
-const activeModules = computed((): Module[] =>
-  systemStore.modules.filter((m) => m.is_core || activeIds.value.includes(m.id)),
-)
-
-const allRules = computed((): Rule[] =>
-  activeModules.value.flatMap((m) => contentStore.rulesByModule[m.id] ?? []),
-)
-
-/** O(1) lookup by rule.id */
-const rulesById = computed((): Map<string, Rule> => {
-  const m = new Map<string, Rule>()
-  for (const r of allRules.value) m.set(r.id, r)
-  return m
-})
-
-/** O(1) lookup by rule.number — used by delegation hover/click */
-const rulesByNumber = computed((): Map<string, Rule> => {
-  const m = new Map<string, Rule>()
-  for (const r of allRules.value) m.set(r.number, r)
-  return m
-})
-
-/**
- * Pre-sorted children lookup: parent_id (or null for roots) → Rule[].
- * Passed to RuleDetailView via RouterView slot / provide, and to RuleTreeNode.
- */
-const childrenMap = computed((): Map<string | null, Rule[]> => {
-  const m = new Map<string | null, Rule[]>()
-  for (const r of allRules.value) {
-    const key = r.parent_id
-    const bucket = m.get(key)
-    if (bucket) {
-      bucket.push(r)
-    } else {
-      m.set(key, [r])
-    }
-  }
-  for (const bucket of m.values()) {
-    bucket.sort((a, b) => a.sort_order - b.sort_order)
-  }
-  return m
-})
-
-const allIndexEntries = computed(() =>
-  activeModules.value.flatMap((m) => contentStore.indexEntriesByModule[m.id] ?? []),
-)
-
-/** O(1) lookup by indexEntry.term — used by delegation hover */
-const indexEntriesByTerm = computed(() => {
-  const m = new Map<string, IndexEntry>()
-  for (const e of allIndexEntries.value) m.set(e.term, e)
-  return m
-})
-
 /**
  * The currently displayed rule (if any), derived from the active child route.
  * Used by the left panel tree for highlighting and by the history recorder.
@@ -135,7 +77,7 @@ const indexEntriesByTerm = computed(() => {
 const selectedRule = computed((): Rule | null => {
   const ruleId = route.params['ruleId'] as string | undefined
   if (!ruleId) return null
-  return rulesById.value.get(ruleId) ?? null
+  return contentStore.rulesById.get(ruleId) ?? null
 })
 
 // ---------------------------------------------------------------------------
@@ -147,18 +89,10 @@ const selectedRule = computed((): Rule | null => {
 // ---------------------------------------------------------------------------
 
 watch(
-  activeIds,
-  async (newIds) => {
-    const modules = systemStore.modules
-    const toLoad = modules.filter(
-      (m) => !m.is_core && newIds.includes(m.id) && !contentStore.rulesByModule[m.id],
-    )
-    if (toLoad.length === 0) return
-    await Promise.all([
-      ...toLoad.map((m) => contentStore.fetchRules(m.id)),
-      ...toLoad.map((m) => contentStore.fetchIndexEntries(m.id)),
-    ])
-    for (const m of toLoad) {
+  () => contentStore.activeIds,
+  async () => {
+    const loaded = await contentStore.fetchMissingModules()
+    for (const m of loaded) {
       panelStore.expandedModuleIds.add(m.id)
     }
   },
@@ -172,7 +106,7 @@ watch(
   () => route.params['ruleId'] as string | undefined,
   (ruleId) => {
     if (!ruleId) return
-    const rule = rulesById.value.get(ruleId)
+    const rule = contentStore.rulesById.get(ruleId)
     const id = systemStore.currentSystem?.id
     if (!rule || !id) return
     historyStore.record({ type: 'rule', id: rule.id, systemId: id, title: rule.title, number: rule.number })
@@ -197,10 +131,10 @@ watch(
       const parentId = current.parent_id
       if (parentId === null) break
       panelStore.expandedRuleIds.add(parentId)
-      current = rulesById.value.get(parentId)
+      current = contentStore.rulesById.get(parentId)
     }
 
-    const module = activeModules.value.find((m) =>
+    const module = contentStore.activeModules.find((m) =>
       (contentStore.rulesByModule[m.id] ?? []).some((r) => r.id === rule.id),
     )
     if (module) {
@@ -246,18 +180,14 @@ function getModuleRules(mod: Module): Rule[] {
   return contentStore.rulesByModule[mod.id] ?? []
 }
 
-useRuleDelegation(() => rulesByNumber.value, selectRule, () => indexEntriesByTerm.value)
-useRulePopup().registerNavigate(selectRule, () => rulesByNumber.value, () => indexEntriesByTerm.value)
+useRuleDelegation(() => contentStore.rulesByNumber, selectRule, () => contentStore.indexEntriesByTerm)
+useRulePopup().registerNavigate(selectRule, () => contentStore.rulesByNumber, () => contentStore.indexEntriesByTerm)
 </script>
 
 <template>
   <div class="h-screen bg-background flex flex-col overflow-hidden">
     <!-- Header -->
     <SystemHeader
-      :active-modules="activeModules"
-      :all-index-entries="allIndexEntries"
-      :rules-by-number="rulesByNumber"
-      :children-map="childrenMap"
       :selected-rule="selectedRule"
       :get-module-rules="getModuleRules"
       :build-top-level-rules="buildTopLevelRules"
@@ -278,12 +208,8 @@ useRulePopup().registerNavigate(selectRule, () => rulesByNumber.value, () => ind
       <!-- Left panel -->
       <div :class="['w-72 border-r border-border shrink-0 h-full flex-col', appSettings.sidebarPinned ? 'flex' : 'hidden md:flex']">
         <LeftPanelContent
-          :active-modules="activeModules"
           :expanded-modules="panelStore.expandedModuleIds"
           :selected-rule="selectedRule"
-          :all-index-entries="allIndexEntries"
-          :rules-by-number="rulesByNumber"
-          :children-map="childrenMap"
           :pinned="appSettings.sidebarPinned"
           :get-module-rules="getModuleRules"
           :build-top-level-rules="buildTopLevelRules"
@@ -300,7 +226,7 @@ useRulePopup().registerNavigate(selectRule, () => rulesByNumber.value, () => ind
 
           <!-- Top-level TOC: shown when no child route is active -->
           <div v-else class="overflow-auto p-6 h-full">
-            <template v-for="mod in activeModules" :key="mod.id">
+            <template v-for="mod in contentStore.activeModules" :key="mod.id">
               <div
                 v-if="buildTopLevelRules(getModuleRules(mod)).length > 0"
                 class="mb-8"

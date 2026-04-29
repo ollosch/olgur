@@ -17,14 +17,10 @@ import {
 import { Menu, MoreVertical, Search } from 'lucide-vue-next'
 import LeftPanelContent from '@/components/systems/LeftPanelContent.vue'
 import ManageMembersDialog from '@/components/systems/ManageMembersDialog.vue'
-import type { Rule, Module, IndexEntry } from '@/types/domain'
+import type { Rule, Module } from '@/types/domain'
 import { ref } from 'vue'
 
 interface Props {
-  activeModules: Module[]
-  allIndexEntries: IndexEntry[]
-  rulesByNumber: Map<string, Rule>
-  childrenMap: Map<string | null, Rule[]>
   selectedRule: Rule | null
   getModuleRules: (mod: Module) => Rule[]
   buildTopLevelRules: (rules: Rule[]) => Rule[]
@@ -60,12 +56,8 @@ async function logout(): Promise<void> {
         </SheetTrigger>
         <SheetContent side="left" class="w-72 p-0 flex flex-col">
           <LeftPanelContent
-            :active-modules="activeModules"
             :expanded-modules="panelStore.expandedModuleIds"
             :selected-rule="selectedRule"
-            :all-index-entries="allIndexEntries"
-            :rules-by-number="rulesByNumber"
-            :children-map="childrenMap"
             :pinned="appSettings.sidebarPinned"
             :get-module-rules="getModuleRules"
             :build-top-level-rules="buildTopLevelRules"

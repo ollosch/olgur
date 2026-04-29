@@ -5,7 +5,6 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/compone
 import { Search } from 'lucide-vue-next'
 import { useShortcutStore } from '@/stores/shortcut'
 import { useContentStore } from '@/stores/content'
-import { useSystemStore } from '@/stores/system'
 import { rankMatch, compareIndexEntries } from '@/lib/utils'
 import type { Rule, IndexEntry } from '@/types/domain'
 import IndexEntryNode from '@/components/systems/IndexEntryNode.vue'
@@ -13,7 +12,6 @@ import IndexEntryNode from '@/components/systems/IndexEntryNode.vue'
 const DEFAULT_CAP = 10
 const shortcutStore = useShortcutStore()
 const contentStore = useContentStore()
-const systemStore = useSystemStore()
 const router = useRouter()
 const route = useRoute()
 
@@ -44,45 +42,6 @@ watch(
 
 // ── Data ────────────────────────────────────────────────────────────────────
 
-const activeModuleIds = computed((): string[] | null => {
-  const ids = systemStore.membership?.config?.active_module_ids
-  return ids ?? null
-})
-
-const searchableModules = computed(() => {
-  const ids = activeModuleIds.value
-  if (!ids) return systemStore.modules
-  return systemStore.modules.filter((m) => m.is_core || ids.includes(m.id))
-})
-
-const allRules = computed((): Rule[] =>
-  searchableModules.value.flatMap((m) => contentStore.rulesByModule[m.id] ?? []),
-)
-
-const allEntries = computed((): IndexEntry[] =>
-  searchableModules.value.flatMap((m) => contentStore.indexEntriesByModule[m.id] ?? []),
-)
-
-const childrenByParent = computed((): Map<string | null, IndexEntry[]> => {
-  const m = new Map<string | null, IndexEntry[]>()
-  for (const e of allEntries.value) {
-    const key = e.parent_id
-    const bucket = m.get(key)
-    if (bucket) {
-      bucket.push(e)
-    } else {
-      m.set(key, [e])
-    }
-  }
-  return m
-})
-
-const entriesById = computed((): Map<string, IndexEntry> => {
-  const m = new Map<string, IndexEntry>()
-  for (const e of allEntries.value) m.set(e.id, e)
-  return m
-})
-
 // ── Ranking + search ─────────────────────────────────────────────────────────
 
 interface RuleResult {
@@ -99,7 +58,7 @@ const entryResults = computed((): EntryResult[] => {
   const q = query.value.trim().toLowerCase()
   if (!q) return []
   const results: EntryResult[] = []
-  for (const entry of allEntries.value) {
+  for (const entry of contentStore.allIndexEntries) {
     const r = rankMatch(entry.term, q)
     if (r < 3) results.push({ entry, rank: r })
   }
@@ -111,7 +70,7 @@ const ruleResults = computed((): RuleResult[] => {
   const q = query.value.trim().toLowerCase()
   if (!q) return []
   const results: RuleResult[] = []
-  for (const rule of allRules.value) {
+  for (const rule of contentStore.allRules) {
     const best = Math.min(rankMatch(rule.number, q), rankMatch(rule.title, q))
     if (best < 3) results.push({ rule, rank: best })
   }
@@ -168,7 +127,7 @@ function selectRule(rule: Rule): void {
 }
 
 function selectRuleByNumber(number: string): void {
-  const rule = allRules.value.find((r) => r.number === number)
+  const rule = contentStore.allRules.find((r) => r.number === number)
   if (rule) selectRule(rule)
 }
 
@@ -234,10 +193,10 @@ function onKeyDown(e: KeyboardEvent): void {
                 v-for="{ entry } in visibleEntries"
                 :key="entry.id"
                 :entry="entry"
-                :children-by-parent="childrenByParent"
+                :children-by-parent="contentStore.indexEntriesByParent"
                 :expanded-ids="expandedEntryIds"
                 :depth="0"
-                :entries-by-id="entriesById"
+                :entries-by-id="contentStore.indexEntriesById"
                 :show-ancestors="true"
                 @toggle="toggleEntryExpand"
               />

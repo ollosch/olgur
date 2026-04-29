@@ -7,7 +7,7 @@ import { useContentStore } from '@/stores/content'
 import { useLeftPanelStore } from '@/stores/leftPanel'
 import { useSystemStore } from '@/stores/system'
 import { renderContent } from '@/lib/renderContent'
-import type { Rule, Module } from '@/types/domain'
+import type { Rule } from '@/types/domain'
 
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, ArrowRight, Crosshair, Star } from 'lucide-vue-next'
@@ -26,53 +26,12 @@ const systemId = computed(() => route.params['systemId'] as string)
 const ruleId = computed(() => route.params['ruleId'] as string)
 
 // ---------------------------------------------------------------------------
-// Derived state (mirrors SystemView but scoped to this view)
+// Derived state
 // ---------------------------------------------------------------------------
-
-const activeIds = computed((): string[] =>
-  systemStore.membership?.config?.active_module_ids ?? [],
-)
-
-const activeModules = computed((): Module[] =>
-  systemStore.modules.filter((m) => m.is_core || activeIds.value.includes(m.id)),
-)
-
-const allRules = computed((): Rule[] =>
-  activeModules.value.flatMap((m) => contentStore.rulesByModule[m.id] ?? []),
-)
-
-const rulesById = computed((): Map<string, Rule> => {
-  const m = new Map<string, Rule>()
-  for (const r of allRules.value) m.set(r.id, r)
-  return m
-})
-
-const rulesByNumber = computed((): Map<string, Rule> => {
-  const m = new Map<string, Rule>()
-  for (const r of allRules.value) m.set(r.number, r)
-  return m
-})
-
-const childrenMap = computed((): Map<string | null, Rule[]> => {
-  const m = new Map<string | null, Rule[]>()
-  for (const r of allRules.value) {
-    const key = r.parent_id
-    const bucket = m.get(key)
-    if (bucket) {
-      bucket.push(r)
-    } else {
-      m.set(key, [r])
-    }
-  }
-  for (const bucket of m.values()) {
-    bucket.sort((a, b) => a.sort_order - b.sort_order)
-  }
-  return m
-})
 
 const tocDepth = computed(() => systemStore.currentSystem?.config?.toc_depth ?? 0)
 
-const selectedRule = computed((): Rule | null => rulesById.value.get(ruleId.value) ?? null)
+const selectedRule = computed((): Rule | null => contentStore.rulesById.get(ruleId.value) ?? null)
 
 // ---------------------------------------------------------------------------
 // Segmented breadcrumb
@@ -98,7 +57,7 @@ const breadcrumbSegments = computed((): BreadcrumbSegment[] => {
   for (let i = 0; i < parts.length; i++) {
     const label = parts.slice(0, i + 1).join('.')
     const isCurrent = i === parts.length - 1
-    const resolved = isCurrent ? rule : (rulesByNumber.value.get(label) ?? null)
+    const resolved = isCurrent ? rule : (contentStore.rulesByNumber.get(label) ?? null)
     segments.push({ label, rule: resolved, isCurrent })
   }
 
@@ -114,7 +73,7 @@ function ruleDepth(rule: Rule): number {
   let depth = 1
   let current: Rule = rule
   while (current.parent_id !== null) {
-    const parent = rulesById.value.get(current.parent_id)
+    const parent = contentStore.rulesById.get(current.parent_id)
     if (!parent) break
     current = parent
     depth++
@@ -219,7 +178,7 @@ watch(ruleId, () => {
       <RuleTocView
         v-if="showToc"
         :rule="selectedRule"
-        :children-map="childrenMap"
+        :children-map="contentStore.childrenMap"
         @select="selectRule"
       />
 
@@ -233,7 +192,7 @@ watch(ruleId, () => {
 
         <RuleDetailChildren
           :rule="selectedRule"
-          :children-map="childrenMap"
+          :children-map="contentStore.childrenMap"
           :depth="ruleDepth(selectedRule) - 1"
           :toc-depth="tocDepth"
           @select-rule="selectRule"

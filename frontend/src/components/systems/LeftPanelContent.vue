@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue'
-import type { Module, Rule, IndexEntry } from '@/types/domain'
+import type { Rule, Module } from '@/types/domain'
 import { useLeftPanelStore, type PanelTab } from '@/stores/leftPanel'
+import { useContentStore } from '@/stores/content'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { ChevronRight, ChevronDown, Bookmark, History, Pin, PinOff } from 'lucide-vue-next'
@@ -11,12 +12,8 @@ import HistoryTab from '@/components/systems/HistoryTab.vue'
 import BookmarksTab from '@/components/systems/BookmarksTab.vue'
 
 interface Props {
-  activeModules: Module[]
   expandedModules: Set<string>
   selectedRule: Rule | null
-  allIndexEntries: IndexEntry[]
-  rulesByNumber: Map<string, Rule>
-  childrenMap: Map<string | null, Rule[]>
   pinned: boolean
   getModuleRules: (mod: Module) => Rule[]
   buildTopLevelRules: (rules: Rule[]) => Rule[]
@@ -30,6 +27,7 @@ const emit = defineEmits<{
 }>()
 
 const panelStore = useLeftPanelStore()
+const contentStore = useContentStore()
 
 // ---------------------------------------------------------------------------
 // Tree container ref for focus/scroll queries
@@ -127,7 +125,7 @@ watch(
           data-tree-container
           @keydown="onTreeKeyDown"
         >
-          <div v-for="mod in activeModules" :key="mod.id" class="mb-2">
+          <div v-for="mod in contentStore.activeModules" :key="mod.id" class="mb-2">
             <button
               class="w-full flex items-center gap-2 px-4 py-2 hover:bg-muted/30 transition-colors text-left"
               @click="emit('toggleModule', mod.id)"
@@ -146,7 +144,7 @@ watch(
                 v-for="rule in buildTopLevelRules(getModuleRules(mod))"
                 :key="rule.id"
                 :rule="rule"
-                :children-map="childrenMap"
+                :children-map="contentStore.childrenMap"
                 :selected-id="selectedRule?.id ?? null"
                 :depth="1"
                 @select="emit('select', $event)"
@@ -154,7 +152,7 @@ watch(
             </div>
           </div>
 
-          <div v-if="activeModules.length === 0" class="px-4 text-xs text-muted-foreground">
+          <div v-if="contentStore.activeModules.length === 0" class="px-4 text-xs text-muted-foreground">
             No active modules.
           </div>
         </div>
@@ -163,11 +161,7 @@ watch(
 
     <!-- Index tab -->
     <TabsContent value="index" class="flex-1 overflow-hidden mt-0">
-      <IndexTab
-        :entries="allIndexEntries"
-        :rules-by-number="rulesByNumber"
-        @select-rule="emit('select', $event)"
-      />
+      <IndexTab @select-rule="emit('select', $event)" />
     </TabsContent>
 
     <!-- Bookmarks tab -->
