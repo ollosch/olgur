@@ -110,6 +110,15 @@ export interface IndexEntry {
   updated_at: string
 }
 
+// -- API Response Wrappers --
+export interface ApiResource<T> {
+  data: T
+}
+
+export interface ApiCollection<T> {
+  data: T[]
+}
+
 // -- Requests --
 export interface LoginRequest {
   email: string

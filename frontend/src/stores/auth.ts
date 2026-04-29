@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 
 import { useApi } from '@/composables/useApi'
-import type { User, LoginRequest, RegisterRequest, UpdateProfileRequest } from '@/types/domain'
+import type { User, LoginRequest, RegisterRequest, UpdateProfileRequest, ApiResource } from '@/types/domain'
 
 export const useAuthStore = defineStore('auth', () => {
   const { get, post, patch, loading, errors } = useApi()
@@ -54,7 +54,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function fetchUser() {
-    const result = await get<{ data: User }>('/me')
+    const result = await get<ApiResource<User>>('/me')
 
     if (result) {
       user.value = result.data

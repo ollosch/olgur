@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { useApi } from '@/composables/useApi'
 import { useSystemStore } from '@/stores/system'
-import type { Rule, IndexEntry } from '@/types/domain'
+import type { Rule, IndexEntry, ApiCollection } from '@/types/domain'
 
 export const useContentStore = defineStore('content', () => {
   const { get, loading } = useApi()
@@ -15,7 +15,7 @@ export const useContentStore = defineStore('content', () => {
     const systemId = systemStore.currentSystem?.id
     if (!systemId) return
 
-    const result = await get<{ data: Rule[] }>(`/systems/${systemId}/modules/${moduleId}/rules`)
+    const result = await get<ApiCollection<Rule>>(`/systems/${systemId}/modules/${moduleId}/rules`)
     if (result) {
       rulesByModule.value[moduleId] = result.data
     }
@@ -25,7 +25,7 @@ export const useContentStore = defineStore('content', () => {
     const systemId = systemStore.currentSystem?.id
     if (!systemId) return
 
-    const result = await get<{ data: IndexEntry[] }>(
+    const result = await get<ApiCollection<IndexEntry>>(
       `/systems/${systemId}/modules/${moduleId}/index-entries`,
     )
     if (result) {

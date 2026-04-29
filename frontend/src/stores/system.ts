@@ -11,6 +11,8 @@ import type {
   UserSubscription,
   CreateSystemRequest,
   CreateModuleRequest,
+  ApiResource,
+  ApiCollection,
 } from '@/types/domain'
 
 export const useSystemStore = defineStore('system', () => {
@@ -39,14 +41,14 @@ export const useSystemStore = defineStore('system', () => {
 
   // ── Systems list actions ─────────────────────────────────────────────────────
   async function fetchSystems() {
-    const result = await get<{ data: System[] }>('/systems')
+    const result = await get<ApiCollection<System>>('/systems')
     if (result) {
       systems.value = result.data
     }
   }
 
   async function createSystem(data: CreateSystemRequest) {
-    const result = await post<{ data: System }, CreateSystemRequest>('/systems', data)
+    const result = await post<ApiResource<System>, CreateSystemRequest>('/systems', data)
     if (result) {
       systems.value.push(result.data)
       await Promise.all([fetchUserMemberships(), fetchUserSubscriptions()])
@@ -63,7 +65,7 @@ export const useSystemStore = defineStore('system', () => {
 
   // ── Membership / subscription bootstrap (home view) ─────────────────────────
   async function fetchUserMemberships() {
-    const result = await get<{ data: Membership[] }>('/me/memberships')
+    const result = await get<ApiCollection<Membership>>('/me/memberships')
     if (result) {
       const map: Record<string, Membership | null> = {}
       for (const m of result.data) {
@@ -74,7 +76,7 @@ export const useSystemStore = defineStore('system', () => {
   }
 
   async function fetchUserSubscriptions() {
-    const result = await get<{ data: Subscription[] }>('/me/subscriptions')
+    const result = await get<ApiCollection<Subscription>>('/me/subscriptions')
     if (result) {
       const map: Record<string, UserSubscription | null> = {}
       for (const s of result.data) {
@@ -87,8 +89,8 @@ export const useSystemStore = defineStore('system', () => {
   // ── System entry / exit ──────────────────────────────────────────────────────
   async function enterSystem(systemId: string) {
     const [systemResult, modulesResult] = await Promise.all([
-      get<{ data: System }>(`/systems/${systemId}`),
-      get<{ data: Module[] }>(`/systems/${systemId}/modules`),
+      get<ApiResource<System>>(`/systems/${systemId}`),
+      get<ApiCollection<Module>>(`/systems/${systemId}/modules`),
     ])
 
     if (systemResult) {
@@ -106,14 +108,14 @@ export const useSystemStore = defineStore('system', () => {
 
   // ── Module actions ───────────────────────────────────────────────────────────
   async function fetchModules(systemId: string) {
-    const result = await get<{ data: Module[] }>(`/systems/${systemId}/modules`)
+    const result = await get<ApiCollection<Module>>(`/systems/${systemId}/modules`)
     if (result) {
       modulesBySystem.value[systemId] = result.data
     }
   }
 
   async function createModule(systemId: string, data: CreateModuleRequest) {
-    const result = await post<{ data: Module }, CreateModuleRequest>(`/systems/${systemId}/modules`, data)
+    const result = await post<ApiResource<Module>, CreateModuleRequest>(`/systems/${systemId}/modules`, data)
     if (result) {
       const existing = modulesBySystem.value[systemId] ?? []
       modulesBySystem.value[systemId] = [...existing, result.data]
@@ -132,7 +134,7 @@ export const useSystemStore = defineStore('system', () => {
 
   // ── Membership / module activation ──────────────────────────────────────────
   async function refreshMembership(systemId: string) {
-    const result = await get<{ data: Membership[] }>('/me/memberships')
+    const result = await get<ApiCollection<Membership>>('/me/memberships')
     if (result) {
       const found = result.data.find((m) => m.system_id === systemId) ?? null
       membershipsBySystem.value[systemId] = found
@@ -181,7 +183,7 @@ export const useSystemStore = defineStore('system', () => {
   }
 
   async function subscribe(systemId: string, moduleId: string) {
-    const result = await post<{ data: Subscription }>(
+    const result = await post<ApiResource<Subscription>>(
       `/systems/${systemId}/modules/${moduleId}/subscriptions`,
       {},
     )
@@ -207,12 +209,12 @@ export const useSystemStore = defineStore('system', () => {
 
   // ── Admin management ─────────────────────────────────────────────────────────
   async function fetchSystemMemberships(systemId: string) {
-    const result = await get<{ data: MembershipWithUser[] }>(`/systems/${systemId}/memberships`)
+    const result = await get<ApiCollection<MembershipWithUser>>(`/systems/${systemId}/memberships`)
     return result?.data ?? []
   }
 
   async function updateMembershipAdmin(systemId: string, membershipId: string, admin: boolean) {
-    const result = await put<{ data: MembershipWithUser }, { admin: boolean }>(
+    const result = await put<ApiResource<MembershipWithUser>, { admin: boolean }>(
       `/systems/${systemId}/memberships/${membershipId}`,
       { admin },
     )
@@ -220,7 +222,7 @@ export const useSystemStore = defineStore('system', () => {
   }
 
   async function fetchModuleSubscriptions(systemId: string, moduleId: string) {
-    const result = await get<{ data: SubscriptionWithUser[] }>(
+    const result = await get<ApiCollection<SubscriptionWithUser>>(
       `/systems/${systemId}/modules/${moduleId}/subscriptions`,
     )
     return result?.data ?? []
@@ -232,7 +234,7 @@ export const useSystemStore = defineStore('system', () => {
     subscriptionId: string,
     editor: boolean,
   ) {
-    const result = await put<{ data: SubscriptionWithUser }, { editor: boolean }>(
+    const result = await put<ApiResource<SubscriptionWithUser>, { editor: boolean }>(
       `/systems/${systemId}/modules/${moduleId}/subscriptions/${subscriptionId}`,
       { editor },
     )

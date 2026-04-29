@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { computed } from 'vue'
 import { useSystemStore } from '@/stores/system'
 import { useApi } from '@/composables/useApi'
-import type { BookmarkEntry, Membership } from '@/types/domain'
+import type { BookmarkEntry, Membership, ApiResource } from '@/types/domain'
 
 export const useBookmarkStore = defineStore('bookmarks', () => {
   const systemStore = useSystemStore()
@@ -42,7 +42,7 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
       bookmarks: updatedBookmarks,
     }
 
-    const result = await patch<{ data: Membership }, { config: typeof newConfig }>(
+    const result = await patch<ApiResource<Membership>, { config: typeof newConfig }>(
       `/me/memberships/${systemId}`,
       { config: newConfig },
     )
