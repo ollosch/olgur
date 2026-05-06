@@ -6,9 +6,11 @@ namespace App\Console\Commands;
 
 use App\Data\SystemConfig;
 use App\Models\IndexEntry;
+use App\Models\Membership;
 use App\Models\Module;
 use App\Models\Rule;
 use App\Models\System;
+use App\Models\User;
 use App\Services\ImportCounter;
 use App\Services\ModuleDataImporter;
 use Illuminate\Console\Command;
@@ -23,6 +25,7 @@ final class ImportGame extends Command
      */
     protected $signature = 'import:game
         {path : Path to a game data directory (must contain index.json)}
+        {--user=ollo@olgur.de : Email address of a user to make admin of the imported system}
         {--fresh : Delete existing rules and index entries before importing}';
 
     /**
@@ -192,6 +195,33 @@ final class ImportGame extends Command
         });
 
         $this->info('Import complete.');
+
+        $userEmail = $this->option('user');
+
+        if (is_string($userEmail) && $userEmail !== '') {
+            $user = User::query()->where('email', $userEmail)->first();
+
+            if ($user === null) {
+                $this->warn(sprintf('No user found with email "%s", skipping admin assignment.', $userEmail));
+
+                return self::SUCCESS;
+            }
+
+            $system = System::query()->where('slug', $systemSlug)->firstOrFail();
+
+            /** @var Membership $membership */
+            $membership = Membership::query()->firstOrCreate(
+                ['user_id' => $user->id, 'system_id' => $system->id],
+                ['admin' => true, 'config' => []],
+            );
+
+            if (! $membership->wasRecentlyCreated) {
+                $membership->admin = true;
+                $membership->save();
+            }
+
+            $this->info(sprintf('User "%s" is now admin of system "%s".', $userEmail, $systemSlug));
+        }
 
         return self::SUCCESS;
     }

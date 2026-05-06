@@ -578,3 +578,96 @@ test('structure key in manifest is used for system config', function () use ($si
 
     removeGameDir($dir);
 });
+
+test('--user option makes the user an admin of the imported system', function () use ($simpleGameRules): void {
+    $user = User::factory()->create(['email' => 'admin@example.com']);
+
+    $dir = makeGameDir(
+        [
+            'name' => 'User Admin Game',
+            'slug' => 'user-admin-game',
+            'modules' => [
+                ['type' => 'core', 'name' => 'Core', 'slug' => 'core', 'path' => 'rules.json'],
+            ],
+            'index' => 'idx.json',
+        ],
+        [
+            'rules.json' => $simpleGameRules,
+            'idx.json' => [],
+        ]
+    );
+
+    artisan('import:game', ['path' => $dir, '--user' => 'admin@example.com'])
+        ->assertSuccessful()
+        ->expectsOutputToContain('admin of system');
+
+    $system = System::query()->where('slug', 'user-admin-game')->firstOrFail();
+    $membership = Membership::query()
+        ->where('user_id', $user->id)
+        ->where('system_id', $system->id)
+        ->first();
+
+    expect($membership)->not->toBeNull();
+    expect($membership->admin)->toBeTrue();
+
+    removeGameDir($dir);
+});
+
+test('--user option promotes existing membership to admin', function () use ($simpleGameRules): void {
+    $user = User::factory()->create(['email' => 'existing@example.com']);
+
+    $dir = makeGameDir(
+        [
+            'name' => 'Promote Admin Game',
+            'slug' => 'promote-admin-game',
+            'modules' => [
+                ['type' => 'core', 'name' => 'Core', 'slug' => 'core', 'path' => 'rules.json'],
+            ],
+            'index' => 'idx.json',
+        ],
+        [
+            'rules.json' => $simpleGameRules,
+            'idx.json' => [],
+        ]
+    );
+
+    artisan('import:game', ['path' => $dir])->assertSuccessful();
+
+    $system = System::query()->where('slug', 'promote-admin-game')->firstOrFail();
+
+    Membership::factory()->create(['user_id' => $user->id, 'system_id' => $system->id, 'admin' => false]);
+
+    artisan('import:game', ['path' => $dir, '--user' => 'existing@example.com', '--fresh' => true])->assertSuccessful();
+
+    $membership = Membership::query()
+        ->where('user_id', $user->id)
+        ->where('system_id', $system->id)
+        ->first();
+
+    expect($membership->admin)->toBeTrue();
+
+    removeGameDir($dir);
+});
+
+test('--user option warns when user email is not found', function () use ($simpleGameRules): void {
+    $dir = makeGameDir(
+        [
+            'name' => 'Unknown User Game',
+            'slug' => 'unknown-user-game',
+            'modules' => [
+                ['type' => 'core', 'name' => 'Core', 'slug' => 'core', 'path' => 'rules.json'],
+            ],
+            'index' => 'idx.json',
+        ],
+        [
+            'rules.json' => $simpleGameRules,
+            'idx.json' => [],
+        ]
+    );
+
+    artisan('import:game', ['path' => $dir, '--user' => 'nobody@example.com'])
+        ->assertSuccessful()
+        ->expectsOutputToContain('No user found with email');
+
+    removeGameDir($dir);
+});
