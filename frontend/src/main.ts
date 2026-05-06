@@ -20,10 +20,11 @@ const authStore = useAuthStore()
 await authStore.fetchCsrfCookie()
 await authStore.fetchUser().catch(() => {})
 
-useAppSettingsStore().init()
-
 if (authStore.user) {
   await useSystemStore().init()
+  router.push({ name: 'home' })
 }
+
+useAppSettingsStore().init()
 
 app.mount('#app')
