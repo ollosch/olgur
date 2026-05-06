@@ -15,7 +15,8 @@ const showCreateDialog = ref(false)
 const initialLoading = ref(true)
 
 onMounted(async () => {
-  await systemStore.fetchSystems()
+  await systemStore.init()
+
   initialLoading.value = false
 })
 

@@ -83,6 +83,20 @@ export const useSystemStore = defineStore('system', () => {
   }
 
   // ── Membership / subscription bootstrap (home view) ─────────────────────────
+  const initialized = ref(false)
+
+  async function init(force = false) {
+    if (initialized.value && !force) return
+
+    await Promise.all([
+      fetchSystems(),
+      fetchUserMemberships(),
+      fetchUserSubscriptions()
+    ])
+
+    initialized.value = true
+  }
+
   async function fetchUserMemberships() {
     const result = await get<ApiCollection<Membership>>('/me/memberships')
     if (result) {
@@ -314,6 +328,8 @@ export const useSystemStore = defineStore('system', () => {
     createSystem,
     deleteSystem,
     // bootstrap
+    init,
+    initialized,
     fetchUserMemberships,
     fetchUserSubscriptions,
     // system context

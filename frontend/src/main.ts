@@ -20,15 +20,9 @@ const authStore = useAuthStore()
 const appSettings = useAppSettingsStore()
 appSettings.init()
 
-await authStore.fetchCsrfCookie()
-await authStore.fetchUser().catch(() => {})
-
 if (authStore.user) {
   const systemStore = useSystemStore()
-  await Promise.all([
-    systemStore.fetchUserMemberships(),
-    systemStore.fetchUserSubscriptions()
-  ])
+  await systemStore.init()
 }
 
 app.use(router)
