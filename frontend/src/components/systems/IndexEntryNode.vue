@@ -4,6 +4,7 @@ import type { IndexEntry } from '@/types/domain'
 import { ChevronDown, ChevronRight } from 'lucide-vue-next'
 import { renderContent } from '@/lib/renderContent'
 import { useAppSettingsStore } from '@/stores/appSettings'
+import { useContentStore } from '@/stores/content'
 
 interface Props {
   entry: IndexEntry
@@ -16,8 +17,19 @@ const props = defineProps<Props>()
 const emit = defineEmits<{ toggle: [id: string] }>()
 
 const appSettings = useAppSettingsStore()
+const contentStore = useContentStore()
 
-const children = computed((): IndexEntry[] => props.childrenByParent.get(props.entry.id) ?? [])
+/** rule_refs filtered to rules that belong to active modules */
+const filteredRuleRefs = computed((): string[] =>
+  (props.entry.relations?.rule_refs ?? []).filter((r) => contentStore.rulesByNumber.has(r)),
+)
+
+/** Only show children that are visible (have content after module filtering) */
+const children = computed((): IndexEntry[] =>
+  (props.childrenByParent.get(props.entry.id) ?? []).filter((c) =>
+    contentStore.visibleIndexEntryIds.has(c.id),
+  ),
+)
 const hasChildren = computed(() => children.value.length > 0)
 const expanded = computed(() => props.expandedIds.has(props.entry.id))
 </script>
@@ -54,10 +66,10 @@ const expanded = computed(() => props.expandedIds.has(props.entry.id))
       v-html="renderContent(entry.notes, { acronymPopups: appSettings.acronymPopups })"
     />
 
-    <!-- rule_refs -->
-    <div v-if="entry.relations?.rule_refs?.length" class="mt-1 flex flex-wrap gap-1.5 items-center">
+    <!-- rule_refs (filtered to active modules) -->
+    <div v-if="filteredRuleRefs.length" class="mt-1 flex flex-wrap gap-1.5 items-center">
       <a
-        v-for="ref in entry.relations.rule_refs"
+        v-for="ref in filteredRuleRefs"
         :key="ref"
         :data-rule-number="ref"
         class="ml-2 font-mono text-xs text-primary underline decoration-dotted hover:text-primary/80 transition-colors cursor-pointer"

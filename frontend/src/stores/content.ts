@@ -92,6 +92,48 @@ export const useContentStore = defineStore('content', () => {
     return m
   })
 
+  /**
+   * Set of index entry IDs that should be shown to the user.
+   *
+   * An entry is hidden when it has no meaningful content after filtering
+   * rule_refs down to active-module rules only:
+   *   – definition is blank
+   *   – notes is blank/null
+   *   – rule_refs (filtered to active rules) is empty
+   *   – see_also is empty/null
+   *
+   * The check cascades upward: a parent that would otherwise be empty is kept
+   * visible as long as at least one of its descendants is visible.
+   */
+  const visibleIndexEntryIds = computed((): Set<string> => {
+    const ruleNums = rulesByNumber.value
+    const childMap = indexEntriesByParent.value
+    const memo = new Map<string, boolean>()
+
+    function hasContent(entry: IndexEntry): boolean {
+      const filteredRefs = (entry.relations?.rule_refs ?? []).filter((r) => ruleNums.has(r))
+      const seeAlso = entry.relations?.see_also ?? []
+      return !!(entry.definition || entry.notes || filteredRefs.length > 0 || seeAlso.length > 0)
+    }
+
+    function isVisible(entry: IndexEntry): boolean {
+      const cached = memo.get(entry.id)
+      if (cached !== undefined) return cached
+      // Set a temporary false to guard against circular parent→child refs (shouldn't exist, but be safe)
+      memo.set(entry.id, false)
+      const children = childMap.get(entry.id) ?? []
+      const result = hasContent(entry) || children.some((c) => isVisible(c))
+      memo.set(entry.id, result)
+      return result
+    }
+
+    const visible = new Set<string>()
+    for (const entry of allIndexEntries.value) {
+      if (isVisible(entry)) visible.add(entry.id)
+    }
+    return visible
+  })
+
   // ---------------------------------------------------------------------------
   // Actions
   // ---------------------------------------------------------------------------
@@ -153,6 +195,7 @@ export const useContentStore = defineStore('content', () => {
     indexEntriesByTerm,
     indexEntriesById,
     indexEntriesByParent,
+    visibleIndexEntryIds,
     fetchRules,
     fetchIndexEntries,
     fetchMissingModules,

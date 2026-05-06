@@ -58,7 +58,9 @@ const entryResults = computed((): EntryResult[] => {
   const q = query.value.trim().toLowerCase()
   if (!q) return []
   const results: EntryResult[] = []
+  const visibleIds = contentStore.visibleIndexEntryIds
   for (const entry of contentStore.allIndexEntries) {
+    if (!visibleIds.has(entry.id)) continue
     const r = rankMatch(entry.term, q)
     if (r < 3) results.push({ entry, rank: r })
   }

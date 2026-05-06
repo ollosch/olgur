@@ -19,6 +19,7 @@ const availableLetters = computed(() => {
   const set = new Set<string>()
   for (const e of contentStore.allIndexEntries) {
     if (e.parent_id !== null) continue // letters only for top-level terms
+    if (!contentStore.visibleIndexEntryIds.has(e.id)) continue
     const first = e.term.charAt(0).toUpperCase()
     if (first) set.add(first)
   }
@@ -28,18 +29,26 @@ const availableLetters = computed(() => {
 /** Entries to display at the top level based on active filter */
 const filtered = computed(() => {
   const q = search.value.trim().toLowerCase()
+  const visibleIds = contentStore.visibleIndexEntryIds
 
   if (q) {
     // Flat search — show all matching entries regardless of hierarchy
     return contentStore.allIndexEntries
-      .filter((e) => e.term.toLowerCase().includes(q) || e.definition.toLowerCase().includes(q))
+      .filter(
+        (e) =>
+          visibleIds.has(e.id) &&
+          (e.term.toLowerCase().includes(q) || e.definition.toLowerCase().includes(q)),
+      )
       .sort((a, b) => compareIndexEntries(a, b, q))
   }
 
   if (activeLetter.value) {
     // Show only top-level entries for the active letter
     return contentStore.allIndexEntries.filter(
-      (e) => e.parent_id === null && e.term.charAt(0).toUpperCase() === activeLetter.value,
+      (e) =>
+        visibleIds.has(e.id) &&
+        e.parent_id === null &&
+        e.term.charAt(0).toUpperCase() === activeLetter.value,
     )
   }
 
@@ -63,6 +72,10 @@ function toggleExpand(id: string): void {
   } else {
     expandedIds.add(id)
   }
+}
+
+function activeRuleRefs(entry: { relations?: { rule_refs?: string[] } | null }): string[] {
+  return (entry.relations?.rule_refs ?? []).filter((r) => contentStore.rulesByNumber.has(r))
 }
 </script>
 
@@ -124,9 +137,9 @@ function toggleExpand(id: string): void {
             class="text-xs text-muted-foreground italic mt-0.5"
             v-html="renderContent(entry.notes, { acronymPopups: appSettings.acronymPopups })"
           />
-          <div v-if="entry.relations?.rule_refs?.length" class="mt-1 flex flex-wrap gap-1.5 items-center">
+          <div v-if="activeRuleRefs(entry).length" class="mt-1 flex flex-wrap gap-1.5 items-center">
             <a
-              v-for="ref in entry.relations.rule_refs"
+              v-for="ref in activeRuleRefs(entry)"
               :key="ref"
               :data-rule-number="ref"
               class="ml-2 font-mono text-xs text-primary underline decoration-dotted hover:text-primary/80 transition-colors cursor-pointer"
