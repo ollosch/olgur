@@ -24,7 +24,7 @@ final class RuleImageController
         $contents = Storage::disk('local')->get($path);
 
         return response($contents, 200, [
-            'Content-Type' => 'image/jpeg',
+            'Content-Type' => 'image/png',
             'Cache-Control' => 'public, max-age=31536000, immutable',
         ]);
     }
