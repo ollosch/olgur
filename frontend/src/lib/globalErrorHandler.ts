@@ -1,0 +1,57 @@
+import type { ApiError } from './http'
+import router from '@/router'
+import { useAuthStore } from '@/stores/auth'
+import { toast } from 'vue-sonner'
+
+export async function globalErrorHandler(err: unknown, instance: any, info?: string) {
+  const error = err as ApiError
+
+  if (import.meta.env.VITE_APP_DEBUG === 'true') {
+    console.error('Global error handler:', err, instance, info)
+  }
+
+  if (!error) {
+    console.error('Error is empty:', err, instance, info)
+  }
+
+  const authStore = useAuthStore()
+
+  switch (error.type) {
+    case 'auth': {
+      if (error.message === 'Already authenticated.') {
+        router.push({ name: 'home' })
+        return
+      }
+
+      const wasAuthenticated = authStore.user !== null
+      authStore.clear()
+
+      if (wasAuthenticated) {
+        toast.error('Your session has expired. Please log in again.')
+      }
+
+      router.push({ name: 'login' })
+      break
+    }
+
+    case 'conflict':
+      toast.error(error.message || 'Conflict error. Please try again.')
+      break
+
+    case 'forbidden':
+      toast.error('You do not have permission to access this resource.')
+      break
+
+    case 'network':
+      toast.error('Network error. Please check your internet connection.')
+      break
+
+    case 'validation': {
+      const firstMessage = Object.values(error.errors)[0]
+      if (firstMessage) {
+        toast.error(firstMessage)
+      }
+      break
+    }
+  }
+}
