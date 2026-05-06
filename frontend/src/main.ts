@@ -13,17 +13,17 @@ import { useSystemStore } from './stores/system'
 const app = createApp(App)
 
 app.use(createPinia())
+app.use(router)
 app.config.errorHandler = globalErrorHandler
 
 const authStore = useAuthStore()
+await authStore.fetchCsrfCookie()
+await authStore.fetchUser().catch(() => {})
 
-const appSettings = useAppSettingsStore()
-appSettings.init()
+useAppSettingsStore().init()
 
 if (authStore.user) {
-  const systemStore = useSystemStore()
-  await systemStore.init()
+  await useSystemStore().init()
 }
 
-app.use(router)
 app.mount('#app')
