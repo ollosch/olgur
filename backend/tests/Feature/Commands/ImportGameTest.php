@@ -3,9 +3,11 @@
 declare(strict_types=1);
 
 use App\Models\IndexEntry;
+use App\Models\Membership;
 use App\Models\Module;
 use App\Models\Rule;
 use App\Models\System;
+use App\Models\User;
 
 use function Pest\Laravel\artisan;
 
@@ -255,8 +257,8 @@ test('system config is not overwritten on second import', function () use ($simp
         ]
     );
 
-    artisan('import:game', ['path' => $dir, '--structure' => 'core_plus_many'])->assertSuccessful();
-    artisan('import:game', ['path' => $dir, '--structure' => 'grouping_only', '--fresh' => true])->assertSuccessful();
+    artisan('import:game', ['path' => $dir])->assertSuccessful();
+    artisan('import:game', ['path' => $dir, '--fresh' => true])->assertSuccessful();
 
     $system = System::query()->where('slug', 'config-test')->first();
     expect($system->config?->structure->value)->toBe('core_plus_many');
@@ -552,7 +554,7 @@ test('no core module in manifest skips index import with warning', function () u
     removeGameDir($dir);
 });
 
-test('structure key in manifest takes precedence over cli option', function () use ($simpleGameRules): void {
+test('structure key in manifest is used for system config', function () use ($simpleGameRules): void {
     $dir = makeGameDir(
         [
             'name' => 'Structure Override Game',
@@ -569,7 +571,7 @@ test('structure key in manifest takes precedence over cli option', function () u
         ]
     );
 
-    artisan('import:game', ['path' => $dir, '--structure' => 'core_plus_many'])->assertSuccessful();
+    artisan('import:game', ['path' => $dir])->assertSuccessful();
 
     $system = System::query()->where('slug', 'structure-override')->first();
     expect($system->config?->structure->value)->toBe('grouping_only');

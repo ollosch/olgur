@@ -23,7 +23,6 @@ final class ImportGame extends Command
      */
     protected $signature = 'import:game
         {path : Path to a game data directory (must contain index.json)}
-        {--structure=core_plus_many : SystemStructure: core_plus_many|core_plus_one|grouping_only}
         {--fresh : Delete existing rules and index entries before importing}';
 
     /**
@@ -64,13 +63,9 @@ final class ImportGame extends Command
         /** @var array<string, mixed> $manifest */
         $manifest = $this->readJson($indexJsonPath) ?? [];
 
-        $structureValue = (is_string($manifest['structure'] ?? null) && $manifest['structure'] !== ''
+        $structureValue = is_string($manifest['structure'] ?? null) && $manifest['structure'] !== ''
             ? $manifest['structure']
-            : (
-                is_string($this->option('structure'))
-                    ? $this->option('structure')
-                    : 'core_plus_many')
-        );
+            : 'core_plus_many';
 
         $fresh = (bool) $this->option('fresh');
 
