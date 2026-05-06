@@ -61,7 +61,7 @@ const entryResults = computed((): EntryResult[] => {
   const visibleIds = contentStore.visibleIndexEntryIds
   for (const entry of contentStore.allIndexEntries) {
     if (!visibleIds.has(entry.id)) continue
-    const r = rankMatch(entry.term, q)
+    const r = Math.min(rankMatch(entry.term, q), rankMatch(entry.definition, q))
     if (r < 3) results.push({ entry, rank: r })
   }
   results.sort((a, b) => compareIndexEntries(a.entry, b.entry, q))
