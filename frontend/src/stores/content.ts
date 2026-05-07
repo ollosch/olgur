@@ -2,10 +2,10 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { useApi } from '@/composables/useApi'
 import { useSystemStore } from '@/stores/system'
-import type { Rule, IndexEntry, Module, ApiCollection } from '@/types/domain'
+import type { Rule, IndexEntry, Module, ApiCollection, ApiResource, UpdateRuleRequest } from '@/types/domain'
 
 export const useContentStore = defineStore('content', () => {
-  const { get, loading } = useApi()
+  const { get, put, loading, errors } = useApi()
   const systemStore = useSystemStore()
 
   const rulesByModule = ref<Record<string, Rule[]>>({})
@@ -148,6 +148,25 @@ export const useContentStore = defineStore('content', () => {
     }
   }
 
+  async function updateRule(rule: Rule, data: UpdateRuleRequest): Promise<Rule | null> {
+    const systemId = systemStore.currentSystem?.id
+    if (!systemId) return null
+
+    const result = await put<ApiResource<Rule>, UpdateRuleRequest>(
+      `/systems/${systemId}/modules/${rule.module_id}/rules/${rule.id}`,
+      data,
+    )
+
+    if (result) {
+      const list = rulesByModule.value[rule.module_id] ?? []
+      const idx = list.indexOf(rulesById.value.get(rule.id)!)
+      if (idx !== -1) list[idx] = result.data
+      return result.data
+    }
+
+    return null
+  }
+
   async function fetchIndexEntries(moduleId: string): Promise<void> {
     const systemId = systemStore.currentSystem?.id
     if (!systemId) return
@@ -185,6 +204,7 @@ export const useContentStore = defineStore('content', () => {
     rulesByModule,
     indexEntriesByModule,
     loading,
+    errors,
     activeIds,
     activeModules,
     allRules,
@@ -197,6 +217,7 @@ export const useContentStore = defineStore('content', () => {
     indexEntriesByParent,
     visibleIndexEntryIds,
     fetchRules,
+    updateRule,
     fetchIndexEntries,
     fetchMissingModules,
     clear,

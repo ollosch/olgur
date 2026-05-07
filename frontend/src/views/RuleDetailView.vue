@@ -6,11 +6,13 @@ import { useBookmarkStore } from '@/stores/bookmarks'
 import { useContentStore } from '@/stores/content'
 import { useLeftPanelStore } from '@/stores/leftPanel'
 import { useSystemStore } from '@/stores/system'
+import { useAuthorization } from '@/composables/useAuthorization'
 import { renderContent } from '@/lib/renderContent'
 import type { Rule } from '@/types/domain'
 
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, ArrowRight, Crosshair, Star } from 'lucide-vue-next'
+import { ArrowLeft, ArrowRight, Crosshair, Pencil, Star } from 'lucide-vue-next'
+import EditRuleDialog from '@/components/systems/EditRuleDialog.vue'
 import RuleDetailChildren from '@/components/systems/RuleDetailChildren.vue'
 import RuleTocView from '@/components/systems/RuleTocView.vue'
 
@@ -21,6 +23,7 @@ const contentStore = useContentStore()
 const appSettings = useAppSettingsStore()
 const bookmarkStore = useBookmarkStore()
 const panelStore = useLeftPanelStore()
+const { canEdit } = useAuthorization()
 
 const systemId = computed(() => route.params['systemId'] as string)
 const ruleId = computed(() => route.params['ruleId'] as string)
@@ -32,6 +35,23 @@ const ruleId = computed(() => route.params['ruleId'] as string)
 const tocDepth = computed(() => systemStore.currentSystem?.config?.toc_depth ?? 0)
 
 const selectedRule = computed((): Rule | null => contentStore.rulesById.get(ruleId.value) ?? null)
+
+const canEditRules = computed((): boolean => {
+  if (!selectedRule.value) return false
+  return canEdit.value(selectedRule.value.module_id)
+})
+
+// ---------------------------------------------------------------------------
+// Edit dialog
+// ---------------------------------------------------------------------------
+
+const editDialogOpen = ref(false)
+const editingRule = ref<Rule | null>(null)
+
+function openEditDialog(rule: Rule): void {
+  editingRule.value = rule
+  editDialogOpen.value = true
+}
 
 // ---------------------------------------------------------------------------
 // Segmented breadcrumb
@@ -152,6 +172,14 @@ watch(ruleId, () => {
           <h2 class="text-foreground text-xl font-semibold">{{ selectedRule.title }}</h2>
           <div class="ml-auto flex items-center gap-1 shrink-0">
             <button
+              v-if="canEditRules"
+              class="p-1 rounded hover:bg-muted/40 transition-colors"
+              title="Edit rule"
+              @click="openEditDialog(selectedRule)"
+            >
+              <Pencil class="w-4 h-4 text-muted-foreground" />
+            </button>
+            <button
               class="p-1 rounded hover:bg-muted/40 transition-colors"
               title="Show in tree"
               @click="showInTree()"
@@ -205,4 +233,11 @@ watch(ruleId, () => {
       Rule not found.
     </div>
   </div>
+
+  <EditRuleDialog
+    v-if="editingRule"
+    :open="editDialogOpen"
+    :rule="editingRule"
+    @update:open="editDialogOpen = $event"
+  />
 </template>

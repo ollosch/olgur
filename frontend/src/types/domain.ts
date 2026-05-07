@@ -3,6 +3,7 @@ export interface User {
   name: string
   email: string
   email_verified_at?: string
+  super_admin: boolean
   created_at: string
   updated_at: string
 }
@@ -163,5 +164,13 @@ export interface CreateModuleRequest {
   is_core: boolean
   description: string
   config: Record<string, unknown>
+  sort_order: number
+}
+
+export interface UpdateRuleRequest {
+  number: string
+  title: string
+  content: string
+  parent_id: string | null
   sort_order: number
 }
