@@ -1,3 +1,6 @@
+/** Tailwind `md` breakpoint in pixels — keep in sync with tailwind.config if overridden */
+export const BREAKPOINT_MD = 768
+
 import type { ClassValue } from "clsx"
 import { clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
