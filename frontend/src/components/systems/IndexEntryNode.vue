@@ -46,9 +46,9 @@ const expanded = computed(() => props.expandedIds.has(props.entry.id))
       >
         <ChevronDown v-if="expanded" class="w-3 h-3 shrink-0 mt-0.5" />
         <ChevronRight v-else class="w-3 h-3 shrink-0 mt-0.5" />
-        {{ entry.term }}
+        <span v-html="entry.term"></span>
       </button>
-      <span v-else class="text-xs font-semibold text-foreground">{{ entry.term }}</span>
+      <span v-else class="text-xs font-semibold text-foreground" v-html="entry.term"></span>
     </div>
 
     <!-- Definition -->

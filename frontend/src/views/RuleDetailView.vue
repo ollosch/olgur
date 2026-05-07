@@ -169,7 +169,7 @@ watch(ruleId, () => {
         <!-- Rule title row -->
         <div class="flex items-baseline gap-3">
           <span class="text-primary font-mono text-lg font-bold shrink-0">{{ selectedRule.number }}</span>
-          <h2 class="text-foreground text-xl font-semibold">{{ selectedRule.title }}</h2>
+          <h2 class="text-foreground text-xl font-semibold" v-html="selectedRule.title"></h2>
           <div class="ml-auto flex items-center gap-1 shrink-0">
             <button
               v-if="canEditRules"

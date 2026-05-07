@@ -37,8 +37,9 @@ function activeRuleRefs(entry: IndexEntry): string[] {
     <div class="flex items-baseline justify-between gap-2">
       <p class="text-xs font-semibold text-foreground">
         <span v-if="depth === 0 && entry.parent_id" class="text-xs text-muted-foreground">
-          {{ contentStore.indexEntriesById.get(entry.parent_id)?.term }} ›
-        </span>{{ entry.term }}
+          <span v-html="contentStore.indexEntriesById.get(entry.parent_id)?.term"></span> ›
+        </span>
+        <span v-html="entry.term"></span>
       </p>
       <button
         v-if="hasChildren"

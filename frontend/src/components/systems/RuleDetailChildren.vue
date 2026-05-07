@@ -69,7 +69,7 @@ function headingClass(level: number): string {
           :class="[headingClass(headingLevel(depth + 1, tocDepth)), 'flex-1']"
         >
           <span class="font-mono text-primary pr-1 cursor-pointer hover:underline" @click="emit('selectRule', child)">{{ child.number }}</span>
-          {{ child.title }}
+          <span v-html="child.title"></span>
         </component>
         <button
           v-if="canEditRules"
