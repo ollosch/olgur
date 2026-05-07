@@ -129,7 +129,7 @@ function selectRule(rule: Rule): void {
 }
 
 function selectRuleByNumber(number: string): void {
-  const rule = contentStore.allRules.find((r) => r.number === number)
+  const rule = contentStore.rulesByNumber.get(number)
   if (rule) selectRule(rule)
 }
 
