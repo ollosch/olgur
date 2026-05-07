@@ -2,7 +2,7 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { useApi } from '@/composables/useApi'
 import { useSystemStore } from '@/stores/system'
-import type { Rule, IndexEntry, Module, ApiCollection, ApiResource, UpdateRuleRequest } from '@/types/domain'
+import type { Rule, IndexEntry, Module, ApiCollection, ApiResource, UpdateRuleRequest, UpdateIndexEntryRequest } from '@/types/domain'
 
 export const useContentStore = defineStore('content', () => {
   const { get, put, loading, errors } = useApi()
@@ -167,6 +167,25 @@ export const useContentStore = defineStore('content', () => {
     return null
   }
 
+  async function updateIndexEntry(entry: IndexEntry, data: UpdateIndexEntryRequest): Promise<IndexEntry | null> {
+    const systemId = systemStore.currentSystem?.id
+    if (!systemId) return null
+
+    const result = await put<ApiResource<IndexEntry>, UpdateIndexEntryRequest>(
+      `/systems/${systemId}/modules/${entry.module_id}/index-entries/${entry.id}`,
+      data,
+    )
+
+    if (result) {
+      const list = indexEntriesByModule.value[entry.module_id] ?? []
+      const idx = list.indexOf(indexEntriesById.value.get(entry.id)!)
+      if (idx !== -1) list[idx] = result.data
+      return result.data
+    }
+
+    return null
+  }
+
   async function fetchIndexEntries(moduleId: string): Promise<void> {
     const systemId = systemStore.currentSystem?.id
     if (!systemId) return
@@ -218,6 +237,7 @@ export const useContentStore = defineStore('content', () => {
     visibleIndexEntryIds,
     fetchRules,
     updateRule,
+    updateIndexEntry,
     fetchIndexEntries,
     fetchMissingModules,
     clear,

@@ -167,6 +167,17 @@ export interface CreateModuleRequest {
   sort_order: number
 }
 
+export interface UpdateIndexEntryRequest {
+  parent_id: string | null
+  term: string
+  definition: string
+  notes: string
+  relations: {
+    rule_refs: string[]
+    see_also: string[]
+  }
+}
+
 export interface UpdateRuleRequest {
   number: string
   title: string

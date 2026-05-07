@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { IndexEntry } from '@/types/domain'
-import { ChevronDown, ChevronRight } from 'lucide-vue-next'
+import { ChevronDown, ChevronRight, Pencil } from 'lucide-vue-next'
 import { renderContent } from '@/lib/renderContent'
 import { useAppSettingsStore } from '@/stores/appSettings'
 import { useContentStore } from '@/stores/content'
+import { useAuthorization } from '@/composables/useAuthorization'
+import EditIndexEntryDialog from '@/components/systems/EditIndexEntryDialog.vue'
 
 interface Props {
   entry: IndexEntry
@@ -16,8 +18,10 @@ const emit = defineEmits<{ seeAlsoClick: [term: string] }>()
 
 const appSettings = useAppSettingsStore()
 const contentStore = useContentStore()
+const { canEdit } = useAuthorization()
 
 const expanded = ref(false)
+const editDialogOpen = ref(false)
 
 const children = computed((): IndexEntry[] =>
   (contentStore.indexEntriesByParent.get(props.entry.id) ?? []).filter((c) =>
@@ -34,22 +38,33 @@ function activeRuleRefs(entry: IndexEntry): string[] {
 <template>
   <div :style="depth > 0 ? { paddingLeft: `${depth * 12}px` } : {}" class="py-2 border-b border-border/50 last:border-0">
     <!-- Term line -->
-    <div class="flex items-baseline justify-between gap-2">
+    <div class="flex items-baseline justify-between gap-2 group">
       <p class="text-xs font-semibold text-foreground">
         <span v-if="depth === 0 && entry.parent_id" class="text-xs text-muted-foreground">
           <span v-html="contentStore.indexEntriesById.get(entry.parent_id)?.term"></span> ›
         </span>
         <span v-html="entry.term"></span>
+        <button
+          v-if="canEdit(entry.module_id)"
+          type="button"
+          class="p-1 rounded hover:bg-muted/40 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+          title="Edit entry"
+          @click="editDialogOpen = true"
+        >
+          <Pencil class="w-3 h-3 text-muted-foreground" />
+        </button>
       </p>
-      <button
-        v-if="hasChildren"
-        type="button"
-        class="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-        @click="expanded = !expanded"
-      >
-        <ChevronDown v-if="expanded" class="w-3 h-3" />
-        <ChevronRight v-else class="w-3 h-3" />
-      </button>
+      <div class="flex items-center gap-1 shrink-0">
+        <button
+          v-if="hasChildren"
+          type="button"
+          class="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+          @click="expanded = !expanded"
+        >
+          <ChevronDown v-if="expanded" class="w-3 h-3" />
+          <ChevronRight v-else class="w-3 h-3" />
+        </button>
+      </div>
     </div>
     <!-- eslint-disable-next-line vue/no-v-html -->
     <p
@@ -92,4 +107,10 @@ function activeRuleRefs(entry: IndexEntry): string[] {
       />
     </template>
   </div>
+
+  <EditIndexEntryDialog
+    :open="editDialogOpen"
+    :entry="entry"
+    @update:open="editDialogOpen = $event"
+  />
 </template>
