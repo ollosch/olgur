@@ -167,10 +167,10 @@ watch(ruleId, () => {
         </div>
 
         <!-- Rule title row -->
-        <div class="flex items-baseline gap-3">
+        <div class="flex items-baseline gap-3 group">
           <span class="text-primary font-mono text-lg font-bold shrink-0">{{ selectedRule.number }}</span>
           <h2 class="text-foreground text-xl font-semibold" v-html="selectedRule.title"></h2>
-          <div class="ml-auto flex items-center gap-1 shrink-0">
+          <div class="ml-auto flex items-center gap-1 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
             <button
               v-if="canEditRules"
               class="p-1 rounded hover:bg-muted/40 transition-colors"
@@ -223,6 +223,7 @@ watch(ruleId, () => {
           :children-map="contentStore.childrenMap"
           :depth="ruleDepth(selectedRule) - 1"
           :toc-depth="tocDepth"
+          :can-edit="canEditRules"
           @select-rule="selectRule"
         />
       </template>

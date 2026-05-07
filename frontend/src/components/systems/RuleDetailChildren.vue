@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import type { Rule } from '@/types/domain'
 import { renderContent } from '@/lib/renderContent'
 import { useAppSettingsStore } from '@/stores/appSettings'
-import { useAuthorization } from '@/composables/useAuthorization'
-import { Pencil } from 'lucide-vue-next'
+import { useBookmarkStore } from '@/stores/bookmarks'
+import { useLeftPanelStore } from '@/stores/leftPanel'
+import { Crosshair, Pencil, Star } from 'lucide-vue-next'
 import EditRuleDialog from '@/components/systems/EditRuleDialog.vue'
 
 interface Props {
@@ -19,12 +20,8 @@ const props = defineProps<Props>()
 const emit = defineEmits<{ selectRule: [rule: Rule] }>()
 
 const appSettings = useAppSettingsStore()
-const { canEdit } = useAuthorization()
-
-const canEditRules = computed((): boolean => {
-  if (props.canEdit !== undefined) return props.canEdit
-  return canEdit.value(props.rule.module_id)
-})
+const bookmarkStore = useBookmarkStore()
+const panelStore = useLeftPanelStore()
 
 const editDialogOpen = ref(false)
 const editingRule = ref<Rule | null>(null)
@@ -34,7 +31,12 @@ function openEditDialog(rule: Rule): void {
   editDialogOpen.value = true
 }
 
-function children(parentId: string): Rule[] {
+function showInTree(): void {
+  panelStore.openToTab('tree')
+  panelStore.treeActivatedTick++
+}
+
+function childRules(parentId: string): Rule[] {
   return props.childrenMap.get(parentId) ?? []
 }
 
@@ -59,26 +61,47 @@ function headingClass(level: number): string {
 <template>
   <div>
     <div
-      v-for="child in children(rule.id)"
+      v-for="child in childRules(rule.id)"
       :key="child.id"
       class="mt-4 flow-root"
     >
-      <div class="flex items-baseline gap-2 group">
+      <div class="flex items-baseline gap-3 group">
         <component
           :is="`h${headingLevel(depth + 1, tocDepth)}`"
-          :class="[headingClass(headingLevel(depth + 1, tocDepth)), 'flex-1']"
+          :class="[headingClass(headingLevel(depth + 1, tocDepth)), 'flex-1 min-w-0']"
         >
           <span class="font-mono text-primary pr-1 cursor-pointer hover:underline" @click="emit('selectRule', child)">{{ child.number }}</span>
-          <span v-html="child.title"></span>
+          {{ child.title }}
         </component>
-        <button
-          v-if="canEditRules"
-          class="p-1 rounded hover:bg-muted/40 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
-          title="Edit rule"
-          @click="openEditDialog(child)"
-        >
-          <Pencil class="w-3.5 h-3.5 text-muted-foreground" />
-        </button>
+        <div class="flex items-center gap-1 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+          <button
+            v-if="canEdit"
+            class="p-1 rounded hover:bg-muted/40 transition-colors"
+            title="Edit rule"
+            @click="openEditDialog(child)"
+          >
+            <Pencil class="w-3.5 h-3.5 text-muted-foreground" />
+          </button>
+          <button
+            class="p-1 rounded hover:bg-muted/40 transition-colors"
+            title="Show in tree"
+            @click="showInTree()"
+          >
+            <Crosshair class="w-3.5 h-3.5 text-muted-foreground" />
+          </button>
+          <button
+            class="p-1 rounded hover:bg-muted/40 transition-colors"
+            :title="bookmarkStore.isBookmarked('rule', child.id) ? 'Remove bookmark' : 'Bookmark rule'"
+            @click="bookmarkStore.isBookmarked('rule', child.id)
+              ? bookmarkStore.removeBookmark('rule', child.id)
+              : bookmarkStore.addBookmark('rule', child.id)"
+          >
+            <Star
+              class="w-3.5 h-3.5 transition-colors"
+              :class="bookmarkStore.isBookmarked('rule', child.id) ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'"
+            />
+          </button>
+        </div>
       </div>
       <!-- eslint-disable-next-line vue/no-v-html -->
       <p
@@ -90,7 +113,7 @@ function headingClass(level: number): string {
         :children-map="childrenMap"
         :depth="depth + 1"
         :toc-depth="tocDepth"
-        :can-edit="canEditRules"
+        :can-edit="canEdit"
         @select-rule="emit('selectRule', $event)"
       />
     </div>

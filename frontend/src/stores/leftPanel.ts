@@ -29,7 +29,7 @@ export const useLeftPanelStore = defineStore('leftPanel', () => {
 
   function openToTab(tab: PanelTab): void {
     activeTab.value = tab
-    if (!appSettings.sidebarPinned) {
+    if (!appSettings.sidebarPinned && window.innerWidth < 768) {
       mobileOpen.value = true
     }
   }
