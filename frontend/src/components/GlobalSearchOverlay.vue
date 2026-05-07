@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, reactive } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Search } from 'lucide-vue-next'
 import { useShortcutStore } from '@/stores/shortcut'
 import { useContentStore } from '@/stores/content'
-import { rankMatch, compareIndexEntries } from '@/lib/utils'
+import { rankMatch, rankMatchLower, compareIndexEntries } from '@/lib/utils'
 import type { Rule, IndexEntry } from '@/types/domain'
-import IndexEntryNode from '@/components/systems/IndexEntryNode.vue'
+import IndexEntryResult from '@/components/systems/IndexEntryResult.vue'
 
 const DEFAULT_CAP = 10
 const shortcutStore = useShortcutStore()
@@ -19,7 +19,6 @@ const route = useRoute()
 const query = ref('')
 const showAllRules = ref(false)
 const showAllEntries = ref(false)
-const expandedEntryIds = reactive(new Set<string>())
 
 const listRef = ref<HTMLElement | null>(null)
 const inputRef = ref<HTMLInputElement | null>(null)
@@ -61,7 +60,7 @@ const entryResults = computed((): EntryResult[] => {
   const visibleIds = contentStore.visibleIndexEntryIds
   for (const entry of contentStore.allIndexEntries) {
     if (!visibleIds.has(entry.id)) continue
-    const r = Math.min(rankMatch(entry.term, q), rankMatch(entry.definition, q))
+    const r = rankMatchLower(entry.term.toLowerCase(), q)
     if (r < 3) results.push({ entry, rank: r })
   }
   results.sort((a, b) => compareIndexEntries(a.entry, b.entry, q))
@@ -77,10 +76,10 @@ const ruleResults = computed((): RuleResult[] => {
     if (best < 3) results.push({ rule, rank: best })
   }
   results.sort((a, b) => {
+    if (a.rank !== b.rank) return a.rank - b.rank
     const aNested = a.rule.parent_id !== null ? 1 : 0
     const bNested = b.rule.parent_id !== null ? 1 : 0
     if (aNested !== bNested) return aNested - bNested
-    if (a.rank !== b.rank) return a.rank - b.rank
     return a.rule.number.localeCompare(b.rule.number)
   })
   return results
@@ -109,15 +108,6 @@ const hasResults = computed(
 function onQueryInput(): void {
   showAllRules.value = false
   showAllEntries.value = false
-  expandedEntryIds.clear()
-}
-
-function toggleEntryExpand(id: string): void {
-  if (expandedEntryIds.has(id)) {
-    expandedEntryIds.delete(id)
-  } else {
-    expandedEntryIds.add(id)
-  }
 }
 
 function selectRule(rule: Rule): void {
@@ -191,16 +181,11 @@ function onKeyDown(e: KeyboardEvent): void {
               class="mx-2"
               @click="handleEntryClick"
             >
-              <IndexEntryNode
+              <IndexEntryResult
                 v-for="{ entry } in visibleEntries"
                 :key="entry.id"
                 :entry="entry"
-                :children-by-parent="contentStore.indexEntriesByParent"
-                :expanded-ids="expandedEntryIds"
-                :depth="0"
-                :entries-by-id="contentStore.indexEntriesById"
-                :show-ancestors="true"
-                @toggle="toggleEntryExpand"
+                @see-also-click="(t) => { query = t }"
               />
             </div>
 

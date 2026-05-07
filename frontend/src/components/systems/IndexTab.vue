@@ -1,19 +1,14 @@
 <script setup lang="ts">
-import { ref, computed, reactive } from 'vue'
+import { ref, computed } from 'vue'
 import { Input } from '@/components/ui/input'
-import { renderContent } from '@/lib/renderContent'
-import { compareIndexEntries } from '@/lib/utils'
-import { useAppSettingsStore } from '@/stores/appSettings'
+import { compareIndexEntries, rankMatchLower } from '@/lib/utils'
 import { useContentStore } from '@/stores/content'
-import IndexEntryNode from '@/components/systems/IndexEntryNode.vue'
+import IndexEntryResult from '@/components/systems/IndexEntryResult.vue'
 
-const appSettings = useAppSettingsStore()
 const contentStore = useContentStore()
 
 const search = ref('')
 const activeLetter = ref<string | null>(null)
-/** Tracks which entries are expanded to show their children */
-const expandedIds = reactive(new Set<string>())
 
 const availableLetters = computed(() => {
   const set = new Set<string>()
@@ -32,13 +27,9 @@ const filtered = computed(() => {
   const visibleIds = contentStore.visibleIndexEntryIds
 
   if (q) {
-    // Flat search — show all matching entries regardless of hierarchy
+    // Flat search — term only, single-letter restricted to exact match
     return contentStore.allIndexEntries
-      .filter(
-        (e) =>
-          visibleIds.has(e.id) &&
-          (e.term.toLowerCase().includes(q) || e.definition.toLowerCase().includes(q)),
-      )
+      .filter((e) => visibleIds.has(e.id) && rankMatchLower(e.term.toLowerCase(), q) < 3)
       .sort((a, b) => compareIndexEntries(a, b, q))
   }
 
@@ -55,27 +46,12 @@ const filtered = computed(() => {
   return []
 })
 
-const isSearchMode = computed(() => !!search.value.trim())
-
 function toggleLetter(letter: string): void {
   activeLetter.value = activeLetter.value === letter ? null : letter
 }
 
 function onSearch(): void {
   activeLetter.value = null
-  expandedIds.clear()
-}
-
-function toggleExpand(id: string): void {
-  if (expandedIds.has(id)) {
-    expandedIds.delete(id)
-  } else {
-    expandedIds.add(id)
-  }
-}
-
-function activeRuleRefs(entry: { relations?: { rule_refs?: string[] } | null }): string[] {
-  return (entry.relations?.rule_refs ?? []).filter((r) => contentStore.rulesByNumber.has(r))
 }
 </script>
 
@@ -115,59 +91,13 @@ function activeRuleRefs(entry: { relations?: { rule_refs?: string[] } | null }):
       </div>
 
       <!-- Flat search mode: show matches as-is (with parent prefix) -->
-      <template v-if="isSearchMode">
-        <div
-          v-for="entry in filtered"
-          :key="entry.id"
-          class="py-2 border-b border-border/50 last:border-0"
-        >
-          <p class="text-xs font-semibold text-foreground">
-            <span v-if="entry.parent_id" class="text-xs text-muted-foreground">
-              {{ contentStore.indexEntriesById.get(entry.parent_id)?.term }} ›
-            </span>{{ entry.term }}
-          </p>
-          <!-- eslint-disable-next-line vue/no-v-html -->
-          <p
-            class="text-xs text-foreground/70 leading-relaxed mt-0.5"
-            v-html="renderContent(entry.definition, { acronymPopups: appSettings.acronymPopups })"
-          />
-          <!-- eslint-disable-next-line vue/no-v-html -->
-          <p
-            v-if="entry.notes"
-            class="text-xs text-muted-foreground italic mt-0.5"
-            v-html="renderContent(entry.notes, { acronymPopups: appSettings.acronymPopups })"
-          />
-          <div v-if="activeRuleRefs(entry).length" class="mt-1 flex flex-wrap gap-1.5 items-center">
-            <a
-              v-for="ref in activeRuleRefs(entry)"
-              :key="ref"
-              :data-rule-number="ref"
-              class="ml-2 font-mono text-xs text-primary underline decoration-dotted hover:text-primary/80 transition-colors cursor-pointer"
-            >{{ ref }}</a>
-          </div>
-          <div v-if="entry.relations?.see_also?.length" class="mt-1 flex flex-wrap gap-1.5 items-center">
-            <span class="ml-2 text-xs text-muted-foreground">See also:</span>
-            <button
-              v-for="term in entry.relations.see_also"
-              :key="term"
-              type="button"
-              class="text-xs text-primary underline decoration-dotted hover:text-primary/80 italic transition-colors cursor-pointer"
-              @click="search = term; activeLetter = null"
-            >{{ term }}</button>
-          </div>
-        </div>
-      </template>
-
-      <!-- Hierarchical mode: expandable tree via letter filter -->
-      <template v-else>
-        <IndexEntryNode
+      <!-- Letter mode: show top-level entries starting with the selected letter -->
+      <template v-if="filtered.length > 0">
+        <IndexEntryResult
           v-for="entry in filtered"
           :key="entry.id"
           :entry="entry"
-          :children-by-parent="contentStore.indexEntriesByParent"
-          :expanded-ids="expandedIds"
-          :depth="0"
-          @toggle="toggleExpand"
+          @see-also-click="(t) => { search = t; activeLetter = null }"
         />
       </template>
     </div>
