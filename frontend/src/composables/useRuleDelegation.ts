@@ -1,12 +1,13 @@
 import { onMounted, onUnmounted } from 'vue'
 import { useRulePopup } from '@/composables/useRulePopup'
 import { useAppSettingsStore } from '@/stores/appSettings'
+import { useContentStore } from '@/stores/content'
 import type { Rule, IndexEntry } from '@/types/domain'
 
 /**
  * Attaches a single document-level mouseover listener.
  * - [data-rule-number]  → rule popup on hover, navigate on click
- * - [data-rule-range]   → navigate to range on click (no hover popup)
+ * - [data-rule-range]   → range popup on hover, navigate to range on click
  * - [data-acronym-term] → acronym popup on hover
  * - Inside popup overlay → keep open
  * - Anything else       → hide
@@ -20,6 +21,7 @@ export function useRuleDelegation(
 ) {
   const { state, hide, keepOpen, navigateToRange } = useRulePopup()
   const appSettings = useAppSettingsStore()
+  const contentStore = useContentStore()
   let showTimer: ReturnType<typeof setTimeout> | null = null
   let activeEl: HTMLElement | null = null
 
@@ -31,6 +33,14 @@ export function useRuleDelegation(
       left = Math.max(8, window.innerWidth - maxW - margin)
     }
     return left
+  }
+
+  /** Estimated popup height used to decide whether to render above or below. */
+  const POPUP_HEIGHT_ESTIMATE = 260
+
+  function popupY(rect: DOMRect): { y: number; above: boolean } {
+    const above = rect.bottom + POPUP_HEIGHT_ESTIMATE > window.innerHeight
+    return { y: above ? rect.top - 6 : rect.bottom + 6, above }
   }
 
   function onDocMouseOver(e: MouseEvent) {
@@ -45,6 +55,7 @@ export function useRuleDelegation(
 
     const trigger =
       target.closest<HTMLElement>('[data-rule-number]') ??
+      target.closest<HTMLElement>('[data-rule-range]') ??
       target.closest<HTMLElement>('[data-acronym-term]')
 
     if (!trigger) {
@@ -70,8 +81,28 @@ export function useRuleDelegation(
         showTimer = null
         const rule = getRulesMap().get(number)
         if (rule) {
-          state.value = { visible: true, content: { type: 'rule', rule }, x: popupX(rect), y: rect.bottom + 6 }
+          const { y, above } = popupY(rect)
+          state.value = { visible: true, content: { type: 'rule', rule }, x: popupX(rect), y, above }
         }
+      }, 150)
+    } else if (trigger.dataset['ruleRange'] !== undefined) {
+      const rangeString = trigger.dataset['ruleRange'] ?? ''
+      showTimer = setTimeout(() => {
+        showTimer = null
+        const sep = rangeString.indexOf('-')
+        if (sep === -1) return
+        const fromNumber = rangeString.slice(0, sep)
+        const toNumber = rangeString.slice(sep + 1)
+        const rulesMap = getRulesMap()
+        const fromRule = rulesMap.get(fromNumber)
+        const toRule = rulesMap.get(toNumber)
+        if (!fromRule || !toRule) return
+        const flattened = contentStore.flattenedRulesByModule.get(fromRule.module_id) ?? []
+        const fromIdx = flattened.findIndex((r) => r.id === fromRule.id)
+        const toIdx = flattened.findIndex((r) => r.id === toRule.id)
+        const rules = fromIdx !== -1 && toIdx >= fromIdx ? flattened.slice(fromIdx, toIdx + 1) : [fromRule, toRule]
+        const { y, above } = popupY(rect)
+        state.value = { visible: true, content: { type: 'range', rules }, x: popupX(rect), y, above }
       }, 150)
     } else if (trigger.dataset['acronymTerm'] !== undefined) {
       if (!appSettings.acronymPopups) return
@@ -80,7 +111,8 @@ export function useRuleDelegation(
         showTimer = null
         const entry = getIndexEntriesMap?.().get(term)
         if (entry) {
-          state.value = { visible: true, content: { type: 'acronym', entry }, x: popupX(rect), y: rect.bottom + 6 }
+          const { y, above } = popupY(rect)
+          state.value = { visible: true, content: { type: 'acronym', entry }, x: popupX(rect), y, above }
         }
       }, 150)
     }

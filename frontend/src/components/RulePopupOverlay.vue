@@ -7,11 +7,16 @@ import { useAppSettingsStore } from '@/stores/appSettings'
 const { state, navigateToNumber, navigateToRange } = useRulePopup()
 const appSettings = useAppSettingsStore()
 
-const style = computed(() => ({
-  left: `${state.value.x}px`,
-  top: `${state.value.y}px`,
-  maxWidth: '320px',
-}))
+const style = computed(() => {
+  const base = {
+    left: `${state.value.x}px`,
+    maxWidth: '320px',
+  }
+  if (state.value.above) {
+    return { ...base, bottom: `${window.innerHeight - state.value.y}px` }
+  }
+  return { ...base, top: `${state.value.y}px` }
+})
 
 function onClick(e: MouseEvent) {
   const rangeAnchor = (e.target as HTMLElement).closest<HTMLElement>('[data-rule-range]')
@@ -56,6 +61,35 @@ function onClick(e: MouseEvent) {
           />
         </template>
 
+        <!-- Range popup -->
+        <template v-else-if="state.content.type === 'range'">
+          <div class="flex items-baseline justify-between gap-2 mb-2">
+            <p class="font-mono text-primary font-bold">
+              {{ state.content.rules[0]?.number }} – {{ state.content.rules[state.content.rules.length - 1]?.number }}
+            </p>
+            <button
+              type="button"
+              class="text-[10px] text-primary underline decoration-dotted hover:text-primary/80 transition-colors shrink-0"
+              @click.stop="navigateToRange(`${state.content.rules[0]?.number}-${state.content.rules[state.content.rules.length - 1]?.number}`)"
+            >Open range</button>
+          </div>
+          <div
+            v-for="(rule, i) in state.content.rules"
+            :key="rule.id"
+            :class="i > 0 ? 'mt-3 pt-3 border-t border-border/40' : ''"
+          >
+            <p class="font-semibold text-foreground mb-1">
+              <span class="font-mono text-primary mr-1.5">{{ rule.number }}</span>{{ rule.title }}
+            </p>
+            <!-- eslint-disable-next-line vue/no-v-html -->
+            <p
+              v-if="rule.content"
+              class="text-foreground/70 leading-relaxed whitespace-pre-wrap"
+              v-html="renderContent(rule.content, { acronymPopups: appSettings.acronymPopups })"
+            />
+          </div>
+        </template>
+
         <!-- Acronym popup -->
         <template v-else-if="state.content.type === 'acronym'">
           <p class="font-semibold text-foreground mb-1">{{ state.content.entry.term }}</p>
@@ -96,6 +130,6 @@ function onClick(e: MouseEvent) {
 .popup-enter-from,
 .popup-leave-to {
   opacity: 0;
-  transform: translateY(-4px);
+  transform: translateY(v-bind("state.above ? '4px' : '-4px'"));
 }
 </style>

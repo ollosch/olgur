@@ -3,6 +3,7 @@ import type { Rule, IndexEntry } from '@/types/domain'
 
 export type PopupContent =
   | { type: 'rule'; rule: Rule }
+  | { type: 'range'; rules: Rule[] }
   | { type: 'acronym'; entry: IndexEntry }
 
 interface PopupState {
@@ -10,10 +11,11 @@ interface PopupState {
   content: PopupContent | null
   x: number
   y: number
+  above: boolean
 }
 
 // Module-level singleton — one instance shared across the entire app
-const state = ref<PopupState>({ visible: false, content: null, x: 0, y: 0 })
+const state = ref<PopupState>({ visible: false, content: null, x: 0, y: 0, above: false })
 let hideTimer: ReturnType<typeof setTimeout> | null = null
 let showTimer: ReturnType<typeof setTimeout> | null = null
 
