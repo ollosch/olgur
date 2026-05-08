@@ -1,14 +1,20 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { refDebounced } from '@vueuse/core'
 import { Input } from '@/components/ui/input'
-import { compareIndexEntries, rankMatchLower } from '@/lib/utils'
+import { compareIndexEntries, rankMatchLower, SEARCH_DEBOUNCE_MS } from '@/lib/utils'
 import { useContentStore } from '@/stores/content'
 import IndexEntryResult from '@/components/systems/IndexEntryResult.vue'
 
 const contentStore = useContentStore()
 
 const search = ref('')
+const debouncedSearch = refDebounced(search, SEARCH_DEBOUNCE_MS)
 const activeLetter = ref<string | null>(null)
+
+watch(search, () => {
+  activeLetter.value = null
+})
 
 const availableLetters = computed(() => {
   const set = new Set<string>()
@@ -23,7 +29,7 @@ const availableLetters = computed(() => {
 
 /** Entries to display at the top level based on active filter */
 const filtered = computed(() => {
-  const q = search.value.trim().toLowerCase()
+  const q = debouncedSearch.value.trim().toLowerCase()
   const visibleIds = contentStore.visibleIndexEntryIds
 
   if (q) {
@@ -49,37 +55,23 @@ const filtered = computed(() => {
 function toggleLetter(letter: string): void {
   activeLetter.value = activeLetter.value === letter ? null : letter
 }
-
-function onSearch(): void {
-  activeLetter.value = null
-}
 </script>
 
 <template>
   <div class="flex flex-col h-full">
     <!-- Search -->
     <div class="px-3 pt-3 pb-2 shrink-0">
-      <Input
-        v-model="search"
-        placeholder="Search index…"
-        class="h-8 text-xs"
-        @input="onSearch"
-      />
+      <Input v-model="search" placeholder="Search index…" class="h-8 text-xs" />
     </div>
 
     <!-- Letter filter (shown when search is empty) -->
     <div v-if="!search.trim()" class="px-3 pb-2 flex flex-wrap gap-1 shrink-0">
-      <button
-        v-for="letter in availableLetters"
-        :key="letter"
-        :class="[
-          'w-6 h-6 text-xs rounded font-mono transition-colors',
-          activeLetter === letter
-            ? 'bg-primary text-primary-foreground'
-            : 'bg-muted/50 hover:bg-muted text-foreground/70',
-        ]"
-        @click="toggleLetter(letter)"
-      >
+      <button v-for="letter in availableLetters" :key="letter" :class="[
+        'w-6 h-6 text-xs rounded font-mono transition-colors',
+        activeLetter === letter
+          ? 'bg-primary text-primary-foreground'
+          : 'bg-muted/50 hover:bg-muted text-foreground/70',
+      ]" @click="toggleLetter(letter)">
         {{ letter }}
       </button>
     </div>
@@ -93,12 +85,8 @@ function onSearch(): void {
       <!-- Flat search mode: show matches as-is (with parent prefix) -->
       <!-- Letter mode: show top-level entries starting with the selected letter -->
       <template v-if="filtered.length > 0">
-        <IndexEntryResult
-          v-for="entry in filtered"
-          :key="entry.id"
-          :entry="entry"
-          @see-also-click="(t) => { search = t; activeLetter = null }"
-        />
+        <IndexEntryResult v-for="entry in filtered" :key="entry.id" :entry="entry"
+          @see-also-click="(t) => { search = t; activeLetter = null }" />
       </template>
     </div>
   </div>
