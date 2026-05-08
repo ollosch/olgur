@@ -45,7 +45,7 @@ function onClick(e: MouseEvent) {
               type="button"
               class="text-[10px] text-primary underline decoration-dotted hover:text-primary/80 transition-colors shrink-0"
               @click.stop="navigateToNumber(state.content.rule.number)"
-            >Open rule</button>
+            >Open</button>
           </div>
           <p class="font-semibold text-foreground mb-1">{{ state.content.rule.title }}</p>
           <!-- eslint-disable-next-line vue/no-v-html -->
