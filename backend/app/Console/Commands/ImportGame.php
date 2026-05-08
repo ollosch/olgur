@@ -9,6 +9,7 @@ use App\Models\IndexEntry;
 use App\Models\Membership;
 use App\Models\Module;
 use App\Models\Rule;
+use App\Models\Subscription;
 use App\Models\System;
 use App\Models\User;
 use App\Services\ImportCounter;
@@ -221,6 +222,19 @@ final class ImportGame extends Command
             }
 
             $this->info(sprintf('User "%s" is now admin of system "%s".', $userEmail, $systemSlug));
+
+            // Subscribe the user to every module in the system (editor access)
+            // so the frontend shows them as subscribed, matching the behaviour
+            // of SystemController::store() which subscribes the creator to the
+            // auto-created core module.
+            $system->modules()->each(function (Module $module) use ($user): void {
+                Subscription::query()->firstOrCreate(
+                    ['user_id' => $user->id, 'module_id' => $module->id],
+                    ['editor' => true],
+                );
+            });
+
+            $this->info(sprintf('User "%s" subscribed to all modules of system "%s".', $userEmail, $systemSlug));
         }
 
         return self::SUCCESS;

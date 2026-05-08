@@ -6,6 +6,7 @@ use App\Models\IndexEntry;
 use App\Models\Membership;
 use App\Models\Module;
 use App\Models\Rule;
+use App\Models\Subscription;
 use App\Models\System;
 use App\Models\User;
 
@@ -668,6 +669,44 @@ test('--user option warns when user email is not found', function () use ($simpl
     artisan('import:game', ['path' => $dir, '--user' => 'nobody@example.com'])
         ->assertSuccessful()
         ->expectsOutputToContain('No user found with email');
+
+    removeGameDir($dir);
+});
+
+test('--user option subscribes user to all modules with editor access', function () use ($simpleGameRules): void {
+    $expansionRules = [['number' => 'X1', 'title' => 'X Section', 'content' => null, 'children' => []]];
+    $user = User::factory()->create(['email' => 'subscriber@example.com']);
+
+    $dir = makeGameDir(
+        [
+            'name' => 'Subscribe Game',
+            'slug' => 'subscribe-game',
+            'modules' => [
+                ['type' => 'core', 'name' => 'Core', 'slug' => 'core', 'path' => 'core.json'],
+                ['type' => 'module', 'name' => 'Expansion', 'slug' => 'exp', 'path' => 'exp.json'],
+            ],
+            'index' => 'idx.json',
+        ],
+        [
+            'core.json' => $simpleGameRules,
+            'exp.json' => $expansionRules,
+            'idx.json' => [],
+        ]
+    );
+
+    artisan('import:game', ['path' => $dir, '--user' => 'subscriber@example.com'])->assertSuccessful();
+
+    $system = System::query()->where('slug', 'subscribe-game')->firstOrFail();
+
+    $system->modules()->each(function (Module $module) use ($user): void {
+        $subscription = Subscription::query()
+            ->where('user_id', $user->id)
+            ->where('module_id', $module->id)
+            ->first();
+
+        expect($subscription)->not->toBeNull();
+        expect($subscription->editor)->toBeTrue();
+    });
 
     removeGameDir($dir);
 });
