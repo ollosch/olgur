@@ -6,6 +6,7 @@ import type { Rule, IndexEntry } from '@/types/domain'
 /**
  * Attaches a single document-level mouseover listener.
  * - [data-rule-number]  → rule popup on hover, navigate on click
+ * - [data-rule-range]   → navigate to range on click (no hover popup)
  * - [data-acronym-term] → acronym popup on hover
  * - Inside popup overlay → keep open
  * - Anything else       → hide
@@ -17,7 +18,7 @@ export function useRuleDelegation(
   onSelect: (rule: Rule) => void,
   getIndexEntriesMap?: () => Map<string, IndexEntry>,
 ) {
-  const { state, hide, keepOpen } = useRulePopup()
+  const { state, hide, keepOpen, navigateToRange } = useRulePopup()
   const appSettings = useAppSettingsStore()
   let showTimer: ReturnType<typeof setTimeout> | null = null
   let activeEl: HTMLElement | null = null
@@ -87,6 +88,14 @@ export function useRuleDelegation(
 
   function onDocClick(e: MouseEvent) {
     if (!(e.target instanceof HTMLElement)) return
+
+    const rangeAnchor = e.target.closest<HTMLElement>('[data-rule-range]')
+    if (rangeAnchor && !rangeAnchor.closest('[data-popup-overlay]')) {
+      e.preventDefault()
+      navigateToRange(rangeAnchor.dataset['ruleRange'] ?? '')
+      return
+    }
+
     const anchor = e.target.closest<HTMLElement>('[data-rule-number]')
     if (!anchor) return
     // Don't navigate clicks inside the popup — those are handled by the overlay

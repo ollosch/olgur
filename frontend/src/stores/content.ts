@@ -56,7 +56,47 @@ export const useContentStore = defineStore('content', () => {
     for (const bucket of m.values()) {
       bucket.sort((a, b) => a.sort_order - b.sort_order)
     }
+
+    // Calculate and assign depth to every rule in one depth-first pass.
+    // Roots (parent_id === null) get depth 0; each child gets parent depth + 1.
+    function assignDepths(rules: Rule[], depth: number): void {
+      for (const rule of rules) {
+        rule.depth = depth
+        const children = m.get(rule.id)
+        if (children) assignDepths(children, depth + 1)
+      }
+    }
+    assignDepths(m.get(null) ?? [], 0)
+
     return m
+  })
+
+  /**
+   * All rules for each module in depth-first traversal order.
+   * Used for rule range calculations.
+   */
+  const flattenedRulesByModule = computed((): Map<string, Rule[]> => {
+    const result = new Map<string, Rule[]>()
+    const children = childrenMap.value
+
+    for (const module of activeModules.value) {
+      const moduleRules = rulesByModule.value[module.id] ?? []
+      const roots = moduleRules.filter((r) => r.parent_id === null)
+      const flattened: Rule[] = []
+
+      function traverse(rules: Rule[]): void {
+        for (const rule of rules) {
+          flattened.push(rule)
+          const ruleChildren = children.get(rule.id)
+          if (ruleChildren) traverse(ruleChildren)
+        }
+      }
+
+      traverse(roots)
+      result.set(module.id, flattened)
+    }
+
+    return result
   })
 
   const allIndexEntries = computed((): IndexEntry[] =>
@@ -111,7 +151,7 @@ export const useContentStore = defineStore('content', () => {
     const memo = new Map<string, boolean>()
 
     function hasContent(entry: IndexEntry): boolean {
-      const filteredRefs = (entry.relations?.rule_refs ?? []).filter((r) => ruleNums.has(r))
+      const filteredRefs = (entry.relations?.rule_refs ?? []).filter((r) => ruleNums.has(r) || r.includes('-'))
       const seeAlso = entry.relations?.see_also ?? []
       return !!(entry.definition || entry.notes || filteredRefs.length > 0 || seeAlso.length > 0)
     }
@@ -230,6 +270,7 @@ export const useContentStore = defineStore('content', () => {
     rulesById,
     rulesByNumber,
     childrenMap,
+    flattenedRulesByModule,
     allIndexEntries,
     indexEntriesByTerm,
     indexEntriesById,

@@ -19,6 +19,7 @@ const { canEdit } = useAuthorization()
 
 const systemId = computed(() => route.params['systemId'] as string)
 const ruleId = computed(() => route.params['ruleId'] as string)
+const toRuleId = computed(() => route.query['to'] as string | undefined)
 
 // ---------------------------------------------------------------------------
 // Derived state
@@ -27,6 +28,11 @@ const ruleId = computed(() => route.params['ruleId'] as string)
 const tocDepth = computed(() => systemStore.currentSystem?.config?.toc_depth ?? 0)
 
 const selectedRule = computed((): Rule | null => contentStore.rulesById.get(ruleId.value) ?? null)
+const toRule = computed((): Rule | null =>
+  toRuleId.value ? (contentStore.rulesById.get(toRuleId.value) ?? null) : null,
+)
+
+const isRangeMode = computed(() => !!toRuleId.value)
 
 const canEditRules = computed((): boolean => {
   if (!selectedRule.value) return false
@@ -34,7 +40,53 @@ const canEditRules = computed((): boolean => {
 })
 
 // ---------------------------------------------------------------------------
-// Segmented breadcrumb
+// Range validation and slice
+// ---------------------------------------------------------------------------
+
+interface RangeValidation {
+  valid: boolean
+  error?: string
+}
+
+const rangeValidation = computed((): RangeValidation => {
+  const from = selectedRule.value
+  const to = toRule.value
+
+  if (!from) return { valid: false, error: 'Rule not found.' }
+  if (!to) return { valid: false, error: `Range target rule not found.` }
+
+  if (from.module_id !== to.module_id) {
+    return { valid: false, error: 'Invalid range: both rules must belong to the same module.' }
+  }
+
+  const flattened = contentStore.flattenedRulesByModule.get(from.module_id) ?? []
+  const fromIndex = flattened.findIndex((r) => r.id === from.id)
+  const toIndex = flattened.findIndex((r) => r.id === to.id)
+
+  if (toIndex < fromIndex) {
+    return {
+      valid: false,
+      error: `Invalid range: ${to.number} comes before ${from.number} in document order.`,
+    }
+  }
+
+  return { valid: true }
+})
+
+const rulesInRange = computed((): Rule[] => {
+  const from = selectedRule.value
+  const to = toRule.value
+  if (!from || !to || !rangeValidation.value.valid) return []
+
+  const flattened = contentStore.flattenedRulesByModule.get(from.module_id) ?? []
+  const fromIndex = flattened.findIndex((r) => r.id === from.id)
+  const toIndex = flattened.findIndex((r) => r.id === to.id)
+
+  return flattened.slice(fromIndex, toIndex + 1)
+})
+
+// ---------------------------------------------------------------------------
+// Segmented breadcrumb (single-rule mode only)
 //
 // The rule number (e.g. "A.11.2.3.4") is split on "." into progressive prefixes.
 // Each prefix that resolves to a known rule becomes a clickable segment.
@@ -82,7 +134,7 @@ const showToc = computed(() => {
 })
 
 // ---------------------------------------------------------------------------
-// Navigation
+// Navigation — always navigates to single-rule view (drops ?to=)
 // ---------------------------------------------------------------------------
 
 function selectRule(rule: Rule): void {
@@ -102,7 +154,65 @@ watch(ruleId, () => {
 
 <template>
   <div ref="scrollEl" class="overflow-auto p-6 h-full">
-    <div v-if="selectedRule">
+
+    <!-- ------------------------------------------------------------------ -->
+    <!-- Range mode                                                           -->
+    <!-- ------------------------------------------------------------------ -->
+    <div v-if="isRangeMode">
+
+      <!-- Nav bar -->
+      <div class="flex items-center justify-between mb-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          class="-ml-2 h-7 text-xs text-muted-foreground hover:text-foreground gap-1.5"
+          @click="router.back()"
+        >
+          <ArrowLeft class="w-3.5 h-3.5" />
+          Back
+        </Button>
+
+        <span v-if="rangeValidation.valid && selectedRule && toRule" class="font-mono text-xs text-muted-foreground/60 mx-2">
+          {{ selectedRule.number }} – {{ toRule.number }}
+          <span class="ml-1">({{ rulesInRange.length }} rules)</span>
+        </span>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          class="-mr-2 h-7 text-xs text-muted-foreground hover:text-foreground gap-1.5"
+          @click="router.forward()"
+        >
+          Forward
+          <ArrowRight class="w-3.5 h-3.5" />
+        </Button>
+      </div>
+
+      <!-- Validation error -->
+      <p v-if="!rangeValidation.valid" class="text-destructive text-sm">
+        {{ rangeValidation.error }}
+      </p>
+
+      <!-- Rules in range -->
+      <div v-else>
+        <div v-for="rule in rulesInRange" :key="rule.id" class="mt-4">
+          <RuleDetailChildren
+            :rule="rule"
+            :children-map="contentStore.childrenMap"
+            :depth="rule.depth"
+            :toc-depth="tocDepth"
+            :can-edit="canEdit(rule.module_id)"
+            :standalone="true"
+            @select-rule="selectRule"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- ------------------------------------------------------------------ -->
+    <!-- Single-rule mode                                                     -->
+    <!-- ------------------------------------------------------------------ -->
+    <div v-else-if="selectedRule">
 
       <!-- Nav bar: Back | breadcrumb | Forward -->
       <div class="flex items-center justify-between mb-4">
@@ -164,5 +274,6 @@ watch(ruleId, () => {
     <div v-else class="text-muted-foreground text-sm">
       Rule not found.
     </div>
+
   </div>
 </template>

@@ -19,9 +19,11 @@ const emit = defineEmits<{ toggle: [id: string] }>()
 const appSettings = useAppSettingsStore()
 const contentStore = useContentStore()
 
-/** rule_refs filtered to rules that belong to active modules */
+/** rule_refs filtered to rules that belong to active modules, plus any ranges (which are always shown) */
 const filteredRuleRefs = computed((): string[] =>
-  (props.entry.relations?.rule_refs ?? []).filter((r) => contentStore.rulesByNumber.has(r)),
+  (props.entry.relations?.rule_refs ?? []).filter(
+    (r) => r.includes('-') || contentStore.rulesByNumber.has(r),
+  ),
 )
 
 /** Only show children that are visible (have content after module filtering) */
@@ -66,14 +68,20 @@ const expanded = computed(() => props.expandedIds.has(props.entry.id))
       v-html="renderContent(entry.notes, { acronymPopups: appSettings.acronymPopups })"
     />
 
-    <!-- rule_refs (filtered to active modules) -->
+    <!-- rule_refs (filtered to active modules; ranges always shown) -->
     <div v-if="filteredRuleRefs.length" class="mt-1 flex flex-wrap gap-1.5 items-center">
-      <a
-        v-for="ref in filteredRuleRefs"
-        :key="ref"
-        :data-rule-number="ref"
-        class="ml-2 font-mono text-xs text-primary underline decoration-dotted hover:text-primary/80 transition-colors cursor-pointer"
-      >{{ ref }}</a>
+      <template v-for="ref in filteredRuleRefs" :key="ref">
+        <a
+          v-if="ref.includes('-')"
+          :data-rule-range="ref"
+          class="ml-2 font-mono text-xs text-primary underline decoration-dotted hover:text-primary/80 transition-colors cursor-pointer"
+        >{{ ref }}</a>
+        <a
+          v-else
+          :data-rule-number="ref"
+          class="ml-2 font-mono text-xs text-primary underline decoration-dotted hover:text-primary/80 transition-colors cursor-pointer"
+        >{{ ref }}</a>
+      </template>
     </div>
 
     <!-- see_also -->

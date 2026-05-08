@@ -14,6 +14,8 @@ interface Props {
   depth: number
   tocDepth: number
   canEdit?: boolean
+  /** When true, children are not rendered. Used when the parent is managing child rendering externally (e.g. range mode). */
+  standalone?: boolean
 }
 
 const props = defineProps<Props>()
@@ -107,16 +109,18 @@ const childRules = computed((): Rule[] => props.childrenMap.get(props.rule.id) ?
   />
 
   <!-- Children -->
-  <div v-for="child in childRules" :key="child.id" class="mt-4">
-    <RuleDetailChildren
-      :rule="child"
-      :children-map="childrenMap"
-      :depth="depth + 1"
-      :toc-depth="tocDepth"
-      :can-edit="canEdit"
-      @select-rule="emit('selectRule', $event)"
-    />
-  </div>
+  <template v-if="!standalone">
+    <div v-for="child in childRules" :key="child.id" class="mt-4">
+      <RuleDetailChildren
+        :rule="child"
+        :children-map="childrenMap"
+        :depth="depth + 1"
+        :toc-depth="tocDepth"
+        :can-edit="canEdit"
+        @select-rule="emit('selectRule', $event)"
+      />
+    </div>
+  </template>
 
   <EditRuleDialog
     v-if="editingRule"

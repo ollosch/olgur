@@ -19,6 +19,7 @@ let showTimer: ReturnType<typeof setTimeout> | null = null
 
 // Registered by SystemView so the popup can navigate without knowing the store
 let navigateHandler: ((rule: Rule) => void) | null = null
+let navigateRangeHandler: ((fromRule: Rule, toRule: Rule) => void) | null = null
 let rulesMapRef: (() => Map<string, Rule>) | null = null
 let indexEntriesMapRef: (() => Map<string, IndexEntry>) | null = null
 
@@ -40,10 +41,12 @@ export function useRulePopup() {
     fn: (rule: Rule) => void,
     getRulesMap: () => Map<string, Rule>,
     getIndexEntriesMap?: () => Map<string, IndexEntry>,
+    navigateRange?: (fromRule: Rule, toRule: Rule) => void,
   ) {
     navigateHandler = fn
     rulesMapRef = getRulesMap
     if (getIndexEntriesMap) indexEntriesMapRef = getIndexEntriesMap
+    if (navigateRange) navigateRangeHandler = navigateRange
   }
 
   function navigateToNumber(number: string) {
@@ -51,6 +54,32 @@ export function useRulePopup() {
     if (rule) {
       state.value.visible = false
       navigateHandler?.(rule)
+    }
+  }
+
+  /**
+   * Navigate to a rule range given a range string like "B.28.5-B.28.5.3".
+   * The separator is the first "-" in the string.
+   */
+  function navigateToRange(rangeString: string) {
+    const separatorIndex = rangeString.indexOf('-')
+    if (separatorIndex === -1) {
+      navigateToNumber(rangeString)
+      return
+    }
+
+    const fromNumber = rangeString.slice(0, separatorIndex)
+    const toNumber = rangeString.slice(separatorIndex + 1)
+    const rulesMap = rulesMapRef?.() ?? new Map()
+    const fromRule = rulesMap.get(fromNumber)
+    const toRule = rulesMap.get(toNumber)
+
+    if (fromRule && toRule) {
+      state.value.visible = false
+      navigateRangeHandler?.(fromRule, toRule)
+    } else if (fromRule) {
+      state.value.visible = false
+      navigateHandler?.(fromRule)
     }
   }
 
@@ -68,6 +97,7 @@ export function useRulePopup() {
     keepOpen,
     registerNavigate,
     navigateToNumber,
+    navigateToRange,
     getRulesMap,
     getIndexEntriesMap,
   }

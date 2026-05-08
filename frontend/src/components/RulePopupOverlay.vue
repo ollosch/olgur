@@ -4,7 +4,7 @@ import { useRulePopup } from '@/composables/useRulePopup'
 import { renderContent } from '@/lib/renderContent'
 import { useAppSettingsStore } from '@/stores/appSettings'
 
-const { state, navigateToNumber } = useRulePopup()
+const { state, navigateToNumber, navigateToRange } = useRulePopup()
 const appSettings = useAppSettingsStore()
 
 const style = computed(() => ({
@@ -14,6 +14,12 @@ const style = computed(() => ({
 }))
 
 function onClick(e: MouseEvent) {
+  const rangeAnchor = (e.target as HTMLElement).closest<HTMLElement>('[data-rule-range]')
+  if (rangeAnchor) {
+    e.preventDefault()
+    navigateToRange(rangeAnchor.dataset['ruleRange'] ?? '')
+    return
+  }
   const anchor = (e.target as HTMLElement).closest<HTMLElement>('[data-rule-number]')
   if (!anchor) return
   e.preventDefault()
@@ -61,6 +67,12 @@ function onClick(e: MouseEvent) {
             <span class="font-medium text-foreground/80">See rules: </span>
             <template v-for="(ref, i) in state.content.entry.relations.rule_refs" :key="ref">
               <a
+                v-if="ref.includes('-')"
+                :data-rule-range="ref"
+                class="underline decoration-dotted cursor-pointer text-primary font-medium hover:text-primary/80 transition-colors"
+              >{{ ref }}</a>
+              <a
+                v-else
                 :data-rule-number="ref"
                 class="underline decoration-dotted cursor-pointer text-primary font-medium hover:text-primary/80 transition-colors"
               >{{ ref }}</a><span v-if="i < (state.content.entry.relations.rule_refs?.length ?? 0) - 1">, </span>

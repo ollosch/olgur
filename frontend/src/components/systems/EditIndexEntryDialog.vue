@@ -157,10 +157,10 @@ const onSubmit = handleSubmit(async (values) => {
     definition: values.definition,
     notes: values.notes,
     parent_id: values.parent_id ?? null,
-    relations: {
-      rule_refs: values.rule_refs ?? [],
-      see_also: values.see_also ?? [],
-    },
+      relations: {
+        rule_refs: values.rule_refs ?? [],
+        see_also: values.see_also ?? [],
+      },
   })
 
   if (apiErrors.value) {

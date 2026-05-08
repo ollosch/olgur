@@ -181,7 +181,12 @@ function getModuleRules(mod: Module): Rule[] {
 }
 
 useRuleDelegation(() => contentStore.rulesByNumber, selectRule, () => contentStore.indexEntriesByTerm)
-useRulePopup().registerNavigate(selectRule, () => contentStore.rulesByNumber, () => contentStore.indexEntriesByTerm)
+useRulePopup().registerNavigate(
+  selectRule,
+  () => contentStore.rulesByNumber,
+  () => contentStore.indexEntriesByTerm,
+  (fromRule, toRule) => router.push({ name: 'system-rule', params: { systemId: systemId.value, ruleId: fromRule.id }, query: { to: toRule.id } }),
+)
 </script>
 
 <template>

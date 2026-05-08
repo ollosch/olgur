@@ -24,6 +24,9 @@ export function renderContent(content: string, options?: { acronymPopups?: boole
         return `<span data-acronym-term="${escapeHtml(key)}" class="underline decoration-dotted cursor-help text-primary/80">${escapeHtml(key)}</span>`
       }
       if (prefix === 'L') {
+        if (key.includes('-')) {
+          return `<a data-rule-range="${escapeHtml(key)}" class="underline decoration-dotted cursor-pointer text-primary font-medium hover:text-primary/80 transition-colors">${escapeHtml(key)}</a>`
+        }
         return `<a data-rule-number="${escapeHtml(key)}" class="underline decoration-dotted cursor-pointer text-primary font-medium hover:text-primary/80 transition-colors">${escapeHtml(key)}</a>`
       }
       return escapeHtml(_match)

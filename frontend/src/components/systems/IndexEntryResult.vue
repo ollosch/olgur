@@ -31,7 +31,9 @@ const children = computed((): IndexEntry[] =>
 const hasChildren = computed(() => children.value.length > 0)
 
 function activeRuleRefs(entry: IndexEntry): string[] {
-  return (entry.relations?.rule_refs ?? []).filter((r) => contentStore.rulesByNumber.has(r))
+  return (entry.relations?.rule_refs ?? []).filter(
+    (r) => r.includes('-') || contentStore.rulesByNumber.has(r),
+  )
 }
 </script>
 
@@ -78,12 +80,18 @@ function activeRuleRefs(entry: IndexEntry): string[] {
       v-html="renderContent(entry.notes, { acronymPopups: appSettings.acronymPopups })"
     />
     <div v-if="activeRuleRefs(entry).length" class="mt-1 flex flex-wrap gap-1.5 items-center">
-      <a
-        v-for="ref in activeRuleRefs(entry)"
-        :key="ref"
-        :data-rule-number="ref"
-        class="ml-2 font-mono text-xs text-primary underline decoration-dotted hover:text-primary/80 transition-colors cursor-pointer"
-      >{{ ref }}</a>
+      <template v-for="ref in activeRuleRefs(entry)" :key="ref">
+        <a
+          v-if="ref.includes('-')"
+          :data-rule-range="ref"
+          class="ml-2 font-mono text-xs text-primary underline decoration-dotted hover:text-primary/80 transition-colors cursor-pointer"
+        >{{ ref }}</a>
+        <a
+          v-else
+          :data-rule-number="ref"
+          class="ml-2 font-mono text-xs text-primary underline decoration-dotted hover:text-primary/80 transition-colors cursor-pointer"
+        >{{ ref }}</a>
+      </template>
     </div>
     <div v-if="entry.relations?.see_also?.length" class="mt-1 flex flex-wrap gap-1.5 items-center">
       <span class="ml-2 text-xs text-muted-foreground">See also:</span>
