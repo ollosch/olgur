@@ -28,8 +28,9 @@ export function useGlobalShortcuts(): void {
       return
     }
 
-    // Single-key shortcuts — suppressed when blocked or in input
+    // Single-key shortcuts — suppressed when blocked, in input, or any modifier is held
     if (shortcutStore.shortcutsBlocked || isFocusInInput()) return
+    if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return
 
     switch (e.key) {
       case 'f':
