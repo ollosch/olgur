@@ -11,9 +11,11 @@ const contentStore = useContentStore()
 const search = ref('')
 const debouncedSearch = refDebounced(search, SEARCH_DEBOUNCE_MS)
 const activeLetter = ref<string | null>(null)
+const showNested = ref(false)
 
 watch(search, () => {
   activeLetter.value = null
+  showNested.value = false
 })
 
 const availableLetters = computed(() => {
@@ -27,7 +29,7 @@ const availableLetters = computed(() => {
   return [...set].sort()
 })
 
-/** Entries to display at the top level based on active filter */
+/** All matching entries in search mode */
 const filtered = computed(() => {
   const q = debouncedSearch.value.trim().toLowerCase()
   const visibleIds = contentStore.visibleIndexEntryIds
@@ -51,6 +53,20 @@ const filtered = computed(() => {
 
   return []
 })
+
+/** Root-only subset used in search mode */
+const rootResults = computed(() =>
+  debouncedSearch.value.trim() ? filtered.value.filter((e) => e.parent_id === null) : filtered.value,
+)
+
+/** Nested subset used in search mode */
+const nestedResults = computed(() =>
+  debouncedSearch.value.trim() ? filtered.value.filter((e) => e.parent_id !== null) : [],
+)
+
+const visibleResults = computed(() =>
+  showNested.value ? filtered.value : rootResults.value
+)
 
 function toggleLetter(letter: string): void {
   activeLetter.value = activeLetter.value === letter ? null : letter
@@ -77,16 +93,26 @@ function toggleLetter(letter: string): void {
     </div>
 
     <div class="flex-1 overflow-y-auto px-3 pb-3">
-      <div v-if="filtered.length === 0" class="text-xs text-muted-foreground py-4 text-center">
+      <div v-if="visibleResults.length === 0 && nestedResults.length === 0" class="text-xs text-muted-foreground py-4 text-center">
         <span v-if="search.trim() || activeLetter">No results.</span>
         <span v-else>Select a letter or search above.</span>
       </div>
 
       <!-- Flat search mode: show matches as-is (with parent prefix) -->
       <!-- Letter mode: show top-level entries starting with the selected letter -->
-      <template v-if="filtered.length > 0">
-        <IndexEntryResult v-for="entry in filtered" :key="entry.id" :entry="entry"
+      <template v-if="visibleResults.length > 0">
+        <IndexEntryResult v-for="entry in visibleResults" :key="entry.id" :entry="entry"
           @see-also-click="(t) => { search = t; activeLetter = null }" />
+      </template>
+
+      <!-- Expand nested results button (search mode only) -->
+      <template v-if="debouncedSearch.trim() && nestedResults.length > 0 && !showNested">
+        <button
+          class="mt-2 w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
+          @click="showNested = true"
+        >
+          Show {{ nestedResults.length }} nested result{{ nestedResults.length === 1 ? '' : 's' }}
+        </button>
       </template>
     </div>
   </div>
