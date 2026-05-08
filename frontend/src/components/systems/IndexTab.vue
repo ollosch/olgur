@@ -11,17 +11,19 @@ const contentStore = useContentStore()
 const search = ref('')
 const debouncedSearch = refDebounced(search, SEARCH_DEBOUNCE_MS)
 const activeLetter = ref<string | null>(null)
+const showAllRoots = ref(false)
 const showNested = ref(false)
 
 watch(search, () => {
   activeLetter.value = null
+  showAllRoots.value = false
   showNested.value = false
 })
 
 const availableLetters = computed(() => {
   const set = new Set<string>()
   for (const e of contentStore.allIndexEntries) {
-    if (e.parent_id !== null) continue // letters only for top-level terms
+    if (e.parent_id !== null) continue
     if (!contentStore.visibleIndexEntryIds.has(e.id)) continue
     const first = e.term.charAt(0).toUpperCase()
     if (first) set.add(first)
@@ -35,14 +37,12 @@ const filtered = computed(() => {
   const visibleIds = contentStore.visibleIndexEntryIds
 
   if (q) {
-    // Flat search — term only, single-letter restricted to exact match
     return contentStore.allIndexEntries
       .filter((e) => visibleIds.has(e.id) && rankMatchLower(e.term.toLowerCase(), q) < 3)
       .sort((a, b) => compareIndexEntries(a, b, q))
   }
 
   if (activeLetter.value) {
-    // Show only top-level entries for the active letter
     return contentStore.allIndexEntries.filter(
       (e) =>
         visibleIds.has(e.id) &&
@@ -54,19 +54,29 @@ const filtered = computed(() => {
   return []
 })
 
-/** Root-only subset used in search mode */
+const isSearchMode = computed(() => debouncedSearch.value.trim().length > 0)
+
+/** Root-only subset (search mode) or full filtered list (letter mode) */
 const rootResults = computed(() =>
-  debouncedSearch.value.trim() ? filtered.value.filter((e) => e.parent_id === null) : filtered.value,
+  isSearchMode.value ? filtered.value.filter((e) => e.parent_id === null) : filtered.value,
 )
 
-/** Nested subset used in search mode */
+/** Nested subset — only relevant in search mode */
 const nestedResults = computed(() =>
-  debouncedSearch.value.trim() ? filtered.value.filter((e) => e.parent_id !== null) : [],
+  isSearchMode.value ? filtered.value.filter((e) => e.parent_id !== null) : [],
 )
 
-const visibleResults = computed(() =>
-  showNested.value ? filtered.value : rootResults.value
+const RESULT_CAP = 50
+
+const visibleRoots = computed(() =>
+  showAllRoots.value ? rootResults.value : rootResults.value.slice(0, RESULT_CAP),
 )
+
+const hiddenRootsCount = computed(() =>
+  showAllRoots.value ? 0 : Math.max(0, rootResults.value.length - RESULT_CAP),
+)
+
+const visibleNested = computed(() => (showNested.value ? nestedResults.value : []))
 
 function toggleLetter(letter: string): void {
   activeLetter.value = activeLetter.value === letter ? null : letter
@@ -93,27 +103,39 @@ function toggleLetter(letter: string): void {
     </div>
 
     <div class="flex-1 overflow-y-auto px-3 pb-3">
-      <div v-if="visibleResults.length === 0 && nestedResults.length === 0" class="text-xs text-muted-foreground py-4 text-center">
+      <div v-if="visibleRoots.length === 0 && visibleNested.length === 0 && nestedResults.length === 0" class="text-xs text-muted-foreground py-4 text-center">
         <span v-if="search.trim() || activeLetter">No results.</span>
         <span v-else>Select a letter or search above.</span>
       </div>
 
-      <!-- Flat search mode: show matches as-is (with parent prefix) -->
-      <!-- Letter mode: show top-level entries starting with the selected letter -->
-      <template v-if="visibleResults.length > 0">
-        <IndexEntryResult v-for="entry in visibleResults" :key="entry.id" :entry="entry"
+      <!-- Root results -->
+      <IndexEntryResult v-for="entry in visibleRoots" :key="entry.id" :entry="entry"
+        @see-also-click="(t) => { search = t; activeLetter = null }" />
+
+      <!-- Show remaining root results -->
+      <button
+        v-if="hiddenRootsCount > 0"
+        class="w-full px-1 py-1.5 text-[11px] text-muted-foreground hover:text-foreground text-left transition-colors"
+        @click="showAllRoots = true"
+      >
+        {{ hiddenRootsCount }} more…
+      </button>
+
+      <!-- Nested results (once expanded) -->
+      <template v-if="visibleNested.length > 0">
+        <div class="border-t border-border/50 my-2" />
+        <IndexEntryResult v-for="entry in visibleNested" :key="entry.id" :entry="entry"
           @see-also-click="(t) => { search = t; activeLetter = null }" />
       </template>
 
-      <!-- Expand nested results button (search mode only) -->
-      <template v-if="debouncedSearch.trim() && nestedResults.length > 0 && !showNested">
-        <button
-          class="mt-2 w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
-          @click="showNested = true"
-        >
-          Show {{ nestedResults.length }} nested result{{ nestedResults.length === 1 ? '' : 's' }}
-        </button>
-      </template>
+      <!-- Show nested results button -->
+      <button
+        v-if="isSearchMode && nestedResults.length > 0 && !showNested"
+        class="w-full px-1 py-1.5 text-[11px] text-muted-foreground hover:text-foreground text-left transition-colors"
+        @click="showNested = true"
+      >
+        {{ nestedResults.length }} nested result{{ nestedResults.length === 1 ? '' : 's' }}…
+      </button>
     </div>
   </div>
 </template>
