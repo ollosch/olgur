@@ -39,6 +39,21 @@ export function rankMatch(field: string, q: string): number {
 }
 
 /**
+ * Ranks a rule against a search query.
+ * Number matches always beat title matches.
+ * 0 = number exact, 1 = number prefix, 2 = number contains,
+ * 3 = title exact, 4 = title prefix, 5 = title contains, 6 = no match.
+ */
+export function rankRule(rule: { number: string; title: string | null }, q: string): number {
+  const numRank = rankMatchLower(rule.number.toLowerCase(), q)
+  if (numRank < 3) return numRank
+  if (!rule.title) return 6
+  const titleRank = rankMatchLower(rule.title.toLowerCase(), q)
+  if (titleRank < 3) return titleRank + 3
+  return 6
+}
+
+/**
  * Comparator for IndexEntry search results.
  * Priority: root entries before nested, then match quality (exact → prefix → contains) within each group, then alphabetical.
  */

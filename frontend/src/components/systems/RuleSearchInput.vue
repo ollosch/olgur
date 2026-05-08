@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { useContentStore } from '@/stores/content'
 import type { Rule } from '@/types/domain'
-import { rankMatchLower } from '@/lib/utils'
+import { rankRule } from '@/lib/utils'
 
 import { Input } from '@/components/ui/input'
 
@@ -20,12 +20,6 @@ const emit = defineEmits<{
 const contentStore = useContentStore()
 const search = ref('')
 
-function rankRule(rule: Rule, q: string): number {
-  const numRank = rankMatchLower(rule.number.toLowerCase(), q)
-  if (numRank < 3) return numRank
-  if (q.length > 1 && rule.title.toLowerCase().includes(q)) return 2
-  return 3
-}
 
 const results = computed((): Rule[] => {
   const q = search.value.trim().toLowerCase()
@@ -36,7 +30,7 @@ const results = computed((): Rule[] => {
   return moduleRules
     .filter((r) => !props.excludedIds?.has(r.id) && !props.excludedNumbers?.has(r.number))
     .map((r) => ({ rule: r, rank: rankRule(r, q) }))
-    .filter((x) => x.rank < 3)
+    .filter((x) => x.rank < 6)
     .sort((a, b) => a.rank - b.rank || a.rule.number.localeCompare(b.rule.number))
     .map((x) => x.rule)
 })

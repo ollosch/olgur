@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/compone
 import { Search } from 'lucide-vue-next'
 import { useShortcutStore } from '@/stores/shortcut'
 import { useContentStore } from '@/stores/content'
-import { rankMatch, rankMatchLower, compareIndexEntries } from '@/lib/utils'
+import { rankMatchLower, compareIndexEntries, rankRule } from '@/lib/utils'
 import type { Rule, IndexEntry } from '@/types/domain'
 import IndexEntryResult from '@/components/systems/IndexEntryResult.vue'
 
@@ -72,8 +72,8 @@ const ruleResults = computed((): RuleResult[] => {
   if (!q) return []
   const results: RuleResult[] = []
   for (const rule of contentStore.allRules) {
-    const best = Math.min(rankMatch(rule.number, q), rankMatch(rule.title, q))
-    if (best < 3) results.push({ rule, rank: best })
+    const best = rankRule(rule, q)
+    if (best < 6) results.push({ rule, rank: best })
   }
   results.sort((a, b) => {
     if (a.rank !== b.rank) return a.rank - b.rank
