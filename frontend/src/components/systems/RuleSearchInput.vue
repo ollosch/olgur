@@ -23,7 +23,7 @@ const search = ref('')
 
 const results = computed((): Rule[] => {
   const q = search.value.trim().toLowerCase()
-  if (q.length < 3) return []
+  if (q.length < 1) return []
 
   const moduleRules = contentStore.rulesByModule[props.moduleId] ?? []
 
@@ -35,7 +35,7 @@ const results = computed((): Rule[] => {
     .map((x) => x.rule)
 })
 
-const showDropdown = computed(() => search.value.trim().length >= 3)
+const showDropdown = computed(() => search.value.trim().length >= 1)
 
 function select(rule: Rule): void {
   search.value = ''
