@@ -14,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Menu, MoreVertical, Search } from 'lucide-vue-next'
+import { Menu, MoreVertical, Search, Table2, ListOrdered } from 'lucide-vue-next'
 import LeftPanelContent from '@/components/systems/LeftPanelContent.vue'
 import ManageMembersDialog from '@/components/systems/ManageMembersDialog.vue'
 import type { Rule, Module } from '@/types/domain'
@@ -27,7 +27,13 @@ interface Props {
 }
 
 defineProps<Props>()
-const emit = defineEmits<{ select: [rule: Rule]; toggleModule: [id: string]; togglePin: [] }>()
+const emit = defineEmits<{
+  select: [rule: Rule]
+  toggleModule: [id: string]
+  togglePin: []
+  openTables: []
+  openSop: []
+}>()
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -73,16 +79,37 @@ async function logout(): Promise<void> {
       </span>
     </div>
 
-    <!-- Center: search trigger -->
-    <div class="flex-1 flex justify-center">
+    <!-- Center: search + nav buttons -->
+    <div class="flex-1 flex items-center justify-center gap-1">
+      <!-- Search -->
       <Button
-        variant="outline"
-        class="h-8 w-full max-w-xs text-xs text-muted-foreground justify-start gap-2 px-3"
+        variant="ghost"
+        size="icon"
+        class="w-8 h-8"
+        title="Search (⌘K)"
         @click="shortcutStore.overlayOpen = true"
       >
-        <Search class="w-3.5 h-3.5 shrink-0" />
-        <span>Search…</span>
-        <kbd class="ml-auto text-[10px] text-muted-foreground/60 font-mono">⌘K</kbd>
+        <Search class="w-4 h-4" />
+      </Button>
+
+      <!-- Tables -->
+      <Button
+        variant="ghost"
+        class="h-8 px-3 text-xs gap-1.5 text-muted-foreground"
+        @click="emit('openTables')"
+      >
+        <Table2 class="w-3.5 h-3.5" />
+        Tables
+      </Button>
+
+      <!-- SOP -->
+      <Button
+        variant="ghost"
+        class="h-8 px-3 text-xs gap-1.5 text-muted-foreground"
+        @click="emit('openSop')"
+      >
+        <ListOrdered class="w-3.5 h-3.5" />
+        SOP
       </Button>
     </div>
 

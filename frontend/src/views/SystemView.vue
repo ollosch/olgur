@@ -12,6 +12,8 @@ import type { Rule, Module } from '@/types/domain'
 
 import LeftPanelContent from '@/components/systems/LeftPanelContent.vue'
 import SystemHeader from '@/components/systems/SystemHeader.vue'
+import GameDataDrawer from '@/components/game-data/GameDataDrawer.vue'
+import type { DrawerMode } from '@/components/game-data/GameDataDrawer.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -188,6 +190,18 @@ useRulePopup().registerNavigate(
   () => contentStore.indexEntriesByTerm,
   (fromRule, toRule) => router.push({ name: 'system-rule', params: { systemId: systemId.value, ruleId: fromRule.id }, query: { to: toRule.id } }),
 )
+
+// ---------------------------------------------------------------------------
+// Game data drawer
+// ---------------------------------------------------------------------------
+
+const drawerOpen = ref(false)
+const drawerMode = ref<DrawerMode>('tables')
+
+function openDrawer(mode: DrawerMode): void {
+  drawerMode.value = mode
+  drawerOpen.value = true
+}
 </script>
 
 <template>
@@ -200,6 +214,8 @@ useRulePopup().registerNavigate(
       @select="selectRule"
       @toggle-module="toggleModule"
       @toggle-pin="togglePin"
+      @open-tables="openDrawer('tables')"
+      @open-sop="openDrawer('sop')"
     />
 
     <div
@@ -260,4 +276,10 @@ useRulePopup().registerNavigate(
       </div>
     </div>
   </div>
+
+  <!-- Game data drawer (slides in from right, does not affect layout) -->
+  <GameDataDrawer
+    v-model:open="drawerOpen"
+    v-model:mode="drawerMode"
+  />
 </template>
