@@ -196,10 +196,11 @@ final class ImportGame extends Command
             $indexCount = $this->importer->importIndexEntries($indexData, $coreModule->id, null);
             $this->info(sprintf('Imported %d index entries.', $indexCount));
 
-            // Import vehicles and ordnance if present in manifest
+            // Import vehicles, ordnance, and sop if present in manifest
             $gameDataTypes = [
                 'vehicles' => GameDataType::Vehicle,
                 'ordnance' => GameDataType::Ordnance,
+                'sop' => GameDataType::Sop,
             ];
 
             foreach ($gameDataTypes as $manifestKey => $gameDataType) {
@@ -225,8 +226,20 @@ final class ImportGame extends Command
                         ->delete();
                 }
 
-                /** @var array<int, array<string, mixed>> $gameDataItems */
-                $gameDataItems = $this->readJson($filePath) ?? [];
+                $rawData = $this->readJson($filePath);
+
+                // SOP is a single object — wrap it as one record with a known slug/name.
+                // All other game data types are arrays of items.
+                if ($gameDataType === GameDataType::Sop) {
+                    /** @var array<string, mixed> $sopObject */
+                    $sopObject = is_array($rawData) ? $rawData : [];
+                    $gameDataItems = [
+                        array_merge($sopObject, ['id' => 'asop', 'name' => 'Advanced Sequence of Play']),
+                    ];
+                } else {
+                    /** @var array<int, array<string, mixed>> $gameDataItems */
+                    $gameDataItems = is_array($rawData) ? $rawData : [];
+                }
 
                 $this->info(sprintf('Importing %s...', $manifestKey));
                 $count = $this->importer->importGameData($gameDataItems, $coreModule->id, $gameDataType);
