@@ -103,7 +103,8 @@ function footnoteClass(fn: AttributeFootnote): string {
             :key="col.id"
             class="border border-border px-2 py-1 text-center font-mono text-foreground"
           >
-            {{ row.cells[col.id]?.value ?? '' }}
+            <!-- eslint-disable-next-line vue/no-v-html -->
+            <span v-html="renderContent(row.cells[col.id]?.value ?? '')" />
             <sup
               v-if="(row.cells[col.id]?.markers ?? []).length > 0"
               class="text-[9px] ml-0.5 text-primary"
