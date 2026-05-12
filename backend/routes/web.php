@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\GameDatumController;
 use App\Http\Controllers\IndexEntryController;
 use App\Http\Controllers\MeController;
 use App\Http\Controllers\MembershipController;
@@ -37,6 +38,7 @@ Route::prefix('api')->group(function (): void {
                 ->except(['show']);
             Route::apiResource('systems.modules.rules', RuleController::class);
             Route::apiResource('systems.modules.index-entries', IndexEntryController::class);
+            Route::apiResource('systems.modules.game-data', GameDatumController::class);
             Route::apiResource('systems.modules.versions', ModuleVersionController::class)
                 ->only(['index', 'store', 'show']);
 
@@ -48,6 +50,8 @@ Route::prefix('api')->group(function (): void {
                 ->name('versions.rules');
             Route::get('/systems/{system}/modules/{module}/versions/{version}/index', [ModuleVersionFileController::class, 'index'])
                 ->name('versions.index');
+            Route::get('/systems/{system}/modules/{module}/versions/{version}/game-data', [ModuleVersionFileController::class, 'gameData'])
+                ->name('versions.game-data');
         });
     });
 
