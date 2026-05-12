@@ -50,4 +50,23 @@ final class ModuleVersionFileController
 
         return response()->json(json_decode($content, true));
     }
+
+    /**
+     * Serve the game data JSON file for a released module version.
+     */
+    public function gameData(System $system, Module $module, ModuleVersion $version): JsonResponse
+    {
+        Gate::authorize('viewAny', ModuleVersion::class);
+
+        abort_if($version->module_id !== $module->id, 404);
+
+        $path = sprintf('versions/%s/game-data.json', $version->id);
+
+        abort_unless(Storage::disk('local')->exists($path), 404);
+
+        /** @var string $content */
+        $content = Storage::disk('local')->get($path);
+
+        return response()->json(json_decode($content, true));
+    }
 }
