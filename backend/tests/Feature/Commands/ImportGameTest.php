@@ -872,3 +872,69 @@ test('missing ordnance file warns and continues without aborting', function () u
 
     removeGameDir($dir);
 });
+
+test('sop is imported when manifest has a sop key', function () use ($simpleGameRules): void {
+    $sop = [
+        'topics' => ['A' => 'Rally'],
+        'pre_game' => ['setup' => 'Place units'],
+        'phases' => [['name' => 'Rally Phase']],
+    ];
+
+    $dir = makeGameDir(
+        [
+            'name' => 'SOP Game',
+            'slug' => 'sop-game',
+            'modules' => [
+                ['type' => 'core', 'name' => 'Core', 'slug' => 'core', 'path' => 'rules.json'],
+            ],
+            'index' => 'idx.json',
+            'sop' => 'sop.json',
+        ],
+        [
+            'rules.json' => $simpleGameRules,
+            'idx.json' => [],
+            'sop.json' => $sop,
+        ]
+    );
+
+    artisan('import:game', ['path' => $dir])
+        ->assertSuccessful()
+        ->expectsOutputToContain('Imported 1 sop');
+
+    expect(GameDatum::query()->where('type', 'sop')->count())->toBe(1);
+    expect(GameDatum::query()->where('slug', 'sop-asop')->exists())->toBeTrue();
+
+    $datum = GameDatum::query()->where('slug', 'sop-asop')->first();
+    expect($datum->name)->toBe('Advanced Sequence of Play');
+
+    removeGameDir($dir);
+});
+
+test('--fresh flag deletes and reimports sop', function () use ($simpleGameRules): void {
+    $sop = ['topics' => [], 'pre_game' => [], 'phases' => []];
+
+    $dir = makeGameDir(
+        [
+            'name' => 'SOP Fresh Game',
+            'slug' => 'sop-fresh-game',
+            'modules' => [
+                ['type' => 'core', 'name' => 'Core', 'slug' => 'core', 'path' => 'rules.json'],
+            ],
+            'index' => 'idx.json',
+            'sop' => 'sop.json',
+        ],
+        [
+            'rules.json' => $simpleGameRules,
+            'idx.json' => [],
+            'sop.json' => $sop,
+        ]
+    );
+
+    artisan('import:game', ['path' => $dir])->assertSuccessful();
+    expect(GameDatum::query()->where('type', 'sop')->count())->toBe(1);
+
+    artisan('import:game', ['path' => $dir, '--fresh' => true])->assertSuccessful();
+    expect(GameDatum::query()->where('type', 'sop')->count())->toBe(1);
+
+    removeGameDir($dir);
+});
