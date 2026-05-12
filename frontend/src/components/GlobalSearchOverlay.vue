@@ -8,12 +8,17 @@ import { useContentStore } from '@/stores/content'
 import { rankMatchLower, compareIndexEntries, rankRule } from '@/lib/utils'
 import type { Rule, IndexEntry, GameDatum } from '@/types/domain'
 import IndexEntryResult from '@/components/systems/IndexEntryResult.vue'
+import { unitTypeLabel, unitNation } from '@/lib/unitUtils'
+import { useUnitSelectionStore } from '@/stores/unitSelection'
+import { useBottomPanelStore } from '@/stores/bottomPanel'
 
 const DEFAULT_CAP = 10
 const shortcutStore = useShortcutStore()
 const contentStore = useContentStore()
 const router = useRouter()
 const route = useRoute()
+const unitSelectionStore = useUnitSelectionStore()
+const bottomPanelStore = useBottomPanelStore()
 
 // Persistent state — survives open/close cycles
 const query = ref('')
@@ -160,53 +165,6 @@ const hasResults = computed(
     unitResults.value.length > 0,
 )
 
-// ── Actions ──────────────────────────────────────────────────────────────────
-
-// ── Unit type label mappings ──────────────────────────────────────────────────
-
-const VEHICLE_TYPE_LABELS: Record<string, string> = {
-  AFV: 'Armored Fighting Vehicle',
-  Tt: 'Light Tank',
-  HT: 'Half-track',
-  AC: 'Armored Car',
-  Tk: 'Tank',
-  Art: 'Artillery',
-  Arm: 'Armored',
-  Wgn: 'Wagon',
-  Tr: 'Truck',
-  Car: 'Car',
-  MC: 'Motorcycle',
-  Jeep: 'Jeep',
-  SPG: 'Self-Propelled Gun',
-  TD: 'Tank Destroyer',
-  AA: 'Anti-Aircraft Vehicle',
-}
-
-const ORDNANCE_TYPE_LABELS: Record<string, string> = {
-  MTR: 'Mortar',
-  AT: 'Anti-Tank Gun',
-  INF: 'Infantry Gun',
-  AA: 'Anti-Aircraft',
-  ART: 'Artillery',
-  RCL: 'Recoilless Rifle',
-  AAMG: 'AA Machine Gun',
-  AATK: 'AA Anti-Tank',
-  DC: 'Demolition Charge',
-}
-
-function unitTypeLabel(item: GameDatum): string {
-  const raw = (item.content['type'] as string | undefined) ?? item.type
-  if (item.type === 'vehicle') return VEHICLE_TYPE_LABELS[raw] ?? raw
-  if (item.type === 'ordnance') return ORDNANCE_TYPE_LABELS[raw] ?? raw
-  return raw
-}
-
-function unitNation(item: GameDatum): string {
-  const nation = item.content['nation'] as string | undefined
-  if (!nation) return ''
-  return nation.charAt(0).toUpperCase() + nation.slice(1)
-}
-
 function onQueryInput(): void {
   showAllRules.value = false
   showAllEntries.value = false
@@ -242,8 +200,10 @@ function selectGameDatum(item: GameDatum): void {
   shortcutStore.overlayOpen = false
 }
 
-function selectUnit(_item: GameDatum): void {
-  // TODO(Phase 4): Navigate to bottom-panel unit detail view instead of closing.
+function selectUnit(item: GameDatum): void {
+  unitSelectionStore.selectUnit(item)
+  bottomPanelStore.open()
+  bottomPanelStore.setActiveTab('unit-data')
   shortcutStore.overlayOpen = false
 }
 
