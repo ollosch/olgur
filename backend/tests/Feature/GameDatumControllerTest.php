@@ -346,3 +346,59 @@ test('system admin can create a game datum', function (): void {
     postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/game-data', ['type' => 'table', 'slug' => 'ift', 'name' => 'Infantry Fire Table', 'content' => ['rows' => []]])
         ->assertCreated();
 });
+
+test('module subscriber can view a single game datum', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $gameDatum = GameDatum::factory()->for($module)->create();
+    Subscription::factory()->for($user)->for($module)->create();
+
+    actingAs($user);
+
+    getJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/game-data/'.$gameDatum->id)
+        ->assertSuccessful()
+        ->assertJsonPath('data.id', $gameDatum->id);
+});
+
+test('system admin can view a single game datum', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $gameDatum = GameDatum::factory()->for($module)->create();
+    Membership::factory()->for($user)->for($system)->admin()->create();
+
+    actingAs($user);
+
+    getJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/game-data/'.$gameDatum->id)
+        ->assertSuccessful()
+        ->assertJsonPath('data.id', $gameDatum->id);
+});
+
+test('module editor can update a game datum', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $gameDatum = GameDatum::factory()->for($module)->create(['type' => GameDataType::Sop, 'slug' => 'asop-editor']);
+    Subscription::factory()->for($user)->for($module)->editor()->create();
+
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/game-data/'.$gameDatum->id, ['content' => ['updated' => true]])
+        ->assertSuccessful();
+});
+
+test('module editor can delete a game datum', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $gameDatum = GameDatum::factory()->for($module)->create();
+    Subscription::factory()->for($user)->for($module)->editor()->create();
+
+    actingAs($user);
+
+    deleteJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/game-data/'.$gameDatum->id)
+        ->assertNoContent();
+
+    assertDatabaseMissing('game_data', ['id' => $gameDatum->id]);
+});
