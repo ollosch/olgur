@@ -352,13 +352,13 @@ function openDrawer(mode: DrawerMode): void {
           <!-- Bottom panel -->
           <BottomPanel />
         </div>
+
+        <!-- Right panel (pinned inline or sheet overlay) -->
+        <GameDataDrawer
+          v-model:open="drawerOpen"
+          v-model:mode="drawerMode"
+        />
       </div>
     </div>
   </div>
-
-  <!-- Game data drawer (slides in from right, does not affect layout) -->
-  <GameDataDrawer
-    v-model:open="drawerOpen"
-    v-model:mode="drawerMode"
-  />
 </template>
