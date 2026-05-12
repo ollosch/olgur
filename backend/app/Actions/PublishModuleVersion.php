@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Actions;
 
+use App\Models\GameDatum;
+use App\Models\GameDatumVersion;
 use App\Models\IndexEntry;
 use App\Models\IndexEntryVersion;
 use App\Models\Module;
@@ -18,7 +20,7 @@ use Illuminate\Support\Str;
 
 final class PublishModuleVersion
 {
-    public function execute(Module $module, User $releasedBy, string $version, ?string $notes = null): ModuleVersion
+    public function execute(Module $module, User $releasedBy, string $version, string $notes = ''): ModuleVersion
     {
         $version = DB::transaction(function () use ($module, $releasedBy, $version, $notes): ModuleVersion {
 
@@ -32,6 +34,7 @@ final class PublishModuleVersion
 
             $this->publishRules($module, $moduleVersion);
             $this->publishIndex($module, $moduleVersion);
+            $this->publishGameData($module, $moduleVersion);
 
             return $moduleVersion;
         });
@@ -116,6 +119,19 @@ final class PublishModuleVersion
         }
     }
 
+    private function publishGameData(Module $module, ModuleVersion $version): void
+    {
+        $module->gameData()->cursor()->map(fn (GameDatum $gameDatum): array => [
+            'id' => Str::lower((string) Str::ulid()),
+            'game_datum_id' => $gameDatum->id,
+            'module_version_id' => $version->id,
+            'type' => $gameDatum->type->value,
+            'slug' => $gameDatum->slug,
+            'name' => $gameDatum->name,
+            'content' => json_encode($gameDatum->content),
+        ])->chunk(500)->each(fn (LazyCollection $chunk) => GameDatumVersion::query()->insert($chunk->values()->all()));
+    }
+
     /**
      * @param  array<string, string>  $parentMap  Map of version_id => parent_version_id
      */
@@ -176,6 +192,25 @@ final class PublishModuleVersion
         Storage::disk('local')->put(
             sprintf('versions/%s/index.json', $version->id),
             (string) json_encode($indexEntries, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+        );
+
+        $gameData = GameDatumVersion::query()
+            ->where('module_version_id', $version->id)
+            ->get()
+            ->map(fn (GameDatumVersion $gdv): array => [
+                'id' => $gdv->id,
+                'game_datum_id' => $gdv->game_datum_id,
+                'module_version_id' => $gdv->module_version_id,
+                'type' => $gdv->type->value,
+                'name' => $gdv->name,
+                'slug' => $gdv->slug,
+                'content' => $gdv->content,
+            ])
+            ->all();
+
+        Storage::disk('local')->put(
+            sprintf('versions/%s/game-data.json', $version->id),
+            (string) json_encode($gameData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
         );
     }
 }
