@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onBeforeUnmount } from 'vue'
 import { useContentStore } from '@/stores/content'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -29,6 +29,61 @@ const emit = defineEmits<{
 }>()
 
 const contentStore = useContentStore()
+
+// ── Right panel resize ────────────────────────────────────────────────────────
+
+const RIGHT_WIDTH_KEY = 'panel-right-width'
+const RIGHT_DEFAULT = 600
+const RIGHT_MIN = 320
+const RIGHT_MAX = 1200
+
+function loadRightWidth(): number {
+  const stored = localStorage.getItem(RIGHT_WIDTH_KEY)
+  if (!stored) return RIGHT_DEFAULT
+  const parsed = parseInt(stored, 10)
+  return isNaN(parsed) ? RIGHT_DEFAULT : parsed
+}
+
+const drawerWidth = ref(loadRightWidth())
+
+const drawerStyle = computed(() => ({
+  width: `min(90vw, ${drawerWidth.value}px)`,
+  maxWidth: 'none',
+}))
+
+const isDragging = ref(false)
+let dragStartX = 0
+let dragStartWidth = 0
+
+function onDragStart(e: PointerEvent): void {
+  isDragging.value = true
+  dragStartX = e.clientX
+  dragStartWidth = drawerWidth.value
+  document.addEventListener('pointermove', onDragMove)
+  document.addEventListener('pointerup', onDragEnd)
+  document.body.style.userSelect = 'none'
+  document.body.style.cursor = 'ew-resize'
+}
+
+function onDragMove(e: PointerEvent): void {
+  if (!isDragging.value) return
+  const delta = dragStartX - e.clientX
+  drawerWidth.value = Math.max(RIGHT_MIN, Math.min(dragStartWidth + delta, RIGHT_MAX))
+}
+
+function onDragEnd(): void {
+  isDragging.value = false
+  localStorage.setItem(RIGHT_WIDTH_KEY, String(drawerWidth.value))
+  document.removeEventListener('pointermove', onDragMove)
+  document.removeEventListener('pointerup', onDragEnd)
+  document.body.style.userSelect = ''
+  document.body.style.cursor = ''
+}
+
+onBeforeUnmount(() => {
+  document.removeEventListener('pointermove', onDragMove)
+  document.removeEventListener('pointerup', onDragEnd)
+})
 
 // ── Data: real store data falling back to fake data ──────────────────────────
 
@@ -76,8 +131,16 @@ function sopContent(item: GameDatum | typeof fakeSops[number]): SopContent | nul
   <Sheet :open="props.open" @update:open="emit('update:open', $event)">
     <SheetContent
       side="right"
-      class="w-[min(90vw,860px)] sm:max-w-none flex flex-col p-0 gap-0"
+      class="sm:max-w-none flex flex-col p-0 gap-0"
+      :style="drawerStyle"
     >
+      <!-- Left edge resize handle -->
+      <div
+        class="absolute top-0 left-0 w-1 h-full cursor-ew-resize hover:bg-primary/30 transition-colors z-10"
+        :class="isDragging ? 'bg-primary/40' : ''"
+        @pointerdown="onDragStart"
+      />
+
       <SheetHeader class="shrink-0 border-b border-border px-4 py-0 flex-row items-center gap-0 space-y-0 h-[53px]">
         <!-- Mode tabs: Tables / SOP -->
         <div class="flex items-center gap-1">

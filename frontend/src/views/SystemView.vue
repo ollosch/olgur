@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
+import { computed, onBeforeUnmount, onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppSettingsStore } from '@/stores/appSettings'
 import { useContentStore } from '@/stores/content'
@@ -13,6 +13,7 @@ import type { Rule, Module } from '@/types/domain'
 import LeftPanelContent from '@/components/systems/LeftPanelContent.vue'
 import SystemHeader from '@/components/systems/SystemHeader.vue'
 import GameDataDrawer from '@/components/game-data/GameDataDrawer.vue'
+import BottomPanel from '@/components/layout/BottomPanel.vue'
 import type { DrawerMode } from '@/components/game-data/GameDataDrawer.vue'
 
 const route = useRoute()
@@ -25,6 +26,63 @@ const historyStore = useHistoryStore()
 
 const systemId = computed(() => route.params['systemId'] as string)
 const loading = ref(true)
+
+// ---------------------------------------------------------------------------
+// Left panel resize
+// ---------------------------------------------------------------------------
+
+const LEFT_WIDTH_KEY = 'panel-left-width'
+const LEFT_DEFAULT = 288
+const LEFT_MIN = 200
+const LEFT_MAX = 480
+
+function loadLeftWidth(): number {
+  const stored = localStorage.getItem(LEFT_WIDTH_KEY)
+  if (!stored) return LEFT_DEFAULT
+  const parsed = parseInt(stored, 10)
+  return isNaN(parsed) ? LEFT_DEFAULT : parsed
+}
+
+const leftPanelWidth = ref(loadLeftWidth())
+
+const leftPanelStyle = computed(() => ({
+  width: `${leftPanelWidth.value}px`,
+  minWidth: `${leftPanelWidth.value}px`,
+}))
+
+const leftDragging = ref(false)
+let leftDragStartX = 0
+let leftDragStartWidth = 0
+
+function onLeftDragStart(e: PointerEvent): void {
+  leftDragging.value = true
+  leftDragStartX = e.clientX
+  leftDragStartWidth = leftPanelWidth.value
+  document.addEventListener('pointermove', onLeftDragMove)
+  document.addEventListener('pointerup', onLeftDragEnd)
+  document.body.style.userSelect = 'none'
+  document.body.style.cursor = 'ew-resize'
+}
+
+function onLeftDragMove(e: PointerEvent): void {
+  if (!leftDragging.value) return
+  const delta = e.clientX - leftDragStartX
+  leftPanelWidth.value = Math.max(LEFT_MIN, Math.min(leftDragStartWidth + delta, LEFT_MAX))
+}
+
+function onLeftDragEnd(): void {
+  leftDragging.value = false
+  localStorage.setItem(LEFT_WIDTH_KEY, String(leftPanelWidth.value))
+  document.removeEventListener('pointermove', onLeftDragMove)
+  document.removeEventListener('pointerup', onLeftDragEnd)
+  document.body.style.userSelect = ''
+  document.body.style.cursor = ''
+}
+
+onBeforeUnmount(() => {
+  document.removeEventListener('pointermove', onLeftDragMove)
+  document.removeEventListener('pointerup', onLeftDragEnd)
+})
 
 // ---------------------------------------------------------------------------
 // System loading
@@ -226,53 +284,74 @@ function openDrawer(mode: DrawerMode): void {
     </div>
 
     <!-- Two-panel layout -->
-    <div v-else class="flex-1 flex overflow-hidden" style="height: calc(100vh - 53px)">
-      <!-- Left panel -->
-      <div :class="['w-72 border-r border-border shrink-0 h-full flex-col', appSettings.sidebarPinned ? 'flex' : 'hidden md:flex']">
-        <LeftPanelContent
-          :expanded-modules="panelStore.expandedModuleIds"
-          :selected-rule="selectedRule"
-          :pinned="appSettings.sidebarPinned"
-          :get-module-rules="getModuleRules"
-          :build-top-level-rules="buildTopLevelRules"
-          @toggle-module="toggleModule"
-          @select="selectRule"
-          @toggle-pin="togglePin"
-        />
-      </div>
+    <div
+      v-else
+      class="flex-1 flex flex-col overflow-hidden"
+      :style="{ height: 'calc(100vh - 53px)' }"
+    >
+      <div class="flex flex-1 overflow-hidden relative">
+        <!-- Left panel -->
+        <div
+          :class="['border-r border-border shrink-0 h-full flex-col relative', appSettings.sidebarPinned ? 'flex' : 'hidden md:flex']"
+          :style="leftPanelStyle"
+        >
+          <LeftPanelContent
+            :expanded-modules="panelStore.expandedModuleIds"
+            :selected-rule="selectedRule"
+            :pinned="appSettings.sidebarPinned"
+            :get-module-rules="getModuleRules"
+            :build-top-level-rules="buildTopLevelRules"
+            @toggle-module="toggleModule"
+            @select="selectRule"
+            @toggle-pin="togglePin"
+          />
+          <!-- Left panel resize handle -->
+          <div
+            class="absolute top-0 right-0 w-1 h-full cursor-ew-resize hover:bg-primary/30 transition-colors z-10"
+            :class="leftDragging ? 'bg-primary/40' : ''"
+            @pointerdown="onLeftDragStart"
+          />
+        </div>
 
-      <!-- Right panel: child route content or top-level TOC -->
-      <div class="flex-1 overflow-hidden">
-        <RouterView v-slot="{ Component }">
-          <component :is="Component" v-if="Component" />
+        <!-- Main area (shrinks when bottom panel is pinned) -->
+        <div class="flex-1 flex flex-col overflow-hidden relative">
+          <!-- Rule content -->
+          <div class="flex-1 overflow-hidden">
+            <RouterView v-slot="{ Component }">
+              <component :is="Component" v-if="Component" />
 
-          <!-- Top-level TOC: shown when no child route is active -->
-          <div v-else class="overflow-auto p-6 h-full">
-            <template v-for="mod in contentStore.activeModules" :key="mod.id">
-              <div
-                v-if="buildTopLevelRules(getModuleRules(mod)).length > 0"
-                class="mb-8"
-              >
-                <h2 class="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
-                  {{ mod.name }}
-                </h2>
-                <button
-                  v-for="rule in buildTopLevelRules(getModuleRules(mod))"
-                  :key="rule.id"
-                  class="w-full flex items-baseline gap-3 px-3 py-2.5 rounded-md hover:bg-muted/40 transition-colors text-left group"
-                  @click="selectRule(rule)"
-                >
-                  <span class="font-mono text-sm text-primary font-semibold shrink-0 w-16 text-right">
-                    {{ rule.number }}
-                  </span>
-                  <span class="text-foreground/90 text-sm group-hover:text-foreground transition-colors">
-                    {{ rule.title }}
-                  </span>
-                </button>
+              <!-- Top-level TOC: shown when no child route is active -->
+              <div v-else class="overflow-auto p-6 h-full">
+                <template v-for="mod in contentStore.activeModules" :key="mod.id">
+                  <div
+                    v-if="buildTopLevelRules(getModuleRules(mod)).length > 0"
+                    class="mb-8"
+                  >
+                    <h2 class="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+                      {{ mod.name }}
+                    </h2>
+                    <button
+                      v-for="rule in buildTopLevelRules(getModuleRules(mod))"
+                      :key="rule.id"
+                      class="w-full flex items-baseline gap-3 px-3 py-2.5 rounded-md hover:bg-muted/40 transition-colors text-left group"
+                      @click="selectRule(rule)"
+                    >
+                      <span class="font-mono text-sm text-primary font-semibold shrink-0 w-16 text-right">
+                        {{ rule.number }}
+                      </span>
+                      <span class="text-foreground/90 text-sm group-hover:text-foreground transition-colors">
+                        {{ rule.title }}
+                      </span>
+                    </button>
+                  </div>
+                </template>
               </div>
-            </template>
+            </RouterView>
           </div>
-        </RouterView>
+
+          <!-- Bottom panel -->
+          <BottomPanel />
+        </div>
       </div>
     </div>
   </div>
