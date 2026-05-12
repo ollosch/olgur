@@ -32,6 +32,7 @@ export interface SystemConfig {
   sort_rules_by: 'number' | 'sort_order'
   toc_depth: number
   cover_image: string | null
+  asop_disabled_topics?: string[]
 }
 
 export interface System {
