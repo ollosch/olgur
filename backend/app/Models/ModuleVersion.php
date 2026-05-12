@@ -82,12 +82,4 @@ final class ModuleVersion extends Model
     {
         return $this->hasMany(IndexEntryVersion::class);
     }
-
-    /**
-     * @return HasMany<GameDatumVersion, $this>
-     */
-    public function gameDatumVersions(): HasMany
-    {
-        return $this->hasMany(GameDatumVersion::class);
-    }
 }
