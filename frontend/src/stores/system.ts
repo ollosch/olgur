@@ -82,6 +82,26 @@ export const useSystemStore = defineStore('system', () => {
     }
   }
 
+  async function updateSystem(
+    systemId: string,
+    data: Partial<{ name: string; description: string | null; config: Partial<import('@/types/domain').SystemConfig> }>,
+  ) {
+    const system = currentSystem.value ?? systems.value.find((s) => s.id === systemId)
+    const payload = {
+      slug: system?.slug ?? '',
+      name: system?.name ?? '',
+      description: system?.description ?? '',
+      ...data,
+    }
+    const result = await put<ApiResource<System>, typeof payload>(`/systems/${systemId}`, payload)
+    if (result) {
+      currentSystem.value = result.data
+      const idx = systems.value.findIndex((s) => s.id === systemId)
+      if (idx !== -1) systems.value[idx] = result.data
+    }
+    return result?.data ?? null
+  }
+
   // ── Membership / subscription bootstrap (home view) ─────────────────────────
   const initialized = ref(false)
 
@@ -327,6 +347,7 @@ export const useSystemStore = defineStore('system', () => {
     fetchSystems,
     createSystem,
     deleteSystem,
+    updateSystem,
     // bootstrap
     init,
     initialized,

@@ -48,20 +48,20 @@ const content = computed((): TableContent | null => {
 
       <div v-if="content">
         <MatrixTable
-          v-if="content.kind === 'matrix'"
-          :content="content"
+          v-if="gameDatum.type === 'table' && (content as MatrixContent).cells !== undefined"
+          :content="(content as MatrixContent)"
         />
         <AttributeTable
-          v-else-if="content.kind === 'attribute_table'"
-          :content="content"
+          v-else-if="gameDatum.type === 'table' && (content as AttributeTableContent).rows !== undefined"
+          :content="(content as AttributeTableContent)"
         />
         <ModifierList
-          v-else-if="content.kind === 'modifier_list'"
-          :content="content"
+          v-else-if="gameDatum.type === 'table' && (content as ModifierListContent).entries !== undefined"
+          :content="(content as ModifierListContent)"
         />
         <SopViewer
-          v-else-if="content.kind === 'sop'"
-          :content="content"
+          v-else-if="gameDatum.type === 'sop'"
+          :content="(content as SopContent)"
         />
         <div v-else class="text-sm text-muted-foreground italic">
           Unknown table kind.

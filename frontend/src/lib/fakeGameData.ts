@@ -112,151 +112,94 @@ export const fakeMoraleModifiers: ModifierListContent = {
 }
 
 export const fakeSop: SopContent = {
-  kind: 'sop',
-  title: 'Sequence of Play',
+  topics: {
+    groups: [
+      {
+        slug: 'night',
+        label: 'Night',
+        ref: 'E1',
+        topics: [],
+      },
+      {
+        slug: 'pacific-theatre',
+        label: 'Pacific Theatre',
+        ref: 'G',
+        topics: [
+          { slug: 'japanese', label: 'The Japanese', ref: 'G1' },
+          { slug: 'us-marine', label: 'US Marines', ref: 'G14' },
+        ],
+      },
+    ],
+  },
+  pre_game: {
+    segments: [
+      { mpath: '0.1', player: 'B', runs: [{ text: 'Set up scenario forces per scenario special rules.', tags: [] }] },
+    ],
+  },
   phases: [
     {
-      id: 'rally',
+      slug: 'rally-phase',
       label: 'Rally Phase',
-      sections: [
+      steps: [
         {
-          id: 'rally-start',
-          label: 'Start',
-          steps: [
-            { id: 'rally-s1', label: 'Remove Prep Fire markers', clauses: [{ text: 'Both sides remove all Prep Fire (PF) markers from their units.' }] },
+          slug: 'start-of-rph',
+          label: 'Start of RPh',
+          segments: [
+            { mpath: '1.1', player: 'B', runs: [{ text: 'Remove all Prep Fire (PF) markers from units of both sides.', tags: [] }] },
           ],
         },
         {
-          id: 'rally-during',
-          label: 'During',
-          steps: [
-            { id: 'rally-d1', label: 'Repair / Recover SW', clauses: [{ text: 'Attempt to repair Malfunctioned SW (A9.72) or recover SW from adjacent hex.' }] },
+          slug: 'during-rph',
+          label: 'During RPh',
+          segments: [
+            { mpath: '1.2', player: 'A', runs: [{ text: 'Attempt to repair Malfunctioned SW or recover SW from adjacent hex.', tags: [] }] },
             {
-              id: 'rally-d2', label: 'Rally broken units', clauses: [
-                { text: 'Roll for each broken unit: ≤ current morale → rallied; place upright.' },
-                { text: 'Wounded leader DRM −1 applies to self-rally only.', tag: 'leader' },
+              mpath: '1.3', player: 'A', runs: [
+                { text: 'Roll for each broken unit: ≤ current morale → rallied.', tags: [] },
+                { text: ' Japanese fanatic units add +2 DRM.', tags: ['japanese'] },
               ]
             },
             {
-              id: 'rally-d3', label: 'Self-rally', clauses: [
-                { text: 'Heroic / 1st-line unit with no leader: attempt self-rally at −1 DRM.' },
-              ]
-            },
-          ],
-        },
-        {
-          id: 'rally-end',
-          label: 'End',
-          steps: [
-            { id: 'rally-e1', label: 'Remove Desperation Morale markers', clauses: [{ text: 'Remove DM markers from rallied units.' }] },
-          ],
-        },
-      ],
-    },
-    {
-      id: 'prep',
-      label: 'Prep Fire Phase (Phasing)',
-      sections: [
-        {
-          id: 'prep-during',
-          label: 'During',
-          steps: [
-            { id: 'prep-d1', label: 'Declare Prep Fire', clauses: [{ text: 'Phasing player fires any non-moving units (place PF marker).' }] },
-            { id: 'prep-d2', label: 'Resolve fire', clauses: [{ text: 'Roll IFT / TH / TK as appropriate. Apply results immediately.' }] },
-          ],
-        },
-      ],
-    },
-    {
-      id: 'movement',
-      label: 'Movement Phase (Phasing)',
-      sections: [
-        {
-          id: 'movement-start',
-          label: 'Start',
-          steps: [
-            { id: 'move-s1', label: 'Place Opportunity Fire markers', clauses: [{ text: 'Non-phasing player declares which units will use Opportunity Fire (optional).' }] },
-          ],
-        },
-        {
-          id: 'movement-during',
-          label: 'During',
-          steps: [
-            { id: 'move-d1', label: 'Move units', clauses: [{ text: 'Spend MF/MP to enter hexes. Announce each move before executing.' }] },
-            { id: 'move-d2', label: 'Defensive First Fire', clauses: [{ text: 'Non-phasing player may fire at any point in a unit\'s movement.' }] },
-            {
-              id: 'move-d3', label: 'Advance into Melee', clauses: [
-                { text: 'Phasing units may advance into a hex containing enemy units (melee declared).' },
+              mpath: '1.4', player: 'A', runs: [
+                { text: 'Night rally: ELR check applies.', tags: ['night'] },
               ]
             },
           ],
         },
-      ],
-    },
-    {
-      id: 'defensive-fire',
-      label: 'Defensive Fire Phase (Non-Phasing)',
-      sections: [
         {
-          id: 'def-fire-during',
-          label: 'During',
-          steps: [
-            { id: 'def-d1', label: 'Final Protective Fire', clauses: [{ text: 'Non-phasing player fires at units that moved adjacent (FPF at +1 DRM).' }] },
-            { id: 'def-d2', label: 'Residual Fire', clauses: [{ text: 'Place residual fire counter for any ROF fire that did not retain ROF.' }] },
+          slug: 'end-of-rph',
+          label: 'End of RPh',
+          segments: [
+            { mpath: '1.9', player: 'B', runs: [{ text: 'Remove DM markers from all rallied units.', tags: [] }] },
           ],
         },
       ],
     },
     {
-      id: 'advancing-fire',
-      label: 'Advancing Fire Phase (Phasing)',
-      sections: [
+      slug: 'prep-fire-phase',
+      label: 'Prep Fire Phase',
+      steps: [
         {
-          id: 'adv-fire-during',
-          label: 'During',
-          steps: [
-            { id: 'adv-d1', label: 'Advancing Fire', clauses: [{ text: 'Phasing units that moved may fire at half FP (round down). Cannot generate Prep Fire marker.' }] },
+          slug: 'during-pfph',
+          label: 'During PFPh',
+          segments: [
+            { mpath: '2.1', player: 'A', runs: [{ text: 'Phasing player fires any non-moving units; place PF marker.', tags: [] }] },
+            { mpath: '2.2', player: 'A', runs: [{ text: 'Resolve fire on IFT / TH / TK as appropriate. Apply results immediately.', tags: [] }] },
           ],
         },
       ],
     },
     {
-      id: 'rout',
-      label: 'Rout Phase',
-      sections: [
+      slug: 'movement-phase',
+      label: 'Movement Phase',
+      sniper: true,
+      steps: [
         {
-          id: 'rout-during',
-          label: 'During',
-          steps: [
-            { id: 'rout-d1', label: 'Rout broken units', clauses: [{ text: 'Broken units must rout toward nearest friendly map edge if possible.' }] },
-            { id: 'rout-d2', label: 'Elimination', clauses: [{ text: 'Broken units that cannot rout and are adjacent to Good Order enemy are eliminated.' }] },
-          ],
-        },
-      ],
-    },
-    {
-      id: 'advance',
-      label: 'Advance Phase (Phasing)',
-      sections: [
-        {
-          id: 'advance-during',
-          label: 'During',
-          steps: [
-            { id: 'adv-p1', label: 'Advance', clauses: [{ text: 'Phasing Good Order units may advance one hex (no opportunity fire permitted).' }] },
-          ],
-        },
-      ],
-    },
-    {
-      id: 'close-combat',
-      label: 'Close Combat Phase',
-      sections: [
-        {
-          id: 'cc-during',
-          label: 'During',
-          steps: [
-            { id: 'cc-d1', label: 'Resolve Melee', clauses: [{ text: 'Roll CCT for each hex containing both sides\' units. Ambush check first.' }] },
-            { id: 'cc-d2', label: 'Capture / Withdraw', clauses: [{ text: 'Surviving non-phasing units may withdraw one hex if no melee remains.' }] },
+          slug: 'during-mph',
+          label: 'During MPh',
+          segments: [
+            { mpath: '3.1', player: 'A', runs: [{ text: 'Spend MF/MP to enter hexes. Announce each move before executing.', tags: [] }] },
+            { mpath: '3.2', player: 'D', runs: [{ text: 'Non-phasing player may fire Defensive First Fire at any point in a unit\'s movement.', tags: [] }] },
           ],
         },
       ],

@@ -1,133 +1,488 @@
 <script setup lang="ts">
-/**
- * SopViewer — renders a Sequence of Play.
- *
- * The JSON schema is NOT yet finalised. This component uses a provisional
- * structure that matches the agreed description from HANDOFF.md:
- *
- *   Phase → Section (start/during/end) → Step → Clauses
- *
- * Tags live at the clause level. A step with all clauses filtered out is hidden.
- * Update this component once the real schema is confirmed.
- */
+import { ref, computed, watch } from 'vue'
+import { useSystemStore } from '@/stores/system'
+import ScrollArea from '@/components/ui/scroll-area/ScrollArea.vue'
 
-export interface SopClause {
+// ── Schema types ────────────────────────────────────────────────────────────
+
+export interface SopRun {
   text: string
-  tag?: string
+  tags: string[]
+}
+
+export interface SopSegment {
+  mpath?: string
+  player?: 'A' | 'D' | 'B' | null
+  runs: SopRun[]
 }
 
 export interface SopStep {
-  id: string
+  slug: string
   label: string
-  clauses: SopClause[]
-}
-
-export interface SopSection {
-  id: string
-  label: string
-  steps: SopStep[]
+  segments: SopSegment[]
 }
 
 export interface SopPhase {
-  id: string
+  slug: string
   label: string
-  sections: SopSection[]
+  sniper?: boolean
+  steps: SopStep[]
+}
+
+export interface SopTopic {
+  slug: string
+  label: string
+  ref: string
+}
+
+export interface SopTopicGroup {
+  slug: string
+  label: string
+  ref: string
+  topics: SopTopic[]
 }
 
 export interface SopContent {
-  kind: 'sop'
-  title?: string
+  topics: {
+    groups: SopTopicGroup[]
+  }
+  pre_game: {
+    segments: SopSegment[]
+  }
   phases: SopPhase[]
-  active_tags?: string[]
 }
+
+// ── Props ────────────────────────────────────────────────────────────────────
 
 const props = defineProps<{ content: SopContent }>()
 
-function isClauseVisible(clause: SopClause): boolean {
-  if (!clause.tag) return true
-  const activeTags = props.content.active_tags ?? []
-  return activeTags.includes(clause.tag)
+// ── Store ────────────────────────────────────────────────────────────────────
+
+const systemStore = useSystemStore()
+
+// ── Disabled topics (persisted to system config) ─────────────────────────────
+
+const localDisabled = ref<string[]>(
+  systemStore.currentSystem?.config?.asop_disabled_topics ?? [],
+)
+
+watch(
+  () => systemStore.currentSystem?.config?.asop_disabled_topics,
+  (val) => {
+    localDisabled.value = val ?? []
+  },
+)
+
+const disabledTopics = computed<string[]>(() => localDisabled.value)
+
+async function saveDisabled(): Promise<void> {
+  if (!systemStore.currentSystem) return
+  await systemStore.updateSystem(systemStore.currentSystem.id, {
+    config: { ...systemStore.currentSystem.config, asop_disabled_topics: localDisabled.value },
+  })
 }
 
-function visibleClauses(step: SopStep): SopClause[] {
-  return step.clauses.filter(isClauseVisible)
+function setDisabled(value: string[]): void {
+  localDisabled.value = value
+}
+
+// ── Topic helpers ─────────────────────────────────────────────────────────────
+
+const allTopicSlugs = computed<string[]>(() => {
+  const slugs: string[] = []
+  for (const group of props.content.topics.groups) {
+    if (group.topics.length === 0) {
+      slugs.push(group.slug)
+    } else {
+      for (const topic of group.topics) {
+        slugs.push(topic.slug)
+      }
+    }
+  }
+  return slugs
+})
+
+function isGroupDisabled(group: SopTopicGroup): boolean {
+  if (group.topics.length === 0) return disabledTopics.value.includes(group.slug)
+  return group.topics.every((t) => disabledTopics.value.includes(t.slug))
+}
+
+function isGroupPartial(group: SopTopicGroup): boolean {
+  if (group.topics.length === 0) return false
+  const disabledCount = group.topics.filter((t) => disabledTopics.value.includes(t.slug)).length
+  return disabledCount > 0 && disabledCount < group.topics.length
+}
+
+function toggleGroup(group: SopTopicGroup): void {
+  const slugs = group.topics.length === 0 ? [group.slug] : group.topics.map((t) => t.slug)
+  const allDisabled = slugs.every((s) => disabledTopics.value.includes(s))
+  if (allDisabled) {
+    setDisabled(disabledTopics.value.filter((s) => !slugs.includes(s)))
+  } else {
+    const newDisabled = [...disabledTopics.value]
+    for (const s of slugs) {
+      if (!newDisabled.includes(s)) newDisabled.push(s)
+    }
+    setDisabled(newDisabled)
+  }
+}
+
+function toggleTopic(slug: string): void {
+  if (disabledTopics.value.includes(slug)) {
+    setDisabled(disabledTopics.value.filter((s) => s !== slug))
+  } else {
+    setDisabled([...disabledTopics.value, slug])
+  }
+}
+
+function resetTopics(): void {
+  setDisabled([])
+}
+
+// ── Visibility logic ──────────────────────────────────────────────────────────
+
+function isRunVisible(run: SopRun): boolean {
+  if (run.tags.length === 0) return true
+  return run.tags.some((tag) => !disabledTopics.value.includes(tag))
+}
+
+function visibleText(segment: SopSegment): string {
+  return segment.runs
+    .filter(isRunVisible)
+    .map((r) => r.text)
+    .join('')
+    .trim()
+}
+
+function isSegmentVisible(segment: SopSegment): boolean {
+  return visibleText(segment).length > 0
 }
 
 function isStepVisible(step: SopStep): boolean {
-  return visibleClauses(step).length > 0
+  return step.segments.some(isSegmentVisible)
 }
 
-function visibleSteps(section: SopSection): SopStep[] {
-  return section.steps.filter(isStepVisible)
+function isPhaseVisible(phase: SopPhase): boolean {
+  return phase.steps.some(isStepVisible)
 }
 
-function isSectionVisible(section: SopSection): boolean {
-  return visibleSteps(section).length > 0
+// ── Search ────────────────────────────────────────────────────────────────────
+
+const searchQuery = ref('')
+
+function matchesSearch(text: string): boolean {
+  if (!searchQuery.value.trim()) return true
+  return text.toLowerCase().includes(searchQuery.value.toLowerCase().trim())
 }
+
+function segmentMatchesSearch(segment: SopSegment): boolean {
+  return matchesSearch(visibleText(segment))
+}
+
+function stepMatchesSearch(step: SopStep): boolean {
+  return step.segments.some((seg) => isSegmentVisible(seg) && segmentMatchesSearch(seg))
+}
+
+function phaseMatchesSearch(phase: SopPhase): boolean {
+  return phase.steps.some(stepMatchesSearch)
+}
+
+// ── Expand / collapse ─────────────────────────────────────────────────────────
+
+const expandedPhases = ref<Set<string>>(new Set())
+const preGameExpanded = ref(false)
+
+function togglePhase(slug: string): void {
+  if (expandedPhases.value.has(slug)) {
+    expandedPhases.value.delete(slug)
+  } else {
+    expandedPhases.value.add(slug)
+  }
+}
+
+function isPhaseExpanded(phase: SopPhase): boolean {
+  if (searchQuery.value.trim()) return phaseMatchesSearch(phase)
+  return expandedPhases.value.has(phase.slug)
+}
+
+// ── Topics popover ────────────────────────────────────────────────────────────
+
+const topicsOpen = ref(false)
+const expandedGroups = ref<Set<string>>(new Set())
+
+function toggleGroupExpand(slug: string): void {
+  if (expandedGroups.value.has(slug)) {
+    expandedGroups.value.delete(slug)
+  } else {
+    expandedGroups.value.add(slug)
+  }
+}
+
+// ── Pre-game visible segments ─────────────────────────────────────────────────
+
+const visiblePreGameSegments = computed(() =>
+  props.content.pre_game.segments.filter(
+    (seg) => isSegmentVisible(seg) && segmentMatchesSearch(seg),
+  ),
+)
 </script>
 
 <template>
-  <div class="space-y-8">
+  <div class="space-y-3">
+    <!-- Toolbar -->
+    <div class="flex items-center gap-2">
+      <input
+        v-model="searchQuery"
+        type="search"
+        placeholder="Search…"
+        class="flex-1 h-8 rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+      />
+
+      <!-- Topics button -->
+      <div class="relative">
+        <button
+          class="inline-flex items-center gap-1.5 h-8 rounded-md border border-input bg-background px-3 text-sm hover:bg-accent hover:text-accent-foreground"
+          @click="topicsOpen = !topicsOpen"
+        >
+          Topics
+          <svg
+            class="h-3 w-3 opacity-60"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </button>
+
+        <!-- Popover panel -->
+        <div
+          v-if="topicsOpen"
+          class="absolute right-0 top-full mt-1 z-50 w-64 rounded-md border border-border bg-popover shadow-md"
+        >
+          <!-- Backdrop -->
+          <div
+            class="fixed inset-0 z-40"
+            @click="topicsOpen = false"
+          />
+          <div class="relative z-50 p-2 space-y-1">
+            <div class="flex items-center justify-between px-1 pb-1 border-b border-border">
+              <span class="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Topics</span>
+              <button
+                class="text-xs text-muted-foreground hover:text-foreground underline"
+                @click="resetTopics"
+              >
+                Reset
+              </button>
+            </div>
+
+            <ScrollArea class="max-h-72 overflow-y-auto">
+              <div class="space-y-0.5 py-1">
+                <div
+                  v-for="group in props.content.topics.groups"
+                  :key="group.slug"
+                >
+                  <!-- Group row -->
+                  <div class="flex items-center gap-2 px-1 py-1 rounded hover:bg-accent/50 cursor-pointer">
+                    <!-- Checkbox -->
+                    <input
+                      type="checkbox"
+                      class="h-3.5 w-3.5 cursor-pointer accent-primary"
+                      :checked="!isGroupDisabled(group)"
+                      :indeterminate="isGroupPartial(group)"
+                      @change="toggleGroup(group)"
+                    />
+                    <span
+                      class="flex-1 text-sm select-none"
+                      @click="toggleGroup(group)"
+                    >
+                      {{ group.label }}
+                      <span class="text-xs text-muted-foreground ml-1">{{ group.ref }}</span>
+                    </span>
+                    <!-- Expand arrow (only if has sub-topics) -->
+                    <button
+                      v-if="group.topics.length > 0"
+                      class="p-0.5 text-muted-foreground hover:text-foreground"
+                      @click.stop="toggleGroupExpand(group.slug)"
+                    >
+                      <svg
+                        class="h-3 w-3 transition-transform"
+                        :class="expandedGroups.has(group.slug) ? 'rotate-180' : ''"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <path d="m6 9 6 6 6-6" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <!-- Sub-topics -->
+                  <div
+                    v-if="group.topics.length > 0 && expandedGroups.has(group.slug)"
+                    class="ml-5 space-y-0.5"
+                  >
+                    <div
+                      v-for="topic in group.topics"
+                      :key="topic.slug"
+                      class="flex items-center gap-2 px-1 py-0.5 rounded hover:bg-accent/50 cursor-pointer"
+                      @click="toggleTopic(topic.slug)"
+                    >
+                      <input
+                        type="checkbox"
+                        class="h-3.5 w-3.5 cursor-pointer accent-primary"
+                        :checked="!disabledTopics.includes(topic.slug)"
+                        @change.stop="toggleTopic(topic.slug)"
+                      />
+                      <span class="flex-1 text-sm select-none">
+                        {{ topic.label }}
+                        <span class="text-xs text-muted-foreground ml-1">{{ topic.ref }}</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ScrollArea>
+
+            <div class="pt-2 border-t border-border mt-1">
+              <button
+                class="w-full h-8 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                @click="saveDisabled"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pre-Game Sequence -->
     <div
-      v-for="phase in props.content.phases"
-      :key="phase.id"
+      v-if="visiblePreGameSegments.length > 0"
+      class="border border-border rounded-lg overflow-hidden"
+    >
+      <button
+        class="w-full flex items-center gap-2 bg-muted/40 border-b border-border px-4 py-2 text-left hover:bg-muted/70 transition-colors"
+        @click="preGameExpanded = !preGameExpanded"
+      >
+        <svg
+          class="h-3.5 w-3.5 text-muted-foreground transition-transform shrink-0"
+          :class="preGameExpanded ? 'rotate-90' : ''"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="m9 18 6-6-6-6" />
+        </svg>
+        <span class="text-sm font-semibold text-foreground uppercase tracking-wide">Pre-Game Sequence</span>
+      </button>
+
+      <div v-if="preGameExpanded || searchQuery.trim()" class="px-4 py-3 space-y-1.5">
+        <div
+          v-for="(segment, i) in visiblePreGameSegments"
+          :key="i"
+          class="flex items-start gap-2 text-sm"
+        >
+          <span
+            v-if="segment.mpath"
+            class="shrink-0 font-mono text-xs text-muted-foreground w-10 text-right pt-0.5"
+          >{{ segment.mpath }}</span>
+          <span
+            v-if="segment.player"
+            class="shrink-0 text-[10px] font-bold rounded px-1 py-0.5 leading-none"
+            :class="{
+              'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400': segment.player === 'A',
+              'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400': segment.player === 'D',
+              'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400': segment.player === 'B',
+            }"
+          >{{ segment.player }}</span>
+          <span class="text-foreground/90">{{ visibleText(segment) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phases -->
+    <div
+      v-for="phase in props.content.phases.filter(isPhaseVisible)"
+      :key="phase.slug"
       class="border border-border rounded-lg overflow-hidden"
     >
       <!-- Phase header -->
-      <div class="bg-muted/40 border-b border-border px-4 py-2">
-        <h2 class="text-sm font-semibold text-foreground uppercase tracking-wide">
+      <button
+        class="w-full flex items-center gap-2 bg-muted/40 border-b border-border px-4 py-2 text-left hover:bg-muted/70 transition-colors"
+        @click="togglePhase(phase.slug)"
+      >
+        <svg
+          class="h-3.5 w-3.5 text-muted-foreground transition-transform shrink-0"
+          :class="isPhaseExpanded(phase) ? 'rotate-90' : ''"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="m9 18 6-6-6-6" />
+        </svg>
+        <span class="text-sm font-semibold text-foreground uppercase tracking-wide">
           {{ phase.label }}
-        </h2>
-      </div>
+        </span>
+        <span
+          v-if="phase.sniper"
+          class="text-xs text-muted-foreground"
+          title="Sniper check"
+        >†</span>
+      </button>
 
-      <div class="divide-y divide-border">
+      <!-- Steps -->
+      <div v-if="isPhaseExpanded(phase)" class="divide-y divide-border">
         <template
-          v-for="section in phase.sections"
-          :key="section.id"
+          v-for="step in phase.steps.filter(isStepVisible)"
+          :key="step.slug"
         >
           <div
-            v-if="isSectionVisible(section)"
+            v-if="stepMatchesSearch(step)"
             class="px-4 py-3"
           >
-            <!-- Section label -->
             <p class="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
-              {{ section.label }}
+              {{ step.label }}
             </p>
 
-            <ol class="space-y-2 list-decimal list-inside">
-              <li
-                v-for="step in visibleSteps(section)"
-                :key="step.id"
-                class="text-sm text-foreground"
+            <div class="space-y-1.5">
+              <div
+                v-for="(segment, si) in step.segments.filter(seg => isSegmentVisible(seg) && segmentMatchesSearch(seg))"
+                :key="si"
+                class="flex items-start gap-2 text-sm"
               >
-                <span class="font-medium">{{ step.label }}</span>
-                <ul
-                  v-if="visibleClauses(step).length > 0"
-                  class="ml-4 mt-1 space-y-0.5 list-[circle] list-inside"
-                >
-                  <li
-                    v-for="(clause, ci) in visibleClauses(step)"
-                    :key="ci"
-                    class="text-xs text-foreground/80"
-                  >
-                    {{ clause.text }}
-                    <span
-                      v-if="clause.tag"
-                      class="ml-1 text-[9px] text-muted-foreground bg-muted rounded px-1 py-0.5"
-                    >
-                      {{ clause.tag }}
-                    </span>
-                  </li>
-                </ul>
-              </li>
-            </ol>
+                <span
+                  v-if="segment.mpath"
+                  class="shrink-0 font-mono text-xs text-muted-foreground w-10 text-right pt-0.5"
+                >{{ segment.mpath }}</span>
+                <span
+                  v-if="segment.player"
+                  class="shrink-0 text-[10px] font-bold rounded px-1 py-0.5 leading-none mt-0.5"
+                  :class="{
+                    'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400': segment.player === 'A',
+                    'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400': segment.player === 'D',
+                    'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400': segment.player === 'B',
+                  }"
+                >{{ segment.player }}</span>
+                <span class="text-foreground/90">{{ visibleText(segment) }}</span>
+              </div>
+            </div>
           </div>
         </template>
       </div>
     </div>
 
     <p
-      v-if="props.content.phases.length === 0"
+      v-if="props.content.phases.filter(isPhaseVisible).length === 0 && visiblePreGameSegments.length === 0"
       class="text-sm text-muted-foreground italic"
     >
       No sequence of play data available.
