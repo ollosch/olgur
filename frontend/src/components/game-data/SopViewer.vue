@@ -2,6 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import { useSystemStore } from '@/stores/system'
 import { renderContent } from '@/lib/renderContent'
+import { toast } from 'vue-sonner'
 import ScrollArea from '@/components/ui/scroll-area/ScrollArea.vue'
 
 // ── Schema types ────────────────────────────────────────────────────────────
@@ -81,6 +82,7 @@ async function saveDisabled(): Promise<void> {
   await systemStore.updateSystem(systemStore.currentSystem.id, {
     config: { ...systemStore.currentSystem.config, asop_disabled_topics: localDisabled.value },
   })
+  toast.success('Topics saved.')
 }
 
 function setDisabled(value: string[]): void {
