@@ -24,6 +24,12 @@ export function renderContent(content: string, options?: { acronymPopups?: boole
         return `<span data-acronym-term="${escapeHtml(key)}" class="underline decoration-dotted cursor-help text-primary/80">${escapeHtml(key)}</span>`
       }
       if (prefix === 'L') {
+        const hashIdx = key.indexOf('#')
+        if (hashIdx !== -1) {
+          const ruleNumber = key.slice(0, hashIdx)
+          const linkName = key.slice(hashIdx + 1)
+          return `<a data-rule-number="${escapeHtml(ruleNumber)}" class="underline decoration-dotted cursor-pointer text-primary font-medium hover:text-primary/80 transition-colors">${escapeHtml(linkName)}</a>`
+        }
         if (key.includes('-')) {
           return `<a data-rule-range="${escapeHtml(key)}" class="underline decoration-dotted cursor-pointer text-primary font-medium hover:text-primary/80 transition-colors">${escapeHtml(key)}</a>`
         }
