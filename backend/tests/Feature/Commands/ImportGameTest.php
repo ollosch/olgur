@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\GameDatum;
 use App\Models\IndexEntry;
 use App\Models\Membership;
 use App\Models\Module;
@@ -707,6 +708,167 @@ test('--user option subscribes user to all modules with editor access', function
         expect($subscription)->not->toBeNull();
         expect($subscription->editor)->toBeTrue();
     });
+
+    removeGameDir($dir);
+});
+
+// ---------------------------------------------------------------------------
+// Vehicle and ordnance importing
+// ---------------------------------------------------------------------------
+
+test('vehicles are imported when manifest has a vehicles key', function () use ($simpleGameRules): void {
+    $vehicles = [
+        ['id' => '2001', 'name' => 'PzKpfw IB', 'nation' => 'german', 'type' => 'Tt'],
+        ['id' => '2002', 'name' => 'PzKpfw IIA', 'nation' => 'german', 'type' => 'Tt'],
+    ];
+
+    $dir = makeGameDir(
+        [
+            'name' => 'Vehicle Game',
+            'slug' => 'vehicle-game',
+            'modules' => [
+                ['type' => 'core', 'name' => 'Core', 'slug' => 'core', 'path' => 'rules.json'],
+            ],
+            'index' => 'idx.json',
+            'vehicles' => 'vehicles.json',
+        ],
+        [
+            'rules.json' => $simpleGameRules,
+            'idx.json' => [],
+            'vehicles.json' => $vehicles,
+        ]
+    );
+
+    artisan('import:game', ['path' => $dir])
+        ->assertSuccessful()
+        ->expectsOutputToContain('Imported 2 vehicles');
+
+    expect(GameDatum::query()->where('type', 'vehicle')->count())->toBe(2);
+    expect(GameDatum::query()->where('slug', 'vehicle-2001')->exists())->toBeTrue();
+    expect(GameDatum::query()->where('slug', 'vehicle-2002')->exists())->toBeTrue();
+
+    $datum = GameDatum::query()->where('slug', 'vehicle-2001')->first();
+    expect($datum->name)->toBe('PzKpfw IB');
+
+    removeGameDir($dir);
+});
+
+test('ordnance is imported when manifest has an ordnance key', function () use ($simpleGameRules): void {
+    $ordnance = [
+        ['id' => '1001', 'name' => '5cm leGrW 36', 'nation' => 'german', 'type' => 'MTR'],
+    ];
+
+    $dir = makeGameDir(
+        [
+            'name' => 'Ordnance Game',
+            'slug' => 'ordnance-game',
+            'modules' => [
+                ['type' => 'core', 'name' => 'Core', 'slug' => 'core', 'path' => 'rules.json'],
+            ],
+            'index' => 'idx.json',
+            'ordnance' => 'ordnance.json',
+        ],
+        [
+            'rules.json' => $simpleGameRules,
+            'idx.json' => [],
+            'ordnance.json' => $ordnance,
+        ]
+    );
+
+    artisan('import:game', ['path' => $dir])
+        ->assertSuccessful()
+        ->expectsOutputToContain('Imported 1 ordnance');
+
+    expect(GameDatum::query()->where('type', 'ordnance')->count())->toBe(1);
+    expect(GameDatum::query()->where('slug', 'ordnance-1001')->exists())->toBeTrue();
+
+    $datum = GameDatum::query()->where('slug', 'ordnance-1001')->first();
+    expect($datum->name)->toBe('5cm leGrW 36');
+
+    removeGameDir($dir);
+});
+
+test('--fresh flag deletes and reimports vehicles and ordnance', function () use ($simpleGameRules): void {
+    $vehicles = [
+        ['id' => '2001', 'name' => 'PzKpfw IB', 'nation' => 'german', 'type' => 'Tt'],
+    ];
+
+    $dir = makeGameDir(
+        [
+            'name' => 'Fresh Game Data',
+            'slug' => 'fresh-game-data',
+            'modules' => [
+                ['type' => 'core', 'name' => 'Core', 'slug' => 'core', 'path' => 'rules.json'],
+            ],
+            'index' => 'idx.json',
+            'vehicles' => 'vehicles.json',
+        ],
+        [
+            'rules.json' => $simpleGameRules,
+            'idx.json' => [],
+            'vehicles.json' => $vehicles,
+        ]
+    );
+
+    artisan('import:game', ['path' => $dir])->assertSuccessful();
+    expect(GameDatum::query()->where('type', 'vehicle')->count())->toBe(1);
+
+    // Second import with --fresh: count stays 1 (deleted then reimported)
+    artisan('import:game', ['path' => $dir, '--fresh' => true])->assertSuccessful();
+    expect(GameDatum::query()->where('type', 'vehicle')->count())->toBe(1);
+
+    removeGameDir($dir);
+});
+
+test('missing vehicles file warns and continues without aborting', function () use ($simpleGameRules): void {
+    $dir = makeGameDir(
+        [
+            'name' => 'Missing Vehicles Game',
+            'slug' => 'missing-vehicles-game',
+            'modules' => [
+                ['type' => 'core', 'name' => 'Core', 'slug' => 'core', 'path' => 'rules.json'],
+            ],
+            'index' => 'idx.json',
+            'vehicles' => 'nonexistent_vehicles.json',
+        ],
+        [
+            'rules.json' => $simpleGameRules,
+            'idx.json' => [],
+        ]
+    );
+
+    artisan('import:game', ['path' => $dir])
+        ->assertSuccessful()
+        ->expectsOutputToContain('skipping');
+
+    expect(GameDatum::query()->where('type', 'vehicle')->count())->toBe(0);
+    expect(Rule::query()->count())->toBe(3);
+
+    removeGameDir($dir);
+});
+
+test('missing ordnance file warns and continues without aborting', function () use ($simpleGameRules): void {
+    $dir = makeGameDir(
+        [
+            'name' => 'Missing Ordnance Game',
+            'slug' => 'missing-ordnance-game',
+            'modules' => [
+                ['type' => 'core', 'name' => 'Core', 'slug' => 'core', 'path' => 'rules.json'],
+            ],
+            'index' => 'idx.json',
+            'ordnance' => 'nonexistent_ordnance.json',
+        ],
+        [
+            'rules.json' => $simpleGameRules,
+            'idx.json' => [],
+        ]
+    );
+
+    artisan('import:game', ['path' => $dir])
+        ->assertSuccessful()
+        ->expectsOutputToContain('skipping');
+
+    expect(GameDatum::query()->where('type', 'ordnance')->count())->toBe(0);
 
     removeGameDir($dir);
 });
