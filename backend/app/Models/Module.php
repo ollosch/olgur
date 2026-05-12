@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\GameDatum;
 use Database\Factories\ModuleFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -77,6 +78,14 @@ final class Module extends Model
     public function indexEntries(): HasMany
     {
         return $this->hasMany(IndexEntry::class);
+    }
+
+    /**
+     * @return HasMany<GameDatum, $this>
+     */
+    public function gameData(): HasMany
+    {
+        return $this->hasMany(GameDatum::class);
     }
 
     /**

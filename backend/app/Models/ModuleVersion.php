@@ -52,6 +52,14 @@ final class ModuleVersion extends Model
     }
 
     /**
+     * @return HasMany<GameDatumVersion, $this>
+     */
+    public function gameDatumVersions(): HasMany
+    {
+        return $this->hasMany(GameDatumVersion::class);
+    }
+
+    /**
      * @return BelongsTo<User, $this>
      */
     public function releasedBy(): BelongsTo
