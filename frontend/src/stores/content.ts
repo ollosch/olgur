@@ -2,7 +2,7 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { useApi } from '@/composables/useApi'
 import { useSystemStore } from '@/stores/system'
-import type { Rule, IndexEntry, Module, ApiCollection, ApiResource, UpdateRuleRequest, UpdateIndexEntryRequest } from '@/types/domain'
+import type { Rule, IndexEntry, Module, GameDatum, ApiCollection, ApiResource, UpdateRuleRequest, UpdateIndexEntryRequest } from '@/types/domain'
 
 export const useContentStore = defineStore('content', () => {
   const { get, put, loading, errors } = useApi()
@@ -10,6 +10,7 @@ export const useContentStore = defineStore('content', () => {
 
   const rulesByModule = ref<Record<string, Rule[]>>({})
   const indexEntriesByModule = ref<Record<string, IndexEntry[]>>({})
+  const gameDataByModule = ref<Record<string, GameDatum[]>>({})
 
   // ---------------------------------------------------------------------------
   // Derived state
@@ -101,6 +102,10 @@ export const useContentStore = defineStore('content', () => {
 
   const allIndexEntries = computed((): IndexEntry[] =>
     activeModules.value.flatMap((m) => indexEntriesByModule.value[m.id] ?? []),
+  )
+
+  const allGameData = computed((): GameDatum[] =>
+    activeModules.value.flatMap((m) => gameDataByModule.value[m.id] ?? []),
   )
 
   /** O(1) lookup by indexEntry.term — used by delegation hover */
@@ -238,6 +243,18 @@ export const useContentStore = defineStore('content', () => {
     }
   }
 
+  async function fetchGameData(moduleId: string): Promise<void> {
+    const systemId = systemStore.currentSystem?.id
+    if (!systemId) return
+
+    const result = await get<ApiCollection<GameDatum>>(
+      `/systems/${systemId}/modules/${moduleId}/game-data`,
+    )
+    if (result) {
+      gameDataByModule.value[moduleId] = result.data
+    }
+  }
+
   /**
    * Fetch rules + index entries for any active non-core modules not yet loaded.
    * Returns the modules that were fetched so callers can react (e.g. expand panel).
@@ -250,6 +267,7 @@ export const useContentStore = defineStore('content', () => {
     await Promise.all([
       ...toLoad.map((m) => fetchRules(m.id)),
       ...toLoad.map((m) => fetchIndexEntries(m.id)),
+      ...toLoad.map((m) => fetchGameData(m.id)),
     ])
     return toLoad
   }
@@ -257,11 +275,13 @@ export const useContentStore = defineStore('content', () => {
   function clear(): void {
     rulesByModule.value = {}
     indexEntriesByModule.value = {}
+    gameDataByModule.value = {}
   }
 
   return {
     rulesByModule,
     indexEntriesByModule,
+    gameDataByModule,
     loading,
     errors,
     activeIds,
@@ -276,10 +296,12 @@ export const useContentStore = defineStore('content', () => {
     indexEntriesById,
     indexEntriesByParent,
     visibleIndexEntryIds,
+    allGameData,
     fetchRules,
     updateRule,
     updateIndexEntry,
     fetchIndexEntries,
+    fetchGameData,
     fetchMissingModules,
     clear,
   }

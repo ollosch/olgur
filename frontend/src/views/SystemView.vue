@@ -47,6 +47,7 @@ async function loadSystem(id: string): Promise<void> {
   await Promise.all([
     ...activeModuleList.map((m) => contentStore.fetchRules(m.id)),
     ...activeModuleList.map((m) => contentStore.fetchIndexEntries(m.id)),
+    ...activeModuleList.map((m) => contentStore.fetchGameData(m.id)),
   ])
 
   for (const m of activeModuleList) {

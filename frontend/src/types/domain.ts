@@ -113,6 +113,17 @@ export interface IndexEntry {
   updated_at: string
 }
 
+export interface GameDatum {
+  id: string
+  module_id: string
+  type: 'sop' | 'table' | 'ordnance' | 'vehicle'
+  slug: string
+  name: string
+  content: Record<string, unknown>
+  created_at: string
+  updated_at: string
+}
+
 // -- API Response Wrappers --
 export interface ApiResource<T> {
   data: T

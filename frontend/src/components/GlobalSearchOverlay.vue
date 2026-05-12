@@ -6,7 +6,7 @@ import { Search } from 'lucide-vue-next'
 import { useShortcutStore } from '@/stores/shortcut'
 import { useContentStore } from '@/stores/content'
 import { rankMatchLower, compareIndexEntries, rankRule } from '@/lib/utils'
-import type { Rule, IndexEntry } from '@/types/domain'
+import type { Rule, IndexEntry, GameDatum } from '@/types/domain'
 import IndexEntryResult from '@/components/systems/IndexEntryResult.vue'
 
 const DEFAULT_CAP = 10
@@ -19,6 +19,7 @@ const route = useRoute()
 const query = ref('')
 const showAllRules = ref(false)
 const showAllEntries = ref(false)
+const showAllGameData = ref(false)
 
 const listRef = ref<HTMLElement | null>(null)
 const inputRef = ref<HTMLInputElement | null>(null)
@@ -50,6 +51,11 @@ interface RuleResult {
 
 interface EntryResult {
   entry: IndexEntry
+  rank: number
+}
+
+interface GameDataResult {
+  item: GameDatum
   rank: number
 }
 
@@ -99,8 +105,30 @@ const hiddenRulesCount = computed((): number =>
   Math.max(0, ruleResults.value.length - DEFAULT_CAP),
 )
 
+const gameDataResults = computed((): GameDataResult[] => {
+  const q = query.value.trim().toLowerCase()
+  if (!q) return []
+  const results: GameDataResult[] = []
+  for (const item of contentStore.allGameData) {
+    const r = rankMatchLower(item.name.toLowerCase(), q)
+    if (r < 3) results.push({ item, rank: r })
+  }
+  results.sort((a, b) => {
+    if (a.rank !== b.rank) return a.rank - b.rank
+    return a.item.name.localeCompare(b.item.name)
+  })
+  return results
+})
+
+const visibleGameData = computed((): GameDataResult[] =>
+  showAllGameData.value ? gameDataResults.value : gameDataResults.value.slice(0, DEFAULT_CAP),
+)
+const hiddenGameDataCount = computed((): number =>
+  Math.max(0, gameDataResults.value.length - DEFAULT_CAP),
+)
+
 const hasResults = computed(
-  (): boolean => ruleResults.value.length > 0 || entryResults.value.length > 0,
+  (): boolean => ruleResults.value.length > 0 || entryResults.value.length > 0 || gameDataResults.value.length > 0,
 )
 
 // ── Actions ──────────────────────────────────────────────────────────────────
@@ -108,6 +136,7 @@ const hasResults = computed(
 function onQueryInput(): void {
   showAllRules.value = false
   showAllEntries.value = false
+  showAllGameData.value = false
 }
 
 function selectRule(rule: Rule): void {
@@ -231,6 +260,42 @@ function onKeyDown(e: KeyboardEvent): void {
               @click="showAllRules = true"
             >
               {{ hiddenRulesCount }} more…
+            </button>
+          </template>
+
+          <!-- Separator between groups -->
+          <div
+            v-if="ruleResults.length > 0 && gameDataResults.length > 0"
+            class="border-t border-border/50 my-2"
+          />
+
+          <!-- Game Data group -->
+          <template v-if="gameDataResults.length > 0">
+            <div class="px-3 pt-1 pb-1">
+              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                Game Data
+              </p>
+            </div>
+
+            <div
+              v-for="{ item } in visibleGameData"
+              :key="item.id"
+              class="mx-2 px-2 py-1.5 rounded cursor-pointer hover:bg-accent flex items-center gap-2 transition-colors"
+              role="button"
+              tabindex="0"
+              @click="shortcutStore.overlayOpen = false"
+              @keydown.enter="shortcutStore.overlayOpen = false"
+            >
+              <span class="text-[10px] font-medium text-muted-foreground bg-muted rounded px-1.5 py-0.5 shrink-0">{{ item.type }}</span>
+              <span class="text-foreground text-xs truncate">{{ item.name }}</span>
+            </div>
+
+            <button
+              v-if="hiddenGameDataCount > 0 && !showAllGameData"
+              class="w-full px-4 py-1.5 text-[11px] text-muted-foreground hover:text-foreground text-left transition-colors"
+              @click="showAllGameData = true"
+            >
+              {{ hiddenGameDataCount }} more…
             </button>
           </template>
         </template>
