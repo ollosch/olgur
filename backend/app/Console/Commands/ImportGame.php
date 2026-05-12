@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Data\SystemConfig;
+use App\Enums\GameDataType;
+use App\Models\GameDatum;
 use App\Models\IndexEntry;
 use App\Models\Membership;
 use App\Models\Module;
@@ -193,6 +195,43 @@ final class ImportGame extends Command
             $this->info('Importing system index...');
             $indexCount = $this->importer->importIndexEntries($indexData, $coreModule->id, null);
             $this->info(sprintf('Imported %d index entries.', $indexCount));
+
+            // Import vehicles and ordnance if present in manifest
+            $gameDataTypes = [
+                'vehicles' => GameDataType::Vehicle,
+                'ordnance' => GameDataType::Ordnance,
+            ];
+
+            foreach ($gameDataTypes as $manifestKey => $gameDataType) {
+                $relPath = is_string($manifest[$manifestKey] ?? null) ? $manifest[$manifestKey] : '';
+
+                if ($relPath === '') {
+                    continue;
+                }
+
+                $filePath = $gameDir.'/'.$relPath;
+
+                if (! file_exists($filePath)) {
+                    $this->warn(sprintf('%s file not found: %s, skipping.', ucfirst($manifestKey), $filePath));
+
+                    continue;
+                }
+
+                if ($fresh) {
+                    $this->warn(sprintf('Deleting existing %s for core module...', $manifestKey));
+                    GameDatum::query()
+                        ->where('module_id', $coreModule->id)
+                        ->where('type', $gameDataType->value)
+                        ->delete();
+                }
+
+                /** @var array<int, array<string, mixed>> $gameDataItems */
+                $gameDataItems = $this->readJson($filePath) ?? [];
+
+                $this->info(sprintf('Importing %s...', $manifestKey));
+                $count = $this->importer->importGameData($gameDataItems, $coreModule->id, $gameDataType);
+                $this->info(sprintf('Imported %d %s.', $count, $manifestKey));
+            }
         });
 
         $this->info('Import complete.');
