@@ -78,14 +78,16 @@ test('store creates a game datum within a module', function (): void {
     $response = postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/game-data', [
         'type' => 'sop',
         'slug' => 'asop',
+        'name' => 'Advanced Sequence of Play',
         'content' => ['phases' => []],
     ])->assertCreated();
 
     $response->assertJsonPath('data.type', 'sop');
     $response->assertJsonPath('data.slug', 'asop');
+    $response->assertJsonPath('data.name', 'Advanced Sequence of Play');
     $response->assertJsonPath('data.module_id', $module->id);
 
-    assertDatabaseHas('game_data', ['slug' => 'asop', 'module_id' => $module->id, 'type' => 'sop']);
+    assertDatabaseHas('game_data', ['slug' => 'asop', 'module_id' => $module->id, 'type' => 'sop', 'name' => 'Advanced Sequence of Play']);
 });
 
 test('store requires type, slug, and data', function (): void {
@@ -97,7 +99,7 @@ test('store requires type, slug, and data', function (): void {
 
     postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/game-data', [])
         ->assertUnprocessable()
-        ->assertJsonValidationErrors(['type', 'slug', 'content']);
+        ->assertJsonValidationErrors(['type', 'slug', 'name', 'content']);
 });
 
 test('store rejects invalid type', function (): void {
@@ -110,6 +112,7 @@ test('store rejects invalid type', function (): void {
     postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/game-data', [
         'type' => 'invalid',
         'slug' => 'test',
+        'name' => 'Test',
         'content' => [],
     ])->assertUnprocessable()->assertJsonValidationErrors(['type']);
 });
@@ -125,6 +128,7 @@ test('store rejects duplicate slug for same type within module', function (): vo
     postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/game-data', [
         'type' => 'sop',
         'slug' => 'asop',
+        'name' => 'ASOP',
         'content' => [],
     ])->assertUnprocessable()->assertJsonValidationErrors(['slug']);
 });
@@ -140,6 +144,7 @@ test('store allows same slug for different types within module', function (): vo
     postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/game-data', [
         'type' => 'vehicle',
         'slug' => 'main',
+        'name' => 'PzKpfw IB',
         'content' => ['name' => 'PzKpfw IB'],
     ])->assertCreated();
 });
@@ -253,7 +258,7 @@ test('regular user cannot create a game datum', function (): void {
 
     actingAs($user);
 
-    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/game-data', ['type' => 'sop', 'slug' => 'asop', 'content' => ['phases' => []]])
+    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/game-data', ['type' => 'sop', 'slug' => 'asop', 'name' => 'ASOP', 'content' => ['phases' => []]])
         ->assertForbidden();
 });
 
@@ -301,7 +306,7 @@ test('module subscriber cannot create a game datum', function (): void {
 
     actingAs($user);
 
-    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/game-data', ['type' => 'sop', 'slug' => 'asop', 'content' => ['phases' => []]])
+    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/game-data', ['type' => 'sop', 'slug' => 'asop', 'name' => 'ASOP', 'content' => ['phases' => []]])
         ->assertForbidden();
 });
 
@@ -313,7 +318,7 @@ test('module editor can create a game datum', function (): void {
 
     actingAs($user);
 
-    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/game-data', ['type' => 'vehicle', 'slug' => 'pzib', 'content' => ['name' => 'PzKpfw IB']])
+    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/game-data', ['type' => 'vehicle', 'slug' => 'pzib', 'name' => 'PzKpfw IB', 'content' => ['name' => 'PzKpfw IB']])
         ->assertCreated();
 });
 
@@ -326,7 +331,7 @@ test('module editor cannot create a game datum in another module', function (): 
 
     actingAs($user);
 
-    postJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/game-data', ['type' => 'vehicle', 'slug' => 'pzib', 'content' => ['name' => 'PzKpfw IB']])
+    postJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/game-data', ['type' => 'vehicle', 'slug' => 'pzib', 'name' => 'PzKpfw IB', 'content' => ['name' => 'PzKpfw IB']])
         ->assertForbidden();
 });
 
@@ -338,6 +343,6 @@ test('system admin can create a game datum', function (): void {
 
     actingAs($user);
 
-    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/game-data', ['type' => 'table', 'slug' => 'ift', 'content' => ['rows' => []]])
+    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/game-data', ['type' => 'table', 'slug' => 'ift', 'name' => 'Infantry Fire Table', 'content' => ['rows' => []]])
         ->assertCreated();
 });
