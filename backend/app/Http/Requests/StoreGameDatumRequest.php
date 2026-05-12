@@ -27,7 +27,12 @@ final class StoreGameDatumRequest extends FormRequest
 
         return [
             'type' => ['required', Rule::enum(GameDataType::class)],
-            'slug' => ['required', 'string', Rule::unique('game_data', 'slug')->where('module_id', $module->id)->where('type', $this->input('type'))],
+            'slug' => [
+                'required',
+                'string',
+                Rule::unique('game_data', 'slug')
+                    ->where('module_id', $module->id)
+                    ->where('type', $this->string('type')->toString())],
             'name' => ['required', 'string', 'max:255'],
             'content' => ['required', 'array'],
         ];

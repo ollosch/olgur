@@ -31,7 +31,13 @@ final class UpdateGameDatumRequest extends FormRequest
 
         return [
             'type' => ['sometimes', Rule::enum(GameDataType::class)],
-            'slug' => ['sometimes', 'string', Rule::unique('game_data', 'slug')->where('module_id', $module->id)->where('type', $this->input('type', $gameDatum->type->value))->ignore($gameDatum->id)],
+            'slug' => [
+                'sometimes',
+                'string',
+                Rule::unique('game_data', 'slug')
+                    ->where('module_id', $module->id)
+                    ->where('type', $this->string('type')->toString())
+                    ->ignore($gameDatum->id)],
             'name' => ['sometimes', 'string', 'max:255'],
             'content' => ['sometimes', 'array'],
         ];

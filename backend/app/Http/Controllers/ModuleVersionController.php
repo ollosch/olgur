@@ -53,8 +53,8 @@ final class ModuleVersionController
         /** @var string $versionString */
         $versionString = $validated['version_string'];
 
-        /** @var string|null $notes */
-        $notes = $validated['notes'] ?? null;
+        /** @var string $notes */
+        $notes = $validated['notes'] ?? '';
 
         $moduleVersion = $publishModuleVersion->execute(
             $module,
