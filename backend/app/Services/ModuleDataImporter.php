@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\GameDataType;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -111,6 +112,43 @@ final class ModuleDataImporter
 
         if ($rows !== []) {
             $this->insertChunked('index_entries', $rows);
+        }
+
+        return $total;
+    }
+
+    /**
+     * Import a flat list of game data items (vehicles, ordnance, etc.) into a module.
+     *
+     * @param  array<int, array<string, mixed>>  $items
+     */
+    public function importGameData(array $items, string $moduleId, GameDataType $type): int
+    {
+        $total = 0;
+        $rows = [];
+
+        foreach ($items as $item) {
+            $now = now()->toDateTimeString();
+            $rawId = is_string($item['id'] ?? null) ? $item['id'] : (is_int($item['id'] ?? null) ? (string) $item['id'] : '');
+            $slug = $type->value.'-'.$rawId;
+            $name = is_string($item['name'] ?? null) ? $item['name'] : '';
+
+            $rows[] = [
+                'id' => Str::lower((string) Str::ulid()),
+                'module_id' => $moduleId,
+                'type' => $type->value,
+                'slug' => $slug,
+                'name' => $name,
+                'content' => json_encode($item) ?: '{}',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+
+            $total++;
+        }
+
+        if ($rows !== []) {
+            $this->insertChunked('game_data', $rows);
         }
 
         return $total;
