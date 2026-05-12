@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useSystemStore } from '@/stores/system'
+import { renderContent } from '@/lib/renderContent'
 import ScrollArea from '@/components/ui/scroll-area/ScrollArea.vue'
 
 // ── Schema types ────────────────────────────────────────────────────────────
@@ -147,11 +148,25 @@ function isRunVisible(run: SopRun): boolean {
 }
 
 function visibleText(segment: SopSegment): string {
-  return segment.runs
-    .filter(isRunVisible)
-    .map((r) => r.text)
-    .join('')
-    .trim()
+  const parts: string[] = []
+  let prevHidden = false
+  for (const run of segment.runs) {
+    if (isRunVisible(run)) {
+      if (prevHidden && parts.length > 0 && run.text.length > 0) {
+        const tail = parts[parts.length - 1] ?? ''
+        const needsSpace =
+          tail.length > 0 &&
+          !tail.endsWith(' ') &&
+          !/^[,;.!?):]/.test(run.text)
+        if (needsSpace) parts.push(' ')
+      }
+      parts.push(run.text)
+      prevHidden = false
+    } else {
+      prevHidden = true
+    }
+  }
+  return parts.join('').trim()
 }
 
 function isSegmentVisible(segment: SopSegment): boolean {
@@ -336,7 +351,8 @@ const visiblePreGameSegments = computed(() =>
                         type="checkbox"
                         class="h-3.5 w-3.5 cursor-pointer accent-primary"
                         :checked="!disabledTopics.includes(topic.slug)"
-                        @change.stop="toggleTopic(topic.slug)"
+                        @click.stop
+                        @change="toggleTopic(topic.slug)"
                       />
                       <span class="flex-1 text-sm select-none">
                         {{ topic.label }}
@@ -403,7 +419,8 @@ const visiblePreGameSegments = computed(() =>
               'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400': segment.player === 'B',
             }"
           >{{ segment.player }}</span>
-          <span class="text-foreground/90">{{ visibleText(segment) }}</span>
+          <!-- eslint-disable-next-line vue/no-v-html -->
+          <span class="text-foreground/90" v-html="renderContent(visibleText(segment))" />
         </div>
       </div>
     </div>
@@ -473,7 +490,8 @@ const visiblePreGameSegments = computed(() =>
                     'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400': segment.player === 'B',
                   }"
                 >{{ segment.player }}</span>
-                <span class="text-foreground/90">{{ visibleText(segment) }}</span>
+                <!-- eslint-disable-next-line vue/no-v-html -->
+                <span class="text-foreground/90" v-html="renderContent(visibleText(segment))" />
               </div>
             </div>
           </div>
