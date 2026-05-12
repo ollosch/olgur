@@ -159,6 +159,14 @@ function handleEntryClick(e: MouseEvent): void {
   }
 }
 
+function selectGameDatum(item: GameDatum): void {
+  const systemId = route.params['systemId'] as string | undefined
+  if (systemId) {
+    router.push({ name: 'system-game-datum', params: { systemId, gameDatumId: item.id } })
+  }
+  shortcutStore.overlayOpen = false
+}
+
 function onKeyDown(e: KeyboardEvent): void {
   if (e.key === 'Enter' && ruleResults.value.length > 0) {
     e.preventDefault()
@@ -283,8 +291,8 @@ function onKeyDown(e: KeyboardEvent): void {
               class="mx-2 px-2 py-1.5 rounded cursor-pointer hover:bg-accent flex items-center gap-2 transition-colors"
               role="button"
               tabindex="0"
-              @click="shortcutStore.overlayOpen = false"
-              @keydown.enter="shortcutStore.overlayOpen = false"
+              @click="selectGameDatum(item)"
+              @keydown.enter="selectGameDatum(item)"
             >
               <span class="text-[10px] font-medium text-muted-foreground bg-muted rounded px-1.5 py-0.5 shrink-0">{{ item.type }}</span>
               <span class="text-foreground text-xs truncate">{{ item.name }}</span>
