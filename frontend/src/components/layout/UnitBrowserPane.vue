@@ -4,23 +4,31 @@ import { refDebounced } from '@vueuse/core'
 import { ArrowLeft, GitCompare } from 'lucide-vue-next'
 import { Input } from '@/components/ui/input'
 import { SEARCH_DEBOUNCE_MS, rankMatchLower } from '@/lib/utils'
-import { unitTypeLabel, unitNation, VEHICLE_TYPE_LABELS, ORDNANCE_TYPE_LABELS } from '@/lib/unitUtils'
+import { unitTypeLabel, unitNation } from '@/lib/unitUtils'
 import { useContentStore } from '@/stores/content'
+import { useAppSettingsStore } from '@/stores/appSettings'
+import { renderContent } from '@/lib/renderContent'
 import type { GameDatum } from '@/types/domain'
 
 const props = withDefaults(defineProps<{
   initialUnit?: GameDatum | null
   showCompareButton?: boolean
+  mode?: 'full' | 'list-only' | 'detail-only'
+  detailUnit?: GameDatum | null
 }>(), {
   initialUnit: null,
   showCompareButton: true,
+  mode: 'full',
+  detailUnit: null,
 })
 
 const emit = defineEmits<{
   compare: [unit: GameDatum]
+  select: [unit: GameDatum]
 }>()
 
 const contentStore = useContentStore()
+const appSettings = useAppSettingsStore()
 
 // ── State ────────────────────────────────────────────────────────────────────
 
@@ -120,6 +128,10 @@ function toggleLetter(letter: string): void {
 }
 
 function selectUnit(unit: GameDatum): void {
+  if (props.mode === 'list-only') {
+    emit('select', unit)
+    return
+  }
   selectedUnit.value = unit
 }
 
@@ -198,246 +210,326 @@ function unitDates(item: GameDatum): string {
   return from
 }
 
-const vehicleTypeKeys = Object.keys(VEHICLE_TYPE_LABELS)
-const ordnanceTypeKeys = Object.keys(ORDNANCE_TYPE_LABELS)
 </script>
 
 <template>
   <div class="flex flex-col h-full">
-    <!-- Detail view -->
-    <template v-if="selectedUnit">
-      <!-- Detail toolbar -->
-      <div class="shrink-0 flex items-center gap-2 px-3 pt-2 pb-1.5 border-b border-border/50">
-        <button
-          class="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-          @click="back"
-        >
-          <ArrowLeft class="w-3 h-3" />
-          Back
-        </button>
-        <div class="flex-1" />
-        <button
-          v-if="showCompareButton"
-          class="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary border border-border rounded px-2 py-0.5 transition-colors hover:border-primary/50"
-          title="Compare with another unit"
-          @click="emit('compare', selectedUnit)"
-        >
-          <GitCompare class="w-3 h-3" />
-          Compare
-        </button>
+    <!-- detail-only mode: always render the detail view for detailUnit -->
+    <template v-if="props.mode === 'detail-only'">
+      <div v-if="!props.detailUnit" class="flex-1 flex items-center justify-center text-xs text-muted-foreground">
+        Select a unit from the list.
       </div>
-
-      <!-- Detail card -->
-      <div class="flex-1 overflow-y-auto px-3 py-3">
-        <!-- Header -->
-        <div class="mb-3">
-          <div class="flex items-start justify-between gap-2">
-            <h2 class="text-sm font-semibold text-foreground leading-tight">{{ selectedUnit.name }}</h2>
-            <div class="flex items-center gap-1 shrink-0">
-              <span
-                v-if="unitNation(selectedUnit)"
-                class="text-[10px] font-medium bg-blue-500/15 text-blue-600 dark:text-blue-400 rounded px-1.5 py-0.5"
-              >{{ unitNation(selectedUnit) }}</span>
-              <span class="text-[10px] font-medium bg-muted text-muted-foreground rounded px-1.5 py-0.5">
-                {{ unitTypeLabel(selectedUnit) }}
-              </span>
-            </div>
-          </div>
-          <p v-if="unitDates(selectedUnit)" class="text-[11px] text-muted-foreground mt-0.5">
-            {{ unitDates(selectedUnit) }}
-          </p>
+      <template v-else>
+        <!-- Detail toolbar -->
+        <div class="shrink-0 flex items-center gap-2 px-3 pt-2 pb-1.5 border-b border-border/50">
+          <div class="flex-1" />
         </div>
 
-        <!-- Vehicle detail -->
-        <template v-if="selectedUnit.type === 'vehicle'">
-          <!-- Stats -->
-          <div v-if="vehicleStats(selectedUnit).length > 0" class="mb-3">
-            <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Stats</p>
-            <div class="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
-              <div
-                v-for="f in vehicleStats(selectedUnit)"
-                :key="f.label"
-                class="bg-muted/50 rounded p-1.5 text-center"
-              >
-                <p class="text-[9px] text-muted-foreground uppercase tracking-wide">{{ f.label }}</p>
-                <p class="text-xs font-mono font-semibold text-foreground">{{ f.value }}</p>
+        <!-- Detail card -->
+        <div class="flex-1 overflow-y-auto px-3 py-3">
+          <!-- Header -->
+          <div class="mb-3">
+            <div class="flex items-start justify-between gap-2">
+              <h2 class="text-sm font-semibold text-foreground leading-tight">{{ props.detailUnit.name }}</h2>
+              <div class="flex items-center gap-1 shrink-0">
+                <span
+                  v-if="unitNation(props.detailUnit)"
+                  class="text-[10px] font-medium bg-blue-500/15 text-blue-600 dark:text-blue-400 rounded px-1.5 py-0.5"
+                >{{ unitNation(props.detailUnit) }}</span>
+                <span class="text-[10px] font-medium bg-muted text-muted-foreground rounded px-1.5 py-0.5">
+                  {{ unitTypeLabel(props.detailUnit) }}
+                </span>
               </div>
             </div>
+            <p v-if="unitDates(props.detailUnit)" class="text-[11px] text-muted-foreground mt-0.5">
+              {{ unitDates(props.detailUnit) }}
+            </p>
           </div>
 
-          <!-- Armament -->
-          <div v-if="vehicleArmament(selectedUnit).length > 0" class="mb-3">
-            <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Armament</p>
-            <div class="flex flex-col gap-0.5">
-              <div
-                v-for="f in vehicleArmament(selectedUnit)"
-                :key="f.label"
-                class="flex gap-2 items-baseline"
-              >
-                <span class="text-[10px] text-muted-foreground w-28 shrink-0">{{ f.label }}</span>
-                <span class="text-xs text-foreground font-mono">{{ f.value }}</span>
+          <!-- Vehicle detail -->
+          <template v-if="props.detailUnit.type === 'vehicle'">
+            <div v-if="vehicleStats(props.detailUnit).length > 0" class="mb-3">
+              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Stats</p>
+              <div class="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
+                <div
+                  v-for="f in vehicleStats(props.detailUnit)"
+                  :key="f.label"
+                  class="bg-muted/50 rounded p-1.5 text-center"
+                >
+                  <p class="text-[9px] text-muted-foreground uppercase tracking-wide">{{ f.label }}</p>
+                  <p class="text-xs font-mono font-semibold text-foreground">{{ f.value }}</p>
+                </div>
               </div>
             </div>
-          </div>
-
-          <!-- Special flags -->
-          <div v-if="fieldBool(selectedUnit, 'radioless') || fieldBool(selectedUnit, 'ot')" class="mb-3 flex gap-1.5">
-            <span
-              v-if="fieldBool(selectedUnit, 'radioless')"
-              class="text-[10px] bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 rounded px-1.5 py-0.5 font-medium"
-            >Radioless</span>
-            <span
-              v-if="fieldBool(selectedUnit, 'ot')"
-              class="text-[10px] bg-orange-500/15 text-orange-700 dark:text-orange-400 rounded px-1.5 py-0.5 font-medium"
-            >Open-topped</span>
-          </div>
-        </template>
-
-        <!-- Ordnance detail -->
-        <template v-else-if="selectedUnit.type === 'ordnance'">
-          <!-- Stats -->
-          <div v-if="ordnanceStats(selectedUnit).length > 0" class="mb-3">
-            <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Stats</p>
-            <div class="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
-              <div
-                v-for="f in ordnanceStats(selectedUnit)"
-                :key="f.label"
-                class="bg-muted/50 rounded p-1.5 text-center"
-              >
-                <p class="text-[9px] text-muted-foreground uppercase tracking-wide">{{ f.label }}</p>
-                <p class="text-xs font-mono font-semibold text-foreground">{{ f.value }}</p>
+            <div v-if="vehicleArmament(props.detailUnit).length > 0" class="mb-3">
+              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Armament</p>
+              <div class="flex flex-col gap-0.5">
+                <div
+                  v-for="f in vehicleArmament(props.detailUnit)"
+                  :key="f.label"
+                  class="flex gap-2 items-baseline"
+                >
+                  <span class="text-[10px] text-muted-foreground w-28 shrink-0">{{ f.label }}</span>
+                  <span class="text-xs text-foreground font-mono">{{ f.value }}</span>
+                </div>
               </div>
             </div>
-          </div>
+            <div v-if="fieldBool(props.detailUnit, 'radioless') || fieldBool(props.detailUnit, 'ot')" class="mb-3 flex gap-1.5">
+              <span
+                v-if="fieldBool(props.detailUnit, 'radioless')"
+                class="text-[10px] bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 rounded px-1.5 py-0.5 font-medium"
+              >Radioless</span>
+              <span
+                v-if="fieldBool(props.detailUnit, 'ot')"
+                class="text-[10px] bg-orange-500/15 text-orange-700 dark:text-orange-400 rounded px-1.5 py-0.5 font-medium"
+              >Open-topped</span>
+            </div>
+          </template>
 
-          <!-- Caliber -->
-          <div v-if="field(selectedUnit, 'csize')" class="mb-3">
-            <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Caliber</p>
+          <!-- Ordnance detail -->
+          <template v-else-if="props.detailUnit.type === 'ordnance'">
+            <div v-if="ordnanceStats(props.detailUnit).length > 0" class="mb-3">
+              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Stats</p>
+              <div class="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
+                <div
+                  v-for="f in ordnanceStats(props.detailUnit)"
+                  :key="f.label"
+                  class="bg-muted/50 rounded p-1.5 text-center"
+                >
+                  <p class="text-[9px] text-muted-foreground uppercase tracking-wide">{{ f.label }}</p>
+                  <p class="text-xs font-mono font-semibold text-foreground">{{ f.value }}</p>
+                </div>
+              </div>
+            </div>
+            <div v-if="field(props.detailUnit, 'csize')" class="mb-3">
+              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Caliber</p>
+              <!-- eslint-disable-next-line vue/no-v-html -->
+              <p class="text-xs text-foreground" v-html="fieldStr(props.detailUnit, 'csize')" />
+            </div>
+            <div v-if="fieldStr(props.detailUnit, 'special')" class="mb-3">
+              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Special</p>
+              <div class="flex flex-wrap gap-1">
+                <span
+                  v-for="rule in fieldStr(props.detailUnit, 'special').split(',').map((s) => s.trim()).filter(Boolean)"
+                  :key="rule"
+                  class="text-[10px] bg-muted rounded px-1.5 py-0.5 text-foreground"
+                >{{ rule }}</span>
+              </div>
+            </div>
+          </template>
+
+          <!-- Note (shared) -->
+          <div v-if="field(props.detailUnit, 'note')" class="mb-3">
+            <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Notes</p>
             <!-- eslint-disable-next-line vue/no-v-html -->
-            <p class="text-xs text-foreground" v-html="fieldStr(selectedUnit, 'csize')" />
+            <div class="text-xs text-foreground leading-relaxed unit-note" v-html="renderContent(fieldStr(props.detailUnit, 'note'), { acronymPopups: appSettings.acronymPopups })" />
           </div>
-
-          <!-- Special rules -->
-          <div v-if="fieldStr(selectedUnit, 'special')" class="mb-3">
-            <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Special</p>
-            <div class="flex flex-wrap gap-1">
-              <span
-                v-for="rule in fieldStr(selectedUnit, 'special').split(',').map((s) => s.trim()).filter(Boolean)"
-                :key="rule"
-                class="text-[10px] bg-muted rounded px-1.5 py-0.5 text-foreground"
-              >{{ rule }}</span>
-            </div>
+          <div v-if="field(props.detailUnit, 'notes')" class="mb-3">
+            <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Notes</p>
+            <!-- eslint-disable-next-line vue/no-v-html -->
+            <div class="text-xs text-foreground leading-relaxed unit-note" v-html="renderContent(fieldStr(props.detailUnit, 'notes'), { acronymPopups: appSettings.acronymPopups })" />
           </div>
-        </template>
-
-        <!-- Note (shared, HTML allowed) -->
-        <div v-if="field(selectedUnit, 'note')" class="mb-3">
-          <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Notes</p>
-          <!-- eslint-disable-next-line vue/no-v-html -->
-          <div class="text-xs text-foreground leading-relaxed unit-note" v-html="fieldStr(selectedUnit, 'note')" />
+          <div v-if="fieldStr(props.detailUnit, 'dagger')" class="mb-3">
+            <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">† Note</p>
+            <!-- eslint-disable-next-line vue/no-v-html -->
+            <p class="text-xs text-foreground" v-html="renderContent(fieldStr(props.detailUnit, 'dagger'), { acronymPopups: appSettings.acronymPopups })" />
+          </div>
         </div>
-
-        <!-- Dagger -->
-        <div v-if="fieldStr(selectedUnit, 'dagger')" class="mb-3">
-          <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">† Note</p>
-          <p class="text-xs text-foreground">{{ fieldStr(selectedUnit, 'dagger') }}</p>
-        </div>
-      </div>
+      </template>
     </template>
 
-    <!-- Browse view -->
+    <!-- list-only or full mode -->
     <template v-else>
-      <!-- Search -->
-      <div class="px-3 pt-3 pb-2 shrink-0">
-        <Input v-model="search" placeholder="Search units…" class="h-8 text-xs" />
-      </div>
-
-      <!-- Filter row -->
-      <div class="px-3 pb-2 shrink-0 flex flex-wrap items-center gap-2">
-        <!-- Type toggle buttons -->
-        <div class="flex gap-0.5 bg-muted/50 rounded p-0.5">
+      <!-- Full mode: detail view when a unit is selected -->
+      <template v-if="selectedUnit && props.mode === 'full'">
+        <!-- Detail toolbar -->
+        <div class="shrink-0 flex items-center gap-2 px-3 pt-2 pb-1.5 border-b border-border/50">
           <button
-            v-for="opt in ([{ value: 'all', label: 'All' }, { value: 'vehicle', label: 'Vehicles' }, { value: 'ordnance', label: 'Ordnance' }] as const)"
-            :key="opt.value"
-            :class="[
-              'px-2 py-0.5 text-[11px] rounded transition-colors',
-              typeFilter === opt.value
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground',
-            ]"
-            @click="typeFilter = opt.value"
+            class="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            @click="back"
           >
-            {{ opt.label }}
+            <ArrowLeft class="w-3 h-3" />
+            Back
+          </button>
+          <div class="flex-1" />
+          <button
+            v-if="showCompareButton"
+            class="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary border border-border rounded px-2 py-0.5 transition-colors hover:border-primary/50"
+            title="Compare with another unit"
+            @click="emit('compare', selectedUnit)"
+          >
+            <GitCompare class="w-3 h-3" />
+            Compare
           </button>
         </div>
 
-        <!-- Nation dropdown -->
-        <select
-          v-model="nationFilter"
-          class="h-6 text-[11px] bg-muted/50 border border-border rounded px-1.5 text-foreground outline-none cursor-pointer"
-        >
-          <option value="all">All nations</option>
-          <option v-for="n in availableNations" :key="n" :value="n">{{ n }}</option>
-        </select>
-      </div>
+        <!-- Detail card -->
+        <div class="flex-1 overflow-y-auto px-3 py-3">
+          <div class="mb-3">
+            <div class="flex items-start justify-between gap-2">
+              <h2 class="text-sm font-semibold text-foreground leading-tight">{{ selectedUnit.name }}</h2>
+              <div class="flex items-center gap-1 shrink-0">
+                <span
+                  v-if="unitNation(selectedUnit)"
+                  class="text-[10px] font-medium bg-blue-500/15 text-blue-600 dark:text-blue-400 rounded px-1.5 py-0.5"
+                >{{ unitNation(selectedUnit) }}</span>
+                <span class="text-[10px] font-medium bg-muted text-muted-foreground rounded px-1.5 py-0.5">
+                  {{ unitTypeLabel(selectedUnit) }}
+                </span>
+              </div>
+            </div>
+            <p v-if="unitDates(selectedUnit)" class="text-[11px] text-muted-foreground mt-0.5">
+              {{ unitDates(selectedUnit) }}
+            </p>
+          </div>
 
-      <!-- Letter chips (when not searching/filtering) -->
-      <div v-if="!isFiltering" class="px-3 pb-2 flex flex-wrap gap-1 shrink-0">
-        <button
-          v-for="letter in availableLetters"
-          :key="letter"
-          :class="[
-            'w-6 h-6 text-xs rounded font-mono transition-colors',
-            activeLetter === letter
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-muted/50 hover:bg-muted text-foreground/70',
-          ]"
-          @click="toggleLetter(letter)"
-        >
-          {{ letter }}
-        </button>
-      </div>
+          <template v-if="selectedUnit.type === 'vehicle'">
+            <div v-if="vehicleStats(selectedUnit).length > 0" class="mb-3">
+              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Stats</p>
+              <div class="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
+                <div v-for="f in vehicleStats(selectedUnit)" :key="f.label" class="bg-muted/50 rounded p-1.5 text-center">
+                  <p class="text-[9px] text-muted-foreground uppercase tracking-wide">{{ f.label }}</p>
+                  <p class="text-xs font-mono font-semibold text-foreground">{{ f.value }}</p>
+                </div>
+              </div>
+            </div>
+            <div v-if="vehicleArmament(selectedUnit).length > 0" class="mb-3">
+              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Armament</p>
+              <div class="flex flex-col gap-0.5">
+                <div v-for="f in vehicleArmament(selectedUnit)" :key="f.label" class="flex gap-2 items-baseline">
+                  <span class="text-[10px] text-muted-foreground w-28 shrink-0">{{ f.label }}</span>
+                  <span class="text-xs text-foreground font-mono">{{ f.value }}</span>
+                </div>
+              </div>
+            </div>
+            <div v-if="fieldBool(selectedUnit, 'radioless') || fieldBool(selectedUnit, 'ot')" class="mb-3 flex gap-1.5">
+              <span v-if="fieldBool(selectedUnit, 'radioless')" class="text-[10px] bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 rounded px-1.5 py-0.5 font-medium">Radioless</span>
+              <span v-if="fieldBool(selectedUnit, 'ot')" class="text-[10px] bg-orange-500/15 text-orange-700 dark:text-orange-400 rounded px-1.5 py-0.5 font-medium">Open-topped</span>
+            </div>
+          </template>
 
-      <!-- Results list -->
-      <div class="flex-1 overflow-y-auto px-3 pb-3">
-        <!-- Empty state -->
-        <div
-          v-if="!showList"
-          class="text-xs text-muted-foreground py-4 text-center"
-        >
-          Select a letter or search above.
+          <template v-else-if="selectedUnit.type === 'ordnance'">
+            <div v-if="ordnanceStats(selectedUnit).length > 0" class="mb-3">
+              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Stats</p>
+              <div class="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
+                <div v-for="f in ordnanceStats(selectedUnit)" :key="f.label" class="bg-muted/50 rounded p-1.5 text-center">
+                  <p class="text-[9px] text-muted-foreground uppercase tracking-wide">{{ f.label }}</p>
+                  <p class="text-xs font-mono font-semibold text-foreground">{{ f.value }}</p>
+                </div>
+              </div>
+            </div>
+            <div v-if="field(selectedUnit, 'csize')" class="mb-3">
+              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Caliber</p>
+              <!-- eslint-disable-next-line vue/no-v-html -->
+              <p class="text-xs text-foreground" v-html="fieldStr(selectedUnit, 'csize')" />
+            </div>
+            <div v-if="fieldStr(selectedUnit, 'special')" class="mb-3">
+              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Special</p>
+              <div class="flex flex-wrap gap-1">
+                <span v-for="rule in fieldStr(selectedUnit, 'special').split(',').map((s) => s.trim()).filter(Boolean)" :key="rule" class="text-[10px] bg-muted rounded px-1.5 py-0.5 text-foreground">{{ rule }}</span>
+              </div>
+            </div>
+          </template>
+
+          <div v-if="field(selectedUnit, 'note')" class="mb-3">
+            <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Notes</p>
+            <!-- eslint-disable-next-line vue/no-v-html -->
+            <div class="text-xs text-foreground leading-relaxed unit-note" v-html="renderContent(fieldStr(selectedUnit, 'note'), { acronymPopups: appSettings.acronymPopups })" />
+          </div>
+          <div v-if="field(selectedUnit, 'notes')" class="mb-3">
+            <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Notes</p>
+            <!-- eslint-disable-next-line vue/no-v-html -->
+            <div class="text-xs text-foreground leading-relaxed unit-note" v-html="renderContent(fieldStr(selectedUnit, 'notes'), { acronymPopups: appSettings.acronymPopups })" />
+          </div>
+          <div v-if="fieldStr(selectedUnit, 'dagger')" class="mb-3">
+            <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">† Note</p>
+            <!-- eslint-disable-next-line vue/no-v-html -->
+            <p class="text-xs text-foreground" v-html="renderContent(fieldStr(selectedUnit, 'dagger'), { acronymPopups: appSettings.acronymPopups })" />
+          </div>
+        </div>
+      </template>
+
+      <!-- Browse view (list-only mode, or full mode with no unit selected) -->
+      <template v-else>
+        <!-- Search -->
+        <div class="px-3 pt-3 pb-2 shrink-0">
+          <Input v-model="search" placeholder="Search units…" class="h-8 text-xs" />
         </div>
 
-        <div v-else-if="filteredUnits.length === 0" class="text-xs text-muted-foreground py-4 text-center">
-          No units found.
+        <!-- Filter row -->
+        <div class="px-3 pb-2 shrink-0 flex flex-wrap items-center gap-2">
+          <div class="flex gap-0.5 bg-muted/50 rounded p-0.5">
+            <button
+              v-for="opt in ([{ value: 'all', label: 'All' }, { value: 'vehicle', label: 'Vehicles' }, { value: 'ordnance', label: 'Ordnance' }] as const)"
+              :key="opt.value"
+              :class="[
+                'px-2 py-0.5 text-[11px] rounded transition-colors',
+                typeFilter === opt.value
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground',
+              ]"
+              @click="typeFilter = opt.value"
+            >
+              {{ opt.label }}
+            </button>
+          </div>
+          <select
+            v-model="nationFilter"
+            class="h-6 text-[11px] bg-muted/50 border border-border rounded px-1.5 text-foreground outline-none cursor-pointer"
+          >
+            <option value="all">All nations</option>
+            <option v-for="n in availableNations" :key="n" :value="n">{{ n }}</option>
+          </select>
         </div>
 
-        <!-- Unit rows -->
-        <div
-          v-for="unit in filteredUnits"
-          v-else
-          :key="unit.id"
-          class="flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer hover:bg-accent transition-colors"
-          role="button"
-          tabindex="0"
-          @click="selectUnit(unit)"
-          @keydown.enter="selectUnit(unit)"
-        >
-          <span class="text-xs text-foreground flex-1 truncate">{{ unit.name }}</span>
-          <span
-            v-if="unitNation(unit)"
-            class="text-[10px] text-muted-foreground shrink-0"
-          >{{ unitNation(unit) }}</span>
-          <span
+        <!-- Letter chips (when not searching/filtering) -->
+        <div v-if="!isFiltering" class="px-3 pb-2 flex flex-wrap gap-1 shrink-0">
+          <button
+            v-for="letter in availableLetters"
+            :key="letter"
             :class="[
-              'text-[10px] font-medium rounded px-1.5 py-0.5 shrink-0',
-              unit.type === 'vehicle'
-                ? 'bg-green-500/15 text-green-700 dark:text-green-400'
-                : 'bg-purple-500/15 text-purple-700 dark:text-purple-400',
+              'w-6 h-6 text-xs rounded font-mono transition-colors',
+              activeLetter === letter
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted/50 hover:bg-muted text-foreground/70',
             ]"
-          >{{ unitTypeLabel(unit) }}</span>
+            @click="toggleLetter(letter)"
+          >
+            {{ letter }}
+          </button>
         </div>
-      </div>
+
+        <!-- Results list -->
+        <div class="flex-1 overflow-y-auto px-3 pb-3">
+          <div v-if="!showList" class="text-xs text-muted-foreground py-4 text-center">
+            Select a letter or search above.
+          </div>
+          <div v-else-if="filteredUnits.length === 0" class="text-xs text-muted-foreground py-4 text-center">
+            No units found.
+          </div>
+          <div
+            v-for="unit in filteredUnits"
+            v-else
+            :key="unit.id"
+            class="flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer hover:bg-accent transition-colors"
+            role="button"
+            tabindex="0"
+            @click="selectUnit(unit)"
+            @keydown.enter="selectUnit(unit)"
+          >
+            <span class="text-xs text-foreground flex-1 truncate">{{ unit.name }}</span>
+            <span v-if="unitNation(unit)" class="text-[10px] text-muted-foreground shrink-0">{{ unitNation(unit) }}</span>
+            <span
+              :class="[
+                'text-[10px] font-medium rounded px-1.5 py-0.5 shrink-0',
+                unit.type === 'vehicle'
+                  ? 'bg-green-500/15 text-green-700 dark:text-green-400'
+                  : 'bg-purple-500/15 text-purple-700 dark:text-purple-400',
+              ]"
+            >{{ unitTypeLabel(unit) }}</span>
+          </div>
+        </div>
+      </template>
     </template>
   </div>
 </template>
