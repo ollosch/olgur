@@ -20,6 +20,7 @@ const query = ref('')
 const showAllRules = ref(false)
 const showAllEntries = ref(false)
 const showAllGameData = ref(false)
+const showAllUnits = ref(false)
 
 const listRef = ref<HTMLElement | null>(null)
 const inputRef = ref<HTMLInputElement | null>(null)
@@ -110,6 +111,23 @@ const gameDataResults = computed((): GameDataResult[] => {
   if (!q) return []
   const results: GameDataResult[] = []
   for (const item of contentStore.allGameData) {
+    if (item.type !== 'sop' && item.type !== 'table') continue
+    const r = rankMatchLower(item.name.toLowerCase(), q)
+    if (r < 3) results.push({ item, rank: r })
+  }
+  results.sort((a, b) => {
+    if (a.rank !== b.rank) return a.rank - b.rank
+    return a.item.name.localeCompare(b.item.name)
+  })
+  return results
+})
+
+const unitResults = computed((): GameDataResult[] => {
+  const q = query.value.trim().toLowerCase()
+  if (!q) return []
+  const results: GameDataResult[] = []
+  for (const item of contentStore.allGameData) {
+    if (item.type !== 'vehicle' && item.type !== 'ordnance') continue
     const r = rankMatchLower(item.name.toLowerCase(), q)
     if (r < 3) results.push({ item, rank: r })
   }
@@ -127,16 +145,73 @@ const hiddenGameDataCount = computed((): number =>
   Math.max(0, gameDataResults.value.length - DEFAULT_CAP),
 )
 
+const visibleUnits = computed((): GameDataResult[] =>
+  showAllUnits.value ? unitResults.value : unitResults.value.slice(0, DEFAULT_CAP),
+)
+const hiddenUnitsCount = computed((): number =>
+  Math.max(0, unitResults.value.length - DEFAULT_CAP),
+)
+
 const hasResults = computed(
-  (): boolean => ruleResults.value.length > 0 || entryResults.value.length > 0 || gameDataResults.value.length > 0,
+  (): boolean =>
+    ruleResults.value.length > 0 ||
+    entryResults.value.length > 0 ||
+    gameDataResults.value.length > 0 ||
+    unitResults.value.length > 0,
 )
 
 // ── Actions ──────────────────────────────────────────────────────────────────
+
+// ── Unit type label mappings ──────────────────────────────────────────────────
+
+const VEHICLE_TYPE_LABELS: Record<string, string> = {
+  AFV: 'Armored Fighting Vehicle',
+  Tt: 'Light Tank',
+  HT: 'Half-track',
+  AC: 'Armored Car',
+  Tk: 'Tank',
+  Art: 'Artillery',
+  Arm: 'Armored',
+  Wgn: 'Wagon',
+  Tr: 'Truck',
+  Car: 'Car',
+  MC: 'Motorcycle',
+  Jeep: 'Jeep',
+  SPG: 'Self-Propelled Gun',
+  TD: 'Tank Destroyer',
+  AA: 'Anti-Aircraft Vehicle',
+}
+
+const ORDNANCE_TYPE_LABELS: Record<string, string> = {
+  MTR: 'Mortar',
+  AT: 'Anti-Tank Gun',
+  INF: 'Infantry Gun',
+  AA: 'Anti-Aircraft',
+  ART: 'Artillery',
+  RCL: 'Recoilless Rifle',
+  AAMG: 'AA Machine Gun',
+  AATK: 'AA Anti-Tank',
+  DC: 'Demolition Charge',
+}
+
+function unitTypeLabel(item: GameDatum): string {
+  const raw = (item.content['type'] as string | undefined) ?? item.type
+  if (item.type === 'vehicle') return VEHICLE_TYPE_LABELS[raw] ?? raw
+  if (item.type === 'ordnance') return ORDNANCE_TYPE_LABELS[raw] ?? raw
+  return raw
+}
+
+function unitNation(item: GameDatum): string {
+  const nation = item.content['nation'] as string | undefined
+  if (!nation) return ''
+  return nation.charAt(0).toUpperCase() + nation.slice(1)
+}
 
 function onQueryInput(): void {
   showAllRules.value = false
   showAllEntries.value = false
   showAllGameData.value = false
+  showAllUnits.value = false
 }
 
 function selectRule(rule: Rule): void {
@@ -164,6 +239,11 @@ function selectGameDatum(item: GameDatum): void {
   if (systemId) {
     router.push({ name: 'system-game-datum', params: { systemId, gameDatumId: item.id } })
   }
+  shortcutStore.overlayOpen = false
+}
+
+function selectUnit(_item: GameDatum): void {
+  // TODO(Phase 4): Navigate to bottom-panel unit detail view instead of closing.
   shortcutStore.overlayOpen = false
 }
 
@@ -304,6 +384,43 @@ function onKeyDown(e: KeyboardEvent): void {
               @click="showAllGameData = true"
             >
               {{ hiddenGameDataCount }} more…
+            </button>
+          </template>
+
+          <!-- Separator between groups -->
+          <div
+            v-if="(gameDataResults.length > 0 || ruleResults.length > 0 || entryResults.length > 0) && unitResults.length > 0"
+            class="border-t border-border/50 my-2"
+          />
+
+          <!-- Units group (vehicles + ordnance) -->
+          <template v-if="unitResults.length > 0">
+            <div class="px-3 pt-1 pb-1">
+              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                Units
+              </p>
+            </div>
+
+            <div
+              v-for="{ item } in visibleUnits"
+              :key="item.id"
+              class="mx-2 px-2 py-1.5 rounded cursor-pointer hover:bg-accent flex items-center gap-2 transition-colors"
+              role="button"
+              tabindex="0"
+              @click="selectUnit(item)"
+              @keydown.enter="selectUnit(item)"
+            >
+              <span class="text-[10px] font-medium text-muted-foreground bg-muted rounded px-1.5 py-0.5 shrink-0">{{ unitTypeLabel(item) }}</span>
+              <span class="text-foreground text-xs truncate flex-1">{{ item.name }}</span>
+              <span v-if="unitNation(item)" class="text-[10px] text-muted-foreground shrink-0">{{ unitNation(item) }}</span>
+            </div>
+
+            <button
+              v-if="hiddenUnitsCount > 0 && !showAllUnits"
+              class="w-full px-4 py-1.5 text-[11px] text-muted-foreground hover:text-foreground text-left transition-colors"
+              @click="showAllUnits = true"
+            >
+              {{ hiddenUnitsCount }} more…
             </button>
           </template>
         </template>
