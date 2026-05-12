@@ -32,6 +32,7 @@ test('unauthenticated requests are rejected', function (string $path): void {
 })->with([
     'rules' => ['/api/systems/{system}/modules/{module}/versions/{version}/rules'],
     'index' => ['/api/systems/{system}/modules/{module}/versions/{version}/index'],
+    'game-data' => ['/api/systems/{system}/modules/{module}/versions/{version}/game-data'],
 ]);
 
 // ── rules endpoint ───────────────────────────────────────────────────────────
@@ -122,5 +123,50 @@ test('index returns 404 when version does not belong to module', function (): vo
     actingAs($user);
 
     getJson(versionFileUrl($system, $moduleA, $version, 'index'))
+        ->assertNotFound();
+});
+
+// ── game-data endpoint ───────────────────────────────────────────────────────
+
+test('authenticated user can download the game-data file', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $version = ModuleVersion::factory()->for($module)->released()->create();
+
+    Storage::disk('local')->put(
+        'versions/'.$version->id.'/game-data.json',
+        json_encode([['id' => 'vehicle-2001', 'name' => 'PzKpfw IB']])
+    );
+
+    actingAs($user);
+
+    getJson(versionFileUrl($system, $module, $version, 'game-data'))
+        ->assertSuccessful()
+        ->assertJsonFragment(['id' => 'vehicle-2001']);
+});
+
+test('game-data returns 404 when file does not exist on disk', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $version = ModuleVersion::factory()->for($module)->released()->create();
+
+    actingAs($user);
+
+    getJson(versionFileUrl($system, $module, $version, 'game-data'))
+        ->assertNotFound();
+});
+
+test('game-data returns 404 when version does not belong to module', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $moduleA = Module::factory()->for($system)->create();
+    $moduleB = Module::factory()->for($system)->create();
+    $version = ModuleVersion::factory()->for($moduleB)->released()->create();
+
+    actingAs($user);
+
+    getJson(versionFileUrl($system, $moduleA, $version, 'game-data'))
         ->assertNotFound();
 });
