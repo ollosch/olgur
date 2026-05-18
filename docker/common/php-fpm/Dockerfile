@@ -103,6 +103,8 @@ CMD ["php-fpm"]
 ##############################
 FROM base AS development
 
+COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
+
 ARG UID=1000
 ARG GID=1000
 
