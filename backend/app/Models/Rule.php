@@ -21,10 +21,11 @@ use Illuminate\Support\Carbon;
  * @property int $sort_order
  * @property string $title
  * @property string $content
+ * @property string|null $markdown
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['module_id', 'parent_id', 'number', 'title', 'content', 'sort_order'])]
+#[Fillable(['module_id', 'parent_id', 'number', 'title', 'content', 'markdown', 'sort_order'])]
 final class Rule extends Model
 {
     /** @use HasFactory<RuleFactory> */

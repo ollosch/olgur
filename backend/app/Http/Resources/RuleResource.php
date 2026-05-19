@@ -25,6 +25,7 @@ final class RuleResource extends JsonResource
             'number' => $this->number,
             'title' => $this->title,
             'content' => $this->content,
+            'markdown' => $this->markdown,
             'sort_order' => $this->sort_order,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

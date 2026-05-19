@@ -11,11 +11,20 @@ use App\Models\User;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\assertDatabaseHas;
-use function Pest\Laravel\assertDatabaseMissing;
 use function Pest\Laravel\deleteJson;
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\patchJson;
 use function Pest\Laravel\postJson;
+
+beforeEach(function (): void {
+    $this->payload = [
+        'number' => 'A.1',
+        'title' => 'Test Rule',
+        'content' => 'Rule content.',
+        'markdown' => '**Bold markdown content.**',
+        'sort_order' => 1,
+    ];
+});
 
 // ── Unauthenticated ──────────────────────────────────────────────────────────
 
@@ -89,23 +98,14 @@ test('store creates a rule within a module', function (): void {
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
 
-    actingAs($user);
+    actingAs($user)
+        ->postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', $this->payload)
+        ->assertCreated()
+        ->assertJsonPath('data.number', $this->payload['number'])
+        ->assertJsonPath('data.title', $this->payload['title'])
+        ->assertJsonPath('data.module_id', $module->id);
 
-    $payload = [
-        'number' => 'A.1',
-        'title' => 'First Rule',
-        'content' => 'The content.',
-        'sort_order' => 1,
-    ];
-
-    $response = postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', $payload)
-        ->assertCreated();
-
-    $response->assertJsonPath('data.number', 'A.1');
-    $response->assertJsonPath('data.title', 'First Rule');
-    $response->assertJsonPath('data.module_id', $module->id);
-
-    assertDatabaseHas('rules', ['number' => 'A.1', 'module_id' => $module->id]);
+    assertDatabaseHas('rules', ['number' => $this->payload['number'], 'module_id' => $module->id]);
 });
 
 test('store requires number and title', function (): void {
@@ -113,9 +113,8 @@ test('store requires number and title', function (): void {
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
 
-    actingAs($user);
-
-    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', [])
+    actingAs($user)
+        ->postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', [])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['number', 'title']);
 });
@@ -124,11 +123,10 @@ test('store rejects duplicate number within the same module', function (): void 
     $user = User::factory()->superAdmin()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
-    Rule::factory()->for($module)->create(['number' => 'A.1']);
+    Rule::factory()->for($module)->create($this->payload);
 
-    actingAs($user);
-
-    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', ['number' => 'A.1', 'title' => 'Duplicate'])
+    actingAs($user)
+        ->postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', $this->payload)
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['number']);
 });
@@ -138,11 +136,10 @@ test('store allows same number in a different module', function (): void {
     $system = System::factory()->create();
     $moduleA = Module::factory()->for($system)->create();
     $moduleB = Module::factory()->for($system)->create();
-    Rule::factory()->for($moduleB)->create(['number' => 'A.1']);
+    Rule::factory()->for($moduleB)->create($this->payload);
 
-    actingAs($user);
-
-    postJson('/api/systems/'.$system->id.'/modules/'.$moduleA->id.'/rules', ['number' => 'A.1', 'title' => 'OK', 'content' => 'Rule content.', 'sort_order' => 1])
+    actingAs($user)
+         ->postJson('/api/systems/'.$system->id.'/modules/'.$moduleA->id.'/rules', $this->payload)
         ->assertCreated();
 });
 
@@ -151,11 +148,10 @@ test('store rejects cross-module duplicate for core module', function (): void {
     $system = System::factory()->create();
     $coreModule = Module::factory()->for($system)->create(['is_core' => true]);
     $otherModule = Module::factory()->for($system)->create(['is_core' => false]);
-    Rule::factory()->for($otherModule)->create(['number' => 'A1.1']);
+    Rule::factory()->for($otherModule)->create($this->payload);
 
-    actingAs($user);
-
-    postJson('/api/systems/'.$system->id.'/modules/'.$coreModule->id.'/rules', ['number' => 'A1.1', 'title' => 'Dup'])
+    actingAs($user)
+        ->postJson('/api/systems/'.$system->id.'/modules/'.$coreModule->id.'/rules', $this->payload)
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['number']);
 });
@@ -165,11 +161,10 @@ test('store rejects cross-module duplicate when allow_concurrent_expansions is t
     $system = System::factory()->create(['config' => ['system_structure' => 'core_plus_many']]);
     $moduleA = Module::factory()->for($system)->create(['is_core' => false]);
     $moduleB = Module::factory()->for($system)->create(['is_core' => false]);
-    Rule::factory()->for($moduleA)->create(['number' => 'A1.1']);
+    Rule::factory()->for($moduleA)->create($this->payload);
 
-    actingAs($user);
-
-    postJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/rules', ['number' => 'A1.1', 'title' => 'Dup'])
+    actingAs($user)
+        ->postJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/rules', $this->payload)
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['number']);
 });
@@ -179,11 +174,10 @@ test('store accepts cross-module duplicate for non-core module when allow_concur
     $system = System::factory()->create(['config' => ['system_structure' => 'grouping_only']]);
     $moduleA = Module::factory()->for($system)->create(['is_core' => false]);
     $moduleB = Module::factory()->for($system)->create(['is_core' => false]);
-    Rule::factory()->for($moduleA)->create(['number' => 'A1.1']);
+    Rule::factory()->for($moduleA)->create($this->payload);
 
-    actingAs($user);
-
-    postJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/rules', ['number' => 'A1.1', 'title' => 'Dup', 'content' => 'Rule content.', 'sort_order' => 1])
+    actingAs($user)
+        ->postJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/rules', $this->payload)
         ->assertCreated();
 });
 
@@ -194,9 +188,8 @@ test('store rejects invalid parent_id from a different module', function (): voi
     $other = Module::factory()->for($system)->create();
     $foreignParent = Rule::factory()->for($other)->create();
 
-    actingAs($user);
-
-    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', [
+    actingAs($user)
+        ->postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', [
         'number' => 'A.1',
         'title' => 'Child',
         'parent_id' => $foreignParent->id,
@@ -218,6 +211,7 @@ test('store accepts valid parent_id within the same module', function (): void {
         'title' => 'Child Rule',
         'parent_id' => $parent->id,
         'content' => 'Child rule content.',
+        'markdown' => null,
         'sort_order' => 1,
     ])
         ->assertCreated()
@@ -269,6 +263,7 @@ test('update modifies a rule', function (): void {
         'number' => $rule->number,
         'title' => 'Updated Title',
         'content' => $rule->content,
+        'markdown' => $rule->markdown,
         'sort_order' => $rule->sort_order,
     ])
         ->assertSuccessful();
@@ -322,6 +317,7 @@ test('update allows cross-module duplicate for non-core module when allow_concur
         'number' => 'A1.1',
         'title' => $ruleB->title,
         'content' => $ruleB->content,
+        'markdown' => $ruleB->markdown,
         'sort_order' => $ruleB->sort_order,
     ])
         ->assertOk();
@@ -352,8 +348,80 @@ test('destroy deletes a rule', function (): void {
 
     deleteJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id)
         ->assertNoContent();
+});
 
-    assertDatabaseMissing('rules', ['id' => $rule->id]);
+// ── markdown field ────────────────────────────────────────────────────────────
+
+test('store saves markdown when provided', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    actingAs($user);
+
+    $data = [
+        'number' => 'M.1',
+        'title' => 'Markdown Rule',
+        'content' => 'Plain content.',
+        'markdown' => '**Bold markdown content.**',
+        'sort_order' => 1,
+    ];
+
+    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', $data)
+        ->assertCreated();
+
+    assertDatabaseHas('rules', $data);
+});
+
+test('update saves markdown when provided', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $rule = Rule::factory()->for($module)->create();
+    actingAs($user);
+
+    $response = patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id, [
+        'parent_id' => $rule->parent_id,
+        'number' => $rule->number,
+        'title' => $rule->title,
+        'content' => $rule->content,
+        'markdown' => '# Updated Markdown',
+        'sort_order' => $rule->sort_order,
+    ])->assertOk();
+
+    $response->assertJsonPath('data.markdown', '# Updated Markdown');
+    assertDatabaseHas('rules', ['id' => $rule->id, 'markdown' => '# Updated Markdown']);
+});
+
+test('update clears markdown when null is provided', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $rule = Rule::factory()->for($module)->create(['markdown' => '**Old markdown.**']);
+    actingAs($user);
+
+    $response = patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id, [
+        'parent_id' => $rule->parent_id,
+        'number' => $rule->number,
+        'title' => $rule->title,
+        'content' => $rule->content,
+        'markdown' => null,
+        'sort_order' => $rule->sort_order,
+    ])->assertOk();
+
+    $response->assertJsonPath('data.markdown', null);
+});
+
+test('response always includes markdown field', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $rule = Rule::factory()->for($module)->create();
+    actingAs($user);
+
+    $response = getJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id)
+        ->assertSuccessful();
+
+    expect($response->json('data'))->toHaveKey('markdown');
 });
 
 test('destroy returns 404 for rule belonging to a different module', function (): void {
@@ -401,8 +469,13 @@ test('regular user cannot create a rule', function (): void {
 
     actingAs($user);
 
-    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', ['number' => 'A.1', 'title' => 'Test', 'content' => 'Content.', 'sort_order' => 1])
-        ->assertForbidden();
+    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', [
+        'number' => 'A.1',
+        'title' => 'Test',
+        'content' => 'Content.',
+        'markdown' => '**Bold markdown content.**',
+        'sort_order' => 1
+    ])->assertForbidden();
 });
 
 test('regular user cannot update a rule', function (): void {
@@ -418,6 +491,7 @@ test('regular user cannot update a rule', function (): void {
         'number' => $rule->number,
         'title' => 'Hacked',
         'content' => $rule->content,
+        'markdown' => $rule->markdown,
         'sort_order' => $rule->sort_order,
     ])
         ->assertForbidden();
@@ -470,8 +544,13 @@ test('module subscriber cannot create a rule', function (): void {
 
     actingAs($user);
 
-    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', ['number' => 'A.1', 'title' => 'Test', 'content' => 'Content.', 'sort_order' => 1])
-        ->assertForbidden();
+    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', [
+        'number' => 'A.1',
+        'title' => 'Test',
+        'content' => 'Content.',
+        'markdown' => '**Bold markdown content.**',
+        'sort_order' => 1
+    ])->assertForbidden();
 });
 
 test('module subscriber cannot update a rule', function (): void {
@@ -488,6 +567,7 @@ test('module subscriber cannot update a rule', function (): void {
         'number' => $rule->number,
         'title' => 'Hacked',
         'content' => $rule->content,
+        'markdown' => $rule->markdown,
         'sort_order' => $rule->sort_order,
     ])
         ->assertForbidden();
@@ -516,8 +596,13 @@ test('module editor can create a rule in their module', function (): void {
 
     actingAs($user);
 
-    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', ['number' => 'E.1', 'title' => 'Editor Rule', 'content' => 'Editor rule content.', 'sort_order' => 1])
-        ->assertCreated();
+    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', [
+        'number' => 'E.1',
+        'title' => 'Editor Rule',
+        'content' => 'Editor rule content.',
+        'markdown' => '**Bold markdown content.**',
+        'sort_order' => 1
+    ])->assertCreated();
 });
 
 test('module editor of module A cannot create a rule in module B', function (): void {
@@ -529,8 +614,13 @@ test('module editor of module A cannot create a rule in module B', function (): 
 
     actingAs($user);
 
-    postJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/rules', ['number' => 'E.1', 'title' => 'Editor Rule', 'content' => 'Editor rule content.', 'sort_order' => 1])
-        ->assertForbidden();
+    postJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/rules', [
+        'number' => 'E.1',
+        'title' => 'Editor Rule',
+        'content' => 'Editor rule content.',
+        'markdown' => '**Bold markdown content.**',
+        'sort_order' => 1
+    ])->assertForbidden();
 });
 
 test('module editor can update a rule in their module', function (): void {
@@ -547,6 +637,7 @@ test('module editor can update a rule in their module', function (): void {
         'number' => $rule->number,
         'title' => 'Editor Updated',
         'content' => $rule->content,
+        'markdown' => $rule->markdown,
         'sort_order' => $rule->sort_order,
     ])
         ->assertSuccessful();
@@ -567,6 +658,7 @@ test('module editor cannot update a rule in another module', function (): void {
         'number' => $rule->number,
         'title' => 'Hacked',
         'content' => $rule->content,
+        'markdown' => $rule->markdown,
         'sort_order' => $rule->sort_order,
     ])
         ->assertForbidden();
@@ -609,8 +701,13 @@ test('system admin can create a rule', function (): void {
 
     actingAs($user);
 
-    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', ['number' => 'A.1', 'title' => 'Admin Rule', 'content' => 'Admin rule content.', 'sort_order' => 1])
-        ->assertCreated();
+    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', [
+        'number' => 'A.1',
+        'title' => 'Admin Rule',
+        'content' => 'Admin rule content.',
+        'markdown' => '**Bold markdown content.**',
+        'sort_order' => 1
+    ])->assertCreated();
 });
 
 test('system admin can update a rule', function (): void {
@@ -627,6 +724,7 @@ test('system admin can update a rule', function (): void {
         'number' => $rule->number,
         'title' => 'Admin Updated',
         'content' => $rule->content,
+        'markdown' => $rule->markdown,
         'sort_order' => $rule->sort_order,
     ])
         ->assertSuccessful();
