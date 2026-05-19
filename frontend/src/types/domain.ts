@@ -91,8 +91,6 @@ export interface Rule {
   title: string
   content: string
   sort_order: number
-  /** Depth in the rule tree. Roots are depth 0. Calculated client-side after load. */
-  depth: number
   created_at: string
   updated_at: string
 }

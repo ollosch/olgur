@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, markRaw, type ComputedRef } from 'vue'
 import { defineStore } from 'pinia'
 import { useApi } from '@/composables/useApi'
 import { useSystemStore } from '@/stores/system'
@@ -57,19 +57,24 @@ export const useContentStore = defineStore('content', () => {
     for (const bucket of m.values()) {
       bucket.sort((a, b) => a.sort_order - b.sort_order)
     }
+    return m
+  })
 
-    // Calculate and assign depth to every rule in one depth-first pass.
-    // Roots (parent_id === null) get depth 0; each child gets parent depth + 1.
+  /** Map of rule_id → depth (roots = 0). Computed via depth-first traversal over childrenMap. */
+  const ruleDepths: ComputedRef<Map<string, number>> = computed((): Map<string, number> => {
+    const depths = new Map<string, number>()
+    const children = childrenMap.value
+
     function assignDepths(rules: Rule[], depth: number): void {
       for (const rule of rules) {
-        rule.depth = depth
-        const children = m.get(rule.id)
-        if (children) assignDepths(children, depth + 1)
+        depths.set(rule.id, depth)
+        const ruleChildren = children.get(rule.id)
+        if (ruleChildren) assignDepths(ruleChildren, depth + 1)
       }
     }
-    assignDepths(m.get(null) ?? [], 0)
+    assignDepths(children.get(null) ?? [], 0)
 
-    return m
+    return depths
   })
 
   /**
@@ -290,6 +295,7 @@ export const useContentStore = defineStore('content', () => {
     rulesById,
     rulesByNumber,
     childrenMap,
+    ruleDepths,
     flattenedRulesByModule,
     allIndexEntries,
     indexEntriesByTerm,

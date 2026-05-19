@@ -199,7 +199,7 @@ watch(ruleId, () => {
           <RuleDetailChildren
             :rule="rule"
             :children-map="contentStore.childrenMap"
-            :depth="rule.depth"
+            :depth="contentStore.ruleDepths.get(rule.id) ?? 0"
             :toc-depth="tocDepth"
             :can-edit="canEdit(rule.module_id)"
             :standalone="true"
