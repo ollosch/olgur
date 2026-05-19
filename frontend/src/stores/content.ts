@@ -189,7 +189,7 @@ export const useContentStore = defineStore('content', () => {
 
     const result = await get<ApiCollection<Rule>>(`/systems/${systemId}/modules/${moduleId}/rules`)
     if (result) {
-      rulesByModule.value[moduleId] = result.data
+      rulesByModule.value[moduleId] = result.data.map((r) => markRaw(r))
     }
   }
 
@@ -205,7 +205,7 @@ export const useContentStore = defineStore('content', () => {
     if (result) {
       const list = rulesByModule.value[rule.module_id] ?? []
       const idx = list.indexOf(rulesById.value.get(rule.id)!)
-      if (idx !== -1) list[idx] = result.data
+      if (idx !== -1) list[idx] = markRaw(result.data)
       return result.data
     }
 
@@ -224,7 +224,7 @@ export const useContentStore = defineStore('content', () => {
     if (result) {
       const list = indexEntriesByModule.value[entry.module_id] ?? []
       const idx = list.indexOf(indexEntriesById.value.get(entry.id)!)
-      if (idx !== -1) list[idx] = result.data
+      if (idx !== -1) list[idx] = markRaw(result.data)
       return result.data
     }
 
@@ -239,7 +239,7 @@ export const useContentStore = defineStore('content', () => {
       `/systems/${systemId}/modules/${moduleId}/index-entries`,
     )
     if (result) {
-      indexEntriesByModule.value[moduleId] = result.data
+      indexEntriesByModule.value[moduleId] = result.data.map((e) => markRaw(e))
     }
   }
 
@@ -251,7 +251,7 @@ export const useContentStore = defineStore('content', () => {
       `/systems/${systemId}/modules/${moduleId}/game-data`,
     )
     if (result) {
-      gameDataByModule.value[moduleId] = result.data
+      gameDataByModule.value[moduleId] = result.data.map((d) => markRaw(d))
     }
   }
 
