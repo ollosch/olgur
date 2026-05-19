@@ -420,7 +420,7 @@ test('unsubscribing from an active expansion removes it from active_module_ids',
         ->first();
 
     expect($membership)->not->toBeNull();
-    expect(($membership->config ?? [])['active_module_ids'] ?? [])->not->toContain($expansion->id);
+    expect($membership?->config?->activeModuleIds ?? [])->not->toContain($expansion->id);
 });
 
 test('unsubscribing from an inactive expansion does not crash', function (): void {
@@ -443,7 +443,7 @@ test('unsubscribing from an inactive expansion does not crash', function (): voi
         ->first();
 
     expect($membership)->not->toBeNull();
-    expect(($membership->config ?? [])['active_module_ids'] ?? [])->toBeEmpty();
+    expect($membership?->config?->activeModuleIds ?? [])->toBeEmpty();
 });
 
 test('unsubscribing from core does not clear active_module_ids', function (): void {
@@ -468,8 +468,8 @@ test('unsubscribing from core does not clear active_module_ids', function (): vo
         ->first();
 
     expect($membership)->not->toBeNull();
-    expect(($membership->config ?? [])['active_module_ids'] ?? [])->toContain($expansionA->id);
-    expect(($membership->config ?? [])['active_module_ids'] ?? [])->toContain($expansionB->id);
+    expect($membership?->config?->activeModuleIds ?? [])->toContain($expansionA->id);
+    expect($membership?->config?->activeModuleIds ?? [])->toContain($expansionB->id);
 });
 
 test('subscribing to expansion in core_plus_one system auto-subscribes to core', function (): void {
@@ -494,4 +494,25 @@ test('unsubscribing when membership does not exist does not throw', function ():
     actingAs($user);
 
     deleteJson(subscriptionUrl($system, $expansion, $subscription))->assertNoContent();
+});
+
+test('unsubscribing preserves other config keys like bookmarks', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $expansion = Module::factory()->for($system)->create();
+    $subscription = Subscription::factory()->for($user)->for($expansion)->create();
+    $bookmark = ['type' => 'rule', 'id' => 'abcdefghijklmnopqrstuvwxyz'];
+    Membership::factory()->for($user)->for($system)->create([
+        'config' => ['active_module_ids' => [$expansion->id], 'bookmarks' => [$bookmark]],
+    ]);
+    actingAs($user);
+
+    deleteJson(subscriptionUrl($system, $expansion, $subscription))->assertNoContent();
+
+    $membership = Membership::query()
+        ->where('user_id', $user->id)
+        ->where('system_id', $system->id)
+        ->first();
+
+    expect($membership?->config?->bookmarks ?? [])->toBe([$bookmark]);
 });

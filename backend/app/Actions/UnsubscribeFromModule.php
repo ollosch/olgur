@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions;
 
+use App\Data\MembershipConfig;
 use App\Models\Membership;
 use App\Models\Module;
 use App\Models\Subscription;
@@ -15,6 +16,7 @@ final class UnsubscribeFromModule
      * Unsubscribe a user from a module.
      *
      * For expansion modules, the module is removed from active_module_ids in the membership.
+     * Preserves all other membership config fields (bookmarks, ignored_tags, etc.).
      * No cascade logic — unsubscribing from core does not affect expansion subscriptions.
      */
     public function execute(User $user, Module $module): void
@@ -27,10 +29,17 @@ final class UnsubscribeFromModule
                 ->first();
 
             if ($membership !== null) {
-                /** @var array<int, string> $activeIds */
-                $activeIds = ($membership->config ?? [])['active_module_ids'] ?? [];
-                $activeIds = array_values(array_filter($activeIds, fn (string $id): bool => $id !== $module->id));
-                $membership->config = ['active_module_ids' => $activeIds];
+                $config = $membership->config;
+
+                $activeIds = array_values(
+                    array_filter($config->activeModuleIds, fn (string $id): bool => $id !== $module->id)
+                );
+
+                $membership->config = new MembershipConfig(
+                    activeModuleIds: $activeIds,
+                    bookmarks: $config->bookmarks,
+                    ignoredTags: $config->ignoredTags,
+                );
                 $membership->save();
             }
         }
