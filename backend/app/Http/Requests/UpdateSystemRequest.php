@@ -31,8 +31,6 @@ final class UpdateSystemRequest extends FormRequest
             'description' => ['present', 'string'],
             'config' => ['present', 'array'],
             'config.cover_image' => ['nullable', 'string', 'url'],
-            'config.asop_disabled_topics' => ['sometimes', 'array'],
-            'config.asop_disabled_topics.*' => ['string'],
         ];
     }
 }

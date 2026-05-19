@@ -19,7 +19,6 @@ use Illuminate\Database\Eloquent\Model;
  *   - $sortRulesBy
  *   - $tocDepth
  *   - $coverImage
- *   - $asopDisabledTopics
  *
  * @see \App\Models\System::$config
  * @see \App\Http\Requests\StoreSystemRequest
@@ -40,12 +39,6 @@ final readonly class SystemConfig implements Castable
         public int $tocDepth,
         /** Cover image URL (display only). */
         public ?string $coverImage,
-        /**
-         * Topic slugs hidden from the ASOP view.
-         *
-         * @var list<string>
-         */
-        public array $asopDisabledTopics,
     ) {}
 
     /**
@@ -63,7 +56,6 @@ final readonly class SystemConfig implements Castable
             sortRulesBy: is_string($data['sort_rules_by'] ?? null) ? $data['sort_rules_by'] : 'sort_order',
             tocDepth: is_int($data['toc_depth'] ?? null) ? $data['toc_depth'] : 1,
             coverImage: is_string($data['cover_image'] ?? null) ? $data['cover_image'] : null,
-            asopDisabledTopics: is_array($data['asop_disabled_topics'] ?? null) ? array_values(array_filter($data['asop_disabled_topics'], is_string(...))) : [],
         );
     }
 
@@ -121,7 +113,6 @@ final readonly class SystemConfig implements Castable
             'sort_rules_by' => $this->sortRulesBy,
             'toc_depth' => $this->tocDepth,
             'cover_image' => $this->coverImage,
-            'asop_disabled_topics' => $this->asopDisabledTopics,
         ];
     }
 

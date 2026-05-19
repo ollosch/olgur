@@ -202,7 +202,9 @@ it('member can update their own membership config', function (): void {
 
     $response->assertJsonPath('data.id', $membership->id);
 
-    expect($membership->fresh()->config)->toBe($config);
+    $fresh = $membership->fresh();
+    expect($fresh?->config?->activeModuleIds)->toBe(['mod-1', 'mod-2']);
+    expect($fresh?->config?->bookmarks)->toBe([['type' => 'rule', 'id' => 'abcdefghijklmnopqrstuvwxyz']]);
 });
 
 it('returns 404 when user has no membership for the system', function (): void {
@@ -240,4 +242,51 @@ it('rejects unknown bookmark types on update membership config', function (): vo
     ])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['config.bookmarks.0.type']);
+});
+
+it('member can update ignored_tags in membership config', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $membership = Membership::factory()->for($user)->for($system)->create();
+    actingAs($user);
+
+    $response = patchJson('/api/me/memberships/'.$system->id, [
+        'config' => [
+            'active_module_ids' => [],
+            'ignored_tags' => ['topic-alpha', 'topic-beta'],
+        ],
+    ])->assertSuccessful();
+
+    $response->assertJsonPath('data.config.ignored_tags', ['topic-alpha', 'topic-beta']);
+
+    $fresh = $membership->fresh();
+    expect($fresh?->config?->ignoredTags)->toBe(['topic-alpha', 'topic-beta']);
+});
+
+it('ignored_tags defaults to empty array when not set', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    Membership::factory()->for($user)->for($system)->create();
+    actingAs($user);
+
+    $response = patchJson('/api/me/memberships/'.$system->id, [
+        'config' => ['active_module_ids' => []],
+    ])->assertSuccessful();
+
+    $response->assertJsonPath('data.config.ignored_tags', []);
+});
+
+it('rejects non-string values in ignored_tags', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    Membership::factory()->for($user)->for($system)->create();
+    actingAs($user);
+
+    patchJson('/api/me/memberships/'.$system->id, [
+        'config' => [
+            'ignored_tags' => [123, 456],
+        ],
+    ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['config.ignored_tags.0']);
 });
