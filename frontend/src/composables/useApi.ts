@@ -7,7 +7,7 @@ export function useApi() {
   const loading = ref(false)
   const errors = ref<ResponseErrors | null>(null)
 
-  async function request<T>(callback: () => Promise<AxiosResponse<T>>): Promise<T> {
+  async function request<T>(callback: () => Promise<AxiosResponse<T>>): Promise<T | null> {
     loading.value = true
     errors.value = null
 
@@ -19,7 +19,7 @@ export function useApi() {
 
       if (error.type === 'validation' && error.errors) {
         errors.value = error.errors
-        return null as unknown as T
+        return null
       }
 
       throw e
@@ -28,23 +28,23 @@ export function useApi() {
     }
   }
 
-  function get<T>(url: string, config?: AxiosRequestConfig) {
+  function get<T>(url: string, config?: AxiosRequestConfig): Promise<T | null> {
     return request(() => api.request<T>({ url, method: 'GET', ...config }))
   }
 
-  function post<T, D = unknown>(url: string, data?: D, config?: AxiosRequestConfig) {
+  function post<T, D = unknown>(url: string, data?: D, config?: AxiosRequestConfig): Promise<T | null> {
     return request(() => api.request<T>({ url, method: 'POST', data, ...config }))
   }
 
-  function put<T, D = unknown>(url: string, data: D, config?: AxiosRequestConfig) {
+  function put<T, D = unknown>(url: string, data: D, config?: AxiosRequestConfig): Promise<T | null> {
     return request(() => api.request<T>({ url, method: 'PUT', data, ...config }))
   }
 
-  function patch<T, D = unknown>(url: string, data: D, config?: AxiosRequestConfig) {
+  function patch<T, D = unknown>(url: string, data: D, config?: AxiosRequestConfig): Promise<T | null> {
     return request(() => api.request<T>({ url, method: 'PATCH', data, ...config }))
   }
 
-  function del<T>(url: string, config?: AxiosRequestConfig) {
+  function del<T>(url: string, config?: AxiosRequestConfig): Promise<T | null> {
     return request(() => api.request<T>({ url, method: 'DELETE', ...config }))
   }
 
