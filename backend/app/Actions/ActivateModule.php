@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Actions;
 
+use App\Data\MembershipConfig;
+use App\Enums\SystemStructure;
 use App\Models\Membership;
 use App\Models\Module;
 use App\Models\User;
@@ -17,7 +19,8 @@ final class ActivateModule
      * Enforces:
      * - Module must not be a core module (core modules are always active).
      * - User must be subscribed to the module.
-     * - Always appends to active_module_ids (never clears others first).
+     * - For core_plus_one systems: deactivates all other active expansion modules before activating.
+     * - Preserves all other membership config fields (bookmarks, ignored_tags, etc.).
      *
      * @throws ValidationException when the module is core or the user is not subscribed
      */
@@ -34,14 +37,34 @@ final class ActivateModule
             ->where('system_id', $module->system_id)
             ->firstOrFail();
 
+        $config = $membership->config;
+
         /** @var array<int, string> $activeIds */
-        $activeIds = ($membership->config ?? [])['active_module_ids'] ?? [];
+        $activeIds = $config->activeModuleIds;
+
+        $system = $module->system()->firstOrFail();
+
+        if ($system->config?->structure === SystemStructure::CorePlusOne) {
+            $nonCoreModuleIds = Module::query()
+                ->where('system_id', $module->system_id)
+                ->where('is_core', false)
+                ->pluck('id')
+                ->all();
+
+            $activeIds = array_values(
+                array_filter($activeIds, fn (string $id): bool => ! in_array($id, $nonCoreModuleIds, strict: true))
+            );
+        }
 
         if (! in_array($module->id, $activeIds, strict: true)) {
             $activeIds[] = $module->id;
         }
 
-        $membership->config = ['active_module_ids' => $activeIds];
+        $membership->config = new MembershipConfig(
+            activeModuleIds: $activeIds,
+            bookmarks: $config->bookmarks,
+            ignoredTags: $config->ignoredTags,
+        );
         $membership->save();
 
         return $membership;

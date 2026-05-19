@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Data\MembershipConfig;
 use App\Models\Membership;
 use App\Models\System;
 use App\Models\User;
@@ -102,4 +103,52 @@ test('isMember returns true when user has a membership', function (): void {
     $membership = Membership::factory()->for($user)->for($system)->create();
 
     expect($membership->isMember($user))->toBeTrue();
+});
+
+// ── MembershipConfig ──────────────────────────────────────────────────────────
+
+test('membership config is cast to MembershipConfig instance', function (): void {
+    $membership = Membership::factory()->create([
+        'config' => ['active_module_ids' => ['mod-1'], 'bookmarks' => [], 'ignored_tags' => ['tag-a']],
+    ]);
+
+    $fresh = $membership->fresh();
+    expect($fresh?->config)->toBeInstanceOf(MembershipConfig::class)
+        ->and($fresh?->config?->activeModuleIds)->toBe(['mod-1'])
+        ->and($fresh?->config?->bookmarks)->toBe([])
+        ->and($fresh?->config?->ignoredTags)->toBe(['tag-a']);
+});
+
+test('MembershipConfig::fromArray uses defaults for missing keys', function (): void {
+    $config = MembershipConfig::fromArray([]);
+
+    expect($config->activeModuleIds)->toBe([])
+        ->and($config->bookmarks)->toBe([])
+        ->and($config->ignoredTags)->toBe([]);
+});
+
+test('MembershipConfig::fromArray filters malformed bookmarks', function (): void {
+    $config = MembershipConfig::fromArray([
+        'bookmarks' => [
+            ['type' => 'rule', 'id' => 'abc123'],
+            ['type' => 123, 'id' => 'abc123'],
+            'not-an-array',
+        ],
+    ]);
+
+    expect($config->bookmarks)->toBe([['type' => 'rule', 'id' => 'abc123']]);
+});
+
+test('MembershipConfig::toArray serialises to the expected shape', function (): void {
+    $config = MembershipConfig::fromArray([
+        'active_module_ids' => ['mod-1'],
+        'bookmarks' => [['type' => 'rule', 'id' => 'abc123']],
+        'ignored_tags' => ['tag-a'],
+    ]);
+
+    expect($config->toArray())->toBe([
+        'active_module_ids' => ['mod-1'],
+        'bookmarks' => [['type' => 'rule', 'id' => 'abc123']],
+        'ignored_tags' => ['tag-a'],
+    ]);
 });

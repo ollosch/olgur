@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions;
 
+use App\Data\MembershipConfig;
 use App\Models\Membership;
 use App\Models\Module;
 use App\Models\User;
@@ -15,6 +16,7 @@ final class DeactivateModule
      * Deactivate an expansion module for a user within a system.
      *
      * Core modules cannot be toggled and will throw a ValidationException.
+     * Preserves all other membership config fields (bookmarks, ignored_tags, etc.).
      *
      * @throws ValidationException when the module is core
      */
@@ -31,12 +33,17 @@ final class DeactivateModule
             ->where('system_id', $module->system_id)
             ->firstOrFail();
 
-        /** @var array<int, string> $activeIds */
-        $activeIds = ($membership->config ?? [])['active_module_ids'] ?? [];
+        $config = $membership->config;
 
-        $activeIds = array_values(array_filter($activeIds, fn (string $id): bool => $id !== $module->id));
+        $activeIds = array_values(
+            array_filter($config->activeModuleIds, fn (string $id): bool => $id !== $module->id)
+        );
 
-        $membership->config = ['active_module_ids' => $activeIds];
+        $membership->config = new MembershipConfig(
+            activeModuleIds: $activeIds,
+            bookmarks: $config->bookmarks,
+            ignoredTags: $config->ignoredTags,
+        );
         $membership->save();
 
         return $membership;

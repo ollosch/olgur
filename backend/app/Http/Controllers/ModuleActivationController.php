@@ -32,8 +32,7 @@ final class ModuleActivationController
 
         $membership = $activateModule->execute($user, $module);
 
-        /** @var array<int, string> $activeIds */
-        $activeIds = ($membership->config ?? [])['active_module_ids'] ?? [];
+        $activeIds = $membership->config->activeModuleIds;
 
         return response()->json([
             'data' => [

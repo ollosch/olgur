@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Data\MembershipConfig;
 use Database\Factories\MembershipFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -17,7 +18,7 @@ use Illuminate\Support\Carbon;
  * @property string $user_id
  * @property string $system_id
  * @property bool $admin
- * @property array<string, mixed>|null $config
+ * @property MembershipConfig $config
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -40,7 +41,7 @@ final class Membership extends Model
     {
         return [
             'admin' => 'boolean',
-            'config' => 'array',
+            'config' => MembershipConfig::class,
         ];
     }
 

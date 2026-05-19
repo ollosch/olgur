@@ -115,7 +115,7 @@ test('user can deactivate an expansion module', function (): void {
         ->where('system_id', $system->id)
         ->first();
 
-    expect($membership?->config['active_module_ids'] ?? [])->not->toContain($module->id);
+    expect($membership?->config?->activeModuleIds ?? [])->not->toContain($module->id);
 });
 
 test('user cannot deactivate a core module', function (): void {
@@ -176,4 +176,93 @@ test('activating always appends to active_module_ids without clearing others', f
     expect($activeIds)
         ->toContain($moduleA->id)
         ->toContain($moduleB->id);
+});
+
+// ── core_plus_one enforcement ─────────────────────────────────────────────────
+
+test('activating in core_plus_one system deactivates other active expansions', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create(['config' => ['system_structure' => 'core_plus_one']]);
+    $moduleA = Module::factory()->for($system)->create(['is_core' => false]);
+    $moduleB = Module::factory()->for($system)->create(['is_core' => false]);
+    Membership::factory()->for($user)->for($system)->create([
+        'config' => ['active_module_ids' => [$moduleA->id]],
+    ]);
+    Subscription::factory()->for($user)->for($moduleA)->create();
+    Subscription::factory()->for($user)->for($moduleB)->create();
+    actingAs($user);
+
+    $response = postJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/activate')
+        ->assertSuccessful();
+
+    $activeIds = $response->json('data.active_module_ids');
+    expect($activeIds)
+        ->toContain($moduleB->id)
+        ->not->toContain($moduleA->id);
+});
+
+test('activating in core_plus_many preserves all active expansions', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create(['config' => ['system_structure' => 'core_plus_many']]);
+    $moduleA = Module::factory()->for($system)->create(['is_core' => false]);
+    $moduleB = Module::factory()->for($system)->create(['is_core' => false]);
+    Membership::factory()->for($user)->for($system)->create([
+        'config' => ['active_module_ids' => [$moduleA->id]],
+    ]);
+    Subscription::factory()->for($user)->for($moduleA)->create();
+    Subscription::factory()->for($user)->for($moduleB)->create();
+    actingAs($user);
+
+    $response = postJson('/api/systems/'.$system->id.'/modules/'.$moduleB->id.'/activate')
+        ->assertSuccessful();
+
+    $activeIds = $response->json('data.active_module_ids');
+    expect($activeIds)
+        ->toContain($moduleA->id)
+        ->toContain($moduleB->id);
+});
+
+// ── config key preservation ───────────────────────────────────────────────────
+
+test('activating preserves other config keys like bookmarks', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $bookmark = ['type' => 'rule', 'id' => 'abcdefghijklmnopqrstuvwxyz'];
+    Membership::factory()->for($user)->for($system)->create([
+        'config' => ['active_module_ids' => [], 'bookmarks' => [$bookmark]],
+    ]);
+    Subscription::factory()->for($user)->for($module)->create();
+    actingAs($user);
+
+    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/activate')
+        ->assertSuccessful();
+
+    $membership = Membership::query()
+        ->where('user_id', $user->id)
+        ->where('system_id', $system->id)
+        ->first();
+
+    expect($membership?->config?->bookmarks ?? [])->toBe([$bookmark]);
+});
+
+test('deactivating preserves other config keys like bookmarks', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $bookmark = ['type' => 'rule', 'id' => 'abcdefghijklmnopqrstuvwxyz'];
+    Membership::factory()->for($user)->for($system)->create([
+        'config' => ['active_module_ids' => [$module->id], 'bookmarks' => [$bookmark]],
+    ]);
+    actingAs($user);
+
+    deleteJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/activate')
+        ->assertNoContent();
+
+    $membership = Membership::query()
+        ->where('user_id', $user->id)
+        ->where('system_id', $system->id)
+        ->first();
+
+    expect($membership?->config?->bookmarks ?? [])->toBe([$bookmark]);
 });
