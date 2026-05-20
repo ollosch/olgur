@@ -276,6 +276,23 @@ it('ignored_tags defaults to empty array when not set', function (): void {
     $response->assertJsonPath('data.config.ignored_tags', []);
 });
 
+it('updating a partial config merges with existing config fields', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $membership = Membership::factory()->for($user)->for($system)->create([
+        'config' => ['active_module_ids' => ['mod-1', 'mod-2'], 'ignored_tags' => []],
+    ]);
+    actingAs($user);
+
+    patchJson('/api/me/memberships/'.$system->id, [
+        'config' => ['ignored_tags' => ['topic-alpha']],
+    ])->assertSuccessful();
+
+    $fresh = $membership->fresh();
+    expect($fresh?->config?->activeModuleIds)->toBe(['mod-1', 'mod-2'])
+        ->and($fresh?->config?->ignoredTags)->toBe(['topic-alpha']);
+});
+
 it('rejects non-string values in ignored_tags', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->create();

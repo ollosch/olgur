@@ -75,7 +75,11 @@ final class MeController
             ->where('user_id', $user->id)
             ->firstOrFail();
 
-        $membership->update(['config' => $request->validated('config')]);
+        $config = $membership->config;
+
+        /** @var array<string, mixed> $incoming */
+        $incoming = $request->validated('config');
+        $membership->update(['config' => array_merge($config->toArray(), $incoming)]);
 
         return new MembershipResource($membership);
     }
