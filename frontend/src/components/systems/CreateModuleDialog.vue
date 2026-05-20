@@ -33,8 +33,10 @@ const showCoreCheckbox = computed(
 )
 
 const systemStore = useSystemStore()
-const { modulesBySystem, errors, loading } = storeToRefs(systemStore)
+const { modulesBySystem, loading } = storeToRefs(systemStore)
 const { createModule } = systemStore
+
+const errors = ref<Record<string, string> | null>(null)
 
 useModalShortcutGuard(() => props.open)
 
@@ -53,6 +55,7 @@ watch(
       name.value = ''
       slug.value = ''
       isCore.value = false
+      errors.value = null
     }
   },
 )
@@ -67,8 +70,10 @@ async function submit() {
     config: {},
     sort_order: existingCount,
   })
-  if (result) {
+  if (result.ok) {
     emit('update:open', false)
+  } else {
+    errors.value = result.errors
   }
 }
 </script>

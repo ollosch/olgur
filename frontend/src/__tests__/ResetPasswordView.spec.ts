@@ -47,7 +47,6 @@ vi.mock('@/components/ui/input', () => ({
 const mockAuthStore = {
   resetPassword: mockResetPassword,
   loading: false,
-  errors: null as Record<string, string> | null,
 }
 
 import ResetPasswordView from '@/views/Auth/ResetPasswordView.vue'
@@ -83,7 +82,6 @@ describe('ResetPasswordView', () => {
     setActivePinia(createPinia())
     mockResetPassword.mockReset()
     mockRouterPush.mockReset()
-    mockAuthStore.errors = null
     mockAuthStore.loading = false
     vi.useFakeTimers()
   })
@@ -107,7 +105,7 @@ describe('ResetPasswordView', () => {
   })
 
   it('calls auth.resetPassword with form values and query params', async () => {
-    mockResetPassword.mockResolvedValue(undefined)
+    mockResetPassword.mockResolvedValue({ ok: true, data: undefined })
     const wrapper = await mountView({ token: 'tok123', email: 'user@example.com' })
     await flushPromises()
 
@@ -123,8 +121,7 @@ describe('ResetPasswordView', () => {
   })
 
   it('redirects to login after successful reset', async () => {
-    mockResetPassword.mockResolvedValue(undefined)
-    mockAuthStore.errors = null
+    mockResetPassword.mockResolvedValue({ ok: true, data: undefined })
     const wrapper = await mountView()
     await flushPromises()
 
@@ -137,9 +134,7 @@ describe('ResetPasswordView', () => {
   })
 
   it('does not redirect when reset returns validation errors', async () => {
-    mockResetPassword.mockImplementation(() => {
-      mockAuthStore.errors = { password: 'Too short.' }
-    })
+    mockResetPassword.mockResolvedValue({ ok: false, errors: { password: 'Too short.' } })
     const wrapper = await mountView()
     await flushPromises()
 

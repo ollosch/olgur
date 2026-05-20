@@ -1,25 +1,22 @@
 import { ref } from 'vue'
 import type { AxiosRequestConfig, AxiosResponse } from 'axios'
 
-import api, { type ApiError, type ResponseErrors } from '@/lib/http'
+import api, { type ApiError, type ApiResult } from '@/lib/http'
 
 export function useApi() {
   const loading = ref(false)
-  const errors = ref<ResponseErrors | null>(null)
 
-  async function request<T>(callback: () => Promise<AxiosResponse<T>>): Promise<T | null> {
+  async function request<T>(callback: () => Promise<AxiosResponse<T>>): Promise<ApiResult<T>> {
     loading.value = true
-    errors.value = null
 
     try {
       const res = await callback()
-      return res.data
+      return { ok: true, data: res.data }
     } catch (e) {
       const error = e as ApiError
 
       if (error.type === 'validation' && error.errors) {
-        errors.value = error.errors
-        return null
+        return { ok: false, errors: error.errors }
       }
 
       throw e
@@ -28,25 +25,25 @@ export function useApi() {
     }
   }
 
-  function get<T>(url: string, config?: AxiosRequestConfig): Promise<T | null> {
+  function get<T>(url: string, config?: AxiosRequestConfig): Promise<ApiResult<T>> {
     return request(() => api.request<T>({ url, method: 'GET', ...config }))
   }
 
-  function post<T, D = unknown>(url: string, data?: D, config?: AxiosRequestConfig): Promise<T | null> {
+  function post<T, D = unknown>(url: string, data?: D, config?: AxiosRequestConfig): Promise<ApiResult<T>> {
     return request(() => api.request<T>({ url, method: 'POST', data, ...config }))
   }
 
-  function put<T, D = unknown>(url: string, data: D, config?: AxiosRequestConfig): Promise<T | null> {
+  function put<T, D = unknown>(url: string, data: D, config?: AxiosRequestConfig): Promise<ApiResult<T>> {
     return request(() => api.request<T>({ url, method: 'PUT', data, ...config }))
   }
 
-  function patch<T, D = unknown>(url: string, data: D, config?: AxiosRequestConfig): Promise<T | null> {
+  function patch<T, D = unknown>(url: string, data: D, config?: AxiosRequestConfig): Promise<ApiResult<T>> {
     return request(() => api.request<T>({ url, method: 'PATCH', data, ...config }))
   }
 
-  function del<T>(url: string, config?: AxiosRequestConfig): Promise<T | null> {
+  function del<T>(url: string, config?: AxiosRequestConfig): Promise<ApiResult<T>> {
     return request(() => api.request<T>({ url, method: 'DELETE', ...config }))
   }
 
-  return { get, post, put, patch, del, loading, errors }
+  return { get, post, put, patch, del, loading }
 }

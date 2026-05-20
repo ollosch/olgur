@@ -27,8 +27,10 @@ const emit = defineEmits<{
 }>()
 
 const systemStore = useSystemStore()
-const { errors, loading } = storeToRefs(systemStore)
+const { loading } = storeToRefs(systemStore)
 const { createSystem } = systemStore
+
+const errors = ref<Record<string, string> | null>(null)
 
 useModalShortcutGuard(() => props.open)
 
@@ -53,6 +55,7 @@ watch(
       structure.value = 'core_plus_many'
       tocDepth.value = 1
       sortRulesBy.value = 'sort_order'
+      errors.value = null
     }
   },
 )
@@ -68,8 +71,10 @@ async function submit() {
       sort_rules_by: sortRulesBy.value,
     },
   })
-  if (result) {
+  if (result.ok) {
     emit('update:open', false)
+  } else {
+    errors.value = result.errors
   }
 }
 </script>

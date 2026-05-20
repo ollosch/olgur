@@ -20,10 +20,10 @@ const [password, passwordAttrs] = defineField('password')
 const [passwordConfirmation, passwordConfirmationAttrs] = defineField('password_confirmation')
 
 const onSubmit = handleSubmit(async (values) => {
-  await authStore.register(values)
+  const result = await authStore.register(values)
 
-  if (authStore.errors) {
-    setErrors(authStore.errors)
+  if (!result.ok) {
+    setErrors(result.errors)
     return
   }
 

@@ -16,10 +16,9 @@ describe('useApi', () => {
     mockRequest.mockReset()
   })
 
-  it('starts with loading=false and errors=null', () => {
-    const { loading, errors } = useApi()
+  it('starts with loading=false', () => {
+    const { loading } = useApi()
     expect(loading.value).toBe(false)
-    expect(errors.value).toBeNull()
   })
 
   it('sets loading=true during request and false after', async () => {
@@ -41,18 +40,17 @@ describe('useApi', () => {
     mockRequest.mockResolvedValue({ data: { id: 1 } })
     const { get } = useApi()
     const result = await get<{ id: number }>('/test')
-    expect(result).toEqual({ id: 1 })
+    expect(result).toEqual({ ok: true, data: { id: 1 } })
   })
 
-  it('captures validation errors and returns null', async () => {
+  it('captures validation errors and returns ok: false', async () => {
     const validationError = { type: 'validation', errors: { email: 'Required.' } }
     mockRequest.mockRejectedValue(validationError)
 
-    const { post, errors } = useApi()
+    const { post } = useApi()
     const result = await post('/login', {})
 
-    expect(result).toBeNull()
-    expect(errors.value).toEqual({ email: 'Required.' })
+    expect(result).toEqual({ ok: false, errors: { email: 'Required.' } })
   })
 
   it('loading is false after validation error', async () => {
@@ -62,16 +60,15 @@ describe('useApi', () => {
     expect(loading.value).toBe(false)
   })
 
-  it('clears previous errors on new request', async () => {
+  it('second request returns ok: true after previous validation error', async () => {
     mockRequest.mockRejectedValueOnce({ type: 'validation', errors: { email: 'Bad.' } })
     mockRequest.mockResolvedValueOnce({ data: null })
 
-    const { post, errors } = useApi()
+    const { post } = useApi()
     await post('/login', {})
-    expect(errors.value).toEqual({ email: 'Bad.' })
 
-    await post('/login', {})
-    expect(errors.value).toBeNull()
+    const result = await post('/login', {})
+    expect(result).toEqual({ ok: true, data: null })
   })
 
   it('re-throws non-validation errors', async () => {

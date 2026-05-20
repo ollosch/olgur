@@ -42,7 +42,6 @@ vi.mock('@/components/ui/input', () => ({
 const mockAuthStore = {
   login: mockLogin,
   loading: false,
-  errors: null as Record<string, string> | null,
   user: null as Record<string, unknown> | null,
 }
 
@@ -74,7 +73,6 @@ describe('LoginView', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     mockLogin.mockReset()
-    mockAuthStore.errors = null
     mockAuthStore.loading = false
     mockAuthStore.user = null
   })
@@ -108,7 +106,7 @@ describe('LoginView', () => {
   })
 
   it('calls auth.login with form values on submit', async () => {
-    mockLogin.mockResolvedValue(undefined)
+    mockLogin.mockResolvedValue({ ok: true, data: undefined })
     const wrapper = mountView()
 
     await wrapper.find('input[type="email"]').setValue('user@example.com')
@@ -123,8 +121,7 @@ describe('LoginView', () => {
   })
 
   it('redirects to home after successful login', async () => {
-    mockLogin.mockResolvedValue(undefined)
-    mockAuthStore.errors = null
+    mockLogin.mockResolvedValue({ ok: true, data: undefined })
     const wrapper = mountView()
 
     await wrapper.find('input[type="email"]').setValue('user@example.com')
@@ -136,9 +133,7 @@ describe('LoginView', () => {
   })
 
   it('does not redirect when login returns errors', async () => {
-    mockLogin.mockImplementation(() => {
-      mockAuthStore.errors = { email: 'Invalid credentials.' }
-    })
+    mockLogin.mockResolvedValue({ ok: false, errors: { email: 'Invalid credentials.' } })
     const wrapper = mountView()
 
     await wrapper.find('input[type="email"]').setValue('bad@example.com')

@@ -78,8 +78,8 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
       { config: newConfig },
     )
 
-    if (result) {
-      systemStore.setMembership(systemId, result.data)
+    if (result.ok) {
+      systemStore.setMembership(systemId, result.data.data)
     }
   }
 

@@ -7,7 +7,6 @@ const mockGet = vi.fn()
 const mockPost = vi.fn()
 const mockPatch = vi.fn()
 const mockLoading = ref(false)
-const mockErrors = ref<Record<string, string> | null>(null)
 
 vi.mock('@/composables/useApi', () => ({
   useApi: vi.fn(() => ({
@@ -15,7 +14,6 @@ vi.mock('@/composables/useApi', () => ({
     post: mockPost,
     patch: mockPatch,
     loading: mockLoading,
-    errors: mockErrors,
   })),
 }))
 
@@ -37,7 +35,6 @@ describe('useAuthStore', () => {
     mockPost.mockReset()
     mockPatch.mockReset()
     mockLoading.value = false
-    mockErrors.value = null
   })
 
   // ── clear ────────────────────────────────────────────────────────────────────
@@ -53,21 +50,21 @@ describe('useAuthStore', () => {
   // ── fetchUser ─────────────────────────────────────────────────────────────────
   describe('fetchUser', () => {
     it('sets user on success', async () => {
-      mockGet.mockResolvedValue({ data: mockUser })
+      mockGet.mockResolvedValue({ ok: true, data: { data: mockUser } })
       const auth = useAuthStore()
       await auth.fetchUser()
       expect(auth.user).toEqual(mockUser)
     })
 
     it('calls /me endpoint', async () => {
-      mockGet.mockResolvedValue({ data: mockUser })
+      mockGet.mockResolvedValue({ ok: true, data: { data: mockUser } })
       const auth = useAuthStore()
       await auth.fetchUser()
       expect(mockGet).toHaveBeenCalledWith('/me')
     })
 
-    it('calls clear when get returns null (validation case)', async () => {
-      mockGet.mockResolvedValue(null)
+    it('calls clear when get returns ok: false (validation case)', async () => {
+      mockGet.mockResolvedValue({ ok: false, errors: { _: 'error' } })
       const auth = useAuthStore()
       auth.user = mockUser
       await auth.fetchUser()
@@ -78,8 +75,8 @@ describe('useAuthStore', () => {
   // ── login ─────────────────────────────────────────────────────────────────────
   describe('login', () => {
     it('posts to /login and fetches user on success', async () => {
-      mockPost.mockResolvedValue(null)
-      mockGet.mockResolvedValue({ data: mockUser })
+      mockPost.mockResolvedValue({ ok: true, data: undefined })
+      mockGet.mockResolvedValue({ ok: true, data: { data: mockUser } })
 
       const auth = useAuthStore()
       await auth.login({ email: 'a@b.com', password: 'secret' })
@@ -89,10 +86,7 @@ describe('useAuthStore', () => {
     })
 
     it('does not fetch user when validation errors present', async () => {
-      mockPost.mockImplementation(() => {
-        mockErrors.value = { email: 'Invalid credentials.' }
-        return Promise.resolve(null)
-      })
+      mockPost.mockResolvedValue({ ok: false, errors: { email: 'Invalid credentials.' } })
 
       const auth = useAuthStore()
       await auth.login({ email: 'a@b.com', password: 'wrong' })
@@ -105,8 +99,8 @@ describe('useAuthStore', () => {
   // ── register ──────────────────────────────────────────────────────────────────
   describe('register', () => {
     it('posts to /register and fetches user on success', async () => {
-      mockPost.mockResolvedValue(null)
-      mockGet.mockResolvedValue({ data: mockUser })
+      mockPost.mockResolvedValue({ ok: true, data: undefined })
+      mockGet.mockResolvedValue({ ok: true, data: { data: mockUser } })
 
       const auth = useAuthStore()
       await auth.register({
@@ -121,10 +115,7 @@ describe('useAuthStore', () => {
     })
 
     it('does not fetch user when validation errors present', async () => {
-      mockPost.mockImplementation(() => {
-        mockErrors.value = { email: 'Already taken.' }
-        return Promise.resolve(null)
-      })
+      mockPost.mockResolvedValue({ ok: false, errors: { email: 'Already taken.' } })
 
       const auth = useAuthStore()
       await auth.register({
@@ -141,7 +132,7 @@ describe('useAuthStore', () => {
   // ── logout ────────────────────────────────────────────────────────────────────
   describe('logout', () => {
     it('posts to /logout and clears user', async () => {
-      mockPost.mockResolvedValue(null)
+      mockPost.mockResolvedValue({ ok: true, data: undefined })
 
       const auth = useAuthStore()
       auth.user = mockUser
@@ -172,8 +163,8 @@ describe('useAuthStore', () => {
   describe('verifyEmail', () => {
     it('calls get with the verification url and then fetches user', async () => {
       mockGet
-        .mockResolvedValueOnce(null) // verifyEmail GET
-        .mockResolvedValueOnce({ data: mockUser }) // fetchUser GET /me
+        .mockResolvedValueOnce({ ok: true, data: undefined }) // verifyEmail GET
+        .mockResolvedValueOnce({ ok: true, data: { data: mockUser } }) // fetchUser GET /me
 
       const auth = useAuthStore()
       await auth.verifyEmail('/verify-email/abc?expires=123&signature=xyz')
@@ -187,7 +178,7 @@ describe('useAuthStore', () => {
   // ── sendResetLink ─────────────────────────────────────────────────────────────
   describe('sendResetLink', () => {
     it('posts to /forgot-password', async () => {
-      mockPost.mockResolvedValue(null)
+      mockPost.mockResolvedValue({ ok: true, data: undefined })
 
       const auth = useAuthStore()
       await auth.sendResetLink({ email: 'a@b.com' })
@@ -199,7 +190,7 @@ describe('useAuthStore', () => {
   // ── resetPassword ─────────────────────────────────────────────────────────────
   describe('resetPassword', () => {
     it('posts to /reset-password with merged params', async () => {
-      mockPost.mockResolvedValue(null)
+      mockPost.mockResolvedValue({ ok: true, data: undefined })
 
       const auth = useAuthStore()
       await auth.resetPassword(
@@ -221,11 +212,5 @@ describe('useAuthStore', () => {
     mockLoading.value = true
     const auth = useAuthStore()
     expect(auth.loading).toBe(true)
-  })
-
-  it('exposes errors ref from useApi', () => {
-    mockErrors.value = { email: 'Error.' }
-    const auth = useAuthStore()
-    expect(auth.errors).toEqual({ email: 'Error.' })
   })
 })

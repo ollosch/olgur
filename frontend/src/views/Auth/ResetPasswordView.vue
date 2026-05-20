@@ -5,6 +5,7 @@ import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useForm } from 'vee-validate'
 import type { UpdatePasswordRequest } from '@/types/domain'
+import type { ResponseErrors } from '@/lib/http'
 
 import AuthLayout from './AuthLayout.vue'
 import { Button } from '@/components/ui/button'
@@ -14,6 +15,7 @@ import { Input } from '@/components/ui/input'
 import { toast } from 'vue-sonner'
 
 const status = ref<'success' | 'error'>('success')
+const resetErrors = ref<ResponseErrors | null>(null)
 
 const route = useRoute()
 const authStore = useAuthStore()
@@ -41,10 +43,11 @@ const onSubmit = handleSubmit(async (values) => {
   const token = route.query.token as string
   const email = route.query.email as string
 
-  await authStore.resetPassword(values, { token, email })
+  const result = await authStore.resetPassword(values, { token, email })
 
-  if (authStore.errors) {
-    setErrors(authStore.errors)
+  if (!result.ok) {
+    resetErrors.value = result.errors
+    setErrors(result.errors)
     return
   }
 
@@ -82,7 +85,7 @@ const goToLogin = () => {
                 type="password"
                 required
               />
-              <div v-if="authStore.errors?.email">{{ authStore.errors.email }}</div>
+              <div v-if="resetErrors?.email">{{ resetErrors.email }}</div>
               <div v-if="errors.password">{{ errors.password }}</div>
               <FieldDescription>Must be at least 8 characters long.</FieldDescription>
             </Field>

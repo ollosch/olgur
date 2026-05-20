@@ -51,7 +51,6 @@ vi.mock('@/components/ui/input', () => ({
 const mockAuthStore = {
   register: mockRegister,
   loading: false,
-  errors: null as Record<string, string> | null,
 }
 
 import RegisterView from '@/views/Auth/RegisterView.vue'
@@ -73,7 +72,6 @@ describe('RegisterView', () => {
     mockRegister.mockReset()
     mockRouterPush.mockReset()
     mockToastSuccess.mockReset()
-    mockAuthStore.errors = null
     mockAuthStore.loading = false
   })
 
@@ -99,7 +97,7 @@ describe('RegisterView', () => {
   })
 
   it('calls auth.register with form values on submit', async () => {
-    mockRegister.mockResolvedValue(undefined)
+    mockRegister.mockResolvedValue({ ok: true, data: undefined })
     const wrapper = mountView()
 
     await wrapper.find('input#name').setValue('Alice')
@@ -118,8 +116,7 @@ describe('RegisterView', () => {
   })
 
   it('shows success toast and redirects to home after successful registration', async () => {
-    mockRegister.mockResolvedValue(undefined)
-    mockAuthStore.errors = null
+    mockRegister.mockResolvedValue({ ok: true, data: undefined })
     const wrapper = mountView()
 
     await wrapper.find('input#name').setValue('Alice')
@@ -134,9 +131,7 @@ describe('RegisterView', () => {
   })
 
   it('does not redirect when register returns errors', async () => {
-    mockRegister.mockImplementation(() => {
-      mockAuthStore.errors = { email: 'Already taken.' }
-    })
+    mockRegister.mockResolvedValue({ ok: false, errors: { email: 'Already taken.' } })
     const wrapper = mountView()
 
     await wrapper.find('input#name').setValue('Alice')
@@ -149,7 +144,6 @@ describe('RegisterView', () => {
     expect(mockRouterPush).not.toHaveBeenCalled()
     expect(mockToastSuccess).not.toHaveBeenCalled()
   })
-
   it('button is disabled when loading is true', () => {
     mockAuthStore.loading = true
     const wrapper = mountView()

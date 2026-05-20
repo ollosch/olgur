@@ -18,10 +18,10 @@ const [email, emailAttrs] = defineField('email')
 const [password, passwordAttrs] = defineField('password')
 
 const onSubmit = handleSubmit(async (values) => {
-  await authStore.login(values)
+  const result = await authStore.login(values)
 
-  if (authStore.errors) {
-    setErrors(authStore.errors)
+  if (!result.ok) {
+    setErrors(result.errors)
     return
   }
 

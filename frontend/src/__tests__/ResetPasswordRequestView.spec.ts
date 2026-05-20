@@ -41,7 +41,6 @@ vi.mock('@/components/ui/input', () => ({
 const mockAuthStore = {
   sendResetLink: mockSendResetLink,
   loading: false,
-  errors: null as Record<string, string> | null,
 }
 
 import ResetPasswordRequestView from '@/views/Auth/ResetPasswordRequestView.vue'
@@ -64,7 +63,6 @@ describe('ResetPasswordRequestView', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     mockSendResetLink.mockReset()
-    mockAuthStore.errors = null
     mockAuthStore.loading = false
   })
 
@@ -93,7 +91,7 @@ describe('ResetPasswordRequestView', () => {
   })
 
   it('calls auth.sendResetLink with email on submit', async () => {
-    mockSendResetLink.mockResolvedValue(undefined)
+    mockSendResetLink.mockResolvedValue({ ok: true, data: undefined })
     const wrapper = await mountView()
 
     await wrapper.find('input[type="email"]').setValue('user@example.com')
@@ -104,7 +102,7 @@ describe('ResetPasswordRequestView', () => {
   })
 
   it('calls sendResetLink once per submit', async () => {
-    mockSendResetLink.mockResolvedValue(undefined)
+    mockSendResetLink.mockResolvedValue({ ok: true, data: undefined })
     const wrapper = await mountView()
 
     await wrapper.find('input[type="email"]').setValue('user@example.com')

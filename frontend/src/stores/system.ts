@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { useApi } from '@/composables/useApi'
+import type { ApiResult } from '@/lib/http'
 import type {
   System,
   Module,
@@ -16,7 +17,7 @@ import type {
 } from '@/types/domain'
 
 export const useSystemStore = defineStore('system', () => {
-  const { get, post, put, del, loading, errors } = useApi()
+  const { get, post, put, del, loading } = useApi()
 
   // ── Systems list (home/browse view) ─────────────────────────────────────────
   const systems = ref<System[]>([])
@@ -61,31 +62,33 @@ export const useSystemStore = defineStore('system', () => {
   // ── Systems list actions ─────────────────────────────────────────────────────
   async function fetchSystems() {
     const result = await get<ApiCollection<System>>('/systems')
-    if (result) {
-      systems.value = result.data
+    if (result.ok) {
+      systems.value = result.data.data
     }
   }
 
-  async function createSystem(data: CreateSystemRequest) {
+  async function createSystem(data: CreateSystemRequest): Promise<ApiResult<System>> {
     const result = await post<ApiResource<System>, CreateSystemRequest>('/systems', data)
-    if (result) {
-      systems.value.push(result.data)
+    if (result.ok) {
+      systems.value.push(result.data.data)
       await Promise.all([fetchUserMemberships(), fetchUserSubscriptions()])
+      return { ok: true, data: result.data.data }
     }
-    return result?.data ?? null
+    return result
   }
 
-  async function deleteSystem(id: string) {
-    await del(`/systems/${id}`)
-    if (!errors.value) {
+  async function deleteSystem(id: string): Promise<ApiResult<void>> {
+    const result = await del<void>(`/systems/${id}`)
+    if (result.ok) {
       systems.value = systems.value.filter((s) => s.id !== id)
     }
+    return result
   }
 
   async function updateSystem(
     systemId: string,
     data: Partial<{ name: string; description: string | null; config: Partial<import('@/types/domain').SystemConfig> }>,
-  ) {
+  ): Promise<ApiResult<System>> {
     const system = currentSystem.value ?? systems.value.find((s) => s.id === systemId)
     const payload = {
       slug: system?.slug ?? '',
@@ -94,12 +97,13 @@ export const useSystemStore = defineStore('system', () => {
       ...data,
     }
     const result = await put<ApiResource<System>, typeof payload>(`/systems/${systemId}`, payload)
-    if (result) {
-      currentSystem.value = result.data
+    if (result.ok) {
+      currentSystem.value = result.data.data
       const idx = systems.value.findIndex((s) => s.id === systemId)
-      if (idx !== -1) systems.value[idx] = result.data
+      if (idx !== -1) systems.value[idx] = result.data.data
+      return { ok: true, data: result.data.data }
     }
-    return result?.data ?? null
+    return result
   }
 
   // ── Membership / subscription bootstrap (home view) ─────────────────────────
@@ -119,9 +123,9 @@ export const useSystemStore = defineStore('system', () => {
 
   async function fetchUserMemberships() {
     const result = await get<ApiCollection<Membership>>('/me/memberships')
-    if (result) {
+    if (result.ok) {
       const map: Record<string, Membership | null> = {}
-      for (const m of result.data) {
+      for (const m of result.data.data) {
         map[m.system_id] = m
       }
       membershipsBySystem.value = map
@@ -130,9 +134,9 @@ export const useSystemStore = defineStore('system', () => {
 
   async function fetchUserSubscriptions() {
     const result = await get<ApiCollection<Subscription>>('/me/subscriptions')
-    if (result) {
+    if (result.ok) {
       const map: Record<string, UserSubscription | null> = {}
-      for (const s of result.data) {
+      for (const s of result.data.data) {
         map[s.module_id] = { id: s.id, editor: s.editor }
       }
       subscriptions.value = map
@@ -146,12 +150,12 @@ export const useSystemStore = defineStore('system', () => {
       get<ApiCollection<Module>>(`/systems/${systemId}/modules`),
     ])
 
-    if (systemResult) {
-      currentSystem.value = systemResult.data
+    if (systemResult.ok) {
+      currentSystem.value = systemResult.data.data
     }
 
-    if (modulesResult) {
-      modulesBySystem.value[systemId] = modulesResult.data
+    if (modulesResult.ok) {
+      modulesBySystem.value[systemId] = modulesResult.data.data
     }
   }
 
@@ -162,34 +166,36 @@ export const useSystemStore = defineStore('system', () => {
   // ── Module actions ───────────────────────────────────────────────────────────
   async function fetchModules(systemId: string) {
     const result = await get<ApiCollection<Module>>(`/systems/${systemId}/modules`)
-    if (result) {
-      modulesBySystem.value[systemId] = result.data
+    if (result.ok) {
+      modulesBySystem.value[systemId] = result.data.data
     }
   }
 
-  async function createModule(systemId: string, data: CreateModuleRequest) {
+  async function createModule(systemId: string, data: CreateModuleRequest): Promise<ApiResult<Module>> {
     const result = await post<ApiResource<Module>, CreateModuleRequest>(`/systems/${systemId}/modules`, data)
-    if (result) {
+    if (result.ok) {
       const existing = modulesBySystem.value[systemId] ?? []
-      modulesBySystem.value[systemId] = [...existing, result.data]
+      modulesBySystem.value[systemId] = [...existing, result.data.data]
       await fetchUserSubscriptions()
+      return { ok: true, data: result.data.data }
     }
-    return result?.data ?? null
+    return result
   }
 
-  async function deleteModule(systemId: string, moduleId: string) {
-    await del(`/systems/${systemId}/modules/${moduleId}`)
-    if (!errors.value) {
+  async function deleteModule(systemId: string, moduleId: string): Promise<ApiResult<void>> {
+    const result = await del<void>(`/systems/${systemId}/modules/${moduleId}`)
+    if (result.ok) {
       const existing = modulesBySystem.value[systemId] ?? []
       modulesBySystem.value[systemId] = existing.filter((m) => m.id !== moduleId)
     }
+    return result
   }
 
   // ── Membership / module activation ──────────────────────────────────────────
   async function refreshMembership(systemId: string) {
     const result = await get<ApiCollection<Membership>>('/me/memberships')
-    if (result) {
-      const found = result.data.find((m) => m.system_id === systemId) ?? null
+    if (result.ok) {
+      const found = result.data.data.find((m) => m.system_id === systemId) ?? null
       membershipsBySystem.value[systemId] = found
     }
   }
@@ -240,8 +246,8 @@ export const useSystemStore = defineStore('system', () => {
       `/systems/${systemId}/modules/${moduleId}/subscriptions`,
       {},
     )
-    if (result) {
-      subscriptions.value[moduleId] = { id: result.data.id, editor: result.data.editor }
+    if (result.ok) {
+      subscriptions.value[moduleId] = { id: result.data.data.id, editor: result.data.data.editor }
       await fetchUserMemberships()
       // Auto-activate non-core modules so their rules appear immediately.
       const mod = (modulesBySystem.value[systemId] ?? []).find((m) => m.id === moduleId)
@@ -267,30 +273,32 @@ export const useSystemStore = defineStore('system', () => {
 
   async function fetchSystemMemberships(systemId: string): Promise<void> {
     const result = await get<ApiCollection<MembershipWithUser>>(`/systems/${systemId}/memberships`)
-    if (result) {
-      adminMemberships.value = result.data
+    if (result.ok) {
+      adminMemberships.value = result.data.data
     }
   }
 
-  async function updateMembershipAdmin(systemId: string, membershipId: string, admin: boolean): Promise<void> {
+  async function updateMembershipAdmin(systemId: string, membershipId: string, admin: boolean): Promise<ApiResult<void>> {
     const result = await put<ApiResource<MembershipWithUser>, { admin: boolean }>(
       `/systems/${systemId}/memberships/${membershipId}`,
       { admin },
     )
-    if (result) {
+    if (result.ok) {
       const idx = adminMemberships.value.findIndex((m) => m.id === membershipId)
       if (idx !== -1) {
-        adminMemberships.value[idx] = { ...adminMemberships.value[idx]!, admin: result.data.admin }
+        adminMemberships.value[idx] = { ...adminMemberships.value[idx]!, admin: result.data.data.admin }
       }
+      return { ok: true, data: undefined }
     }
+    return result
   }
 
   async function fetchModuleSubscriptions(systemId: string, moduleId: string): Promise<void> {
     const result = await get<ApiCollection<SubscriptionWithUser>>(
       `/systems/${systemId}/modules/${moduleId}/subscriptions`,
     )
-    if (result) {
-      adminSubscriptionsByModule.value[moduleId] = result.data
+    if (result.ok) {
+      adminSubscriptionsByModule.value[moduleId] = result.data.data
     }
   }
 
@@ -299,18 +307,20 @@ export const useSystemStore = defineStore('system', () => {
     moduleId: string,
     subscriptionId: string,
     editor: boolean,
-  ): Promise<void> {
+  ): Promise<ApiResult<void>> {
     const result = await put<ApiResource<SubscriptionWithUser>, { editor: boolean }>(
       `/systems/${systemId}/modules/${moduleId}/subscriptions/${subscriptionId}`,
       { editor },
     )
-    if (result) {
+    if (result.ok) {
       const list = adminSubscriptionsByModule.value[moduleId] ?? []
       const idx = list.findIndex((s) => s.id === subscriptionId)
       if (idx !== -1) {
-        list[idx] = { ...list[idx]!, editor: result.data.editor }
+        list[idx] = { ...list[idx]!, editor: result.data.data.editor }
       }
+      return { ok: true, data: undefined }
     }
+    return result
   }
 
   async function loadAdminData(systemId: string): Promise<void> {
@@ -342,7 +352,6 @@ export const useSystemStore = defineStore('system', () => {
     otherSystems,
     // api state
     loading,
-    errors,
     // systems
     fetchSystems,
     createSystem,

@@ -1,11 +1,12 @@
 import { ref, computed, markRaw, type ComputedRef } from 'vue'
 import { defineStore } from 'pinia'
 import { useApi } from '@/composables/useApi'
+import type { ApiResult } from '@/lib/http'
 import { useSystemStore } from '@/stores/system'
 import type { Rule, IndexEntry, Module, GameDatum, ApiCollection, ApiResource, UpdateRuleRequest, UpdateIndexEntryRequest } from '@/types/domain'
 
 export const useContentStore = defineStore('content', () => {
-  const { get, put, loading, errors } = useApi()
+  const { get, put, loading } = useApi()
   const systemStore = useSystemStore()
 
   const rulesByModule = ref<Record<string, Rule[]>>({})
@@ -193,47 +194,47 @@ export const useContentStore = defineStore('content', () => {
     if (!systemId) return
 
     const result = await get<ApiCollection<Rule>>(`/systems/${systemId}/modules/${moduleId}/rules`)
-    if (result) {
-      rulesByModule.value[moduleId] = result.data.map((r) => markRaw(r))
+    if (result.ok) {
+      rulesByModule.value[moduleId] = result.data.data.map((r) => markRaw(r))
     }
   }
 
-  async function updateRule(rule: Rule, data: UpdateRuleRequest): Promise<Rule | null> {
+  async function updateRule(rule: Rule, data: UpdateRuleRequest): Promise<ApiResult<Rule>> {
     const systemId = systemStore.currentSystem?.id
-    if (!systemId) return null
+    if (!systemId) return { ok: false, errors: { _: 'No system context' } }
 
     const result = await put<ApiResource<Rule>, UpdateRuleRequest>(
       `/systems/${systemId}/modules/${rule.module_id}/rules/${rule.id}`,
       data,
     )
 
-    if (result) {
+    if (result.ok) {
       const list = rulesByModule.value[rule.module_id] ?? []
       const idx = list.indexOf(rulesById.value.get(rule.id)!)
-      if (idx !== -1) list[idx] = markRaw(result.data)
-      return result.data
+      if (idx !== -1) list[idx] = markRaw(result.data.data)
+      return { ok: true, data: result.data.data }
     }
 
-    return null
+    return result
   }
 
-  async function updateIndexEntry(entry: IndexEntry, data: UpdateIndexEntryRequest): Promise<IndexEntry | null> {
+  async function updateIndexEntry(entry: IndexEntry, data: UpdateIndexEntryRequest): Promise<ApiResult<IndexEntry>> {
     const systemId = systemStore.currentSystem?.id
-    if (!systemId) return null
+    if (!systemId) return { ok: false, errors: { _: 'No system context' } }
 
     const result = await put<ApiResource<IndexEntry>, UpdateIndexEntryRequest>(
       `/systems/${systemId}/modules/${entry.module_id}/index-entries/${entry.id}`,
       data,
     )
 
-    if (result) {
+    if (result.ok) {
       const list = indexEntriesByModule.value[entry.module_id] ?? []
       const idx = list.indexOf(indexEntriesById.value.get(entry.id)!)
-      if (idx !== -1) list[idx] = markRaw(result.data)
-      return result.data
+      if (idx !== -1) list[idx] = markRaw(result.data.data)
+      return { ok: true, data: result.data.data }
     }
 
-    return null
+    return result
   }
 
   async function fetchIndexEntries(moduleId: string): Promise<void> {
@@ -243,8 +244,8 @@ export const useContentStore = defineStore('content', () => {
     const result = await get<ApiCollection<IndexEntry>>(
       `/systems/${systemId}/modules/${moduleId}/index-entries`,
     )
-    if (result) {
-      indexEntriesByModule.value[moduleId] = result.data.map((e) => markRaw(e))
+    if (result.ok) {
+      indexEntriesByModule.value[moduleId] = result.data.data.map((e) => markRaw(e))
     }
   }
 
@@ -255,8 +256,8 @@ export const useContentStore = defineStore('content', () => {
     const result = await get<ApiCollection<GameDatum>>(
       `/systems/${systemId}/modules/${moduleId}/game-data`,
     )
-    if (result) {
-      gameDataByModule.value[moduleId] = result.data.map((d) => markRaw(d))
+    if (result.ok) {
+      gameDataByModule.value[moduleId] = result.data.data.map((d) => markRaw(d))
     }
   }
 
@@ -288,7 +289,6 @@ export const useContentStore = defineStore('content', () => {
     indexEntriesByModule,
     gameDataByModule,
     loading,
-    errors,
     activeIds,
     activeModules,
     allRules,

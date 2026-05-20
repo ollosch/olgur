@@ -2,27 +2,24 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 
 import { useApi } from '@/composables/useApi'
+import type { ApiResult } from '@/lib/http'
 import type { User, LoginRequest, RegisterRequest, UpdateProfileRequest, ApiResource } from '@/types/domain'
 
 export const useAuthStore = defineStore('auth', () => {
-  const { get, post, patch, loading, errors } = useApi()
+  const { get, post, patch, loading } = useApi()
 
   const user = ref<User | null>(null)
 
-  async function login(credentials: LoginRequest) {
-    await post<void, LoginRequest>('/login', credentials)
-
-    if (!errors.value) {
-      await fetchUser()
-    }
+  async function login(credentials: LoginRequest): Promise<ApiResult<void>> {
+    const result = await post<void, LoginRequest>('/login', credentials)
+    if (result.ok) await fetchUser()
+    return result
   }
 
-  async function register(credentials: RegisterRequest) {
-    await post<void, RegisterRequest>('/register', credentials)
-
-    if (!errors.value) {
-      await fetchUser()
-    }
+  async function register(credentials: RegisterRequest): Promise<ApiResult<void>> {
+    const result = await post<void, RegisterRequest>('/register', credentials)
+    if (result.ok) await fetchUser()
+    return result
   }
 
   async function logout() {
@@ -38,15 +35,15 @@ export const useAuthStore = defineStore('auth', () => {
     await fetchUser()
   }
 
-  async function sendResetLink(credentials: { email: string }) {
-    await post('/forgot-password', credentials)
+  async function sendResetLink(credentials: { email: string }): Promise<ApiResult<void>> {
+    return await post('/forgot-password', credentials)
   }
 
   async function resetPassword(
     credentials: { password: string; password_confirmation: string },
     params: { token: string; email: string },
-  ) {
-    await post('/reset-password', { ...credentials, ...params })
+  ): Promise<ApiResult<void>> {
+    return await post('/reset-password', { ...credentials, ...params })
   }
 
   async function fetchCsrfCookie() {
@@ -55,19 +52,17 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function fetchUser() {
     const result = await get<ApiResource<User>>('/me')
-
-    if (result) {
-      user.value = result.data
+    if (result.ok) {
+      user.value = result.data.data
     } else {
       clear()
     }
   }
 
-  async function updateProfile(data: UpdateProfileRequest) {
-    const updated = await patch<User, UpdateProfileRequest>('/me', data)
-    if (updated) {
-      user.value = updated
-    }
+  async function updateProfile(data: UpdateProfileRequest): Promise<ApiResult<User>> {
+    const result = await patch<User, UpdateProfileRequest>('/me', data)
+    if (result.ok) user.value = result.data
+    return result
   }
 
   function clear() {
@@ -85,7 +80,6 @@ export const useAuthStore = defineStore('auth', () => {
     sendResetLink,
     updateProfile,
     verifyEmail,
-    errors,
     loading,
     user,
   }

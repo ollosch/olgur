@@ -5,6 +5,8 @@ export interface ResponseErrors {
   [key: string]: string
 }
 
+export type ApiResult<T> = { ok: true; data: T } | { ok: false; errors: ResponseErrors }
+
 export type ApiError =
   | { type: 'validation'; errors: ResponseErrors }
   | { type: 'auth'; message?: string }

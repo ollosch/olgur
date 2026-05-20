@@ -15,10 +15,10 @@ const { defineField, handleSubmit, errors, setErrors } = useForm<ResetPasswordRe
 const [email, emailAttrs] = defineField('email')
 
 const onSubmit = handleSubmit(async (values) => {
-  await authStore.sendResetLink(values)
+  const result = await authStore.sendResetLink(values)
 
-  if (authStore.errors) {
-    setErrors(authStore.errors)
+  if (!result.ok) {
+    setErrors(result.errors)
   }
 })
 </script>

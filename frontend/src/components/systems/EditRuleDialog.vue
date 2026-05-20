@@ -37,7 +37,7 @@ const emit = defineEmits<{
 }>()
 
 const contentStore = useContentStore()
-const { loading, errors: apiErrors } = storeToRefs(contentStore)
+const { loading } = storeToRefs(contentStore)
 
 useModalShortcutGuard(() => props.open)
 
@@ -112,7 +112,7 @@ watch(
 // ---------------------------------------------------------------------------
 
 const onSubmit = handleSubmit(async (values) => {
-  const updated = await contentStore.updateRule(props.rule, {
+  const result = await contentStore.updateRule(props.rule, {
     number: values.number,
     title: values.title,
     content: values.content.replaceAll('\n', '<br>'),
@@ -120,14 +120,12 @@ const onSubmit = handleSubmit(async (values) => {
     sort_order: props.rule.sort_order,
   })
 
-  if (apiErrors.value) {
-    setErrors(apiErrors.value as Partial<Record<keyof FormValues, string>>)
+  if (!result.ok) {
+    setErrors(result.errors as Partial<Record<keyof FormValues, string>>)
     return
   }
 
-  if (updated) {
-    emit('update:open', false)
-  }
+  emit('update:open', false)
 })
 </script>
 

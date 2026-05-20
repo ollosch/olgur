@@ -25,10 +25,10 @@ const [name, nameAttrs] = defineField('name')
 const [email, emailAttrs] = defineField('email')
 
 const onSubmit = handleSubmit(async (values) => {
-  await authStore.updateProfile(values)
+  const result = await authStore.updateProfile(values)
 
-  if (authStore.errors) {
-    setErrors(authStore.errors)
+  if (!result.ok) {
+    setErrors(result.errors)
     return
   }
 
