@@ -82,7 +82,12 @@ export function useRuleDelegation(
         const rule = getRulesMap().get(number)
         if (rule) {
           const { y, above } = popupY(rect)
-          state.value = { visible: true, content: { type: 'rule', rule }, x: popupX(rect), y, above }
+          const isActive = contentStore.activeModules.some((m) => m.id === rule.module_id)
+          if (!isActive) {
+            state.value = { visible: true, content: { type: 'inactive_module' }, x: popupX(rect), y, above }
+          } else {
+            state.value = { visible: true, content: { type: 'rule', rule }, x: popupX(rect), y, above }
+          }
         }
       }, 150)
     } else if (trigger.dataset['ruleRange'] !== undefined) {

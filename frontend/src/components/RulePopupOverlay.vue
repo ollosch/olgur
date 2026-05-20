@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRulePopup } from '@/composables/useRulePopup'
+import { useContentStore } from '@/stores/content'
 import { renderContent } from '@/lib/renderContent'
 import { useAppSettingsStore } from '@/stores/appSettings'
 
 const { state, navigateToNumber, navigateToRange } = useRulePopup()
 const appSettings = useAppSettingsStore()
+const contentStore = useContentStore()
 
 const style = computed(() => {
   const base = {
@@ -116,6 +118,11 @@ function onClick(e: MouseEvent) {
             <span class="font-medium text-foreground/80">See also: </span>
             {{ state.content.entry.relations.see_also.join(', ') }}
           </p>
+        </template>
+
+        <!-- Inactive module popup -->
+        <template v-else-if="state.content.type === 'inactive_module'">
+          <p class="text-muted-foreground italic text-xs">Module not active</p>
         </template>
       </div>
     </Transition>
