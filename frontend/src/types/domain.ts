@@ -91,6 +91,7 @@ export interface Rule {
   number: string
   title: string
   content: string
+  markdown: string | null
   sort_order: number
   created_at: string
   updated_at: string
