@@ -17,7 +17,7 @@ import type {
 } from '@/types/domain'
 
 export const useSystemStore = defineStore('system', () => {
-  const { get, post, put, del, loading } = useApi()
+  const { get, post, put, patch, del, loading } = useApi()
 
   // ── Systems list (home/browse view) ─────────────────────────────────────────
   const systems = ref<System[]>([])
@@ -278,6 +278,18 @@ export const useSystemStore = defineStore('system', () => {
     }
   }
 
+  async function updateMembership(systemId: string, config: Record<string, unknown>): Promise<ApiResult<void>> {
+    const result = await patch<ApiResource<Membership>, { config: Record<string, unknown> }>(
+      `/me/memberships/${systemId}`,
+      { config },
+    )
+    if (result.ok) {
+      membershipsBySystem.value[systemId] = result.data.data
+      return { ok: true, data: undefined }
+    }
+    return result
+  }
+
   async function updateMembershipAdmin(systemId: string, membershipId: string, admin: boolean): Promise<ApiResult<void>> {
     const result = await put<ApiResource<MembershipWithUser>, { admin: boolean }>(
       `/systems/${systemId}/memberships/${membershipId}`,
@@ -382,6 +394,7 @@ export const useSystemStore = defineStore('system', () => {
     adminLoading,
     loadAdminData,
     fetchSystemMemberships,
+    updateMembership,
     updateMembershipAdmin,
     fetchModuleSubscriptions,
     updateSubscriptionEditor,

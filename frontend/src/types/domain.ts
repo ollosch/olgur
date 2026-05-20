@@ -32,7 +32,6 @@ export interface SystemConfig {
   sort_rules_by: 'number' | 'sort_order'
   toc_depth: number
   cover_image: string | null
-  asop_disabled_topics?: string[]
 }
 
 export interface System {
@@ -71,6 +70,8 @@ export interface UserSubscription {
 export interface MembershipConfig {
   active_module_ids: string[]
   bookmarks?: BookmarkEntry[]
+  ignored_tags?: string[]
+  preferred_rule_format?: 'content' | 'markdown'
 }
 
 export interface Membership {

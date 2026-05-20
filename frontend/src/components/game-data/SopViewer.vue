@@ -62,14 +62,14 @@ const props = defineProps<{ content: SopContent }>()
 
 const systemStore = useSystemStore()
 
-// ── Disabled topics (persisted to system config) ─────────────────────────────
+// ── Disabled topics (persisted to membership config) ─────────────────────────
 
 const localDisabled = ref<string[]>(
-  systemStore.currentSystem?.config?.asop_disabled_topics ?? [],
+  systemStore.membership?.config?.ignored_tags ?? [],
 )
 
 watch(
-  () => systemStore.currentSystem?.config?.asop_disabled_topics,
+  () => systemStore.membership?.config?.ignored_tags,
   (val) => {
     localDisabled.value = val ?? []
   },
@@ -78,10 +78,9 @@ watch(
 const disabledTopics = computed<string[]>(() => localDisabled.value)
 
 async function saveDisabled(): Promise<void> {
-  if (!systemStore.currentSystem) return
-  await systemStore.updateSystem(systemStore.currentSystem.id, {
-    config: { ...systemStore.currentSystem.config, asop_disabled_topics: localDisabled.value },
-  })
+  const systemId = systemStore.currentSystem?.id
+  if (!systemId) return
+  await systemStore.updateMembership(systemId, { ignored_tags: localDisabled.value })
   toast.success('Topics saved.')
 }
 
