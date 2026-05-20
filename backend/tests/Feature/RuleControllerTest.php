@@ -139,7 +139,7 @@ test('store allows same number in a different module', function (): void {
     Rule::factory()->for($moduleB)->create($this->payload);
 
     actingAs($user)
-         ->postJson('/api/systems/'.$system->id.'/modules/'.$moduleA->id.'/rules', $this->payload)
+        ->postJson('/api/systems/'.$system->id.'/modules/'.$moduleA->id.'/rules', $this->payload)
         ->assertCreated();
 });
 
@@ -190,10 +190,10 @@ test('store rejects invalid parent_id from a different module', function (): voi
 
     actingAs($user)
         ->postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', [
-        'number' => 'A.1',
-        'title' => 'Child',
-        'parent_id' => $foreignParent->id,
-    ])
+            'number' => 'A.1',
+            'title' => 'Child',
+            'parent_id' => $foreignParent->id,
+        ])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['parent_id']);
 });
@@ -474,7 +474,7 @@ test('regular user cannot create a rule', function (): void {
         'title' => 'Test',
         'content' => 'Content.',
         'markdown' => '**Bold markdown content.**',
-        'sort_order' => 1
+        'sort_order' => 1,
     ])->assertForbidden();
 });
 
@@ -549,7 +549,7 @@ test('module subscriber cannot create a rule', function (): void {
         'title' => 'Test',
         'content' => 'Content.',
         'markdown' => '**Bold markdown content.**',
-        'sort_order' => 1
+        'sort_order' => 1,
     ])->assertForbidden();
 });
 
@@ -601,7 +601,7 @@ test('module editor can create a rule in their module', function (): void {
         'title' => 'Editor Rule',
         'content' => 'Editor rule content.',
         'markdown' => '**Bold markdown content.**',
-        'sort_order' => 1
+        'sort_order' => 1,
     ])->assertCreated();
 });
 
@@ -619,7 +619,7 @@ test('module editor of module A cannot create a rule in module B', function (): 
         'title' => 'Editor Rule',
         'content' => 'Editor rule content.',
         'markdown' => '**Bold markdown content.**',
-        'sort_order' => 1
+        'sort_order' => 1,
     ])->assertForbidden();
 });
 
@@ -706,7 +706,7 @@ test('system admin can create a rule', function (): void {
         'title' => 'Admin Rule',
         'content' => 'Admin rule content.',
         'markdown' => '**Bold markdown content.**',
-        'sort_order' => 1
+        'sort_order' => 1,
     ])->assertCreated();
 });
 
