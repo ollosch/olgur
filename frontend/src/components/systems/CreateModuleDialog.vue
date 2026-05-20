@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { computed, watch } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useForm } from 'vee-validate'
 import { useSystemStore } from '@/stores/system'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,6 +24,12 @@ interface Props {
   hasCoreModule?: boolean
 }
 
+interface FormValues {
+  name: string
+  slug: string
+  is_core: boolean
+}
+
 const props = defineProps<Props>()
 const emit = defineEmits<{
   'update:open': [value: boolean]
@@ -36,36 +43,33 @@ const systemStore = useSystemStore()
 const { modulesBySystem, loading } = storeToRefs(systemStore)
 const { createModule } = systemStore
 
-const errors = ref<Record<string, string> | null>(null)
-
 useModalShortcutGuard(() => props.open)
 
-const name = ref('')
-const slug = ref('')
-const isCore = ref(false)
+const { defineField, handleSubmit, errors, setErrors, resetForm } = useForm<FormValues>()
+
+const [name] = defineField('name')
+const [slug] = defineField('slug')
+const [isCore] = defineField('is_core')
 
 watch(name, (val) => {
-  slug.value = generateSlug(val)
+  slug.value = generateSlug(val ?? '')
 })
 
 watch(
   () => props.open,
   (val) => {
     if (val) {
-      name.value = ''
-      slug.value = ''
-      isCore.value = false
-      errors.value = null
+      resetForm({ values: { name: '', slug: '', is_core: false } })
     }
   },
 )
 
-async function submit() {
+const onSubmit = handleSubmit(async (values) => {
   const existingCount = modulesBySystem.value[props.systemId]?.length ?? 0
   const result = await createModule(props.systemId, {
-    name: name.value,
-    slug: slug.value,
-    is_core: isCore.value,
+    name: values.name,
+    slug: values.slug,
+    is_core: values.is_core,
     description: '',
     config: {},
     sort_order: existingCount,
@@ -73,9 +77,9 @@ async function submit() {
   if (result.ok) {
     emit('update:open', false)
   } else {
-    errors.value = result.errors
+    setErrors(result.errors)
   }
-}
+})
 </script>
 
 <template>
@@ -86,11 +90,11 @@ async function submit() {
         <DialogDescription class="sr-only">Create a new module within this system</DialogDescription>
       </DialogHeader>
 
-      <form class="space-y-4" @submit.prevent="submit">
+      <form class="space-y-4" @submit.prevent="onSubmit">
         <div class="space-y-1.5">
           <Label for="mod-name">Name</Label>
           <Input id="mod-name" v-model="name" placeholder="Core Rules" />
-          <p v-if="errors?.name" class="text-destructive text-xs">
+          <p v-if="errors.name" class="text-destructive text-xs">
             {{ errors.name }}
           </p>
         </div>
@@ -98,7 +102,7 @@ async function submit() {
         <div class="space-y-1.5">
           <Label for="mod-slug">Slug</Label>
           <Input id="mod-slug" v-model="slug" placeholder="core-rules" />
-          <p v-if="errors?.slug" class="text-destructive text-xs">
+          <p v-if="errors.slug" class="text-destructive text-xs">
             {{ errors.slug }}
           </p>
         </div>
@@ -112,7 +116,7 @@ async function submit() {
           />
           <Label for="mod-core">Core module</Label>
         </div>
-        <p v-if="errors?.is_core" class="text-destructive text-xs">
+        <p v-if="errors.is_core" class="text-destructive text-xs">
           {{ errors.is_core }}
         </p>
 

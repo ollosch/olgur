@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { watch } from 'vue'
 import type { SystemStructure } from '@/types/domain'
 import { storeToRefs } from 'pinia'
+import { useForm } from 'vee-validate'
 import { useSystemStore } from '@/stores/system'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -21,6 +22,15 @@ interface Props {
   open: boolean
 }
 
+interface FormValues {
+  name: string
+  slug: string
+  description: string
+  structure: SystemStructure
+  toc_depth: number
+  sort_rules_by: 'number' | 'sort_order'
+}
+
 const props = defineProps<Props>()
 const emit = defineEmits<{
   'update:open': [value: boolean]
@@ -30,53 +40,56 @@ const systemStore = useSystemStore()
 const { loading } = storeToRefs(systemStore)
 const { createSystem } = systemStore
 
-const errors = ref<Record<string, string> | null>(null)
-
 useModalShortcutGuard(() => props.open)
 
-const name = ref('')
-const slug = ref('')
-const description = ref('')
-const structure = ref<SystemStructure>('core_plus_many')
-const tocDepth = ref(1)
-const sortRulesBy = ref<'number' | 'sort_order'>('sort_order')
+const { defineField, handleSubmit, errors, setErrors, resetForm } = useForm<FormValues>()
+
+const [name] = defineField('name')
+const [slug] = defineField('slug')
+const [description] = defineField('description')
+const [structure] = defineField('structure')
+const [tocDepth] = defineField('toc_depth')
+const [sortRulesBy] = defineField('sort_rules_by')
 
 watch(name, (val) => {
-  slug.value = generateSlug(val)
+  slug.value = generateSlug(val ?? '')
 })
 
 watch(
   () => props.open,
   (val) => {
     if (val) {
-      name.value = ''
-      slug.value = ''
-      description.value = ''
-      structure.value = 'core_plus_many'
-      tocDepth.value = 1
-      sortRulesBy.value = 'sort_order'
-      errors.value = null
+      resetForm({
+        values: {
+          name: '',
+          slug: '',
+          description: '',
+          structure: 'core_plus_many',
+          toc_depth: 1,
+          sort_rules_by: 'sort_order',
+        },
+      })
     }
   },
 )
 
-async function submit() {
+const onSubmit = handleSubmit(async (values) => {
   const result = await createSystem({
-    name: name.value,
-    slug: slug.value,
-    description: description.value,
+    name: values.name,
+    slug: values.slug,
+    description: values.description,
     config: {
-      system_structure: structure.value,
-      toc_depth: tocDepth.value,
-      sort_rules_by: sortRulesBy.value,
+      system_structure: values.structure,
+      toc_depth: values.toc_depth,
+      sort_rules_by: values.sort_rules_by,
     },
   })
   if (result.ok) {
     emit('update:open', false)
   } else {
-    errors.value = result.errors
+    setErrors(result.errors)
   }
-}
+})
 </script>
 
 <template>
@@ -87,11 +100,11 @@ async function submit() {
         <DialogDescription class="sr-only">Create a new rulebook system</DialogDescription>
       </DialogHeader>
 
-      <form class="space-y-4" @submit.prevent="submit">
+      <form class="space-y-4" @submit.prevent="onSubmit">
         <div class="space-y-1.5">
           <Label for="sys-name">Name</Label>
           <Input id="sys-name" v-model="name" placeholder="My Rulebook System" />
-          <p v-if="errors?.name" class="text-destructive text-xs">
+          <p v-if="errors.name" class="text-destructive text-xs">
             {{ errors.name }}
           </p>
         </div>
@@ -99,7 +112,7 @@ async function submit() {
         <div class="space-y-1.5">
           <Label for="sys-slug">Slug</Label>
           <Input id="sys-slug" v-model="slug" placeholder="my-rulebook-system" />
-          <p v-if="errors?.slug" class="text-destructive text-xs">
+          <p v-if="errors.slug" class="text-destructive text-xs">
             {{ errors.slug }}
           </p>
         </div>
@@ -107,7 +120,7 @@ async function submit() {
         <div class="space-y-1.5">
           <Label for="sys-description">Description</Label>
           <Input id="sys-description" v-model="description" placeholder="A short description (optional)" />
-          <p v-if="errors?.description" class="text-destructive text-xs">
+          <p v-if="errors.description" class="text-destructive text-xs">
             {{ errors.description }}
           </p>
         </div>
@@ -124,7 +137,7 @@ async function submit() {
             <option value="grouping_only">Grouping Only (ZOC-style)</option>
           </select>
           <p
-            v-if="errors?.['config.system_structure']"
+            v-if="errors['config.system_structure']"
             class="text-destructive text-xs"
           >
             {{ errors['config.system_structure'] }}
@@ -142,7 +155,7 @@ async function submit() {
             <option value="number">Rule number</option>
           </select>
           <p
-            v-if="errors?.['config.sort_rules_by']"
+            v-if="errors['config.sort_rules_by']"
             class="text-destructive text-xs"
           >
             {{ errors['config.sort_rules_by'] }}
@@ -158,7 +171,7 @@ async function submit() {
             min="1"
             placeholder="1"
           />
-          <p v-if="errors?.['config.toc_depth']" class="text-destructive text-xs">
+          <p v-if="errors['config.toc_depth']" class="text-destructive text-xs">
             {{ errors['config.toc_depth'] }}
           </p>
         </div>
