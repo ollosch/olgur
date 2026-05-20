@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useAppSettingsStore, THEME_PRESETS } from '@/stores/appSettings'
+import { useSystemStore } from '@/stores/system'
+import { useContentStore } from '@/stores/content'
 import { useRouter } from 'vue-router'
 import { cn } from '@/lib/utils'
 
@@ -9,6 +11,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ArrowLeft, Check } from 'lucide-vue-next'
 
 const settings = useAppSettingsStore()
+const systemStore = useSystemStore()
+const contentStore = useContentStore()
 const router = useRouter()
 
 const customHue = computed({
@@ -28,6 +32,22 @@ function goBack(): void {
   } else {
     router.push({ name: 'home' })
   }
+}
+
+/** Whether the current system has any rules with non-null markdown */
+const hasMarkdownRules = computed(() =>
+  contentStore.allRules.some((r) => r.markdown !== null),
+)
+
+const preferredFormat = computed((): 'content' | 'markdown' =>
+  systemStore.membership?.config?.preferred_rule_format ?? 'content',
+)
+
+async function toggleFormat(): Promise<void> {
+  const systemId = systemStore.currentSystem?.id
+  if (!systemId) return
+  const next: 'content' | 'markdown' = preferredFormat.value === 'content' ? 'markdown' : 'content'
+  await systemStore.updateMembership(systemId, { preferred_rule_format: next })
 }
 </script>
 
@@ -73,6 +93,42 @@ function goBack(): void {
           </button>
           <p class="mt-2 text-sm text-muted-foreground">
             {{ settings.acronymPopups ? 'Enabled' : 'Disabled' }}
+          </p>
+        </CardContent>
+      </Card>
+
+      <!-- Rule Format Preference (only shown when current system has markdown rules) -->
+      <Card v-if="systemStore.currentSystem && hasMarkdownRules">
+        <CardHeader>
+          <CardTitle>Rule Format</CardTitle>
+          <CardDescription>
+            Choose whether to display rules in their custom or markdown format (when available).
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <button
+            type="button"
+            role="switch"
+            :aria-checked="preferredFormat === 'markdown'"
+            :class="
+              cn(
+                'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                preferredFormat === 'markdown' ? 'bg-primary' : 'bg-muted',
+              )
+            "
+            @click="toggleFormat"
+          >
+            <span
+              :class="
+                cn(
+                  'pointer-events-none block h-4 w-4 rounded-full bg-white shadow-sm ring-0 transition-transform',
+                  preferredFormat === 'markdown' ? 'translate-x-6' : 'translate-x-1',
+                )
+              "
+            />
+          </button>
+          <p class="mt-2 text-sm text-muted-foreground">
+            {{ preferredFormat === 'markdown' ? 'Markdown' : 'Custom' }}
           </p>
         </CardContent>
       </Card>
