@@ -139,6 +139,31 @@ export interface ManifestEntry {
   files: ManifestFiles
 }
 
+export interface ModuleVersionAmendment {
+  id: string
+  module_version_id: string
+  entity_type: 'rule' | 'index_entry' | 'game_datum'
+  entity_id: string
+  change_type: 'correction' | 'update'
+  description: string
+  content_after: Record<string, unknown>
+  amended_by: string
+  amended_at: string
+}
+
+export interface ModuleDraftChange {
+  id: string
+  module_id: string
+  module_version_id: string | null
+  entity_type: 'rule' | 'index_entry' | 'game_datum'
+  entity_id: string
+  change_type: 'correction' | 'update'
+  description: string | null
+  content_after: Record<string, unknown>
+  changed_by: string
+  changed_at: string
+}
+
 // -- API Response Wrappers --
 export interface ApiResource<T> {
   data: T
