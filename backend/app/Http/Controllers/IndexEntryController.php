@@ -9,9 +9,12 @@ use App\Http\Requests\UpdateIndexEntryRequest;
 use App\Http\Resources\IndexEntryResource;
 use App\Models\IndexEntry;
 use App\Models\Module;
+use App\Models\ModuleDraftChange;
 use App\Models\System;
+use App\Models\User;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 
 final class IndexEntryController
@@ -56,6 +59,25 @@ final class IndexEntryController
         Gate::authorize('update', [IndexEntry::class, $system, $module]);
 
         $indexEntry->update($request->validated());
+
+        /** @var User $user */
+        $user = Auth::user();
+
+        ModuleDraftChange::query()->create([
+            'module_id' => $module->id,
+            'module_version_id' => null,
+            'entity_type' => 'index_entry',
+            'entity_id' => $indexEntry->id,
+            'change_type' => 'update',
+            'description' => null,
+            'content_after' => [
+                'definition' => $indexEntry->definition,
+                'notes' => $indexEntry->notes,
+                'relations' => $indexEntry->relations,
+            ],
+            'changed_by' => $user->id,
+            'changed_at' => now(),
+        ]);
 
         return new IndexEntryResource($indexEntry);
     }

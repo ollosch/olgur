@@ -8,10 +8,13 @@ use App\Http\Requests\StoreRuleRequest;
 use App\Http\Requests\UpdateRuleRequest;
 use App\Http\Resources\RuleResource;
 use App\Models\Module;
+use App\Models\ModuleDraftChange;
 use App\Models\Rule;
 use App\Models\System;
+use App\Models\User;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 
 final class RuleController
@@ -60,6 +63,21 @@ final class RuleController
         Gate::authorize('update', [Rule::class, $system, $module]);
 
         $rule->update($request->validated());
+
+        /** @var User $user */
+        $user = Auth::user();
+
+        ModuleDraftChange::query()->create([
+            'module_id' => $module->id,
+            'module_version_id' => null,
+            'entity_type' => 'rule',
+            'entity_id' => $rule->id,
+            'change_type' => 'update',
+            'description' => null,
+            'content_after' => ['content' => $rule->content],
+            'changed_by' => $user->id,
+            'changed_at' => now(),
+        ]);
 
         return new RuleResource($rule);
     }

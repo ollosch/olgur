@@ -8,6 +8,8 @@ use App\Http\Controllers\MeController;
 use App\Http\Controllers\MembershipController;
 use App\Http\Controllers\ModuleActivationController;
 use App\Http\Controllers\ModuleController;
+use App\Http\Controllers\ModuleDraftChangeController;
+use App\Http\Controllers\ModuleVersionAmendmentController;
 use App\Http\Controllers\ModuleVersionController;
 use App\Http\Controllers\ModuleVersionFileController;
 use App\Http\Controllers\RuleController;
@@ -52,6 +54,11 @@ Route::prefix('api')->group(function (): void {
                 ->name('versions.index');
             Route::get('/systems/{system}/modules/{module}/versions/{version}/game-data', [ModuleVersionFileController::class, 'gameData'])
                 ->name('versions.game-data');
+
+            Route::get('/systems/{system}/modules/{module}/versions/{version}/amendments', [ModuleVersionAmendmentController::class, 'index']);
+            Route::post('/systems/{system}/modules/{module}/versions/{version}/amendments', [ModuleVersionAmendmentController::class, 'store']);
+
+            Route::get('/systems/{system}/modules/{module}/draft-changes', [ModuleDraftChangeController::class, 'index']);
         });
     });
 

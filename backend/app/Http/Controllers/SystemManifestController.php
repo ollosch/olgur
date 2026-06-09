@@ -39,9 +39,9 @@ final class SystemManifestController
                     'version_string' => $latestVersion?->version_string,
                     'released_at' => $latestVersion?->released_at?->toIso8601String(),
                     'files' => $latestVersion !== null ? [
-                        'rules' => route('versions.rules', [$system, $module, $latestVersion]),
-                        'index' => route('versions.index', [$system, $module, $latestVersion]),
-                        'game-data' => route('versions.game-data', [$system, $module, $latestVersion]),
+                        'rules' => $this->fileUrl('versions.rules', [$system, $module, $latestVersion], $latestVersion->revision),
+                        'index' => $this->fileUrl('versions.index', [$system, $module, $latestVersion], $latestVersion->revision),
+                        'game-data' => $this->fileUrl('versions.game-data', [$system, $module, $latestVersion], $latestVersion->revision),
                     ] : null,
                 ];
             })
@@ -54,5 +54,19 @@ final class SystemManifestController
                 'modules' => $modules,
             ],
         ]);
+    }
+
+    /**
+     * @param  array<mixed>  $parameters
+     */
+    private function fileUrl(string $name, array $parameters, int $revision): string
+    {
+        $url = route($name, $parameters);
+
+        if ($revision > 0) {
+            $url .= '?rev='.$revision;
+        }
+
+        return $url;
     }
 }

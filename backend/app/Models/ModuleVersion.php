@@ -19,11 +19,12 @@ use Illuminate\Support\Carbon;
  * @property string|null $released_by
  * @property string $version_string
  * @property string $notes
+ * @property int $revision
  * @property Carbon|null $released_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['module_id', 'version_string', 'notes', 'released_at', 'released_by'])]
+#[Fillable(['module_id', 'version_string', 'notes', 'revision', 'released_at', 'released_by'])]
 final class ModuleVersion extends Model
 {
     /** @use HasFactory<ModuleVersionFactory> */
@@ -40,6 +41,7 @@ final class ModuleVersion extends Model
     {
         return [
             'released_at' => 'datetime',
+            'revision' => 'integer',
         ];
     }
 
@@ -81,5 +83,13 @@ final class ModuleVersion extends Model
     public function indexEntryVersions(): HasMany
     {
         return $this->hasMany(IndexEntryVersion::class);
+    }
+
+    /**
+     * @return HasMany<ModuleVersionAmendment, $this>
+     */
+    public function amendments(): HasMany
+    {
+        return $this->hasMany(ModuleVersionAmendment::class);
     }
 }

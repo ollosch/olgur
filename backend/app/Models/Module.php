@@ -95,6 +95,14 @@ final class Module extends Model
         return $this->hasMany(ModuleVersion::class);
     }
 
+    /**
+     * @return HasMany<ModuleDraftChange, $this>
+     */
+    public function draftChanges(): HasMany
+    {
+        return $this->hasMany(ModuleDraftChange::class);
+    }
+
     public function isSubscriber(User $user): bool
     {
         return $this->subscriptions()->where('user_id', $user->id)->exists();

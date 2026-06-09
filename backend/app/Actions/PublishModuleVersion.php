@@ -9,17 +9,19 @@ use App\Models\GameDatumVersion;
 use App\Models\IndexEntry;
 use App\Models\IndexEntryVersion;
 use App\Models\Module;
+use App\Models\ModuleDraftChange;
 use App\Models\ModuleVersion;
 use App\Models\Rule;
 use App\Models\RuleVersion;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\LazyCollection;
 use Illuminate\Support\Str;
 
-final class PublishModuleVersion
+final readonly class PublishModuleVersion
 {
+    public function __construct(private GenerateModuleVersionFiles $generateFiles) {}
+
     public function execute(Module $module, User $releasedBy, string $version, string $notes = ''): ModuleVersion
     {
         $version = DB::transaction(function () use ($module, $releasedBy, $version, $notes): ModuleVersion {
@@ -36,10 +38,15 @@ final class PublishModuleVersion
             $this->publishIndex($module, $moduleVersion);
             $this->publishGameData($module, $moduleVersion);
 
+            ModuleDraftChange::query()
+                ->where('module_id', $module->id)
+                ->whereNull('module_version_id')
+                ->update(['module_version_id' => $moduleVersion->id]);
+
             return $moduleVersion;
         });
 
-        $this->generateStaticFiles($version);
+        $this->generateFiles->generateAll($version);
 
         return $version;
 
@@ -148,69 +155,5 @@ final class PublishModuleVersion
         $idList = implode("', '", $ids);
 
         DB::statement(sprintf("UPDATE `%s` SET `parent_id` = CASE `id` %sEND WHERE `id` IN ('%s')", $table, $cases, $idList));
-    }
-
-    private function generateStaticFiles(ModuleVersion $version): void
-    {
-        $rules = RuleVersion::query()
-            ->where('module_version_id', $version->id)
-            ->orderBy('sort_order')
-            ->get()
-            ->map(fn (RuleVersion $rv): array => [
-                'id' => $rv->id,
-                'rule_id' => $rv->rule_id,
-                'module_version_id' => $rv->module_version_id,
-                'parent_id' => $rv->parent_id,
-                'number' => $rv->number,
-                'title' => $rv->title,
-                'content' => $rv->content,
-                'sort_order' => $rv->sort_order,
-            ])
-            ->all();
-
-        Storage::disk('local')->put(
-            sprintf('versions/%s/rules.json', $version->id),
-            (string) json_encode($rules, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
-        );
-
-        $indexEntries = IndexEntryVersion::query()
-            ->where('module_version_id', $version->id)
-            ->orderBy('term')
-            ->get()
-            ->map(fn (IndexEntryVersion $iev): array => [
-                'id' => $iev->id,
-                'index_entry_id' => $iev->index_entry_id,
-                'module_version_id' => $iev->module_version_id,
-                'parent_id' => $iev->parent_id,
-                'term' => $iev->term,
-                'definition' => $iev->definition,
-                'notes' => $iev->notes,
-                'relations' => $iev->relations,
-            ])
-            ->all();
-
-        Storage::disk('local')->put(
-            sprintf('versions/%s/index.json', $version->id),
-            (string) json_encode($indexEntries, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
-        );
-
-        $gameData = GameDatumVersion::query()
-            ->where('module_version_id', $version->id)
-            ->get()
-            ->map(fn (GameDatumVersion $gdv): array => [
-                'id' => $gdv->id,
-                'game_datum_id' => $gdv->game_datum_id,
-                'module_version_id' => $gdv->module_version_id,
-                'type' => $gdv->type->value,
-                'name' => $gdv->name,
-                'slug' => $gdv->slug,
-                'content' => $gdv->content,
-            ])
-            ->all();
-
-        Storage::disk('local')->put(
-            sprintf('versions/%s/game-data.json', $version->id),
-            (string) json_encode($gameData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
-        );
     }
 }

@@ -9,9 +9,12 @@ use App\Http\Requests\UpdateGameDatumRequest;
 use App\Http\Resources\GameDatumResource;
 use App\Models\GameDatum;
 use App\Models\Module;
+use App\Models\ModuleDraftChange;
 use App\Models\System;
+use App\Models\User;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 
 final class GameDatumController
@@ -58,6 +61,21 @@ final class GameDatumController
         Gate::authorize('update', [GameDatum::class, $system, $module]);
 
         $gameDatum->update($request->validated());
+
+        /** @var User $user */
+        $user = Auth::user();
+
+        ModuleDraftChange::query()->create([
+            'module_id' => $module->id,
+            'module_version_id' => null,
+            'entity_type' => 'game_datum',
+            'entity_id' => $gameDatum->id,
+            'change_type' => 'update',
+            'description' => null,
+            'content_after' => ['content' => $gameDatum->content],
+            'changed_by' => $user->id,
+            'changed_at' => now(),
+        ]);
 
         return new GameDatumResource($gameDatum);
     }
