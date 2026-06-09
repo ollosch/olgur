@@ -91,6 +91,7 @@ function makeManifestEntry(moduleId: string): ManifestEntry {
     version_id: 'v1',
     version_string: '1.0',
     released_at: '2024-01-01T00:00:00Z',
+    revision: 0,
     files: {
       rules: `https://cdn.example.com/${moduleId}/rules.json`,
       index: `https://cdn.example.com/${moduleId}/index.json`,

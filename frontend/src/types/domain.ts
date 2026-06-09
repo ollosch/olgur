@@ -136,6 +136,7 @@ export interface ManifestEntry {
   version_id: string
   version_string: string
   released_at: string
+  revision: number
   files: ManifestFiles
 }
 
