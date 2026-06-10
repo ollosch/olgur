@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { useApi } from '@/composables/useApi'
+import { useMembershipStore } from '@/stores/membership'
 import type { ApiResult } from '@/lib/http'
 import type {
   System,
@@ -40,7 +41,6 @@ export const useSystemStore = defineStore('system', () => {
     const result = await post<ApiResource<System>, CreateSystemRequest>('/systems', data)
     if (result.ok) {
       systems.value.push(result.data.data)
-      const { useMembershipStore } = await import('@/stores/membership')
       const membershipStore = useMembershipStore()
       await Promise.all([membershipStore.fetchMemberships(), membershipStore.fetchSubscriptions()])
       return { ok: true, data: result.data.data }
@@ -83,7 +83,6 @@ export const useSystemStore = defineStore('system', () => {
   async function init(force = false): Promise<void> {
     if (initialized.value && !force) return
 
-    const { useMembershipStore } = await import('@/stores/membership')
     const membershipStore = useMembershipStore()
 
     await Promise.all([
@@ -128,7 +127,6 @@ export const useSystemStore = defineStore('system', () => {
     if (result.ok) {
       const existing = modulesBySystem.value[systemId] ?? []
       modulesBySystem.value[systemId] = [...existing, result.data.data]
-      const { useMembershipStore } = await import('@/stores/membership')
       await useMembershipStore().fetchSubscriptions()
       return { ok: true, data: result.data.data }
     }
