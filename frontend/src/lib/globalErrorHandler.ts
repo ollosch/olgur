@@ -10,7 +10,7 @@ export async function globalErrorHandler(err: unknown, instance: ComponentPublic
 
   // Only log debug information when explicitly enabled and not running tests
   const isDebug = import.meta.env.VITE_APP_DEBUG === 'true'
-  const isTest = Boolean((import.meta.env as any).VITEST)
+  const isTest = Boolean(import.meta.env.VITEST)
 
   if (isDebug && !isTest) {
     console.error('Global error handler:', err, instance, info)
