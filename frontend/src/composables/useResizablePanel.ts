@@ -1,4 +1,5 @@
 import { onBeforeUnmount, ref, type Ref } from 'vue'
+import { loadNumber, saveItem } from '@/lib/storage'
 
 export interface ResizablePanelOptions {
   /** localStorage key used to persist the panel size. */
@@ -33,14 +34,7 @@ function resolve(val: number | (() => number)): number {
 export function useResizablePanel(options: ResizablePanelOptions): ResizablePanelReturn {
   const { storageKey, direction, inverted = false } = options
 
-  function loadSize(): number {
-    const stored = localStorage.getItem(storageKey)
-    if (!stored) return resolve(options.defaultSize)
-    const parsed = parseInt(stored, 10)
-    return isNaN(parsed) ? resolve(options.defaultSize) : parsed
-  }
-
-  const size = ref(loadSize())
+  const size = ref(loadNumber(storageKey, resolve(options.defaultSize)))
   const isDragging = ref(false)
 
   let dragStartPos = 0
@@ -55,7 +49,7 @@ export function useResizablePanel(options: ResizablePanelOptions): ResizablePane
 
   function onEnd(): void {
     isDragging.value = false
-    localStorage.setItem(storageKey, String(size.value))
+    saveItem(storageKey, String(size.value))
     document.removeEventListener('pointermove', onMove)
     document.removeEventListener('pointerup', onEnd)
     document.body.style.userSelect = ''

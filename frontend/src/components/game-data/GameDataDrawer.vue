@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useResizablePanel } from '@/composables/useResizablePanel'
+import { loadBool, saveItem } from '@/lib/storage'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import GameDataDrawerContent from '@/components/game-data/GameDataDrawerContent.vue'
 import type { DrawerMode } from '@/components/game-data/GameDataDrawerContent.vue'
@@ -21,15 +22,11 @@ const emit = defineEmits<{
 
 const PIN_KEY = 'panel-right-pinned'
 
-function loadPinned(): boolean {
-  return localStorage.getItem(PIN_KEY) === 'true'
-}
-
-const isPinned = ref(loadPinned())
+const isPinned = ref(loadBool(PIN_KEY, false))
 
 function togglePin(): void {
   isPinned.value = !isPinned.value
-  localStorage.setItem(PIN_KEY, String(isPinned.value))
+  saveItem(PIN_KEY, String(isPinned.value))
   if (isPinned.value) {
     emit('update:open', false)
   }

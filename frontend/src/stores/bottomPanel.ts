@@ -1,20 +1,11 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
+import { loadBool, loadString, saveItem } from '@/lib/storage'
 
 export interface BottomPanelTab {
   id: string
   label: string
   icon: string
-}
-
-function loadBool(key: string, defaultValue: boolean): boolean {
-  const stored = localStorage.getItem(key)
-  if (stored === null) return defaultValue
-  return stored === 'true'
-}
-
-function loadString(key: string, defaultValue: string): string {
-  return localStorage.getItem(key) ?? defaultValue
 }
 
 export const useBottomPanelStore = defineStore('bottomPanel', () => {
@@ -23,8 +14,8 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
   const tabs = ref<BottomPanelTab[]>([])
   const activeTabId = ref(loadString('panel-bottom-active-tab', ''))
 
-  watch(isPinned, (val) => localStorage.setItem('panel-bottom-pinned', String(val)))
-  watch(activeTabId, (val) => localStorage.setItem('panel-bottom-active-tab', val))
+  watch(isPinned, (val) => saveItem('panel-bottom-pinned', String(val)))
+  watch(activeTabId, (val) => saveItem('panel-bottom-active-tab', val))
 
   function open(): void {
     isOpen.value = true

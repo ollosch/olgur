@@ -1,5 +1,6 @@
 import { ref, watch } from 'vue'
 import { defineStore } from 'pinia'
+import { loadBool, loadNumber, saveItem } from '@/lib/storage'
 
 export type ThemeHue = number
 
@@ -17,28 +18,15 @@ export const THEME_PRESETS: ThemePreset[] = [
   { name: 'Teal', hue: 175 },
 ]
 
-function loadBool(key: string, defaultValue: boolean): boolean {
-  const stored = localStorage.getItem(key)
-  if (stored === null) return defaultValue
-  return stored === 'true'
-}
-
-function loadNumber(key: string, defaultValue: number): number {
-  const stored = localStorage.getItem(key)
-  if (stored === null) return defaultValue
-  const parsed = parseFloat(stored)
-  return isNaN(parsed) ? defaultValue : parsed
-}
-
 export const useAppSettingsStore = defineStore('appSettings', () => {
   const acronymPopups = ref(loadBool('settings.acronymPopups', true))
   const themeHue = ref(loadNumber('settings.themeHue', 142))
   const sidebarPinned = ref(loadBool('settings.sidebarPinned', false))
 
-  watch(acronymPopups, (val) => localStorage.setItem('settings.acronymPopups', String(val)))
-  watch(sidebarPinned, (val) => localStorage.setItem('settings.sidebarPinned', String(val)))
+  watch(acronymPopups, (val) => saveItem('settings.acronymPopups', String(val)))
+  watch(sidebarPinned, (val) => saveItem('settings.sidebarPinned', String(val)))
   watch(themeHue, (val) => {
-    localStorage.setItem('settings.themeHue', String(val))
+    saveItem('settings.themeHue', String(val))
     applyTheme(val)
   })
 
