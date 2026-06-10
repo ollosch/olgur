@@ -41,6 +41,7 @@ final class SystemManifestController
                     'files' => $latestVersion !== null ? [
                         'rules' => route('versions.rules', [$system, $module, $latestVersion]),
                         'index' => route('versions.index', [$system, $module, $latestVersion]),
+                        'game-data' => route('versions.game-data', [$system, $module, $latestVersion]),
                     ] : null,
                 ];
             })

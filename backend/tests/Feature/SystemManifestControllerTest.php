@@ -89,6 +89,11 @@ test('manifest file paths reference correct version ids', function (): void {
         ->toStartWith('http')
         ->toContain($version->id)
         ->toContain('index');
+
+    expect($files['game-data'])
+        ->toStartWith('http')
+        ->toContain($version->id)
+        ->toContain('game-data');
 });
 
 test('manifest returns 404 for unknown system', function (): void {
