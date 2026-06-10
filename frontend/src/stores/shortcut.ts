@@ -9,5 +9,15 @@ export const useShortcutStore = defineStore('shortcut', () => {
 
   const shortcutsBlocked = computed(() => overlayOpen.value || modalCount.value > 0)
 
-  return { overlayOpen, shortcutsBlocked, modalCount }
+  /** Call when a modal dialog opens — increments the blocked-shortcut counter. */
+  function openModal(): void {
+    modalCount.value++
+  }
+
+  /** Call when a modal dialog closes — decrements the blocked-shortcut counter. */
+  function closeModal(): void {
+    modalCount.value--
+  }
+
+  return { overlayOpen, shortcutsBlocked, modalCount, openModal, closeModal }
 })
