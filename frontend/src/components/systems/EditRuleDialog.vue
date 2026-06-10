@@ -118,7 +118,7 @@ const onSubmit = handleSubmit(async (values) => {
   const result = await contentStore.updateRule(props.rule, {
     number: values.number,
     title: values.title,
-    content: values.content.replaceAll('\n', '<br>'),
+    content: values.content,
     markdown: values.markdown,
     parent_id: values.parent_id ?? null,
     sort_order: props.rule.sort_order,

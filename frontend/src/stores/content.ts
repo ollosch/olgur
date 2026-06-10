@@ -195,7 +195,9 @@ export const useContentStore = defineStore('content', () => {
 
     const result = await get<ApiCollection<Rule>>(`/systems/${systemId}/modules/${moduleId}/rules`)
     if (result.ok) {
-      rulesByModule.value[moduleId] = result.data.data.map((r) => markRaw(r))
+      rulesByModule.value[moduleId] = result.data.data.map((r) =>
+        markRaw({ ...r, content: r.content.split('<br>').join('\n') }),
+      )
     }
   }
 
@@ -205,14 +207,15 @@ export const useContentStore = defineStore('content', () => {
 
     const result = await put<ApiResource<Rule>, UpdateRuleRequest>(
       `/systems/${systemId}/modules/${rule.module_id}/rules/${rule.id}`,
-      data,
+      { ...data, content: data.content.split('\n').join('<br>') },
     )
 
     if (result.ok) {
+      const stored = markRaw({ ...result.data.data, content: result.data.data.content.split('<br>').join('\n') })
       const list = rulesByModule.value[rule.module_id] ?? []
       const idx = list.indexOf(rulesById.value.get(rule.id)!)
-      if (idx !== -1) list[idx] = markRaw(result.data.data)
-      return { ok: true, data: result.data.data }
+      if (idx !== -1) list[idx] = stored
+      return { ok: true, data: stored }
     }
 
     return result
