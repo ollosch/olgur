@@ -150,5 +150,7 @@ test('MembershipConfig::toArray serialises to the expected shape', function (): 
         'active_module_ids' => ['mod-1'],
         'bookmarks' => [['type' => 'rule', 'id' => 'abc123']],
         'ignored_tags' => ['tag-a'],
+        'acronym_popups' => false,
+        'preferred_rule_format' => 'content',
     ]);
 });

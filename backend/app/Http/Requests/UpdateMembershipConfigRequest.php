@@ -25,6 +25,8 @@ final class UpdateMembershipConfigRequest extends FormRequest
     {
         return [
             'config' => ['required', 'array'],
+            'config.acronym_popups' => ['sometimes', 'boolean'],
+            'config.preferred_rule_format' => ['sometimes', 'string', 'in:content,markdown'],
             'config.active_module_ids' => ['sometimes', 'array'],
             'config.active_module_ids.*' => ['string'],
             'config.bookmarks' => ['sometimes', 'array'],

@@ -64,6 +64,8 @@ final class ActivateModule
             activeModuleIds: $activeIds,
             bookmarks: $config->bookmarks,
             ignoredTags: $config->ignoredTags,
+            acronymPopups: $config->acronymPopups,
+            preferredRuleFormat: $config->preferredRuleFormat,
         );
         $membership->save();
 

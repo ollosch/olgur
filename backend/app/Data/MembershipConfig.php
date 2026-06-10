@@ -28,6 +28,10 @@ final readonly class MembershipConfig implements Castable
         public array $bookmarks,
         /** Tag slugs ignored in the ASOP view for this user. */
         public array $ignoredTags,
+        /** Whether acronym popups are enabled for this user. */
+        public bool $acronymPopups,
+        /** The preferred rule format for this user. */
+        public string $preferredRuleFormat,
     ) {}
 
     /**
@@ -59,6 +63,8 @@ final readonly class MembershipConfig implements Castable
             activeModuleIds: $activeModuleIds,
             bookmarks: $bookmarks,
             ignoredTags: $ignoredTags,
+            acronymPopups: (bool) ($data['acronym_popups'] ?? false),
+            preferredRuleFormat: (string) ($data['preferred_rule_format'] ?? 'content'),
         );
     }
 
@@ -107,6 +113,8 @@ final readonly class MembershipConfig implements Castable
             'active_module_ids' => $this->activeModuleIds,
             'bookmarks' => $this->bookmarks,
             'ignored_tags' => $this->ignoredTags,
+            'acronym_popups' => $this->acronymPopups,
+            'preferred_rule_format' => $this->preferredRuleFormat,
         ];
     }
 }
