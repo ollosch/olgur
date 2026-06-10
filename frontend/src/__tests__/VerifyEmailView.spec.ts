@@ -63,7 +63,7 @@ describe('VerifyEmailView', () => {
 
   it('shows verifying state initially (before onMounted resolves)', async () => {
     // Never resolves so stays in verifying state
-    mockVerifyEmail.mockReturnValue(new Promise(() => {}))
+    mockVerifyEmail.mockReturnValue(new Promise(() => { }))
     const wrapper = await mountView({ url: '/email/verify/123?expires=123&signature=abc' })
     expect(wrapper.text()).toContain('Verifying')
   })
@@ -103,9 +103,8 @@ describe('VerifyEmailView', () => {
 
     await flushPromises()
     const btn = wrapper.find('button')
-    if (btn.exists()) {
-      await btn.trigger('click')
-      expect(pushSpy).toHaveBeenCalledWith({ name: 'login' })
-    }
+    expect(btn.exists()).toBe(true)
+    await btn.trigger('click')
+    expect(pushSpy).toHaveBeenCalledWith({ name: 'login' })
   })
 })
