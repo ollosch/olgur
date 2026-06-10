@@ -1,6 +1,7 @@
 import { onMounted, onUnmounted } from 'vue'
-import { useRulePopup } from '@/composables/useRulePopup'
+import { storeToRefs } from 'pinia'
 import { useAppSettingsStore } from '@/stores/appSettings'
+import { useInteractionStore } from '@/stores/interaction'
 import { useContentStore } from '@/stores/content'
 import type { Rule, IndexEntry } from '@/types/domain'
 
@@ -19,7 +20,8 @@ export function useRuleDelegation(
   onSelect: (rule: Rule) => void,
   getIndexEntriesMap?: () => Map<string, IndexEntry>,
 ) {
-  const { state, hide, keepOpen, navigateToRange } = useRulePopup()
+  const interactionStore = useInteractionStore()
+  const { popupState: state } = storeToRefs(interactionStore)
   const appSettings = useAppSettingsStore()
   const contentStore = useContentStore()
   let showTimer: ReturnType<typeof setTimeout> | null = null
@@ -49,7 +51,7 @@ export function useRuleDelegation(
 
     // Inside the popup — keep it open and do nothing else
     if (target.closest('[data-popup-overlay]')) {
-      keepOpen()
+      interactionStore.keepOpen()
       return
     }
 
@@ -61,12 +63,12 @@ export function useRuleDelegation(
     if (!trigger) {
       if (showTimer) { clearTimeout(showTimer); showTimer = null }
       activeEl = null
-      hide()
+      interactionStore.hide()
       return
     }
 
     // Trigger found — cancel any pending hide before doing anything else
-    keepOpen()
+    interactionStore.keepOpen()
 
     if (trigger === activeEl) return // still on same trigger
 
@@ -129,7 +131,7 @@ export function useRuleDelegation(
     const rangeAnchor = e.target.closest<HTMLElement>('[data-rule-range]')
     if (rangeAnchor && !rangeAnchor.closest('[data-popup-overlay]')) {
       e.preventDefault()
-      navigateToRange(rangeAnchor.dataset['ruleRange'] ?? '')
+      interactionStore.navigateToRange(rangeAnchor.dataset['ruleRange'] ?? '')
       return
     }
 

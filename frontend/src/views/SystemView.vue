@@ -8,7 +8,7 @@ import { useLeftPanelStore } from '@/stores/leftPanel'
 import { useSystemStore } from '@/stores/system'
 import { useRuleDelegation } from '@/composables/useRuleDelegation'
 import { useResizablePanel } from '@/composables/useResizablePanel'
-import { useRulePopup } from '@/composables/useRulePopup'
+import { useInteractionStore } from '@/stores/interaction'
 import type { Rule, Module } from '@/types/domain'
 
 import LeftPanelContent from '@/components/systems/LeftPanelContent.vue'
@@ -207,7 +207,7 @@ function getModuleRules(mod: Module): Rule[] {
 }
 
 useRuleDelegation(() => contentStore.rulesByNumber, selectRule, () => contentStore.indexEntriesByTerm)
-useRulePopup().registerNavigate(
+useInteractionStore().registerNavigate(
   selectRule,
   () => contentStore.rulesByNumber,
   () => contentStore.indexEntriesByTerm,

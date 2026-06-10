@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRulePopup } from '@/composables/useRulePopup'
+import { storeToRefs } from 'pinia'
+import { useInteractionStore } from '@/stores/interaction'
 import { renderContent } from '@/lib/renderContent'
 import { useAppSettingsStore } from '@/stores/appSettings'
 
-const { state, navigateToNumber, navigateToRange } = useRulePopup()
+const interaction = useInteractionStore()
+const { popupState: state } = storeToRefs(interaction)
 const appSettings = useAppSettingsStore()
 
 const style = computed(() => {
@@ -22,13 +24,13 @@ function onClick(e: MouseEvent) {
   const rangeAnchor = (e.target as HTMLElement).closest<HTMLElement>('[data-rule-range]')
   if (rangeAnchor) {
     e.preventDefault()
-    navigateToRange(rangeAnchor.dataset['ruleRange'] ?? '')
+    interaction.navigateToRange(rangeAnchor.dataset['ruleRange'] ?? '')
     return
   }
   const anchor = (e.target as HTMLElement).closest<HTMLElement>('[data-rule-number]')
   if (!anchor) return
   e.preventDefault()
-  navigateToNumber(anchor.dataset['ruleNumber'] ?? '')
+  interaction.navigateToNumber(anchor.dataset['ruleNumber'] ?? '')
 }
 </script>
 
@@ -49,7 +51,7 @@ function onClick(e: MouseEvent) {
             <button
               type="button"
               class="text-[10px] text-primary underline decoration-dotted hover:text-primary/80 transition-colors shrink-0"
-              @click.stop="navigateToNumber(state.content.rule.number)"
+              @click.stop="interaction.navigateToNumber(state.content.rule.number)"
             >Open</button>
           </div>
           <p class="font-semibold text-foreground mb-1">{{ state.content.rule.title }}</p>
@@ -70,7 +72,7 @@ function onClick(e: MouseEvent) {
             <button
               type="button"
               class="text-[10px] text-primary underline decoration-dotted hover:text-primary/80 transition-colors shrink-0"
-              @click.stop="navigateToRange(`${state.content.rules[0]?.number}-${state.content.rules[state.content.rules.length - 1]?.number}`)"
+              @click.stop="interaction.navigateToRange(`${state.content.rules[0]?.number}-${state.content.rules[state.content.rules.length - 1]?.number}`)"
             >Open range</button>
           </div>
           <div
