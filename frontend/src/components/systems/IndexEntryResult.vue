@@ -43,9 +43,9 @@ function activeRuleRefs(entry: IndexEntry): string[] {
     <div class="flex items-baseline justify-between gap-2 group">
       <p class="text-xs font-semibold text-foreground">
         <span v-if="depth === 0 && entry.parent_id" class="text-xs text-muted-foreground">
-          <span v-html="contentStore.indexEntriesById.get(entry.parent_id)?.term"></span> ›
+          <span v-html="renderContent(contentStore.indexEntriesById.get(entry.parent_id)?.term ?? '')"></span> ›
         </span>
-        <span v-html="entry.term"></span>
+        <span v-html="renderContent(entry.term)"></span>
         <button
           v-if="canEdit(entry.module_id)"
           type="button"
