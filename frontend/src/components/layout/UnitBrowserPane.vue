@@ -6,8 +6,7 @@ import { Input } from '@/components/ui/input'
 import { SEARCH_DEBOUNCE_MS, rankMatchLower } from '@/lib/utils'
 import { unitTypeLabel, unitNation } from '@/lib/unitUtils'
 import { useContentStore } from '@/stores/content'
-import { useAppSettingsStore } from '@/stores/appSettings'
-import { renderContent } from '@/lib/renderContent'
+import UnitDetailCard from '@/components/layout/UnitDetailCard.vue'
 import type { GameDatum } from '@/types/domain'
 
 const props = withDefaults(defineProps<{
@@ -28,7 +27,6 @@ const emit = defineEmits<{
 }>()
 
 const contentStore = useContentStore()
-const appSettings = useAppSettingsStore()
 
 // ── State ────────────────────────────────────────────────────────────────────
 
@@ -138,78 +136,6 @@ function selectUnit(unit: GameDatum): void {
 function back(): void {
   selectedUnit.value = null
 }
-
-// ── Unit field helpers ────────────────────────────────────────────────────────
-
-function field(item: GameDatum, key: string): unknown {
-  return item.content[key]
-}
-
-function fieldStr(item: GameDatum, key: string): string {
-  const v = item.content[key]
-  if (v === null || v === undefined) return ''
-  return String(v)
-}
-
-function fieldBool(item: GameDatum, key: string): boolean {
-  const v = item.content[key]
-  return v === true || v === 'true' || v === 1 || v === '1'
-}
-
-interface StatField { label: string; value: string }
-
-function vehicleStats(item: GameDatum): StatField[] {
-  const pairs: [string, string][] = [
-    ['BPV', 'bpv'],
-    ['RF', 'rf'],
-    ['Size', 'size'],
-    ['AF', 'af'],
-    ['TA', 'ta'],
-    ['CS', 'cs'],
-    ['MP', 'mp'],
-  ]
-  return pairs
-    .map(([label, key]) => ({ label, value: fieldStr(item, key) }))
-    .filter((f) => f.value !== '')
-}
-
-function vehicleArmament(item: GameDatum): StatField[] {
-  const pairs: [string, string][] = [
-    ['Main Armament', 'ma'],
-    ['ROF', 'rof'],
-    ['B#', 'b_num'],
-    ['BMG', 'bmg'],
-    ['CMG', 'cmg'],
-    ['AAMG', 'aamg'],
-    ['SA', 'sa'],
-  ]
-  return pairs
-    .map(([label, key]) => ({ label, value: fieldStr(item, key) }))
-    .filter((f) => f.value !== '')
-}
-
-function ordnanceStats(item: GameDatum): StatField[] {
-  const pairs: [string, string][] = [
-    ['BPV', 'bpv'],
-    ['RF', 'rf'],
-    ['ROF', 'rof'],
-    ['B#', 'b_num'],
-    ['Range', 'range'],
-    ['M#', 'm_num'],
-    ['TGT Size', 'tgt_size'],
-  ]
-  return pairs
-    .map(([label, key]) => ({ label, value: fieldStr(item, key) }))
-    .filter((f) => f.value !== '')
-}
-
-function unitDates(item: GameDatum): string {
-  const from = fieldStr(item, 'date_from') || fieldStr(item, 'date')
-  const to = fieldStr(item, 'date_to')
-  if (from && to) return `${from}–${to}`
-  return from
-}
-
 </script>
 
 <template>
@@ -226,115 +152,7 @@ function unitDates(item: GameDatum): string {
         </div>
 
         <!-- Detail card -->
-        <div class="flex-1 overflow-y-auto px-3 py-3">
-          <!-- Header -->
-          <div class="mb-3">
-            <div class="flex items-start justify-between gap-2">
-              <h2 class="text-sm font-semibold text-foreground leading-tight">{{ props.detailUnit.name }}</h2>
-              <div class="flex items-center gap-1 shrink-0">
-                <span
-                  v-if="unitNation(props.detailUnit)"
-                  class="text-[10px] font-medium bg-blue-500/15 text-blue-600 dark:text-blue-400 rounded px-1.5 py-0.5"
-                >{{ unitNation(props.detailUnit) }}</span>
-                <span class="text-[10px] font-medium bg-muted text-muted-foreground rounded px-1.5 py-0.5">
-                  {{ unitTypeLabel(props.detailUnit) }}
-                </span>
-              </div>
-            </div>
-            <p v-if="unitDates(props.detailUnit)" class="text-[11px] text-muted-foreground mt-0.5">
-              {{ unitDates(props.detailUnit) }}
-            </p>
-          </div>
-
-          <!-- Vehicle detail -->
-          <template v-if="props.detailUnit.type === 'vehicle'">
-            <div v-if="vehicleStats(props.detailUnit).length > 0" class="mb-3">
-              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Stats</p>
-              <div class="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
-                <div
-                  v-for="f in vehicleStats(props.detailUnit)"
-                  :key="f.label"
-                  class="bg-muted/50 rounded p-1.5 text-center"
-                >
-                  <p class="text-[9px] text-muted-foreground uppercase tracking-wide">{{ f.label }}</p>
-                  <p class="text-xs font-mono font-semibold text-foreground">{{ f.value }}</p>
-                </div>
-              </div>
-            </div>
-            <div v-if="vehicleArmament(props.detailUnit).length > 0" class="mb-3">
-              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Armament</p>
-              <div class="flex flex-col gap-0.5">
-                <div
-                  v-for="f in vehicleArmament(props.detailUnit)"
-                  :key="f.label"
-                  class="flex gap-2 items-baseline"
-                >
-                  <span class="text-[10px] text-muted-foreground w-28 shrink-0">{{ f.label }}</span>
-                  <span class="text-xs text-foreground font-mono">{{ f.value }}</span>
-                </div>
-              </div>
-            </div>
-            <div v-if="fieldBool(props.detailUnit, 'radioless') || fieldBool(props.detailUnit, 'ot')" class="mb-3 flex gap-1.5">
-              <span
-                v-if="fieldBool(props.detailUnit, 'radioless')"
-                class="text-[10px] bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 rounded px-1.5 py-0.5 font-medium"
-              >Radioless</span>
-              <span
-                v-if="fieldBool(props.detailUnit, 'ot')"
-                class="text-[10px] bg-orange-500/15 text-orange-700 dark:text-orange-400 rounded px-1.5 py-0.5 font-medium"
-              >Open-topped</span>
-            </div>
-          </template>
-
-          <!-- Ordnance detail -->
-          <template v-else-if="props.detailUnit.type === 'ordnance'">
-            <div v-if="ordnanceStats(props.detailUnit).length > 0" class="mb-3">
-              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Stats</p>
-              <div class="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
-                <div
-                  v-for="f in ordnanceStats(props.detailUnit)"
-                  :key="f.label"
-                  class="bg-muted/50 rounded p-1.5 text-center"
-                >
-                  <p class="text-[9px] text-muted-foreground uppercase tracking-wide">{{ f.label }}</p>
-                  <p class="text-xs font-mono font-semibold text-foreground">{{ f.value }}</p>
-                </div>
-              </div>
-            </div>
-            <div v-if="field(props.detailUnit, 'csize')" class="mb-3">
-              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Caliber</p>
-              <!-- eslint-disable-next-line vue/no-v-html -->
-              <p class="text-xs text-foreground" v-html="fieldStr(props.detailUnit, 'csize')" />
-            </div>
-            <div v-if="fieldStr(props.detailUnit, 'special')" class="mb-3">
-              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Special</p>
-              <div class="flex flex-wrap gap-1">
-                <span
-                  v-for="rule in fieldStr(props.detailUnit, 'special').split(',').map((s) => s.trim()).filter(Boolean)"
-                  :key="rule"
-                  class="text-[10px] bg-muted rounded px-1.5 py-0.5 text-foreground"
-                >{{ rule }}</span>
-              </div>
-            </div>
-          </template>
-
-          <!-- Note (shared) -->
-          <div v-if="field(props.detailUnit, 'note')" class="mb-3">
-            <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Notes</p>
-            <!-- eslint-disable-next-line vue/no-v-html -->
-            <div class="text-xs text-foreground leading-relaxed unit-note" v-html="renderContent(fieldStr(props.detailUnit, 'note'), { acronymPopups: appSettings.acronymPopups })" />
-          </div>
-          <div v-if="field(props.detailUnit, 'notes')" class="mb-3">
-            <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Notes</p>
-            <!-- eslint-disable-next-line vue/no-v-html -->
-            <div class="text-xs text-foreground leading-relaxed unit-note" v-html="renderContent(fieldStr(props.detailUnit, 'notes'), { acronymPopups: appSettings.acronymPopups })" />
-          </div>
-          <div v-if="fieldStr(props.detailUnit, 'dagger')" class="mb-3">
-            <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">† Note</p>
-            <!-- eslint-disable-next-line vue/no-v-html -->
-            <p class="text-xs text-foreground" v-html="renderContent(fieldStr(props.detailUnit, 'dagger'), { acronymPopups: appSettings.acronymPopups })" />
-          </div>
-        </div>
+        <UnitDetailCard :unit="props.detailUnit" />
       </template>
     </template>
 
@@ -364,89 +182,7 @@ function unitDates(item: GameDatum): string {
         </div>
 
         <!-- Detail card -->
-        <div class="flex-1 overflow-y-auto px-3 py-3">
-          <div class="mb-3">
-            <div class="flex items-start justify-between gap-2">
-              <h2 class="text-sm font-semibold text-foreground leading-tight">{{ selectedUnit.name }}</h2>
-              <div class="flex items-center gap-1 shrink-0">
-                <span
-                  v-if="unitNation(selectedUnit)"
-                  class="text-[10px] font-medium bg-blue-500/15 text-blue-600 dark:text-blue-400 rounded px-1.5 py-0.5"
-                >{{ unitNation(selectedUnit) }}</span>
-                <span class="text-[10px] font-medium bg-muted text-muted-foreground rounded px-1.5 py-0.5">
-                  {{ unitTypeLabel(selectedUnit) }}
-                </span>
-              </div>
-            </div>
-            <p v-if="unitDates(selectedUnit)" class="text-[11px] text-muted-foreground mt-0.5">
-              {{ unitDates(selectedUnit) }}
-            </p>
-          </div>
-
-          <template v-if="selectedUnit.type === 'vehicle'">
-            <div v-if="vehicleStats(selectedUnit).length > 0" class="mb-3">
-              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Stats</p>
-              <div class="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
-                <div v-for="f in vehicleStats(selectedUnit)" :key="f.label" class="bg-muted/50 rounded p-1.5 text-center">
-                  <p class="text-[9px] text-muted-foreground uppercase tracking-wide">{{ f.label }}</p>
-                  <p class="text-xs font-mono font-semibold text-foreground">{{ f.value }}</p>
-                </div>
-              </div>
-            </div>
-            <div v-if="vehicleArmament(selectedUnit).length > 0" class="mb-3">
-              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Armament</p>
-              <div class="flex flex-col gap-0.5">
-                <div v-for="f in vehicleArmament(selectedUnit)" :key="f.label" class="flex gap-2 items-baseline">
-                  <span class="text-[10px] text-muted-foreground w-28 shrink-0">{{ f.label }}</span>
-                  <span class="text-xs text-foreground font-mono">{{ f.value }}</span>
-                </div>
-              </div>
-            </div>
-            <div v-if="fieldBool(selectedUnit, 'radioless') || fieldBool(selectedUnit, 'ot')" class="mb-3 flex gap-1.5">
-              <span v-if="fieldBool(selectedUnit, 'radioless')" class="text-[10px] bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 rounded px-1.5 py-0.5 font-medium">Radioless</span>
-              <span v-if="fieldBool(selectedUnit, 'ot')" class="text-[10px] bg-orange-500/15 text-orange-700 dark:text-orange-400 rounded px-1.5 py-0.5 font-medium">Open-topped</span>
-            </div>
-          </template>
-
-          <template v-else-if="selectedUnit.type === 'ordnance'">
-            <div v-if="ordnanceStats(selectedUnit).length > 0" class="mb-3">
-              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Stats</p>
-              <div class="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
-                <div v-for="f in ordnanceStats(selectedUnit)" :key="f.label" class="bg-muted/50 rounded p-1.5 text-center">
-                  <p class="text-[9px] text-muted-foreground uppercase tracking-wide">{{ f.label }}</p>
-                  <p class="text-xs font-mono font-semibold text-foreground">{{ f.value }}</p>
-                </div>
-              </div>
-            </div>
-            <div v-if="field(selectedUnit, 'csize')" class="mb-3">
-              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Caliber</p>
-              <!-- eslint-disable-next-line vue/no-v-html -->
-              <p class="text-xs text-foreground" v-html="fieldStr(selectedUnit, 'csize')" />
-            </div>
-            <div v-if="fieldStr(selectedUnit, 'special')" class="mb-3">
-              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Special</p>
-              <div class="flex flex-wrap gap-1">
-                <span v-for="rule in fieldStr(selectedUnit, 'special').split(',').map((s) => s.trim()).filter(Boolean)" :key="rule" class="text-[10px] bg-muted rounded px-1.5 py-0.5 text-foreground">{{ rule }}</span>
-              </div>
-            </div>
-          </template>
-
-          <div v-if="field(selectedUnit, 'note')" class="mb-3">
-            <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Notes</p>
-            <!-- eslint-disable-next-line vue/no-v-html -->
-            <div class="text-xs text-foreground leading-relaxed unit-note" v-html="renderContent(fieldStr(selectedUnit, 'note'), { acronymPopups: appSettings.acronymPopups })" />
-          </div>
-          <div v-if="field(selectedUnit, 'notes')" class="mb-3">
-            <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Notes</p>
-            <!-- eslint-disable-next-line vue/no-v-html -->
-            <div class="text-xs text-foreground leading-relaxed unit-note" v-html="renderContent(fieldStr(selectedUnit, 'notes'), { acronymPopups: appSettings.acronymPopups })" />
-          </div>
-          <div v-if="fieldStr(selectedUnit, 'dagger')" class="mb-3">
-            <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">† Note</p>
-            <!-- eslint-disable-next-line vue/no-v-html -->
-            <p class="text-xs text-foreground" v-html="renderContent(fieldStr(selectedUnit, 'dagger'), { acronymPopups: appSettings.acronymPopups })" />
-          </div>
-        </div>
+        <UnitDetailCard :unit="selectedUnit" />
       </template>
 
       <!-- Browse view (list-only mode, or full mode with no unit selected) -->
