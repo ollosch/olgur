@@ -21,6 +21,14 @@ export default defineConfigWithVueTs(
   ...pluginVue.configs['flat/essential'],
   vueTsConfigs.recommended,
 
+  // shadcn/ui components use single-word names
+  {
+    files: ['src/components/ui/**/*.vue'],
+    rules: {
+      'vue/multi-word-component-names': 'off',
+    },
+  },
+
   {
     ...pluginVitest.configs.recommended,
     files: ['src/**/__tests__/*'],
