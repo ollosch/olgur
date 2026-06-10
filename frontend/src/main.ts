@@ -22,7 +22,6 @@ await authStore.fetchUser().catch(() => { })
 
 if (authStore.user) {
   await useSystemStore().init()
-  router.push({ name: 'home' })
 }
 
 useAppSettingsStore().init()

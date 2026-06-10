@@ -77,7 +77,7 @@ const goToLogin = () => {
               d="M5 13l4 4L19 7"
             />
           </svg>
-          <p class="text-sm text-muted-foreground">Redirecting to login...</p>
+          <p class="text-sm text-muted-foreground">Redirecting...</p>
         </div>
         <div v-else class="flex flex-col items-center gap-4 py-4">
           <svg class="w-16 h-16 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">

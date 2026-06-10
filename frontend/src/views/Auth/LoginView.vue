@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useForm } from 'vee-validate'
 import type { LoginRequest } from '@/types/domain'
@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input'
 
 const authStore = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 const { defineField, handleSubmit, errors, setErrors } = useForm<LoginRequest>()
 
 const [email, emailAttrs] = defineField('email')
@@ -25,7 +26,7 @@ const onSubmit = handleSubmit(async (values) => {
     return
   }
 
-  router.push({ name: 'home' })
+  router.push(typeof route.query.redirect === 'string' ? route.query.redirect : { name: 'home' })
 })
 </script>
 
