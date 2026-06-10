@@ -8,6 +8,8 @@ import { cn } from '@/lib/utils'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import { ArrowLeft, Check } from 'lucide-vue-next'
 
 const settings = useAppSettingsStore()
@@ -69,31 +71,12 @@ async function toggleFormat(): Promise<void> {
             Show a popup with the definition when hovering over an acronym in rule content.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <button
-            type="button"
-            role="switch"
-            :aria-checked="settings.acronymPopups"
-            :class="
-              cn(
-                'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-                settings.acronymPopups ? 'bg-primary' : 'bg-muted',
-              )
-            "
+        <CardContent class="flex items-center space-x-2">
+          <Switch id="acronym-popups"
+            :model-value="settings.acronymPopups"
             @click="settings.acronymPopups = !settings.acronymPopups"
-          >
-            <span
-              :class="
-                cn(
-                  'pointer-events-none block h-4 w-4 rounded-full bg-white shadow-sm ring-0 transition-transform',
-                  settings.acronymPopups ? 'translate-x-6' : 'translate-x-1',
-                )
-              "
-            />
-          </button>
-          <p class="mt-2 text-sm text-muted-foreground">
-            {{ settings.acronymPopups ? 'Enabled' : 'Disabled' }}
-          </p>
+          />
+          <Label for="acronym-popups">Acronym Popups</Label>
         </CardContent>
       </Card>
 
@@ -105,31 +88,12 @@ async function toggleFormat(): Promise<void> {
             Choose whether to display rules in their custom or markdown format (when available).
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <button
-            type="button"
-            role="switch"
-            :aria-checked="preferredFormat === 'markdown'"
-            :class="
-              cn(
-                'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-                preferredFormat === 'markdown' ? 'bg-primary' : 'bg-muted',
-              )
-            "
+        <CardContent class="flex items-center space-x-2">
+          <Switch id="prefer-markdown"
+            :model-value="preferredFormat === 'markdown'"
             @click="toggleFormat"
-          >
-            <span
-              :class="
-                cn(
-                  'pointer-events-none block h-4 w-4 rounded-full bg-white shadow-sm ring-0 transition-transform',
-                  preferredFormat === 'markdown' ? 'translate-x-6' : 'translate-x-1',
-                )
-              "
-            />
-          </button>
-          <p class="mt-2 text-sm text-muted-foreground">
-            {{ preferredFormat === 'markdown' ? 'Markdown' : 'Custom' }}
-          </p>
+          />
+          <Label for="prefer-markdown">Prefer Markdown</Label>
         </CardContent>
       </Card>
 
