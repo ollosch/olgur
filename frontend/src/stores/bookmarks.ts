@@ -69,7 +69,7 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
     if (!membership) return
 
     const newConfig = {
-      ...(membership.config ?? {}),
+      ...membership.config,
       bookmarks: updatedBookmarks,
     }
 

@@ -1,9 +1,10 @@
 import type { ApiError } from './http'
+import type { ComponentPublicInstance } from 'vue'
 import router from '@/router'
 import { useAuthStore } from '@/stores/auth'
 import { toast } from 'vue-sonner'
 
-export async function globalErrorHandler(err: unknown, instance: any, info?: string) {
+export async function globalErrorHandler(err: unknown, instance: ComponentPublicInstance | null, info?: string) {
   const error = err as ApiError
 
   if (import.meta.env.VITE_APP_DEBUG === 'true') {
