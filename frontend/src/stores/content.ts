@@ -223,10 +223,18 @@ export const useContentStore = defineStore('content', () => {
    * before any content fetches.
    */
   async function fetchManifest(systemId: string): Promise<void> {
-    const result = await get<ApiCollection<ManifestEntry>>(`/systems/${systemId}/manifest`)
+    // The backend returns { data: { system_id, name, modules: ManifestEntry[] } }
+    // `useApi()` returns `res.data` as `result.data`, so modules live at
+    // result.data.data.modules.
+    const result = await get<ApiResource<{ system_id: string; name?: string; modules?: ManifestEntry[] }>>(`/systems/${systemId}/manifest`)
     if (result.ok) {
       const map: Record<string, ManifestEntry> = {}
-      for (const entry of result.data.data) {
+      // Support two response shapes used in tests and different backends:
+      //  - { data: { modules: ManifestEntry[] } }
+      //  - { data: [ ManifestEntry, ... ] }
+      const payload = result.data?.data
+      const modules: ManifestEntry[] = Array.isArray(payload) ? payload : (payload?.modules ?? [])
+      for (const entry of modules) {
         map[entry.module_id] = entry
       }
       manifestByModule.value = map
