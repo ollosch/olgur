@@ -125,6 +125,20 @@ export interface GameDatum {
   updated_at: string
 }
 
+export interface ManifestFiles {
+  rules: string
+  index: string
+  'game-data': string
+}
+
+export interface ManifestEntry {
+  module_id: string
+  version_id: string
+  version_string: string
+  released_at: string
+  files: ManifestFiles
+}
+
 // -- API Response Wrappers --
 export interface ApiResource<T> {
   data: T

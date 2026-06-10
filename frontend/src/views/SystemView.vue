@@ -67,6 +67,10 @@ async function loadSystem(id: string): Promise<void> {
 
   await systemStore.enterSystem(id)
 
+  // Fetch the versioned manifest before loading content so that fetchRules /
+  // fetchIndexEntries / fetchGameData can route players to static file URLs.
+  await contentStore.fetchManifest(id)
+
   const activeModuleList = contentStore.activeModules
 
   await Promise.all([

@@ -1,19 +1,23 @@
 import { ref, computed, markRaw, type ComputedRef } from 'vue'
 import { defineStore } from 'pinia'
 import { useApi } from '@/composables/useApi'
+import { request } from '@/lib/http'
 import type { ApiResult } from '@/lib/http'
+import { useAuthStore } from '@/stores/auth'
 import { useSystemStore } from '@/stores/system'
 import { useMembershipStore } from '@/stores/membership'
-import type { Rule, IndexEntry, Module, GameDatum, ApiCollection, ApiResource, UpdateRuleRequest, UpdateIndexEntryRequest } from '@/types/domain'
+import type { Rule, IndexEntry, Module, GameDatum, ManifestEntry, ApiCollection, ApiResource, UpdateRuleRequest, UpdateIndexEntryRequest } from '@/types/domain'
 
 export const useContentStore = defineStore('content', () => {
   const { get, put, loading } = useApi()
+  const authStore = useAuthStore()
   const systemStore = useSystemStore()
   const membershipStore = useMembershipStore()
 
   const rulesByModule = ref<Record<string, Rule[]>>({})
   const indexEntriesByModule = ref<Record<string, IndexEntry[]>>({})
   const gameDataByModule = ref<Record<string, GameDatum[]>>({})
+  const manifestByModule = ref<Record<string, ManifestEntry>>({})
 
   // ---------------------------------------------------------------------------
   // Derived state
@@ -26,6 +30,27 @@ export const useContentStore = defineStore('content', () => {
   const activeModules = computed((): Module[] =>
     systemStore.modules.filter((m) => m.is_core || activeIds.value.includes(m.id)),
   )
+
+  /**
+   * True when the user has editorial access to the current system.
+   * Designers see live draft content; everyone else (players) reads from
+   * versioned static files listed in the manifest.
+   *
+   * A user is a designer if they are:
+   *  – a super_admin, OR
+   *  – a system admin (membership.admin), OR
+   *  – an editor of at least one module in the current system
+   */
+  const isDesigner = computed((): boolean => {
+    const user = authStore.user
+    if (!user) return false
+    if (user.super_admin) return true
+    if (membershipStore.membership?.admin) return true
+    const systemModuleIds = new Set(systemStore.modules.map((m) => m.id))
+    return Object.entries(membershipStore.subscriptions).some(
+      ([moduleId, sub]) => systemModuleIds.has(moduleId) && sub?.editor === true,
+    )
+  })
 
   const allRules = computed((): Rule[] =>
     activeModules.value.flatMap((m) => rulesByModule.value[m.id] ?? []),
@@ -191,7 +216,50 @@ export const useContentStore = defineStore('content', () => {
   // Actions
   // ---------------------------------------------------------------------------
 
+
+  /**
+   * Fetch the versioned manifest for the given system and store entries keyed
+   * by module_id.  Always called on system entry so the manifest is ready
+   * before any content fetches.
+   */
+  async function fetchManifest(systemId: string): Promise<void> {
+    const result = await get<ApiCollection<ManifestEntry>>(`/systems/${systemId}/manifest`)
+    if (result.ok) {
+      const map: Record<string, ManifestEntry> = {}
+      for (const entry of result.data.data) {
+        map[entry.module_id] = entry
+      }
+      manifestByModule.value = map
+    }
+  }
+
+  /**
+   * Fetch a JSON collection from an absolute URL using the authenticated axios
+   * instance.  Cookies and XSRF token are sent automatically.
+   * Returns null on any error so callers can skip gracefully.
+   */
+  async function fetchAuthenticatedCollection<T>(url: string): Promise<T[] | null> {
+    try {
+      const json = await request<ApiCollection<T>>({ method: 'GET', url })
+      return Array.isArray(json.data) ? json.data : null
+    } catch {
+      return null
+    }
+  }
+
   async function fetchRules(systemId: string, moduleId: string): Promise<void> {
+    if (!isDesigner.value) {
+      const manifestEntry = manifestByModule.value[moduleId]
+      if (!manifestEntry) return
+      const data = await fetchAuthenticatedCollection<Rule>(manifestEntry.files.rules)
+      if (data !== null) {
+        rulesByModule.value[moduleId] = data.map((r) =>
+          markRaw({ ...r, content: r.content.split('<br>').join('\n') }),
+        )
+      }
+      return
+    }
+
     const result = await get<ApiCollection<Rule>>(`/systems/${systemId}/modules/${moduleId}/rules`)
     if (result.ok) {
       rulesByModule.value[moduleId] = result.data.data.map((r) =>
@@ -234,6 +302,16 @@ export const useContentStore = defineStore('content', () => {
   }
 
   async function fetchIndexEntries(systemId: string, moduleId: string): Promise<void> {
+    if (!isDesigner.value) {
+      const manifestEntry = manifestByModule.value[moduleId]
+      if (!manifestEntry) return
+      const data = await fetchAuthenticatedCollection<IndexEntry>(manifestEntry.files.index)
+      if (data !== null) {
+        indexEntriesByModule.value[moduleId] = data.map((e) => markRaw(e))
+      }
+      return
+    }
+
     const result = await get<ApiCollection<IndexEntry>>(
       `/systems/${systemId}/modules/${moduleId}/index-entries`,
     )
@@ -243,6 +321,16 @@ export const useContentStore = defineStore('content', () => {
   }
 
   async function fetchGameData(systemId: string, moduleId: string): Promise<void> {
+    if (!isDesigner.value) {
+      const manifestEntry = manifestByModule.value[moduleId]
+      if (!manifestEntry) return
+      const data = await fetchAuthenticatedCollection<GameDatum>(manifestEntry.files['game-data'])
+      if (data !== null) {
+        gameDataByModule.value[moduleId] = data.map((d) => markRaw(d))
+      }
+      return
+    }
+
     const result = await get<ApiCollection<GameDatum>>(
       `/systems/${systemId}/modules/${moduleId}/game-data`,
     )
@@ -272,15 +360,18 @@ export const useContentStore = defineStore('content', () => {
     rulesByModule.value = {}
     indexEntriesByModule.value = {}
     gameDataByModule.value = {}
+    manifestByModule.value = {}
   }
 
   return {
     rulesByModule,
     indexEntriesByModule,
     gameDataByModule,
+    manifestByModule,
     loading,
     activeIds,
     activeModules,
+    isDesigner,
     allRules,
     rulesById,
     rulesByNumber,
@@ -293,6 +384,7 @@ export const useContentStore = defineStore('content', () => {
     indexEntriesByParent,
     visibleIndexEntryIds,
     allGameData,
+    fetchManifest,
     fetchRules,
     updateRule,
     updateIndexEntry,
