@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRulePopup } from '@/composables/useRulePopup'
-import { useContentStore } from '@/stores/content'
 import { renderContent } from '@/lib/renderContent'
 import { useAppSettingsStore } from '@/stores/appSettings'
 
 const { state, navigateToNumber, navigateToRange } = useRulePopup()
 const appSettings = useAppSettingsStore()
-const contentStore = useContentStore()
 
 const style = computed(() => {
   const base = {
