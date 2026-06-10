@@ -3,6 +3,7 @@ import { computed, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useForm } from 'vee-validate'
 import { useContentStore } from '@/stores/content'
+import { useSystemStore } from '@/stores/system'
 import type { IndexEntry, Rule } from '@/types/domain'
 
 import { Button } from '@/components/ui/button'
@@ -45,6 +46,7 @@ const emit = defineEmits<{
   'update:open': [value: boolean]
 }>()
 
+const systemStore = useSystemStore()
 const contentStore = useContentStore()
 const { loading } = storeToRefs(contentStore)
 
@@ -152,8 +154,8 @@ watch(
 // ---------------------------------------------------------------------------
 
 const onSubmit = handleSubmit(async (values) => {
-  const result = await contentStore.updateIndexEntry(props.entry, {
-    term: values.term,
+    const result = await contentStore.updateIndexEntry(systemStore.currentSystem?.id ?? '', props.entry, {
+      term: values.term,
     definition: values.definition,
     notes: values.notes,
     parent_id: values.parent_id ?? null,

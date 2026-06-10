@@ -70,9 +70,9 @@ async function loadSystem(id: string): Promise<void> {
   const activeModuleList = contentStore.activeModules
 
   await Promise.all([
-    ...activeModuleList.map((m) => contentStore.fetchRules(m.id)),
-    ...activeModuleList.map((m) => contentStore.fetchIndexEntries(m.id)),
-    ...activeModuleList.map((m) => contentStore.fetchGameData(m.id)),
+    ...activeModuleList.map((m) => contentStore.fetchRules(id, m.id)),
+    ...activeModuleList.map((m) => contentStore.fetchIndexEntries(id, m.id)),
+    ...activeModuleList.map((m) => contentStore.fetchGameData(id, m.id)),
   ])
 
   for (const m of activeModuleList) {
@@ -117,7 +117,7 @@ const selectedRule = computed((): Rule | null => {
 watch(
   () => contentStore.activeIds,
   async () => {
-    const loaded = await contentStore.fetchMissingModules()
+    const loaded = await contentStore.fetchMissingModules(systemId.value, systemStore.modules)
     for (const m of loaded) {
       panelStore.expandedModuleIds.add(m.id)
     }

@@ -191,10 +191,7 @@ export const useContentStore = defineStore('content', () => {
   // Actions
   // ---------------------------------------------------------------------------
 
-  async function fetchRules(moduleId: string): Promise<void> {
-    const systemId = systemStore.currentSystem?.id
-    if (!systemId) return
-
+  async function fetchRules(systemId: string, moduleId: string): Promise<void> {
     const result = await get<ApiCollection<Rule>>(`/systems/${systemId}/modules/${moduleId}/rules`)
     if (result.ok) {
       rulesByModule.value[moduleId] = result.data.data.map((r) =>
@@ -203,10 +200,7 @@ export const useContentStore = defineStore('content', () => {
     }
   }
 
-  async function updateRule(rule: Rule, data: UpdateRuleRequest): Promise<ApiResult<Rule>> {
-    const systemId = systemStore.currentSystem?.id
-    if (!systemId) return { ok: false, errors: { _: 'No system context' } }
-
+  async function updateRule(systemId: string, rule: Rule, data: UpdateRuleRequest): Promise<ApiResult<Rule>> {
     const result = await put<ApiResource<Rule>, UpdateRuleRequest>(
       `/systems/${systemId}/modules/${rule.module_id}/rules/${rule.id}`,
       { ...data, content: data.content.split('\n').join('<br>') },
@@ -223,10 +217,7 @@ export const useContentStore = defineStore('content', () => {
     return result
   }
 
-  async function updateIndexEntry(entry: IndexEntry, data: UpdateIndexEntryRequest): Promise<ApiResult<IndexEntry>> {
-    const systemId = systemStore.currentSystem?.id
-    if (!systemId) return { ok: false, errors: { _: 'No system context' } }
-
+  async function updateIndexEntry(systemId: string, entry: IndexEntry, data: UpdateIndexEntryRequest): Promise<ApiResult<IndexEntry>> {
     const result = await put<ApiResource<IndexEntry>, UpdateIndexEntryRequest>(
       `/systems/${systemId}/modules/${entry.module_id}/index-entries/${entry.id}`,
       data,
@@ -242,10 +233,7 @@ export const useContentStore = defineStore('content', () => {
     return result
   }
 
-  async function fetchIndexEntries(moduleId: string): Promise<void> {
-    const systemId = systemStore.currentSystem?.id
-    if (!systemId) return
-
+  async function fetchIndexEntries(systemId: string, moduleId: string): Promise<void> {
     const result = await get<ApiCollection<IndexEntry>>(
       `/systems/${systemId}/modules/${moduleId}/index-entries`,
     )
@@ -254,10 +242,7 @@ export const useContentStore = defineStore('content', () => {
     }
   }
 
-  async function fetchGameData(moduleId: string): Promise<void> {
-    const systemId = systemStore.currentSystem?.id
-    if (!systemId) return
-
+  async function fetchGameData(systemId: string, moduleId: string): Promise<void> {
     const result = await get<ApiCollection<GameDatum>>(
       `/systems/${systemId}/modules/${moduleId}/game-data`,
     )
@@ -270,15 +255,15 @@ export const useContentStore = defineStore('content', () => {
    * Fetch rules + index entries for any active non-core modules not yet loaded.
    * Returns the modules that were fetched so callers can react (e.g. expand panel).
    */
-  async function fetchMissingModules(): Promise<Module[]> {
-    const toLoad = systemStore.modules.filter(
+  async function fetchMissingModules(systemId: string, modules: Module[]): Promise<Module[]> {
+    const toLoad = modules.filter(
       (m) => !m.is_core && activeIds.value.includes(m.id) && !rulesByModule.value[m.id],
     )
     if (toLoad.length === 0) return []
     await Promise.all([
-      ...toLoad.map((m) => fetchRules(m.id)),
-      ...toLoad.map((m) => fetchIndexEntries(m.id)),
-      ...toLoad.map((m) => fetchGameData(m.id)),
+      ...toLoad.map((m) => fetchRules(systemId, m.id)),
+      ...toLoad.map((m) => fetchIndexEntries(systemId, m.id)),
+      ...toLoad.map((m) => fetchGameData(systemId, m.id)),
     ])
     return toLoad
   }
