@@ -116,21 +116,9 @@ const breadcrumbSegments = computed((): BreadcrumbSegment[] => {
   return segments
 })
 
-function ruleDepth(rule: Rule): number {
-  let depth = 1
-  let current: Rule = rule
-  while (current.parent_id !== null) {
-    const parent = contentStore.rulesById.get(current.parent_id)
-    if (!parent) break
-    current = parent
-    depth++
-  }
-  return depth
-}
-
 const showToc = computed(() => {
   if (!selectedRule.value) return false
-  return ruleDepth(selectedRule.value) <= tocDepth.value
+  return (contentStore.ruleDepths.get(selectedRule.value.id) ?? 0) < tocDepth.value
 })
 
 // ---------------------------------------------------------------------------
