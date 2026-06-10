@@ -1,125 +1,110 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { createRouter, createMemoryHistory } from 'vue-router'
+import { ref } from 'vue'
 import { setActivePinia, createPinia } from 'pinia'
-import { defineComponent } from 'vue'
 
-// ─── Mock auth store ──────────────────────────────────────────────────────────
-const mockAuthUser = { value: null as Record<string, unknown> | null }
+// ─── Mock useApi so the auth store never makes real HTTP calls ────────────────
+const mockGet = vi.fn()
+const mockPost = vi.fn()
+const mockPatch = vi.fn()
+const mockLoading = ref(false)
 
-vi.mock('@/stores/auth', () => ({
-  useAuthStore: vi.fn(() => ({
-    get user() {
-      return mockAuthUser.value
-    },
+vi.mock('@/composables/useApi', () => ({
+  useApi: vi.fn(() => ({
+    get: mockGet,
+    post: mockPost,
+    patch: mockPatch,
+    loading: mockLoading,
   })),
 }))
 
-// Dummy components for routes
-const Dummy = defineComponent({ template: '<div>page</div>' })
-
-function buildRouter() {
-  return createRouter({
-    history: createMemoryHistory(),
-    routes: [
-      { path: '/login', name: 'login', meta: { requiresGuest: true }, component: Dummy },
-      { path: '/register', name: 'register', meta: { requiresGuest: true }, component: Dummy },
-      {
-        path: '/verify-email',
-        name: 'verify-email',
-        meta: { requiresAuth: true },
-        component: Dummy,
-      },
-      { path: '/', name: 'home', meta: {}, component: Dummy },
-      { path: '/public', name: 'public', component: Dummy },
-    ],
-  })
-}
-
-// Import navigation guard logic separately (we re-implement the guard inline
-// using the same logic as router/index.ts, to avoid importing the real router
-// which would break module isolation).
+// Import the real router singleton (with its registered beforeEach guard) and
+// the real auth store — both are resolved after the mock above is hoisted.
+import router from '@/router/index.ts'
 import { useAuthStore } from '@/stores/auth'
 
-async function runGuard(
-  router: ReturnType<typeof buildRouter>,
-  to: { name: string; fullPath?: string },
-) {
-  // Simulate the beforeEach guard from router/index.ts
-  const auth = useAuthStore()
-  const route = router.resolve({ name: to.name })
-  const requiresAuth = route.meta.requiresAuth
-  const requiresGuest = route.meta.requiresGuest
-  const fullPath = to.fullPath ?? route.fullPath
-
-  if (requiresAuth && !auth.user) {
-    return { name: 'login', query: { redirect: fullPath } }
-  }
-
-  if (requiresGuest && auth.user) {
-    return { name: 'home' }
-  }
-
-  return undefined
+const mockUser = {
+  id: '01abc',
+  name: 'Test User',
+  email: 'test@test.com',
+  super_admin: false,
+  created_at: '2024-01-01T00:00:00Z',
+  updated_at: '2024-01-01T00:00:00Z',
 }
 
 describe('Router navigation guards', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    // Fresh Pinia per test so store state never leaks between tests.
     setActivePinia(createPinia())
-    mockAuthUser.value = null
+    // Reset to /register (a guest route that is never the target of any test
+    // below) so that pushes to /login are never treated as NavigationDuplicated
+    // — Vue Router skips guards entirely for duplicate navigations.
+    await router.push('/register')
   })
 
-  describe('requiresAuth guard', () => {
-    it('redirects to login with redirect query when unauthenticated', async () => {
-      mockAuthUser.value = null
-      const router = buildRouter()
-      const result = await runGuard(router, { name: 'verify-email', fullPath: '/verify-email' })
-      expect(result).toEqual({ name: 'login', query: { redirect: '/verify-email' } })
+  // ── Unauthenticated user ─────────────────────────────────────────────────────
+
+  describe('unauthenticated user', () => {
+    it('navigating to / (protected) redirects to /login with ?redirect=/', async () => {
+      const authStore = useAuthStore()
+      authStore.user = null
+
+      await router.push('/')
+
+      expect(router.currentRoute.value.path).toBe('/login')
+      expect(router.currentRoute.value.query.redirect).toBe('/')
     })
 
-    it('allows access when authenticated', async () => {
-      mockAuthUser.value = { id: '1', name: 'Alice', email: 'a@b.com' }
-      const router = buildRouter()
-      const result = await runGuard(router, { name: 'verify-email' })
-      expect(result).toBeUndefined()
-    })
-  })
+    it('navigating to /systems/abc (protected) redirects to /login with ?redirect=/systems/abc', async () => {
+      const authStore = useAuthStore()
+      authStore.user = null
 
-  describe('requiresGuest guard', () => {
-    it('redirects to home when authenticated user visits guest route', async () => {
-      mockAuthUser.value = { id: '1', name: 'Alice', email: 'a@b.com' }
-      const router = buildRouter()
-      const result = await runGuard(router, { name: 'login' })
-      expect(result).toEqual({ name: 'home' })
+      await router.push('/systems/abc')
+
+      expect(router.currentRoute.value.path).toBe('/login')
+      expect(router.currentRoute.value.query.redirect).toBe('/systems/abc')
     })
 
-    it('allows access to guest route when unauthenticated', async () => {
-      mockAuthUser.value = null
-      const router = buildRouter()
-      const result = await runGuard(router, { name: 'login' })
-      expect(result).toBeUndefined()
-    })
+    it('navigating to /login stays on /login — no redirect loop', async () => {
+      const authStore = useAuthStore()
+      authStore.user = null
 
-    it('redirects authenticated user away from register to home', async () => {
-      mockAuthUser.value = { id: '1', name: 'Alice', email: 'a@b.com' }
-      const router = buildRouter()
-      const result = await runGuard(router, { name: 'register' })
-      expect(result).toEqual({ name: 'home' })
+      await router.push('/login')
+
+      expect(router.currentRoute.value.name).toBe('login')
     })
   })
 
-  describe('routes without guards', () => {
-    it('allows unauthenticated access to public routes', async () => {
-      mockAuthUser.value = null
-      const router = buildRouter()
-      const result = await runGuard(router, { name: 'public' })
-      expect(result).toBeUndefined()
+  // ── Authenticated user ───────────────────────────────────────────────────────
+
+  describe('authenticated user', () => {
+    it('navigating to /login redirects to / (home)', async () => {
+      const authStore = useAuthStore()
+      authStore.user = mockUser
+
+      await router.push('/login')
+
+      expect(router.currentRoute.value.name).toBe('home')
+      expect(router.currentRoute.value.path).toBe('/')
     })
 
-    it('allows authenticated access to public routes', async () => {
-      mockAuthUser.value = { id: '1', name: 'Alice', email: 'a@b.com' }
-      const router = buildRouter()
-      const result = await runGuard(router, { name: 'public' })
-      expect(result).toBeUndefined()
+    it('navigating to / (protected) stays on /', async () => {
+      const authStore = useAuthStore()
+      authStore.user = mockUser
+
+      await router.push('/')
+
+      expect(router.currentRoute.value.name).toBe('home')
+      expect(router.currentRoute.value.path).toBe('/')
+    })
+
+    it('navigating to /profile (protected) stays on /profile', async () => {
+      const authStore = useAuthStore()
+      authStore.user = mockUser
+
+      await router.push('/profile')
+
+      expect(router.currentRoute.value.name).toBe('profile')
+      expect(router.currentRoute.value.path).toBe('/profile')
     })
   })
 })
