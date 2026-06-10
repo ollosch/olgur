@@ -196,6 +196,7 @@ export interface UpdateRuleRequest {
   number: string
   title: string
   content: string
+  markdown: string | null
   parent_id: string | null
   sort_order: number
 }

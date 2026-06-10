@@ -28,6 +28,7 @@ interface FormValues {
   number: string
   title: string
   content: string
+  markdown: string | null
   parent_id: string | null
 }
 
@@ -47,6 +48,7 @@ const { defineField, handleSubmit, errors, setErrors, setFieldValue, resetForm }
 const [ruleNumber, ruleNumberAttrs] = defineField('number')
 const [title, titleAttrs] = defineField('title')
 const [content, contentAttrs] = defineField('content')
+const [markdown, markdownAttrs] = defineField('markdown')
 const [parentId] = defineField('parent_id')
 
 // ---------------------------------------------------------------------------
@@ -99,6 +101,7 @@ watch(
           number: props.rule.number,
           title: props.rule.title,
           content: props.rule.content.replaceAll('<br>', '\n'),
+          markdown: props.rule.markdown ?? '',
           parent_id: props.rule.parent_id,
         },
       })
@@ -116,6 +119,7 @@ const onSubmit = handleSubmit(async (values) => {
     number: values.number,
     title: values.title,
     content: values.content.replaceAll('\n', '<br>'),
+    markdown: values.markdown,
     parent_id: values.parent_id ?? null,
     sort_order: props.rule.sort_order,
   })
@@ -181,6 +185,13 @@ const onSubmit = handleSubmit(async (values) => {
             <textarea id="rule-content" v-model="content" v-bind="contentAttrs" rows="6" placeholder="Rule content…"
               class="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex min-h-[80px] w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50" />
             <div v-if="errors.content" class="text-destructive text-sm">{{ errors.content }}</div>
+          </Field>
+
+          <Field>
+            <FieldLabel for="rule-markdown">Markdown</FieldLabel>
+            <textarea id="rule-markdown" v-model="markdown" v-bind="markdownAttrs" rows="6" placeholder="Rule markdown…"
+              class="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex min-h-[80px] w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50" />
+            <div v-if="errors.markdown" class="text-destructive text-sm">{{ errors.markdown }}</div>
           </Field>
         </FieldGroup>
 
