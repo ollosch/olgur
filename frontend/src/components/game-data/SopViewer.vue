@@ -89,21 +89,6 @@ function setDisabled(value: string[]): void {
 }
 
 // ── Topic helpers ─────────────────────────────────────────────────────────────
-
-const allTopicSlugs = computed<string[]>(() => {
-  const slugs: string[] = []
-  for (const group of props.content.topics.groups) {
-    if (group.topics.length === 0) {
-      slugs.push(group.slug)
-    } else {
-      for (const topic of group.topics) {
-        slugs.push(topic.slug)
-      }
-    }
-  }
-  return slugs
-})
-
 function isGroupDisabled(group: SopTopicGroup): boolean {
   if (group.topics.length === 0) return disabledTopics.value.includes(group.slug)
   return group.topics.every((t) => disabledTopics.value.includes(t.slug))
