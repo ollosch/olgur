@@ -16,14 +16,21 @@ app.use(createPinia())
 app.use(router)
 app.config.errorHandler = globalErrorHandler
 
-const authStore = useAuthStore()
-await authStore.fetchCsrfCookie()
-await authStore.fetchUser().catch(() => { })
-
-if (authStore.user) {
-  await useSystemStore().init()
-}
-
 useAppSettingsStore().init()
 
 app.mount('#app')
+
+const authStore = useAuthStore()
+
+async function bootstrap(): Promise<void> {
+  await authStore.fetchCsrfCookie()
+  await authStore.fetchUser().catch(() => { })
+
+  if (authStore.user) {
+    await useSystemStore().init()
+  }
+
+  authStore.initialized = true
+}
+
+bootstrap()

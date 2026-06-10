@@ -5,15 +5,25 @@ import RulePopupOverlay from '@/components/RulePopupOverlay.vue'
 import GlobalSearchOverlay from '@/components/GlobalSearchOverlay.vue'
 import 'vue-sonner/style.css'
 import { Toaster } from '@/components/ui/sonner'
+import { useAuthStore } from '@/stores/auth'
 
 useGlobalShortcuts()
+
+const authStore = useAuthStore()
 </script>
 
 <template>
   <div class="dark">
-    <router-view class="bg-background text-foreground" />
-    <Toaster />
-    <RulePopupOverlay />
-    <GlobalSearchOverlay />
+    <template v-if="authStore.initialized">
+      <router-view class="bg-background text-foreground" />
+      <Toaster />
+      <RulePopupOverlay />
+      <GlobalSearchOverlay />
+    </template>
+    <template v-else>
+      <div class="bg-background text-foreground flex min-h-screen items-center justify-center">
+        <div class="h-8 w-8 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
+      </div>
+    </template>
   </div>
 </template>

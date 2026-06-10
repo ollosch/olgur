@@ -9,6 +9,7 @@ export const useAuthStore = defineStore('auth', () => {
   const { get, post, patch, loading } = useApi()
 
   const user = ref<User | null>(null)
+  const initialized = ref(false)
 
   async function login(credentials: LoginRequest): Promise<ApiResult<void>> {
     const result = await post<void, LoginRequest>('/login', credentials)
@@ -80,6 +81,7 @@ export const useAuthStore = defineStore('auth', () => {
     sendResetLink,
     updateProfile,
     verifyEmail,
+    initialized,
     loading,
     user,
   }
