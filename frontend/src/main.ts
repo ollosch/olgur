@@ -18,7 +18,7 @@ app.config.errorHandler = globalErrorHandler
 
 const authStore = useAuthStore()
 await authStore.fetchCsrfCookie()
-await authStore.fetchUser().catch(() => {})
+await authStore.fetchUser().catch(() => { })
 
 if (authStore.user) {
   await useSystemStore().init()
