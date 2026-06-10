@@ -8,12 +8,16 @@ import { redirectAlreadyAuthenticated, redirectOnSessionExpiry } from '@/lib/ses
 export async function globalErrorHandler(err: unknown, instance: ComponentPublicInstance | null, info?: string) {
   const error = err as ApiError
 
-  if (import.meta.env.VITE_APP_DEBUG === 'true') {
-    console.error('Global error handler:', err, instance, info)
-  }
+  // Only log debug information when explicitly enabled and not running tests
+  const isDebug = import.meta.env.VITE_APP_DEBUG === 'true'
+  const isTest = Boolean((import.meta.env as any).VITEST)
 
-  if (!error) {
-    console.error('Error is empty:', err, instance, info)
+  if (isDebug && !isTest) {
+    console.error('Global error handler:', err, instance, info)
+
+    if (!error) {
+      console.error('Error is empty:', err, instance, info)
+    }
   }
 
   const authStore = useAuthStore()
