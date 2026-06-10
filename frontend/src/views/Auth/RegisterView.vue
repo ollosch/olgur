@@ -3,6 +3,7 @@ import router from '@/router'
 import { useAuthStore } from '@/stores/auth'
 import { useForm } from 'vee-validate'
 import type { RegisterRequest } from '@/types/domain'
+import { redirectAfterRegister } from '@/lib/sessionNavigation'
 
 import AuthLayout from './AuthLayout.vue'
 import { Button } from '@/components/ui/button'
@@ -28,7 +29,7 @@ const onSubmit = handleSubmit(async (values) => {
   }
 
   toast.success('Registration successful! Please verify your email.')
-  router.push({ name: 'home' })
+  redirectAfterRegister(router)
 })
 </script>
 

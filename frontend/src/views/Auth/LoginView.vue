@@ -3,6 +3,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useForm } from 'vee-validate'
 import type { LoginRequest } from '@/types/domain'
+import { redirectAfterLogin } from '@/lib/sessionNavigation'
 
 import AuthLayout from './AuthLayout.vue'
 import { Button } from '@/components/ui/button'
@@ -26,7 +27,7 @@ const onSubmit = handleSubmit(async (values) => {
     return
   }
 
-  router.push(typeof route.query.redirect === 'string' ? route.query.redirect : { name: 'home' })
+  redirectAfterLogin(router, route)
 })
 </script>
 

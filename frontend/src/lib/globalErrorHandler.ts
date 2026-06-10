@@ -3,6 +3,7 @@ import type { ComponentPublicInstance } from 'vue'
 import router from '@/router'
 import { useAuthStore } from '@/stores/auth'
 import { toast } from 'vue-sonner'
+import { redirectAlreadyAuthenticated, redirectOnSessionExpiry } from '@/lib/sessionNavigation'
 
 export async function globalErrorHandler(err: unknown, instance: ComponentPublicInstance | null, info?: string) {
   const error = err as ApiError
@@ -20,7 +21,7 @@ export async function globalErrorHandler(err: unknown, instance: ComponentPublic
   switch (error.type) {
     case 'auth': {
       if (error.message === 'Already authenticated.') {
-        router.push({ name: 'home' })
+        redirectAlreadyAuthenticated(router)
         return
       }
 
@@ -31,7 +32,7 @@ export async function globalErrorHandler(err: unknown, instance: ComponentPublic
         toast.error('Your session has expired. Please log in again.')
       }
 
-      router.push({ name: 'login' })
+      redirectOnSessionExpiry(router)
       break
     }
 

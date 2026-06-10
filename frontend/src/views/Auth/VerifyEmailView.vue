@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { redirectAfterVerify } from '@/lib/sessionNavigation'
 
 import AuthLayout from './AuthLayout.vue'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -28,9 +29,7 @@ onMounted(async () => {
     status.value = 'success'
     message.value = 'Your email has been verified successfully!'
 
-    setTimeout(() => {
-      router.push({ name: 'home' })
-    }, 2000)
+    redirectAfterVerify(router)
   } catch {
     status.value = 'error'
     message.value = 'Failed to verify email. The link may have expired or is invalid.'
