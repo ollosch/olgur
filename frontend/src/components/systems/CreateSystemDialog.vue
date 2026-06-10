@@ -90,6 +90,10 @@ const onSubmit = handleSubmit(async (values) => {
     setErrors(result.errors)
   }
 })
+
+function formError(key: string): string | undefined {
+  return (errors.value as Record<string, string | undefined>)[key]
+}
 </script>
 
 <template>
@@ -137,10 +141,10 @@ const onSubmit = handleSubmit(async (values) => {
             <option value="grouping_only">Grouping Only (ZOC-style)</option>
           </select>
           <p
-            v-if="errors['config.system_structure']"
+            v-if="formError('config.system_structure')"
             class="text-destructive text-xs"
           >
-            {{ errors['config.system_structure'] }}
+            {{ formError('config.system_structure') }}
           </p>
         </div>
 
@@ -155,10 +159,10 @@ const onSubmit = handleSubmit(async (values) => {
             <option value="number">Rule number</option>
           </select>
           <p
-            v-if="errors['config.sort_rules_by']"
+            v-if="formError('config.sort_rules_by')"
             class="text-destructive text-xs"
           >
-            {{ errors['config.sort_rules_by'] }}
+            {{ formError('config.sort_rules_by') }}
           </p>
         </div>
 
@@ -171,8 +175,8 @@ const onSubmit = handleSubmit(async (values) => {
             min="1"
             placeholder="1"
           />
-          <p v-if="errors['config.toc_depth']" class="text-destructive text-xs">
-            {{ errors['config.toc_depth'] }}
+          <p v-if="formError('config.toc_depth')" class="text-destructive text-xs">
+            {{ formError('config.toc_depth') }}
           </p>
         </div>
 
