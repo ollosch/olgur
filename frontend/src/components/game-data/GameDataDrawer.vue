@@ -12,7 +12,6 @@ import type { MatrixContent } from '@/components/game-data/MatrixTable.vue'
 import type { AttributeTableContent } from '@/components/game-data/AttributeTable.vue'
 import type { ModifierListContent } from '@/components/game-data/ModifierList.vue'
 import type { SopContent } from '@/components/game-data/SopViewer.vue'
-import { fakeTables, fakeSops } from '@/lib/fakeGameData'
 import type { GameDatum } from '@/types/domain'
 
 export type DrawerMode = 'tables' | 'sop'
@@ -109,17 +108,11 @@ onBeforeUnmount(() => {
   document.removeEventListener('pointerup', onDragEnd)
 })
 
-// ── Data: real store data falling back to fake data ──────────────────────────
+// ── Data ──────────────────────────────────────────────────────────────────────
 
-const tables = computed(() => {
-  const real = contentStore.allGameData.filter((d) => d.type === 'table')
-  return real.length > 0 ? real : fakeTables
-})
+const tables = computed(() => contentStore.allGameData.filter((d) => d.type === 'table'))
 
-const sops = computed(() => {
-  const real = contentStore.allGameData.filter((d) => d.type === 'sop')
-  return real.length > 0 ? real : fakeSops
-})
+const sops = computed(() => contentStore.allGameData.filter((d) => d.type === 'sop'))
 
 // ── Active tab state per mode ─────────────────────────────────────────────────
 
@@ -142,11 +135,11 @@ const activeSop = computed((): string => {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function tableContent(item: GameDatum | typeof fakeTables[number]): TableContent | null {
+function tableContent(item: GameDatum): TableContent | null {
   return (item.content as unknown) as TableContent
 }
 
-function sopContent(item: GameDatum | typeof fakeSops[number]): SopContent | null {
+function sopContent(item: GameDatum): SopContent | null {
   return (item.content as unknown) as SopContent
 }
 </script>
