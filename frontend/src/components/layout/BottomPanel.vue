@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useBottomPanelStore } from '@/stores/bottomPanel'
+import { useResizablePanel } from '@/composables/useResizablePanel'
 import { ChevronUp, Database, Pin, PinOff, X } from 'lucide-vue-next'
 import UnitDataTab from '@/components/layout/UnitDataTab.vue'
 
@@ -18,64 +19,24 @@ onMounted(() => {
 // Height persistence
 // ---------------------------------------------------------------------------
 
-const STORAGE_KEY = 'panel-bottom-height'
 const MIN_HEIGHT = 200
 
-function defaultHeight(): number {
-  return Math.round(window.innerHeight * 0.4)
-}
-
-function loadHeight(): number {
-  const stored = localStorage.getItem(STORAGE_KEY)
-  if (!stored) return defaultHeight()
-  const parsed = parseInt(stored, 10)
-  return isNaN(parsed) ? defaultHeight() : parsed
-}
-
-const panelHeight = ref(loadHeight())
+const {
+  size: panelHeight,
+  isDragging,
+  startResize: onDragStart,
+} = useResizablePanel({
+  storageKey: 'panel-bottom-height',
+  defaultSize: () => Math.round(window.innerHeight * 0.4),
+  min: MIN_HEIGHT,
+  max: () => Math.round(window.innerHeight * 0.8),
+  direction: 'vertical',
+  inverted: true,
+})
 
 const clampedHeight = computed(() => {
   const maxPx = Math.round(window.innerHeight * 0.8)
   return Math.max(MIN_HEIGHT, Math.min(panelHeight.value, maxPx))
-})
-
-// ---------------------------------------------------------------------------
-// Resize drag (top edge)
-// ---------------------------------------------------------------------------
-
-const isDragging = ref(false)
-let dragStartY = 0
-let dragStartHeight = 0
-
-function onDragStart(e: PointerEvent): void {
-  isDragging.value = true
-  dragStartY = e.clientY
-  dragStartHeight = panelHeight.value
-  document.addEventListener('pointermove', onDragMove)
-  document.addEventListener('pointerup', onDragEnd)
-  document.body.style.userSelect = 'none'
-  document.body.style.cursor = 'ns-resize'
-}
-
-function onDragMove(e: PointerEvent): void {
-  if (!isDragging.value) return
-  const delta = dragStartY - e.clientY
-  const maxPx = Math.round(window.innerHeight * 0.8)
-  panelHeight.value = Math.max(MIN_HEIGHT, Math.min(dragStartHeight + delta, maxPx))
-}
-
-function onDragEnd(): void {
-  isDragging.value = false
-  localStorage.setItem(STORAGE_KEY, String(panelHeight.value))
-  document.removeEventListener('pointermove', onDragMove)
-  document.removeEventListener('pointerup', onDragEnd)
-  document.body.style.userSelect = ''
-  document.body.style.cursor = ''
-}
-
-onBeforeUnmount(() => {
-  document.removeEventListener('pointermove', onDragMove)
-  document.removeEventListener('pointerup', onDragEnd)
 })
 </script>
 

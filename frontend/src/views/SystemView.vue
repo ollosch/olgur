@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppSettingsStore } from '@/stores/appSettings'
 import { useContentStore } from '@/stores/content'
@@ -7,6 +7,7 @@ import { useHistoryStore } from '@/stores/history'
 import { useLeftPanelStore } from '@/stores/leftPanel'
 import { useSystemStore } from '@/stores/system'
 import { useRuleDelegation } from '@/composables/useRuleDelegation'
+import { useResizablePanel } from '@/composables/useResizablePanel'
 import { useRulePopup } from '@/composables/useRulePopup'
 import type { Rule, Module } from '@/types/domain'
 
@@ -31,58 +32,22 @@ const loading = ref(true)
 // Left panel resize
 // ---------------------------------------------------------------------------
 
-const LEFT_WIDTH_KEY = 'panel-left-width'
-const LEFT_DEFAULT = 288
-const LEFT_MIN = 200
-const LEFT_MAX = 480
-
-function loadLeftWidth(): number {
-  const stored = localStorage.getItem(LEFT_WIDTH_KEY)
-  if (!stored) return LEFT_DEFAULT
-  const parsed = parseInt(stored, 10)
-  return isNaN(parsed) ? LEFT_DEFAULT : parsed
-}
-
-const leftPanelWidth = ref(loadLeftWidth())
+const {
+  size: leftPanelWidth,
+  isDragging: leftDragging,
+  startResize: onLeftDragStart,
+} = useResizablePanel({
+  storageKey: 'panel-left-width',
+  defaultSize: 288,
+  min: 200,
+  max: 480,
+  direction: 'horizontal',
+})
 
 const leftPanelStyle = computed(() => ({
   width: `${leftPanelWidth.value}px`,
   minWidth: `${leftPanelWidth.value}px`,
 }))
-
-const leftDragging = ref(false)
-let leftDragStartX = 0
-let leftDragStartWidth = 0
-
-function onLeftDragStart(e: PointerEvent): void {
-  leftDragging.value = true
-  leftDragStartX = e.clientX
-  leftDragStartWidth = leftPanelWidth.value
-  document.addEventListener('pointermove', onLeftDragMove)
-  document.addEventListener('pointerup', onLeftDragEnd)
-  document.body.style.userSelect = 'none'
-  document.body.style.cursor = 'ew-resize'
-}
-
-function onLeftDragMove(e: PointerEvent): void {
-  if (!leftDragging.value) return
-  const delta = e.clientX - leftDragStartX
-  leftPanelWidth.value = Math.max(LEFT_MIN, Math.min(leftDragStartWidth + delta, LEFT_MAX))
-}
-
-function onLeftDragEnd(): void {
-  leftDragging.value = false
-  localStorage.setItem(LEFT_WIDTH_KEY, String(leftPanelWidth.value))
-  document.removeEventListener('pointermove', onLeftDragMove)
-  document.removeEventListener('pointerup', onLeftDragEnd)
-  document.body.style.userSelect = ''
-  document.body.style.cursor = ''
-}
-
-onBeforeUnmount(() => {
-  document.removeEventListener('pointermove', onLeftDragMove)
-  document.removeEventListener('pointerup', onLeftDragEnd)
-})
 
 // ---------------------------------------------------------------------------
 // System loading

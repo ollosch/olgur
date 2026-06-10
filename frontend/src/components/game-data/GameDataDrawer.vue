@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, onBeforeUnmount } from 'vue'
+import { ref, computed } from 'vue'
 import { useContentStore } from '@/stores/content'
+import { useResizablePanel } from '@/composables/useResizablePanel'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Pin, PinOff } from 'lucide-vue-next'
@@ -50,19 +51,18 @@ function togglePin(): void {
 
 // ── Right panel resize ────────────────────────────────────────────────────────
 
-const RIGHT_WIDTH_KEY = 'panel-right-width'
-const RIGHT_DEFAULT = 600
-const RIGHT_MIN = 320
-const RIGHT_MAX = 1200
-
-function loadRightWidth(): number {
-  const stored = localStorage.getItem(RIGHT_WIDTH_KEY)
-  if (!stored) return RIGHT_DEFAULT
-  const parsed = parseInt(stored, 10)
-  return isNaN(parsed) ? RIGHT_DEFAULT : parsed
-}
-
-const drawerWidth = ref(loadRightWidth())
+const {
+  size: drawerWidth,
+  isDragging,
+  startResize: onDragStart,
+} = useResizablePanel({
+  storageKey: 'panel-right-width',
+  defaultSize: 600,
+  min: 320,
+  max: 1200,
+  direction: 'horizontal',
+  inverted: true,
+})
 
 const drawerStyle = computed(() => ({
   width: `min(90vw, ${drawerWidth.value}px)`,
@@ -73,40 +73,6 @@ const pinnedStyle = computed(() => ({
   width: `${drawerWidth.value}px`,
   minWidth: `${drawerWidth.value}px`,
 }))
-
-const isDragging = ref(false)
-let dragStartX = 0
-let dragStartWidth = 0
-
-function onDragStart(e: PointerEvent): void {
-  isDragging.value = true
-  dragStartX = e.clientX
-  dragStartWidth = drawerWidth.value
-  document.addEventListener('pointermove', onDragMove)
-  document.addEventListener('pointerup', onDragEnd)
-  document.body.style.userSelect = 'none'
-  document.body.style.cursor = 'ew-resize'
-}
-
-function onDragMove(e: PointerEvent): void {
-  if (!isDragging.value) return
-  const delta = dragStartX - e.clientX
-  drawerWidth.value = Math.max(RIGHT_MIN, Math.min(dragStartWidth + delta, RIGHT_MAX))
-}
-
-function onDragEnd(): void {
-  isDragging.value = false
-  localStorage.setItem(RIGHT_WIDTH_KEY, String(drawerWidth.value))
-  document.removeEventListener('pointermove', onDragMove)
-  document.removeEventListener('pointerup', onDragEnd)
-  document.body.style.userSelect = ''
-  document.body.style.cursor = ''
-}
-
-onBeforeUnmount(() => {
-  document.removeEventListener('pointermove', onDragMove)
-  document.removeEventListener('pointerup', onDragEnd)
-})
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 
