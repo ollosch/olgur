@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useSystemStore } from '@/stores/system'
+import { useMembershipStore } from '@/stores/membership'
 import { renderContent } from '@/lib/renderContent'
 import { toast } from 'vue-sonner'
 import ScrollArea from '@/components/ui/scroll-area/ScrollArea.vue'
@@ -61,15 +62,16 @@ const props = defineProps<{ content: SopContent }>()
 // ── Store ────────────────────────────────────────────────────────────────────
 
 const systemStore = useSystemStore()
+const membershipStore = useMembershipStore()
 
 // ── Disabled topics (persisted to membership config) ─────────────────────────
 
 const localDisabled = ref<string[]>(
-  systemStore.membership?.config?.ignored_tags ?? [],
+  membershipStore.membership?.config?.ignored_tags ?? [],
 )
 
 watch(
-  () => systemStore.membership?.config?.ignored_tags,
+  () => membershipStore.membership?.config?.ignored_tags,
   (val) => {
     localDisabled.value = val ?? []
   },
@@ -80,7 +82,7 @@ const disabledTopics = computed<string[]>(() => localDisabled.value)
 async function saveDisabled(): Promise<void> {
   const systemId = systemStore.currentSystem?.id
   if (!systemId) return
-  await systemStore.updateMembership(systemId, { ignored_tags: localDisabled.value })
+  await membershipStore.updateMembership(systemId, { ignored_tags: localDisabled.value })
   toast.success('Topics saved.')
 }
 
@@ -89,6 +91,7 @@ function setDisabled(value: string[]): void {
 }
 
 // ── Topic helpers ─────────────────────────────────────────────────────────────
+
 function isGroupDisabled(group: SopTopicGroup): boolean {
   if (group.topics.length === 0) return disabledTopics.value.includes(group.slug)
   return group.topics.every((t) => disabledTopics.value.includes(t.slug))

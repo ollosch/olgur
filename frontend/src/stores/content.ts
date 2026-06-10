@@ -3,11 +3,13 @@ import { defineStore } from 'pinia'
 import { useApi } from '@/composables/useApi'
 import type { ApiResult } from '@/lib/http'
 import { useSystemStore } from '@/stores/system'
+import { useMembershipStore } from '@/stores/membership'
 import type { Rule, IndexEntry, Module, GameDatum, ApiCollection, ApiResource, UpdateRuleRequest, UpdateIndexEntryRequest } from '@/types/domain'
 
 export const useContentStore = defineStore('content', () => {
   const { get, put, loading } = useApi()
   const systemStore = useSystemStore()
+  const membershipStore = useMembershipStore()
 
   const rulesByModule = ref<Record<string, Rule[]>>({})
   const indexEntriesByModule = ref<Record<string, IndexEntry[]>>({})
@@ -18,7 +20,7 @@ export const useContentStore = defineStore('content', () => {
   // ---------------------------------------------------------------------------
 
   const activeIds = computed((): string[] =>
-    systemStore.membership?.config?.active_module_ids ?? [],
+    membershipStore.membership?.config?.active_module_ids ?? [],
   )
 
   const activeModules = computed((): Module[] =>

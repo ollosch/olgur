@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { watch } from 'vue'
 import { useSystemStore } from '@/stores/system'
+import { useMemberManagementStore } from '@/stores/memberManagement'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -22,6 +23,7 @@ const emit = defineEmits<{
 }>()
 
 const systemStore = useSystemStore()
+const memberManagementStore = useMemberManagementStore()
 
 useModalShortcutGuard(() => props.open)
 
@@ -29,7 +31,7 @@ watch(
   () => props.open,
   async (val) => {
     if (!val) return
-    await systemStore.loadAdminData(props.systemId)
+    await memberManagementStore.loadAdminData(props.systemId)
   },
 )
 
@@ -44,7 +46,7 @@ const modules = () => systemStore.modulesBySystem[props.systemId] ?? []
         <DialogDescription class="sr-only">Add or remove system members and manage their roles</DialogDescription>
       </DialogHeader>
 
-      <div v-if="systemStore.adminLoading" class="text-sm text-muted-foreground py-4 text-center">
+      <div v-if="memberManagementStore.adminLoading" class="text-sm text-muted-foreground py-4 text-center">
         Loading…
       </div>
 
@@ -55,7 +57,7 @@ const modules = () => systemStore.modulesBySystem[props.systemId] ?? []
             Members
           </h3>
           <div
-            v-for="m in systemStore.adminMemberships"
+            v-for="m in memberManagementStore.adminMemberships"
             :key="m.id"
             class="flex items-center justify-between rounded-md px-3 py-2 hover:bg-muted/30"
           >
@@ -66,14 +68,14 @@ const modules = () => systemStore.modulesBySystem[props.systemId] ?? []
             <Button
               variant="outline"
               size="sm"
-              :disabled="systemStore.loading"
+              :disabled="memberManagementStore.loading"
               class="ml-4 shrink-0 text-xs"
-              @click="systemStore.updateMembershipAdmin(props.systemId, m.id, !m.admin)"
+              @click="memberManagementStore.updateMembershipAdmin(props.systemId, m.id, !m.admin)"
             >
               {{ m.admin ? 'Remove Admin' : 'Make Admin' }}
             </Button>
           </div>
-          <p v-if="systemStore.adminMemberships.length === 0" class="text-sm text-muted-foreground px-3 py-2">
+          <p v-if="memberManagementStore.adminMemberships.length === 0" class="text-sm text-muted-foreground px-3 py-2">
             No members yet.
           </p>
         </section>
@@ -84,7 +86,7 @@ const modules = () => systemStore.modulesBySystem[props.systemId] ?? []
             {{ mod.name }} — Editors
           </h3>
           <div
-            v-for="sub in systemStore.adminSubscriptionsByModule[mod.id] ?? []"
+            v-for="sub in memberManagementStore.adminSubscriptionsByModule[mod.id] ?? []"
             :key="sub.id"
             class="flex items-center justify-between rounded-md px-3 py-2 hover:bg-muted/30"
           >
@@ -95,15 +97,15 @@ const modules = () => systemStore.modulesBySystem[props.systemId] ?? []
             <Button
               variant="outline"
               size="sm"
-              :disabled="systemStore.loading"
+              :disabled="memberManagementStore.loading"
               class="ml-4 shrink-0 text-xs"
-              @click="systemStore.updateSubscriptionEditor(props.systemId, mod.id, sub.id, !sub.editor)"
+              @click="memberManagementStore.updateSubscriptionEditor(props.systemId, mod.id, sub.id, !sub.editor)"
             >
               {{ sub.editor ? 'Remove Editor' : 'Make Editor' }}
             </Button>
           </div>
           <p
-            v-if="(systemStore.adminSubscriptionsByModule[mod.id] ?? []).length === 0"
+            v-if="(memberManagementStore.adminSubscriptionsByModule[mod.id] ?? []).length === 0"
             class="text-sm text-muted-foreground px-3 py-2"
           >
             No subscribers yet.

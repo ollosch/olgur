@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { useSystemStore } from '@/stores/system'
+import { useMembershipStore } from '@/stores/membership'
 
 /**
  * Returns authorization helpers for the current user within the current system context.
@@ -10,14 +10,14 @@ import { useSystemStore } from '@/stores/system'
  */
 export function useAuthorization() {
   const authStore = useAuthStore()
-  const systemStore = useSystemStore()
+  const membershipStore = useMembershipStore()
 
   const canEdit = computed(() => (moduleId: string): boolean => {
     const user = authStore.user
     if (!user) return false
     if (user.super_admin) return true
-    if (systemStore.membership?.admin) return true
-    return !!systemStore.subscriptions[moduleId]?.editor
+    if (membershipStore.membership?.admin) return true
+    return !!membershipStore.subscriptions[moduleId]?.editor
   })
 
   return { canEdit }

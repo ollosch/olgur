@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
 import { useSystemStore } from '@/stores/system'
+import { useMembershipStore } from '@/stores/membership'
 import { useContentStore } from '@/stores/content'
 import { useApi } from '@/composables/useApi'
 import type { BookmarkEntry, Membership, ApiResource } from '@/types/domain'
@@ -14,12 +15,13 @@ export interface ResolvedBookmark {
 
 export const useBookmarkStore = defineStore('bookmarks', () => {
   const systemStore = useSystemStore()
+  const membershipStore = useMembershipStore()
   const contentStore = useContentStore()
   const { patch } = useApi()
 
   /** Current bookmarks from the active membership config */
   const bookmarks = computed((): BookmarkEntry[] =>
-    systemStore.membership?.config?.bookmarks ?? [],
+    membershipStore.membership?.config?.bookmarks ?? [],
   )
 
   const resolvedBookmarks = computed((): ResolvedBookmark[] => {
@@ -65,7 +67,7 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
   }
 
   async function _patchConfig(systemId: string, updatedBookmarks: BookmarkEntry[]): Promise<void> {
-    const membership = systemStore.membership
+    const membership = membershipStore.membership
     if (!membership) return
 
     const newConfig = {
@@ -79,7 +81,7 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
     )
 
     if (result.ok) {
-      systemStore.setMembership(systemId, result.data.data)
+      membershipStore.setMembership(systemId, result.data.data)
     }
   }
 

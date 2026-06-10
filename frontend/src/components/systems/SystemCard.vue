@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import type { System, Membership } from '@/types/domain'
 import { storeToRefs } from 'pinia'
 import { useSystemStore } from '@/stores/system'
+import { useMembershipStore } from '@/stores/membership'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -21,8 +22,11 @@ const props = defineProps<Props>()
 
 const router = useRouter()
 const systemStore = useSystemStore()
-const { modulesBySystem, subscriptions, loading } = storeToRefs(systemStore)
-const { fetchModules, deleteSystem, deleteModule, activateModule, deactivateModule, subscribe, unsubscribe, canSubscribeToModule } = systemStore
+const membershipStore = useMembershipStore()
+const { modulesBySystem, loading } = storeToRefs(systemStore)
+const { subscriptions } = storeToRefs(membershipStore)
+const { fetchModules, deleteSystem, deleteModule } = systemStore
+const { activateModule, deactivateModule, subscribe, unsubscribe, canSubscribeToModule } = membershipStore
 
 const expanded = ref(false)
 const showCreateModule = ref(false)

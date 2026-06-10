@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useAppSettingsStore, THEME_PRESETS } from '@/stores/appSettings'
 import { useSystemStore } from '@/stores/system'
 import { useContentStore } from '@/stores/content'
+import { useMembershipStore } from '@/stores/membership'
 import { useRouter } from 'vue-router'
 import { cn } from '@/lib/utils'
 
@@ -15,6 +16,7 @@ import { ArrowLeft, Check } from 'lucide-vue-next'
 const settings = useAppSettingsStore()
 const systemStore = useSystemStore()
 const contentStore = useContentStore()
+const membershipStore = useMembershipStore()
 const router = useRouter()
 
 const customHue = computed({
@@ -42,14 +44,14 @@ const hasMarkdownRules = computed(() =>
 )
 
 const preferredFormat = computed((): 'content' | 'markdown' =>
-  systemStore.membership?.config?.preferred_rule_format ?? 'content',
+  membershipStore.membership?.config?.preferred_rule_format ?? 'content',
 )
 
 async function toggleFormat(): Promise<void> {
   const systemId = systemStore.currentSystem?.id
   if (!systemId) return
   const next: 'content' | 'markdown' = preferredFormat.value === 'content' ? 'markdown' : 'content'
-  await systemStore.updateMembership(systemId, { preferred_rule_format: next })
+  await membershipStore.updateMembership(systemId, { preferred_rule_format: next })
 }
 </script>
 

@@ -5,6 +5,7 @@ import { useAppSettingsStore } from '@/stores/appSettings'
 import { useLeftPanelStore } from '@/stores/leftPanel'
 import { useShortcutStore } from '@/stores/shortcut'
 import { useSystemStore } from '@/stores/system'
+import { useMembershipStore } from '@/stores/membership'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import {
@@ -41,6 +42,7 @@ const appSettings = useAppSettingsStore()
 const panelStore = useLeftPanelStore()
 const shortcutStore = useShortcutStore()
 const systemStore = useSystemStore()
+const membershipStore = useMembershipStore()
 
 const manageMembersOpen = ref(false)
 
@@ -126,12 +128,12 @@ async function logout(): Promise<void> {
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          v-if="systemStore.membership?.admin"
+          v-if="membershipStore.membership?.admin"
           @click="manageMembersOpen = true"
         >
           Manage Members
         </DropdownMenuItem>
-        <DropdownMenuSeparator v-if="systemStore.membership?.admin" />
+        <DropdownMenuSeparator v-if="membershipStore.membership?.admin" />
         <DropdownMenuItem @click="router.push({ name: 'profile' })">
           User Profile
         </DropdownMenuItem>

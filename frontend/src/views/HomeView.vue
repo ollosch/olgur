@@ -3,12 +3,14 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useSystemStore } from '@/stores/system'
+import { useMembershipStore } from '@/stores/membership'
 
 import { Button } from '@/components/ui/button'
 import SystemCard from '@/components/systems/SystemCard.vue'
 import CreateSystemDialog from '@/components/systems/CreateSystemDialog.vue'
 
 const systemStore = useSystemStore()
+const membershipStore = useMembershipStore()
 const authStore = useAuthStore()
 
 const showCreateDialog = ref(false)
@@ -50,31 +52,31 @@ async function logout() {
 
       <div v-else class="space-y-6">
         <!-- Your Systems -->
-        <div v-if="systemStore.memberSystems.length > 0">
+        <div v-if="membershipStore.memberSystems.length > 0">
           <div class="text-xs text-muted-foreground uppercase tracking-widest mb-3">
             Your Systems
           </div>
           <div class="space-y-2">
             <SystemCard
-              v-for="system in systemStore.memberSystems"
+              v-for="system in membershipStore.memberSystems"
               :key="system.id"
               :system="system"
-              :membership="systemStore.membershipsBySystem[system.id]"
+              :membership="membershipStore.membershipsBySystem[system.id]"
             />
           </div>
         </div>
 
         <!-- Other Systems -->
-        <div v-if="systemStore.otherSystems.length > 0">
+        <div v-if="membershipStore.otherSystems.length > 0">
           <div class="text-xs text-muted-foreground uppercase tracking-widest mb-3">
             Other Systems
           </div>
           <div class="space-y-2">
             <SystemCard
-              v-for="system in systemStore.otherSystems"
+              v-for="system in membershipStore.otherSystems"
               :key="system.id"
               :system="system"
-              :membership="systemStore.membershipsBySystem[system.id]"
+              :membership="membershipStore.membershipsBySystem[system.id]"
             />
           </div>
         </div>
