@@ -1,3 +1,4 @@
+import { watch } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import authRoutes from '@/router/auth.ts'
 import { useAuthStore } from '@/stores/auth.ts'
@@ -53,6 +54,24 @@ const router = createRouter({
 
 router.beforeEach(async (to) => {
   const authStore = useAuthStore()
+
+  // Block the guard until bootstrap has resolved so we never redirect based on
+  // a still-null user that is about to be populated by fetchUser().
+  if (!authStore.initialized) {
+    await new Promise<void>((resolve) => {
+      const stop = watch(
+        () => authStore.initialized,
+        (initialized) => {
+          if (initialized) {
+            stop()
+            resolve()
+          }
+        },
+        { immediate: true },
+      )
+    })
+  }
+
   const requiresAuth = to.meta.requiresAuth
   const requiresGuest = to.meta.requiresGuest
 

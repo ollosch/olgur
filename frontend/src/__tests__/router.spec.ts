@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
 import { setActivePinia, createPinia } from 'pinia'
 
 // ─── Mock useApi so the auth store never makes real HTTP calls ────────────────
@@ -35,6 +35,8 @@ describe('Router navigation guards', () => {
   beforeEach(async () => {
     // Fresh Pinia per test so store state never leaks between tests.
     setActivePinia(createPinia())
+    // Mark auth as initialized so the guard does not wait in normal tests.
+    useAuthStore().initialized = true
     // Reset to /register (a guest route that is never the target of any test
     // below) so that pushes to /login are never treated as NavigationDuplicated
     // — Vue Router skips guards entirely for duplicate navigations.
@@ -105,6 +107,48 @@ describe('Router navigation guards', () => {
 
       expect(router.currentRoute.value.name).toBe('profile')
       expect(router.currentRoute.value.path).toBe('/profile')
+    })
+  })
+
+  // ── Initialization gate ──────────────────────────────────────────────────────
+
+  describe('initialization gate', () => {
+    it('holds navigation until authStore.initialized becomes true, then respects auth state', async () => {
+      const authStore = useAuthStore()
+      // Start un-initialized with a valid user — simulates bootstrap in-flight.
+      authStore.initialized = false
+      authStore.user = mockUser
+
+      // Kick off navigation to a protected route; do NOT await yet.
+      const navPromise = router.push('/')
+
+      // Guard is suspended — current route has not changed.
+      await nextTick()
+      expect(router.currentRoute.value.path).toBe('/register')
+
+      // Bootstrap completes.
+      authStore.initialized = true
+
+      // Guard resumes: user is authenticated so the route is allowed.
+      await navPromise
+      expect(router.currentRoute.value.name).toBe('home')
+    })
+
+    it('redirects to login after initialization when the user is not authenticated', async () => {
+      const authStore = useAuthStore()
+      authStore.initialized = false
+      authStore.user = null
+
+      const navPromise = router.push('/')
+
+      await nextTick()
+      expect(router.currentRoute.value.path).toBe('/register')
+
+      authStore.initialized = true
+
+      await navPromise
+      expect(router.currentRoute.value.path).toBe('/login')
+      expect(router.currentRoute.value.query.redirect).toBe('/')
     })
   })
 })
