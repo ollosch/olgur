@@ -23,14 +23,19 @@ app.mount('#app')
 const authStore = useAuthStore()
 
 async function bootstrap(): Promise<void> {
-  await authStore.fetchCsrfCookie()
-  await authStore.fetchUser().catch(() => { })
+  try {
+    await authStore.fetchCsrfCookie()
+    await authStore.fetchUser().catch(() => { })
 
-  if (authStore.user) {
-    await useSystemStore().init()
+    if (authStore.user) {
+      await useSystemStore().init()
+    }
+  } finally {
+    authStore.initialized = true
   }
-
-  authStore.initialized = true
 }
 
 bootstrap()
+  .catch(
+    (err: unknown) => globalErrorHandler(err, null)
+  )
