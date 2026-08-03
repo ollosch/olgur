@@ -28,15 +28,10 @@ final class SubscriptionPolicy
 
     /**
      * System admins can subscribe users to modules in their system.
-     * Users can subscribe themselves to modules.
      */
-    public function create(User $user, System $system, ?User $member = null): bool
+    public function create(User $user, System $system): bool
     {
-        if ($member && $member->id !== $user->id) {
-            return $system->isAdmin($user);
-        }
-
-        return true;
+        return $system->isAdmin($user);
     }
 
     /**

@@ -54,7 +54,9 @@ final class SubscriptionController
             'The user is already subscribed to this module.',
         );
 
-        Gate::authorize('create', [Subscription::class, $system, $subscriber]);
+        Gate::authorize('create', [Subscription::class, $system]);
+
+        abort_unless($system->isMember($subscriber), 422, 'The user must be a system member.');
 
         $subscription = $subscribeToModule->execute($subscriber, $module);
 

@@ -13,19 +13,19 @@ use App\Models\User;
 final class ModulePolicy
 {
     /**
-     * Any authenticated user can list modules.
+     * System members can list modules.
      */
-    public function viewAny(User $user): bool
+    public function viewAny(User $user, System $system): bool
     {
-        return true;
+        return $system->isMember($user);
     }
 
     /**
-     * Any authenticated user can view a module.
+     * System members can view a module.
      */
     public function view(User $user, Module $module): bool
     {
-        return true;
+        return (bool) $module->system?->isMember($user);
     }
 
     /**

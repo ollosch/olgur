@@ -84,34 +84,12 @@ test('index returns 404 for unknown system', function (): void {
 
 // ── store ────────────────────────────────────────────────────────────────────
 
-test('user can join a system themselves', function (): void {
+test('user cannot join a system themselves', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->create();
     actingAs($user);
 
-    $response = postJson('/api/systems/'.$system->id.'/memberships', ['config' => []])
-        ->assertCreated();
-
-    $response->assertJsonPath('data.user_id', $user->id);
-    $response->assertJsonPath('data.system_id', $system->id);
-    $response->assertJsonPath('data.admin', false);
-
-    assertDatabaseHas('memberships', ['user_id' => $user->id, 'system_id' => $system->id]);
-});
-
-test('regular user cannot self-promote to admin', function (): void {
-    $user = User::factory()->create();
-    $system = System::factory()->create();
-    actingAs($user);
-
-    $response = postJson('/api/systems/'.$system->id.'/memberships', [
-        'user_id' => $user->id,
-        'admin' => true,
-        'config' => [],
-    ])->assertCreated();
-
-    $response->assertJsonPath('data.admin', false);
-    assertDatabaseHas('memberships', ['user_id' => $user->id, 'system_id' => $system->id, 'admin' => false]);
+    postJson('/api/systems/'.$system->id.'/memberships', ['config' => []])->assertForbidden();
 });
 
 test('system admin can add another user to the system', function (): void {

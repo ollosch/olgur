@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Actions;
 
 use App\Enums\SystemStructure;
-use App\Models\Membership;
 use App\Models\Module;
 use App\Models\Subscription;
 use App\Models\User;
@@ -24,14 +23,6 @@ final class SubscribeToModule
      */
     public function execute(User $user, Module $module): Subscription
     {
-        // Auto-create membership if the user is not yet a member of this system
-        Membership::query()->firstOrCreate([
-            'user_id' => $user->id,
-            'system_id' => $module->system_id,
-        ], [
-            'admin' => false,
-        ]);
-
         if (! $module->is_core) {
             $structure = $module->system?->config?->structure ?? SystemStructure::GroupingOnly;  // @phpstan-ignore nullsafe.neverNull
 

@@ -38,6 +38,7 @@ test('regular user cannot create a module', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->create();
     actingAs($user);
+    Membership::factory()->for($user)->for($system)->create();
 
     postJson('/api/systems/'.$system->id.'/modules', ['slug' => 'core', 'name' => 'Core Rules', 'description' => 'The core rules.', 'config' => [], 'is_core' => false, 'sort_order' => 0])
         ->assertForbidden();
@@ -139,6 +140,7 @@ test('index returns all modules for a system ordered by sort_order', function ()
     $system = System::factory()->create();
     Module::factory()->for($system)->create(['name' => 'Expansion', 'slug' => 'expansion', 'sort_order' => 10]);
     Module::factory()->for($system)->create(['name' => 'Core', 'slug' => 'core', 'sort_order' => 0]);
+    Membership::factory()->for($user)->for($system)->create();
 
     actingAs($user);
 
@@ -154,6 +156,7 @@ test('index does not return modules from other systems', function (): void {
     $system = System::factory()->create();
     $other = System::factory()->create();
     Module::factory()->for($other)->create();
+    Membership::factory()->for($user)->for($system)->create();
 
     actingAs($user);
 
@@ -242,12 +245,20 @@ test('show returns a single module', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
+    Membership::factory()->for($user)->for($system)->create();
     actingAs($user);
 
     $response = getJson('/api/systems/'.$system->id.'/modules/'.$module->id)->assertSuccessful();
 
     $response->assertJsonPath('data.id', $module->id);
     $response->assertJsonPath('data.system_id', $system->id);
+});
+
+test('index is forbidden for non-members', function (): void {
+    $system = System::factory()->create();
+    actingAs(User::factory()->create());
+
+    getJson('/api/systems/'.$system->id.'/modules')->assertForbidden();
 });
 
 test('show returns 404 for module belonging to a different system', function (): void {

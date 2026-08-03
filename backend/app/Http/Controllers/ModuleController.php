@@ -22,7 +22,7 @@ final class ModuleController
      */
     public function index(System $system): AnonymousResourceCollection
     {
-        Gate::authorize('viewAny', Module::class);
+        Gate::authorize('viewAny', [Module::class, $system]);
 
         return ModuleResource::collection($system->modules);
     }

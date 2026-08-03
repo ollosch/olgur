@@ -20,15 +20,10 @@ final class MembershipPolicy
 
     /**
      * System admins can add members to their system.
-     * Users can add themselves to a system.
      */
-    public function create(User $user, System $system, ?User $member = null): bool
+    public function create(User $user, System $system): bool
     {
-        if ($member && $member->id !== $user->id) {
-            return $system->isAdmin($user);
-        }
-
-        return true;
+        return $system->isAdmin($user);
     }
 
     /**

@@ -93,18 +93,13 @@ test('non-subscriber cannot list subscriptions for a module', function (): void 
 
 // ── store (subscribe) ────────────────────────────────────────────────────────
 
-test('user can subscribe themselves to a core module', function (): void {
+test('user cannot subscribe themselves to a module', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->core()->create();
     actingAs($user);
 
-    $response = postJson(subscriptionUrl($system, $module))->assertSuccessful();
-
-    $response->assertJsonPath('data.user_id', $user->id);
-    $response->assertJsonPath('data.module_id', $module->id);
-
-    assertDatabaseHas('subscriptions', ['user_id' => $user->id, 'module_id' => $module->id]);
+    postJson(subscriptionUrl($system, $module))->assertForbidden();
 });
 
 test('system admin can subscribe another user to a module', function (): void {
@@ -112,6 +107,7 @@ test('system admin can subscribe another user to a module', function (): void {
     $admin = User::factory()->create();
     Membership::factory()->for($admin)->for($system)->admin()->create();
     $member = User::factory()->create();
+    Membership::factory()->for($member)->for($system)->create();
     $module = Module::factory()->for($system)->core()->create();
     actingAs($admin);
 
@@ -132,89 +128,82 @@ test('regular user cannot subscribe another user to a module', function (): void
     postJson(subscriptionUrl($system, $module), ['user_id' => $other->id])->assertForbidden();
 });
 
-test('user can subscribe to an expansion when core is subscribed', function (): void {
+test('system admin can subscribe a member to an expansion when they have the core subscription', function (): void {
     $user = User::factory()->create();
+    $admin = User::factory()->create();
     $system = System::factory()->create();
     $core = Module::factory()->for($system)->core()->create();
     $expansion = Module::factory()->for($system)->create();
     Subscription::factory()->for($user)->for($core)->create();
-    actingAs($user);
+    Membership::factory()->for($user)->for($system)->create();
+    Membership::factory()->for($admin)->for($system)->admin()->create();
+    actingAs($admin);
 
-    postJson(subscriptionUrl($system, $expansion))->assertSuccessful();
+    postJson(subscriptionUrl($system, $expansion), ['user_id' => $user->id])->assertSuccessful();
 
     assertDatabaseHas('subscriptions', ['user_id' => $user->id, 'module_id' => $expansion->id]);
 });
 
-test('subscribing to expansion without core subscription succeeds when require_core_subscription is not set', function (): void {
+test('system admin can subscribe a member to an expansion without core subscription in grouping only systems', function (): void {
     $user = User::factory()->create();
+    $admin = User::factory()->create();
     $system = System::factory()->create(); // no require_core_subscription config
     $expansion = Module::factory()->for($system)->create(); // not core
-    actingAs($user);
+    Membership::factory()->for($user)->for($system)->create();
+    Membership::factory()->for($admin)->for($system)->admin()->create();
+    actingAs($admin);
 
-    postJson(subscriptionUrl($system, $expansion))->assertSuccessful();
+    postJson(subscriptionUrl($system, $expansion), ['user_id' => $user->id])->assertSuccessful();
 });
 
-test('subscribing to expansion without core subscription fails when core_plus_many and core module exists', function (): void {
+test('system admin cannot subscribe a member to an expansion without core subscription in core plus many systems', function (): void {
     $user = User::factory()->create();
+    $admin = User::factory()->create();
     $system = System::factory()->corePlusMany()->create();
     Module::factory()->for($system)->core()->create(); // core module exists
     $expansion = Module::factory()->for($system)->create();
-    actingAs($user);
+    Membership::factory()->for($user)->for($system)->create();
+    Membership::factory()->for($admin)->for($system)->admin()->create();
+    actingAs($admin);
 
-    postJson(subscriptionUrl($system, $expansion))
+    postJson(subscriptionUrl($system, $expansion), ['user_id' => $user->id])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['module_id']);
 });
 
-test('subscribing to expansion without core subscription succeeds when core_plus_many but no core module exists', function (): void {
+test('system admin can subscribe a member to an expansion when core plus many has no core module', function (): void {
     $user = User::factory()->create();
+    $admin = User::factory()->create();
     $system = System::factory()->corePlusMany()->create();
     $expansion = Module::factory()->for($system)->create(); // no core module exists
-    actingAs($user);
+    Membership::factory()->for($user)->for($system)->create();
+    Membership::factory()->for($admin)->for($system)->admin()->create();
+    actingAs($admin);
 
-    postJson(subscriptionUrl($system, $expansion))->assertSuccessful();
+    postJson(subscriptionUrl($system, $expansion), ['user_id' => $user->id])->assertSuccessful();
 });
 
-test('subscribing when not a member auto-creates a plain membership', function (): void {
+test('system admin cannot subscribe a user who is not a member', function (): void {
     $user = User::factory()->create();
+    $admin = User::factory()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->core()->create();
-    actingAs($user);
+    Membership::factory()->for($admin)->for($system)->admin()->create();
+    actingAs($admin);
 
-    postJson(subscriptionUrl($system, $module))->assertSuccessful();
-
-    assertDatabaseHas('memberships', [
-        'user_id' => $user->id,
-        'system_id' => $system->id,
-        'admin' => false,
-    ]);
-});
-
-test('subscribing when already a member does not create a duplicate', function (): void {
-    $user = User::factory()->create();
-    $system = System::factory()->create();
-    $module = Module::factory()->for($system)->core()->create();
-    Membership::factory()->for($user)->for($system)->create(['admin' => false]);
-    actingAs($user);
-
-    postJson(subscriptionUrl($system, $module))->assertSuccessful();
-
-    expect(
-        Membership::query()
-            ->where('user_id', $user->id)
-            ->where('system_id', $system->id)
-            ->count()
-    )->toBe(1);
+    postJson(subscriptionUrl($system, $module), ['user_id' => $user->id])->assertUnprocessable();
 });
 
 test('subscribing twice returns 409', function (): void {
     $user = User::factory()->create();
+    $admin = User::factory()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->core()->create();
-    $existing = Subscription::factory()->for($user)->for($module)->create();
-    actingAs($user);
+    Subscription::factory()->for($user)->for($module)->create();
+    Membership::factory()->for($admin)->for($system)->admin()->create();
+    actingAs($admin);
 
-    postJson(subscriptionUrl($system, $module))
+    postJson(subscriptionUrl($system, $module), ['user_id' => $user->id])
         ->assertConflict();
 });
 
@@ -474,12 +463,15 @@ test('unsubscribing from core does not clear active_module_ids', function (): vo
 
 test('subscribing to expansion in core_plus_one system auto-subscribes to core', function (): void {
     $user = User::factory()->create();
+    $admin = User::factory()->create();
     $system = System::factory()->corePlusOne()->create();
     $core = Module::factory()->for($system)->core()->create();
     $expansion = Module::factory()->for($system)->create();
-    actingAs($user);
+    Membership::factory()->for($user)->for($system)->create();
+    Membership::factory()->for($admin)->for($system)->admin()->create();
+    actingAs($admin);
 
-    postJson(subscriptionUrl($system, $expansion))->assertSuccessful();
+    postJson(subscriptionUrl($system, $expansion), ['user_id' => $user->id])->assertSuccessful();
 
     assertDatabaseHas('subscriptions', ['user_id' => $user->id, 'module_id' => $expansion->id]);
     assertDatabaseHas('subscriptions', ['user_id' => $user->id, 'module_id' => $core->id]);

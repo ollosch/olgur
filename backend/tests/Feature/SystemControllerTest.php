@@ -28,10 +28,13 @@ test('unauthenticated requests are rejected', function (string $method, string $
 
 // ── index ────────────────────────────────────────────────────────────────────
 
-test('index returns all systems ordered by name', function (): void {
+test('index returns member systems ordered by name', function (): void {
     $user = User::factory()->create();
-    System::factory()->create(['name' => 'Zebra Game', 'slug' => 'zebra-game']);
-    System::factory()->create(['name' => 'Alpha Game', 'slug' => 'alpha-game']);
+    $zebra = System::factory()->create(['name' => 'Zebra Game', 'slug' => 'zebra-game']);
+    $alpha = System::factory()->create(['name' => 'Alpha Game', 'slug' => 'alpha-game']);
+    System::factory()->create(['name' => 'Hidden Game', 'slug' => 'hidden-game']);
+    Membership::factory()->for($user)->for($zebra)->create();
+    Membership::factory()->for($user)->for($alpha)->create();
 
     actingAs($user);
 
@@ -45,6 +48,7 @@ test('index returns all systems ordered by name', function (): void {
 test('index returns systems as resource collection', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->create();
+    Membership::factory()->for($user)->for($system)->create();
 
     actingAs($user);
 
@@ -125,12 +129,21 @@ test('store allows any authenticated user to create a system', function (): void
 test('show returns a single system', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->create();
+    Membership::factory()->for($user)->for($system)->create();
     actingAs($user);
 
     $response = getJson('/api/systems/'.$system->id)
         ->assertSuccessful()
         ->assertJsonPath('data.id', $system->id)
         ->assertJsonPath('data.slug', $system->slug);
+});
+
+test('show is forbidden for non-members', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    actingAs($user);
+
+    getJson('/api/systems/'.$system->id)->assertForbidden();
 });
 
 test('show returns 404 for unknown system', function (): void {

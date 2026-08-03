@@ -10,6 +10,8 @@ use App\Http\Requests\UpdateSystemRequest;
 use App\Http\Resources\SystemResource;
 use App\Models\System;
 use App\Models\User;
+use Illuminate\Container\Attributes\CurrentUser;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
@@ -17,15 +19,16 @@ use Illuminate\Support\Facades\Gate;
 final class SystemController
 {
     /**
-     * Display a listing of all systems.
+     * Display systems the authenticated user belongs to.
      */
-    public function index(): AnonymousResourceCollection
+    public function index(#[CurrentUser] User $user): AnonymousResourceCollection
     {
         Gate::authorize('viewAny', System::class);
 
-        return SystemResource::collection(
-            System::query()->orderBy('name')->get()
-        );
+        return SystemResource::collection(System::query()
+            ->whereHas('memberships', fn (Builder $query): Builder => $query->where('user_id', $user->id))
+            ->orderBy('name')
+            ->get());
     }
 
     /**

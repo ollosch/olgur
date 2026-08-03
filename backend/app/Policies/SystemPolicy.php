@@ -18,11 +18,11 @@ final class SystemPolicy
     }
 
     /**
-     * Any authenticated user can view a system.
+     * Only system members can view a system.
      */
     public function view(User $user, System $system): bool
     {
-        return true;
+        return $system->isMember($user);
     }
 
     /**
