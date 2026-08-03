@@ -6,6 +6,7 @@ namespace App\Models;
 
 use Database\Factories\ModuleVersionAmendmentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\WithoutTimestamps;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -24,14 +25,13 @@ use Illuminate\Support\Carbon;
  * @property Carbon $amended_at
  */
 #[Fillable(['module_version_id', 'entity_type', 'entity_id', 'change_type', 'description', 'content_after', 'amended_by', 'amended_at'])]
+#[WithoutTimestamps]
 final class ModuleVersionAmendment extends Model
 {
     /** @use HasFactory<ModuleVersionAmendmentFactory> */
     use HasFactory;
 
     use HasUlids;
-
-    public $timestamps = false;
 
     /**
      * @return array<string, string>

@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Data\MembershipConfig;
 use Database\Factories\MembershipFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -23,14 +24,13 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  */
 #[Fillable(['user_id', 'system_id', 'admin', 'config'])]
+#[Table(name: 'memberships')]
 final class Membership extends Model
 {
     /** @use HasFactory<MembershipFactory> */
     use HasFactory;
 
     use HasUlids;
-
-    protected $table = 'memberships';
 
     /**
      * Get the attributes that should be cast.

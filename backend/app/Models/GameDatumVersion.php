@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Enums\GameDataType;
 use Database\Factories\GameDatumVersionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\WithoutTimestamps;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -22,14 +23,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property array<mixed> $content
  */
 #[Fillable(['game_datum_id', 'module_version_id', 'type', 'slug', 'name', 'content'])]
+#[WithoutTimestamps]
 final class GameDatumVersion extends Model
 {
     /** @use HasFactory<GameDatumVersionFactory> */
     use HasFactory;
 
     use HasUlids;
-
-    public $timestamps = false;
 
     /**
      * @return array<string, string>

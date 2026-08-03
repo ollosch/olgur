@@ -6,6 +6,7 @@ namespace App\Models;
 
 use Database\Factories\ModuleDraftChangeFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\WithoutTimestamps;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -25,14 +26,13 @@ use Illuminate\Support\Carbon;
  * @property Carbon $changed_at
  */
 #[Fillable(['module_id', 'module_version_id', 'entity_type', 'entity_id', 'change_type', 'description', 'content_after', 'changed_by', 'changed_at'])]
+#[WithoutTimestamps]
 final class ModuleDraftChange extends Model
 {
     /** @use HasFactory<ModuleDraftChangeFactory> */
     use HasFactory;
 
     use HasUlids;
-
-    public $timestamps = false;
 
     /**
      * @return array<string, string>

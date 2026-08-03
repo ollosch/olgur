@@ -6,6 +6,7 @@ namespace App\Models;
 
 use Database\Factories\RuleVersionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\WithoutTimestamps;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -23,14 +24,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $sort_order
  */
 #[Fillable(['rule_id', 'module_version_id', 'parent_id', 'number', 'title', 'content', 'sort_order'])]
+#[WithoutTimestamps]
 final class RuleVersion extends Model
 {
     /** @use HasFactory<RuleVersionFactory> */
     use HasFactory;
 
     use HasUlids;
-
-    public $timestamps = false;
 
     /**
      * Get the attributes that should be cast.

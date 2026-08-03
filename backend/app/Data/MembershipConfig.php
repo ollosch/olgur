@@ -59,12 +59,16 @@ final readonly class MembershipConfig implements Castable
             ? array_values(array_filter($data['ignored_tags'], is_string(...)))
             : [];
 
+        $preferredRuleFormat = is_string($data['preferred_rule_format'] ?? null)
+            ? $data['preferred_rule_format']
+            : 'content';
+
         return new self(
             activeModuleIds: $activeModuleIds,
             bookmarks: $bookmarks,
             ignoredTags: $ignoredTags,
             acronymPopups: (bool) ($data['acronym_popups'] ?? false),
-            preferredRuleFormat: (string) ($data['preferred_rule_format'] ?? 'content'),
+            preferredRuleFormat: $preferredRuleFormat,
         );
     }
 

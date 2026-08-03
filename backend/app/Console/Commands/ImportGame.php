@@ -16,28 +16,18 @@ use App\Models\System;
 use App\Models\User;
 use App\Services\ImportCounter;
 use App\Services\ModuleDataImporter;
+use Illuminate\Console\Attributes\Description;
+use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
-final class ImportGame extends Command
-{
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'import:game
+#[Description('Import a full game system from a directory containing an index.json manifest')]
+#[Signature('import:game
         {path : Path to a game data directory (must contain index.json)}
         {--user=ollo@olgur.de : Email address of a user to make admin of the imported system}
-        {--fresh : Delete existing rules and index entries before importing}';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Import a full game system from a directory containing an index.json manifest';
-
+        {--fresh : Delete existing rules and index entries before importing}')]
+final class ImportGame extends Command
+{
     public function __construct(private readonly ModuleDataImporter $importer)
     {
         parent::__construct();
@@ -304,7 +294,7 @@ final class ImportGame extends Command
         // avoiding the mb_str_functions Pint rule while remaining correct for
         // multibyte UTF-8 content (JSON structural characters are all ASCII).
         /** @var list<string> $bytes */
-        $bytes = mb_str_split($raw) ?: [];
+        $bytes = mb_str_split($raw);
         $count = count($bytes);
         $out = '';
         $i = 0;
@@ -350,7 +340,7 @@ final class ImportGame extends Command
 
             if ($ch === '/' && $i + 1 < $count && $bytes[$i + 1] === '*') {
                 $i += 2;
-                while ($i + 1 < $count && ! ($bytes[$i] === '*' && $bytes[$i + 1] === '/')) {
+                while ($i + 1 < $count && ($bytes[$i] !== '*' || $bytes[$i + 1] !== '/')) {
                     $i++;
                 }
 
