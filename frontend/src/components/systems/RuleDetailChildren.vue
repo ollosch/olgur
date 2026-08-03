@@ -68,7 +68,8 @@ const childRules = computed((): Rule[] => props.childrenMap.get(props.rule.id) ?
         class="font-mono text-primary pr-1 cursor-pointer hover:underline"
         @click="emit('selectRule', rule)"
       >{{ rule.number }}</span>
-      {{ rule.title }}
+      <!-- eslint-disable-next-line vue/no-v-html -->
+      <span v-html="renderContent(rule.title)" />
     </component>
     <div class="flex items-center gap-1 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
       <button

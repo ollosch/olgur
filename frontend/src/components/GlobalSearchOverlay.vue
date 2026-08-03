@@ -6,6 +6,7 @@ import { Search } from 'lucide-vue-next'
 import { useShortcutStore } from '@/stores/shortcut'
 import { useContentStore } from '@/stores/content'
 import { rankMatchLower, compareIndexEntries, rankRule } from '@/lib/utils'
+import { renderContent } from '@/lib/renderContent'
 import type { Rule, IndexEntry, GameDatum } from '@/types/domain'
 import IndexEntryResult from '@/components/systems/IndexEntryResult.vue'
 import { unitTypeLabel, unitNation } from '@/lib/unitUtils'
@@ -299,7 +300,8 @@ function onKeyDown(e: KeyboardEvent): void {
               @keydown.enter="selectRule(rule)"
             >
               <span :data-rule-number="rule.number" class="font-mono text-xs text-primary font-semibold shrink-0">{{ rule.number }}</span>
-              <span class="text-foreground text-xs truncate">{{ rule.title }}</span>
+              <!-- eslint-disable-next-line vue/no-v-html -->
+              <span class="text-foreground text-xs truncate" v-html="renderContent(rule.title)" />
             </div>
 
             <button

@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useContentStore } from '@/stores/content'
 import type { Rule } from '@/types/domain'
 import { rankRule } from '@/lib/utils'
+import { renderContent } from '@/lib/renderContent'
 
 import { Input } from '@/components/ui/input'
 
@@ -56,7 +57,8 @@ function select(rule: Rule): void {
         class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent cursor-pointer"
         @click="select(result)">
         <span class="font-mono text-primary shrink-0">{{ result.number }}</span>
-        <span class="text-foreground/80 min-w-0 truncate">{{ result.title }}</span>
+        <!-- eslint-disable-next-line vue/no-v-html -->
+        <span class="text-foreground/80 min-w-0 truncate" v-html="renderContent(result.title)" />
       </button>
     </div>
   </div>

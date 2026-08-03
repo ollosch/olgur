@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useRouter, useRoute } from 'vue-router'
 import { useHistoryStore } from '@/stores/history'
+import { renderContent } from '@/lib/renderContent'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Clock } from 'lucide-vue-next'
 
@@ -42,7 +43,8 @@ function relativeTime(date: Date): string {
         <div class="min-w-0 flex-1">
           <div class="flex items-baseline gap-2">
             <span class="font-mono text-xs text-primary shrink-0">{{ entry.number }}</span>
-            <span class="text-xs text-foreground truncate">{{ entry.title }}</span>
+            <!-- eslint-disable-next-line vue/no-v-html -->
+            <span class="text-xs text-foreground truncate" v-html="renderContent(entry.title)" />
           </div>
           <span class="text-[10px] text-muted-foreground">{{ relativeTime(entry.viewedAt) }}</span>
         </div>

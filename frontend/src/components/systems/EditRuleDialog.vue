@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia'
 import { useForm } from 'vee-validate'
 import { useContentStore } from '@/stores/content'
 import { useSystemStore } from '@/stores/system'
+import { renderContent } from '@/lib/renderContent'
 import type { Rule } from '@/types/domain'
 
 import { Button } from '@/components/ui/button'
@@ -164,7 +165,8 @@ const onSubmit = handleSubmit(async (values) => {
             <div v-if="selectedParent"
               class="flex items-center gap-2 rounded-md border border-input bg-muted/40 px-3 py-2 text-sm">
               <span class="font-mono text-primary">{{ selectedParent.number }}</span>
-              <span class="text-foreground/80 min-w-0 truncate">{{ selectedParent.title }}</span>
+              <!-- eslint-disable-next-line vue/no-v-html -->
+              <span class="text-foreground/80 min-w-0 truncate" v-html="renderContent(selectedParent.title)" />
               <button type="button"
                 class="ml-auto text-muted-foreground hover:text-foreground transition-colors shrink-0"
                 title="Clear parent" @click="clearParent">

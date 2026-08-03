@@ -10,6 +10,7 @@ import { useRuleDelegation } from '@/composables/useRuleDelegation'
 import { useResizablePanel } from '@/composables/useResizablePanel'
 import { useInteractionStore } from '@/stores/interaction'
 import { requestLeaveSystemConfirmation } from '@/composables/useLeaveSystemConfirm'
+import { renderContent } from '@/lib/renderContent'
 import type { Rule, Module } from '@/types/domain'
 
 import LeftPanelContent from '@/components/systems/LeftPanelContent.vue'
@@ -336,7 +337,8 @@ function openDrawer(mode: DrawerMode): void {
                         {{ rule.number }}
                       </span>
                       <span class="text-foreground/90 text-sm group-hover:text-foreground transition-colors">
-                        {{ rule.title }}
+                        <!-- eslint-disable-next-line vue/no-v-html -->
+                        <span v-html="renderContent(rule.title)" />
                       </span>
                     </button>
                   </div>

@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import type { Rule } from '@/types/domain'
 import { cn } from '@/lib/utils'
+import { renderContent } from '@/lib/renderContent'
 import { ChevronRight, ChevronDown, Minus } from 'lucide-vue-next'
 import { useLeftPanelStore } from '@/stores/leftPanel'
 
@@ -103,7 +104,8 @@ function onKeyDown(e: KeyboardEvent): void {
         @keydown="onKeyDown"
       >
         <span class="font-mono text-xs text-muted-foreground shrink-0">{{ rule.number }}</span>
-        <span class="truncate">{{ rule.title }}</span>
+        <!-- eslint-disable-next-line vue/no-v-html -->
+        <span class="truncate" v-html="renderContent(rule.title)" />
       </button>
     </div>
 

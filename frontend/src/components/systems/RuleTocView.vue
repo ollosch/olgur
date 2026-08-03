@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Rule } from '@/types/domain'
+import { renderContent } from '@/lib/renderContent'
 
 interface Props {
   rule: Rule
@@ -25,9 +26,11 @@ const children = computed(() => props.childrenMap.get(props.rule.id) ?? [])
         <span class="font-mono text-sm text-primary font-semibold shrink-0 w-16 text-right">
           {{ child.number }}
         </span>
-        <span class="text-foreground/90 text-sm group-hover:text-foreground transition-colors">
-          {{ child.title }}
-        </span>
+        <!-- eslint-disable-next-line vue/no-v-html -->
+        <span
+          class="text-foreground/90 text-sm group-hover:text-foreground transition-colors"
+          v-html="renderContent(child.title)"
+        />
       </button>
     </div>
   </div>

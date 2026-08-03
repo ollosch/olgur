@@ -54,7 +54,8 @@ function onClick(e: MouseEvent) {
               @click.stop="interaction.navigateToNumber(state.content.rule.number)"
             >Open</button>
           </div>
-          <p class="font-semibold text-foreground mb-1">{{ state.content.rule.title }}</p>
+          <!-- eslint-disable-next-line vue/no-v-html -->
+          <p class="font-semibold text-foreground mb-1" v-html="renderContent(state.content.rule.title)" />
           <!-- eslint-disable-next-line vue/no-v-html -->
           <p
             v-if="state.content.rule.content"
@@ -81,7 +82,9 @@ function onClick(e: MouseEvent) {
             :class="i > 0 ? 'mt-3 pt-3 border-t border-border/40' : ''"
           >
             <p class="font-semibold text-foreground mb-1">
-              <span class="font-mono text-primary mr-1.5">{{ rule.number }}</span>{{ rule.title }}
+              <span class="font-mono text-primary mr-1.5">{{ rule.number }}</span>
+              <!-- eslint-disable-next-line vue/no-v-html -->
+              <span v-html="renderContent(rule.title)" />
             </p>
             <!-- eslint-disable-next-line vue/no-v-html -->
             <p
