@@ -8,9 +8,10 @@ docker/**/log*
 .github
 .vscode
 .yaak
-
+/docs
 /plans
 AGENTS.md
+CONTEXT.md
 DOMAIN.md
 INSTRUCTIONS.md
 opencode.json
