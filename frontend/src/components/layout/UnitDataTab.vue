@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { onMounted } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useUnitSelectionStore } from '@/stores/unitSelection'
+import { useUnitBrowserStore } from '@/stores/unitBrowser'
 import UnitBrowserPane from '@/components/layout/UnitBrowserPane.vue'
-import type { GameDatum } from '@/types/domain'
 
 const unitSelectionStore = useUnitSelectionStore()
 
 // ── Lifted selected unit state ─────────────────────────────────────────────────
+// Backed by the unit browser store so the selection (and the list pane's
+// search/filters) survive the Bottom Panel being closed and reopened.
 
-const selectedUnit = ref<GameDatum | null>(null)
+const { selectedUnit } = storeToRefs(useUnitBrowserStore())
 
 // ── Consume pending unit from GlobalSearch ────────────────────────────────────
 

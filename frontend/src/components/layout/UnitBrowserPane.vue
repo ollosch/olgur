@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { computed, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 import { refDebounced } from '@vueuse/core'
 import { ArrowLeft, GitCompare } from 'lucide-vue-next'
 import { Input } from '@/components/ui/input'
 import { SEARCH_DEBOUNCE_MS, rankMatchLower } from '@/lib/utils'
 import { unitTypeLabel, unitNation } from '@/lib/unitUtils'
 import { useContentStore } from '@/stores/content'
+import { useUnitBrowserStore } from '@/stores/unitBrowser'
 import UnitDetailCard from '@/components/layout/UnitDetailCard.vue'
 import type { GameDatum } from '@/types/domain'
 
@@ -29,13 +31,16 @@ const emit = defineEmits<{
 const contentStore = useContentStore()
 
 // ── State ────────────────────────────────────────────────────────────────────
+// Backed by a store (rather than local refs) so search/filters/selection
+// survive the panel that hosts this component being closed and reopened.
 
-const search = ref('')
+const browserStore = useUnitBrowserStore()
+const { search, activeLetter, typeFilter, nationFilter, selectedUnit } = storeToRefs(browserStore)
 const debouncedSearch = refDebounced(search, SEARCH_DEBOUNCE_MS)
-const activeLetter = ref<string | null>(null)
-const typeFilter = ref<'all' | 'vehicle' | 'ordnance'>('all')
-const nationFilter = ref<string>('all')
-const selectedUnit = ref<GameDatum | null>(props.initialUnit ?? null)
+
+if (props.initialUnit) {
+  selectedUnit.value = props.initialUnit
+}
 
 watch(() => props.initialUnit, (unit) => {
   if (unit) {
