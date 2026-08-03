@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, onMounted, ref, watch, nextTick } from 'vue'
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useAppSettingsStore } from '@/stores/appSettings'
 import { useContentStore } from '@/stores/content'
 import { useHistoryStore } from '@/stores/history'
@@ -9,6 +9,7 @@ import { useSystemStore } from '@/stores/system'
 import { useRuleDelegation } from '@/composables/useRuleDelegation'
 import { useResizablePanel } from '@/composables/useResizablePanel'
 import { useInteractionStore } from '@/stores/interaction'
+import { requestLeaveSystemConfirmation } from '@/composables/useLeaveSystemConfirm'
 import type { Rule, Module } from '@/types/domain'
 
 import LeftPanelContent from '@/components/systems/LeftPanelContent.vue'
@@ -58,10 +59,13 @@ const leftPanelStyle = computed(() => ({
 // ---------------------------------------------------------------------------
 
 async function loadSystem(id: string): Promise<void> {
-  if (systemStore.currentSystem?.id === id) {
+  const previousId = systemStore.currentSystem?.id
+
+  if (previousId === id) {
     loading.value = false
     // The system context is already loaded — this happens when the user
-    // navigated to HomeView and back to the same system. Any module
+    // navigated to HomeView and back to the same system. Its store data is
+    // intentionally kept around (see history clearing below), but any module
     // activated in the meantime still needs its rules/index/game-data fetched.
     const loaded = await contentStore.fetchMissingModules(id, systemStore.modules)
     for (const m of loaded) {
@@ -71,6 +75,13 @@ async function loadSystem(id: string): Promise<void> {
   }
 
   loading.value = true
+
+  // Genuinely switching to a different system: unload the previous one so
+  // its rule-browsing history doesn't leak into the new context. Merely
+  // passing through HomeView and back to the *same* system must not clear it.
+  if (previousId) {
+    historyStore.clearSystem(previousId)
+  }
 
   await systemStore.enterSystem(id)
 
@@ -98,9 +109,18 @@ onMounted(() => loadSystem(systemId.value))
 // Handle direct URL navigation between different systems
 watch(systemId, (newId) => loadSystem(newId))
 
-onUnmounted(() => {
-  const id = systemStore.currentSystem?.id
-  if (id) historyStore.clearSystem(id)
+// ---------------------------------------------------------------------------
+// Confirm before leaving to HomeView
+//
+// Leaving the system for HomeView is easy to trigger by accident (repeated
+// browser "back" presses). Ask for confirmation first; the rule-browsing
+// history is intentionally NOT cleared here — it is only cleared when the
+// system is actually unloaded (see loadSystem above).
+// ---------------------------------------------------------------------------
+
+onBeforeRouteLeave(async (to) => {
+  if (to.name !== 'home') return true
+  return requestLeaveSystemConfirmation()
 })
 
 // ---------------------------------------------------------------------------

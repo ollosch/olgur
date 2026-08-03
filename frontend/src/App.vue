@@ -3,6 +3,7 @@ import { useGlobalShortcuts } from '@/composables/useGlobalShortcuts'
 
 import RulePopupOverlay from '@/components/RulePopupOverlay.vue'
 import GlobalSearchOverlay from '@/components/GlobalSearchOverlay.vue'
+import LeaveSystemConfirmDialog from '@/components/systems/LeaveSystemConfirmDialog.vue'
 import 'vue-sonner/style.css'
 import { Toaster } from '@/components/ui/sonner'
 import { useAuthStore } from '@/stores/auth'
@@ -19,6 +20,7 @@ const authStore = useAuthStore()
       <Toaster />
       <RulePopupOverlay />
       <GlobalSearchOverlay />
+      <LeaveSystemConfirmDialog />
     </template>
     <template v-else>
       <div class="bg-background text-foreground flex min-h-screen items-center justify-center">
