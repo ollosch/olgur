@@ -142,6 +142,14 @@ export const useSystemStore = defineStore('system', () => {
     return result
   }
 
+  async function createVersion(systemId: string, moduleId: string): Promise<ApiResult<void>> {
+    const result = await post<void>(`/systems/${systemId}/modules/${moduleId}/versions`, {
+      version_string: `v${Date.now()}`,
+      notes: '',
+    })
+    return result
+  }
+
   return {
     // state
     systems,
@@ -166,5 +174,6 @@ export const useSystemStore = defineStore('system', () => {
     fetchModules,
     createModule,
     deleteModule,
+    createVersion,
   }
 })

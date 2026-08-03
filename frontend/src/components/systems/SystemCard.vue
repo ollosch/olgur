@@ -25,7 +25,7 @@ const systemStore = useSystemStore()
 const membershipStore = useMembershipStore()
 const { modulesBySystem, loading } = storeToRefs(systemStore)
 const { subscriptions } = storeToRefs(membershipStore)
-const { fetchModules, deleteSystem, deleteModule } = systemStore
+const { fetchModules, deleteSystem, deleteModule, createVersion } = systemStore
 const { activateModule, deactivateModule, subscribe, unsubscribe, canSubscribeToModule } = membershipStore
 
 const expanded = ref(false)
@@ -80,6 +80,10 @@ async function handleSubscribe(moduleId: string) {
 
 async function handleUnsubscribe(moduleId: string) {
   if (subscriptions.value[moduleId]) await unsubscribe(props.system.id, moduleId)
+}
+
+async function handleCreateVersion(moduleId: string) {
+  await createVersion(props.system.id, moduleId)
 }
 
 function openSystem() {
@@ -209,6 +213,15 @@ function openSystem() {
               @click="handleUnsubscribe(mod.id)"
             >
               Unsubscribe
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              class="text-xs h-6 text-muted-foreground"
+              :disabled="loading"
+              @click="handleCreateVersion(mod.id)"
+            >
+              Version
             </Button>
           </li>
         </ul>
