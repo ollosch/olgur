@@ -60,6 +60,13 @@ const leftPanelStyle = computed(() => ({
 async function loadSystem(id: string): Promise<void> {
   if (systemStore.currentSystem?.id === id) {
     loading.value = false
+    // The system context is already loaded — this happens when the user
+    // navigated to HomeView and back to the same system. Any module
+    // activated in the meantime still needs its rules/index/game-data fetched.
+    const loaded = await contentStore.fetchMissingModules(id, systemStore.modules)
+    for (const m of loaded) {
+      panelStore.expandedModuleIds.add(m.id)
+    }
     return
   }
 
