@@ -89,6 +89,7 @@ export const useAuthStore = defineStore('auth', () => {
     verifyEmail,
     initialized,
     loading,
+    registrationEnabled: import.meta.env.REGISTRATION_ENABLED === 'true',
     user,
   }
 })

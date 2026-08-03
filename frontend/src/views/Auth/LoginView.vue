@@ -76,9 +76,12 @@ const onSubmit = handleSubmit(async (values) => {
             <div v-if="errors.password">{{ errors.password }}</div>
             <Field>
               <Button :disabled="authStore.loading" type="submit"> Login </Button>
-              <FieldDescription class="text-center">
+              <FieldDescription v-if="authStore.registrationEnabled" class="text-center">
                 Don't have an account?
                 <router-link :to="{ name: 'register' }"> Sign up </router-link>
+              </FieldDescription>
+              <FieldDescription v-else class="text-center">
+                Registration is currently disabled.
               </FieldDescription>
             </Field>
           </FieldGroup>

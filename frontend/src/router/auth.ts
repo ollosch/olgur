@@ -1,17 +1,11 @@
 import LoginView from '@/views/Auth/LoginView.vue'
 
-export default [
+const authRoutes = [
   {
     path: '/login',
     name: 'login',
     meta: { requiresGuest: true },
     component: LoginView,
-  },
-  {
-    path: '/register',
-    name: 'register',
-    meta: { requiresGuest: true },
-    component: () => import('@/views/Auth/RegisterView.vue'),
   },
   {
     path: '/verify-email',
@@ -32,3 +26,14 @@ export default [
     component: () => import('@/views/Auth/ResetPasswordView.vue'),
   },
 ]
+
+if (import.meta.env.REGISTRATION_ENABLED === 'true') {
+  authRoutes.push({
+    path: '/register',
+    name: 'register',
+    meta: { requiresGuest: true },
+    component: () => import('@/views/Auth/RegisterView.vue'),
+  })
+}
+
+export default authRoutes
