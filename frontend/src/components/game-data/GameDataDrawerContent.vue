@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useContentStore } from '@/stores/content'
+import { useGameDataPanelStore } from '@/stores/gameDataPanel'
 import { SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Pin, PinOff } from 'lucide-vue-next'
@@ -35,8 +37,10 @@ const contentStore = useContentStore()
 const tables = computed(() => contentStore.allGameData.filter((d) => d.type === 'table'))
 const sops   = computed(() => contentStore.allGameData.filter((d) => d.type === 'sop'))
 
-const activeTableId = ref<string>('')
-const activeSopId   = ref<string>('')
+// Backed by a store (rather than local refs) so the active tab and each
+// SOP's expand/collapse + search state survive the drawer's Sheet being
+// closed and reopened.
+const { activeTableId, activeSopId } = storeToRefs(useGameDataPanelStore())
 
 const activeTable = computed((): string => {
   if (activeTableId.value && tables.value.some((t) => t.id === activeTableId.value)) {
@@ -186,6 +190,7 @@ function sopContent(item: GameDatum): SopContent | null {
       >
         <SopViewer
           v-if="sopContent(sop)"
+          :sop-id="sop.id"
           :content="(sopContent(sop) as SopContent)"
         />
       </TabsContent>

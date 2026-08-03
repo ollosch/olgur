@@ -2,6 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import { useSystemStore } from '@/stores/system'
 import { useMembershipStore } from '@/stores/membership'
+import { useGameDataPanelStore } from '@/stores/gameDataPanel'
 import { renderContent } from '@/lib/renderContent'
 import { toast } from 'vue-sonner'
 import ScrollArea from '@/components/ui/scroll-area/ScrollArea.vue'
@@ -57,12 +58,13 @@ export interface SopContent {
 
 // ── Props ────────────────────────────────────────────────────────────────────
 
-const props = defineProps<{ content: SopContent }>()
+const props = defineProps<{ sopId: string; content: SopContent }>()
 
 // ── Store ────────────────────────────────────────────────────────────────────
 
 const systemStore = useSystemStore()
 const membershipStore = useMembershipStore()
+const gameDataPanelStore = useGameDataPanelStore()
 
 // ── Disabled topics (persisted to membership config) ─────────────────────────
 
@@ -170,9 +172,16 @@ function isPhaseVisible(phase: SopPhase): boolean {
   return phase.steps.some(isStepVisible)
 }
 
-// ── Search ────────────────────────────────────────────────────────────────────
+// ── Persisted UI state ────────────────────────────────────────────────────────
+// Keyed by sopId in the game-data panel store so search/expand state survives
+// the drawer (Sheet) being closed and reopened, and switching between SOP tabs.
 
-const searchQuery = ref('')
+const sopState = gameDataPanelStore.getSopState(props.sopId)
+
+const searchQuery = computed({
+  get: () => sopState.searchQuery,
+  set: (value: string) => { sopState.searchQuery = value },
+})
 
 function matchesSearch(text: string): boolean {
   if (!searchQuery.value.trim()) return true
@@ -193,32 +202,36 @@ function phaseMatchesSearch(phase: SopPhase): boolean {
 
 // ── Expand / collapse ─────────────────────────────────────────────────────────
 
-const expandedPhases = ref<Set<string>>(new Set())
-const preGameExpanded = ref(false)
+const expandedPhases = sopState.expandedPhases
+
+const preGameExpanded = computed({
+  get: () => sopState.preGameExpanded,
+  set: (value: boolean) => { sopState.preGameExpanded = value },
+})
 
 function togglePhase(slug: string): void {
-  if (expandedPhases.value.has(slug)) {
-    expandedPhases.value.delete(slug)
+  if (expandedPhases.has(slug)) {
+    expandedPhases.delete(slug)
   } else {
-    expandedPhases.value.add(slug)
+    expandedPhases.add(slug)
   }
 }
 
 function isPhaseExpanded(phase: SopPhase): boolean {
   if (searchQuery.value.trim()) return phaseMatchesSearch(phase)
-  return expandedPhases.value.has(phase.slug)
+  return expandedPhases.has(phase.slug)
 }
 
 // ── Topics popover ────────────────────────────────────────────────────────────
 
 const topicsOpen = ref(false)
-const expandedGroups = ref<Set<string>>(new Set())
+const expandedGroups = sopState.expandedGroups
 
 function toggleGroupExpand(slug: string): void {
-  if (expandedGroups.value.has(slug)) {
-    expandedGroups.value.delete(slug)
+  if (expandedGroups.has(slug)) {
+    expandedGroups.delete(slug)
   } else {
-    expandedGroups.value.add(slug)
+    expandedGroups.add(slug)
   }
 }
 

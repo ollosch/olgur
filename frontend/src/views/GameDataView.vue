@@ -61,6 +61,7 @@ const content = computed((): TableContent | null => {
         />
         <SopViewer
           v-else-if="gameDatum.type === 'sop'"
+          :sop-id="gameDatum.id"
           :content="(content as SopContent)"
         />
         <div v-else class="text-sm text-muted-foreground italic">
