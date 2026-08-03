@@ -43,6 +43,8 @@ return [
 
     'debug' => (bool) env('APP_DEBUG', false),
 
+    'registration_enabled' => (bool) env('REGISTRATION_ENABLED', false),
+
     /*
     |--------------------------------------------------------------------------
     | Application URL

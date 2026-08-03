@@ -11,6 +11,16 @@ use function Pest\Laravel\assertAuthenticated;
 use function Pest\Laravel\assertDatabaseHas;
 use function Pest\Laravel\postJson;
 
+beforeEach(function (): void {
+    config()->set('app.registration_enabled', true);
+});
+
+test('registration is unavailable when disabled', function (): void {
+    config()->set('app.registration_enabled', false);
+
+    postJson('/api/register')->assertNotFound();
+});
+
 test('a guest can register with valid data', function (): void {
     $response = postJson('/api/register', [
         'name' => 'Jane Doe',
