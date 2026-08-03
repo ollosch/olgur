@@ -60,18 +60,18 @@ const childRules = computed((): Rule[] => props.childrenMap.get(props.rule.id) ?
 <template>
   <!-- Rule header -->
   <div class="flex items-baseline gap-3 group">
-    <component
-      :is="headingTag(depth)"
-      :class="[headingClass(depth), 'flex-1 min-w-0']"
-    >
+    <component :is="headingTag(depth)" :class="[headingClass(depth), 'flex-1 min-w-0']">
       <span
         class="font-mono text-primary pr-1 cursor-pointer hover:underline"
         @click="emit('selectRule', rule)"
-      >{{ rule.number }}</span>
+        >{{ rule.number }}</span
+      >
       <!-- eslint-disable-next-line vue/no-v-html -->
       <span v-html="renderContent(rule.title)" />
     </component>
-    <div class="flex items-center gap-1 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+    <div
+      class="flex items-center gap-1 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+    >
       <button
         v-if="canEdit"
         class="p-1 rounded hover:bg-muted/40 transition-colors"
@@ -90,13 +90,19 @@ const childRules = computed((): Rule[] => props.childrenMap.get(props.rule.id) ?
       <button
         class="p-1 rounded hover:bg-muted/40 transition-colors"
         :title="bookmarkStore.isBookmarked('rule', rule.id) ? 'Remove bookmark' : 'Bookmark rule'"
-        @click="bookmarkStore.isBookmarked('rule', rule.id)
-          ? bookmarkStore.removeBookmark('rule', rule.id)
-          : bookmarkStore.addBookmark('rule', rule.id)"
+        @click="
+          bookmarkStore.isBookmarked('rule', rule.id)
+            ? bookmarkStore.removeBookmark('rule', rule.id)
+            : bookmarkStore.addBookmark('rule', rule.id)
+        "
       >
         <Star
           class="w-3.5 h-3.5 transition-colors"
-          :class="bookmarkStore.isBookmarked('rule', rule.id) ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'"
+          :class="
+            bookmarkStore.isBookmarked('rule', rule.id)
+              ? 'text-yellow-400 fill-yellow-400'
+              : 'text-muted-foreground'
+          "
         />
       </button>
     </div>

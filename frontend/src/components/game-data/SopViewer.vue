@@ -68,9 +68,7 @@ const gameDataPanelStore = useGameDataPanelStore()
 
 // ── Disabled topics (persisted to membership config) ─────────────────────────
 
-const localDisabled = ref<string[]>(
-  membershipStore.membership?.config?.ignored_tags ?? [],
-)
+const localDisabled = ref<string[]>(membershipStore.membership?.config?.ignored_tags ?? [])
 
 watch(
   () => membershipStore.membership?.config?.ignored_tags,
@@ -145,10 +143,7 @@ function visibleText(segment: SopSegment): string {
     if (isRunVisible(run)) {
       if (prevHidden && parts.length > 0 && run.text.length > 0) {
         const tail = parts[parts.length - 1] ?? ''
-        const needsSpace =
-          tail.length > 0 &&
-          !tail.endsWith(' ') &&
-          !/^[,;.!?):]/.test(run.text)
+        const needsSpace = tail.length > 0 && !tail.endsWith(' ') && !/^[,;.!?):]/.test(run.text)
         if (needsSpace) parts.push(' ')
       }
       parts.push(run.text)
@@ -180,7 +175,9 @@ const sopState = gameDataPanelStore.getSopState(props.sopId)
 
 const searchQuery = computed({
   get: () => sopState.searchQuery,
-  set: (value: string) => { sopState.searchQuery = value },
+  set: (value: string) => {
+    sopState.searchQuery = value
+  },
 })
 
 function matchesSearch(text: string): boolean {
@@ -206,7 +203,9 @@ const expandedPhases = sopState.expandedPhases
 
 const preGameExpanded = computed({
   get: () => sopState.preGameExpanded,
-  set: (value: boolean) => { sopState.preGameExpanded = value },
+  set: (value: boolean) => {
+    sopState.preGameExpanded = value
+  },
 })
 
 function togglePhase(slug: string): void {
@@ -280,13 +279,12 @@ const visiblePreGameSegments = computed(() =>
           class="absolute right-0 top-full mt-1 z-50 w-64 rounded-md border border-border bg-popover shadow-md"
         >
           <!-- Backdrop -->
-          <div
-            class="fixed inset-0 z-40"
-            @click="topicsOpen = false"
-          />
+          <div class="fixed inset-0 z-40" @click="topicsOpen = false" />
           <div class="relative z-50 p-2 space-y-1">
             <div class="flex items-center justify-between px-1 pb-1 border-b border-border">
-              <span class="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Topics</span>
+              <span class="text-xs font-semibold text-muted-foreground uppercase tracking-wide"
+                >Topics</span
+              >
               <button
                 class="text-xs text-muted-foreground hover:text-foreground underline"
                 @click="resetTopics"
@@ -297,12 +295,11 @@ const visiblePreGameSegments = computed(() =>
 
             <ScrollArea class="max-h-72 overflow-y-auto">
               <div class="space-y-0.5 py-1">
-                <div
-                  v-for="group in props.content.topics.groups"
-                  :key="group.slug"
-                >
+                <div v-for="group in props.content.topics.groups" :key="group.slug">
                   <!-- Group row -->
-                  <div class="flex items-center gap-2 px-1 py-1 rounded hover:bg-accent/50 cursor-pointer">
+                  <div
+                    class="flex items-center gap-2 px-1 py-1 rounded hover:bg-accent/50 cursor-pointer"
+                  >
                     <!-- Checkbox -->
                     <input
                       type="checkbox"
@@ -311,10 +308,7 @@ const visiblePreGameSegments = computed(() =>
                       :indeterminate="isGroupPartial(group)"
                       @change="toggleGroup(group)"
                     />
-                    <span
-                      class="flex-1 text-sm select-none"
-                      @click="toggleGroup(group)"
-                    >
+                    <span class="flex-1 text-sm select-none" @click="toggleGroup(group)">
                       {{ group.label }}
                       <span class="text-xs text-muted-foreground ml-1">{{ group.ref }}</span>
                     </span>
@@ -399,7 +393,9 @@ const visiblePreGameSegments = computed(() =>
         >
           <path d="m9 18 6-6-6-6" />
         </svg>
-        <span class="text-sm font-semibold text-foreground uppercase tracking-wide">Pre-Game Sequence</span>
+        <span class="text-sm font-semibold text-foreground uppercase tracking-wide"
+          >Pre-Game Sequence</span
+        >
       </button>
 
       <div v-if="preGameExpanded || searchQuery.trim()" class="px-4 py-3 space-y-1.5">
@@ -411,16 +407,21 @@ const visiblePreGameSegments = computed(() =>
           <span
             v-if="segment.mpath"
             class="shrink-0 font-mono text-xs text-muted-foreground w-10 text-right pt-0.5"
-          >{{ segment.mpath }}</span>
+            >{{ segment.mpath }}</span
+          >
           <span
             v-if="segment.player"
             class="shrink-0 text-[10px] font-bold rounded px-1 py-0.5 leading-none"
             :class="{
-              'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400': segment.player === 'A',
-              'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400': segment.player === 'D',
-              'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400': segment.player === 'B',
+              'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400':
+                segment.player === 'A',
+              'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400':
+                segment.player === 'D',
+              'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400':
+                segment.player === 'B',
             }"
-          >{{ segment.player }}</span>
+            >{{ segment.player }}</span
+          >
           <!-- eslint-disable-next-line vue/no-v-html -->
           <span class="text-foreground/90" v-html="renderContent(visibleText(segment))" />
         </div>
@@ -452,46 +453,47 @@ const visiblePreGameSegments = computed(() =>
         <span class="text-sm font-semibold text-foreground uppercase tracking-wide">
           {{ phase.label }}
         </span>
-        <span
-          v-if="phase.sniper"
-          class="text-xs text-muted-foreground"
-          title="Sniper check"
-        >†</span>
+        <span v-if="phase.sniper" class="text-xs text-muted-foreground" title="Sniper check"
+          >†</span
+        >
       </button>
 
       <!-- Steps -->
       <div v-if="isPhaseExpanded(phase)" class="divide-y divide-border">
-        <template
-          v-for="step in phase.steps.filter(isStepVisible)"
-          :key="step.slug"
-        >
-          <div
-            v-if="stepMatchesSearch(step)"
-            class="px-4 py-3"
-          >
-            <p class="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+        <template v-for="step in phase.steps.filter(isStepVisible)" :key="step.slug">
+          <div v-if="stepMatchesSearch(step)" class="px-4 py-3">
+            <p
+              class="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2"
+            >
               {{ step.label }}
             </p>
 
             <div class="space-y-1.5">
               <div
-                v-for="(segment, si) in step.segments.filter(seg => isSegmentVisible(seg) && segmentMatchesSearch(seg))"
+                v-for="(segment, si) in step.segments.filter(
+                  (seg) => isSegmentVisible(seg) && segmentMatchesSearch(seg),
+                )"
                 :key="si"
                 class="flex items-start gap-2 text-sm"
               >
                 <span
                   v-if="segment.mpath"
                   class="shrink-0 font-mono text-xs text-muted-foreground w-10 text-right pt-0.5"
-                >{{ segment.mpath }}</span>
+                  >{{ segment.mpath }}</span
+                >
                 <span
                   v-if="segment.player"
                   class="shrink-0 text-[10px] font-bold rounded px-1 py-0.5 leading-none mt-0.5"
                   :class="{
-                    'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400': segment.player === 'A',
-                    'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400': segment.player === 'D',
-                    'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400': segment.player === 'B',
+                    'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400':
+                      segment.player === 'A',
+                    'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400':
+                      segment.player === 'D',
+                    'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400':
+                      segment.player === 'B',
                   }"
-                >{{ segment.player }}</span>
+                  >{{ segment.player }}</span
+                >
                 <!-- eslint-disable-next-line vue/no-v-html -->
                 <span class="text-foreground/90" v-html="renderContent(visibleText(segment))" />
               </div>
@@ -502,7 +504,10 @@ const visiblePreGameSegments = computed(() =>
     </div>
 
     <p
-      v-if="props.content.phases.filter(isPhaseVisible).length === 0 && visiblePreGameSegments.length === 0"
+      v-if="
+        props.content.phases.filter(isPhaseVisible).length === 0 &&
+        visiblePreGameSegments.length === 0
+      "
       class="text-sm text-muted-foreground italic"
     >
       No sequence of play data available.

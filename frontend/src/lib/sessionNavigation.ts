@@ -8,9 +8,7 @@ export function redirectAfterLogin(
   router: Router,
   route: Pick<RouteLocationNormalized, 'query'>,
 ): void {
-  router.push(
-    typeof route.query.redirect === 'string' ? route.query.redirect : { name: 'home' },
-  )
+  router.push(typeof route.query.redirect === 'string' ? route.query.redirect : { name: 'home' })
 }
 
 /**

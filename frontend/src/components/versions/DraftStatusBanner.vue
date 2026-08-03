@@ -18,8 +18,7 @@ const { isDesigner, hasReleasedVersion, displayVersion, revision, versionString 
     <template v-if="hasReleasedVersion">
       <span aria-hidden="true" class="text-zinc-600">·</span>
       <span v-if="revision > 0">
-        Current released version: v{{ versionString }}
-        ({{ revision }}
+        Current released version: v{{ versionString }} ({{ revision }}
         editorial
         {{ revision === 1 ? 'correction' : 'corrections' }}
         applied)

@@ -154,16 +154,20 @@ watch(
 // ---------------------------------------------------------------------------
 
 const onSubmit = handleSubmit(async (values) => {
-    const result = await contentStore.updateIndexEntry(systemStore.currentSystem?.id ?? '', props.entry, {
+  const result = await contentStore.updateIndexEntry(
+    systemStore.currentSystem?.id ?? '',
+    props.entry,
+    {
       term: values.term,
-    definition: values.definition,
-    notes: values.notes,
-    parent_id: values.parent_id ?? null,
+      definition: values.definition,
+      notes: values.notes,
+      parent_id: values.parent_id ?? null,
       relations: {
         rule_refs: values.rule_refs ?? [],
         see_also: values.see_also ?? [],
       },
-  })
+    },
+  )
 
   if (!result.ok) {
     setErrors(result.errors as Partial<Record<keyof FormValues, string>>)
@@ -179,7 +183,8 @@ const onSubmit = handleSubmit(async (values) => {
     <DialogContent class="overflow-y-auto max-h-[calc(90dvh-12rem)] sm:max-h-[95dvh]">
       <DialogHeader>
         <DialogTitle>Edit Index Entry</DialogTitle>
-        <DialogDescription class="sr-only">Edit the term, parent, definition, notes, rule references and see also links
+        <DialogDescription class="sr-only"
+          >Edit the term, parent, definition, notes, rule references and see also links
         </DialogDescription>
       </DialogHeader>
 
@@ -197,21 +202,33 @@ const onSubmit = handleSubmit(async (values) => {
             <FieldLabel>Parent</FieldLabel>
 
             <!-- Selected parent display -->
-            <div v-if="selectedParent"
-              class="flex items-center gap-2 rounded-md border border-input bg-muted/40 px-3 py-2 text-sm">
+            <div
+              v-if="selectedParent"
+              class="flex items-center gap-2 rounded-md border border-input bg-muted/40 px-3 py-2 text-sm"
+            >
               <span class="text-foreground/80 min-w-0 truncate">{{ selectedParent.term }}</span>
-              <button type="button"
+              <button
+                type="button"
                 class="ml-auto text-muted-foreground hover:text-foreground transition-colors shrink-0"
-                title="Clear parent" @click="clearParent">
+                title="Clear parent"
+                @click="clearParent"
+              >
                 ✕
               </button>
             </div>
 
             <!-- Search input + floating dropdown -->
-            <IndexEntrySearchInput v-else :module-id="props.entry.module_id" :excluded-ids="excludedParentIds"
-              :root-only="true" @select="selectParent" />
+            <IndexEntrySearchInput
+              v-else
+              :module-id="props.entry.module_id"
+              :excluded-ids="excludedParentIds"
+              :root-only="true"
+              @select="selectParent"
+            />
 
-            <div v-if="errors.parent_id" class="text-destructive text-sm">{{ errors.parent_id }}</div>
+            <div v-if="errors.parent_id" class="text-destructive text-sm">
+              {{ errors.parent_id }}
+            </div>
           </Field>
 
           <!-- Rule refs -->
@@ -219,20 +236,33 @@ const onSubmit = handleSubmit(async (values) => {
             <FieldLabel>Rule References</FieldLabel>
 
             <!-- Chips -->
-            <TagsInput v-if="(ruleRefs ?? []).length" :model-value="ruleRefs ?? []" :add-on-keys="[]"
-              @update:model-value="setFieldValue('rule_refs', $event as string[])">
-              <TagsInputItem v-for="ref in (ruleRefs ?? [])" :key="ref" :value="ref"
-                class="h-auto rounded bg-muted px-2 py-0.5 font-mono text-xs text-primary">
+            <TagsInput
+              v-if="(ruleRefs ?? []).length"
+              :model-value="ruleRefs ?? []"
+              :add-on-keys="[]"
+              @update:model-value="setFieldValue('rule_refs', $event as string[])"
+            >
+              <TagsInputItem
+                v-for="ref in ruleRefs ?? []"
+                :key="ref"
+                :value="ref"
+                class="h-auto rounded bg-muted px-2 py-0.5 font-mono text-xs text-primary"
+              >
                 <TagsInputItemText />
                 <TagsInputItemDelete />
               </TagsInputItem>
             </TagsInput>
 
             <!-- Search input + floating dropdown -->
-            <RuleSearchInput :module-id="props.entry.module_id" :excluded-numbers="excludedRuleNumbers"
-              @select="addRuleRef" />
+            <RuleSearchInput
+              :module-id="props.entry.module_id"
+              :excluded-numbers="excludedRuleNumbers"
+              @select="addRuleRef"
+            />
 
-            <div v-if="errors.rule_refs" class="text-destructive text-sm">{{ errors.rule_refs }}</div>
+            <div v-if="errors.rule_refs" class="text-destructive text-sm">
+              {{ errors.rule_refs }}
+            </div>
           </Field>
 
           <!-- See also -->
@@ -240,18 +270,31 @@ const onSubmit = handleSubmit(async (values) => {
             <FieldLabel>See Also</FieldLabel>
 
             <!-- Chips -->
-            <TagsInput v-if="(seeAlso ?? []).length" :model-value="seeAlso ?? []" :add-on-keys="[]"
-              @update:model-value="setFieldValue('see_also', $event as string[])">
-              <TagsInputItem v-for="t in (seeAlso ?? [])" :key="t" :value="t"
-                class="h-auto rounded bg-muted px-2 py-0.5 text-xs italic text-foreground/80">
+            <TagsInput
+              v-if="(seeAlso ?? []).length"
+              :model-value="seeAlso ?? []"
+              :add-on-keys="[]"
+              @update:model-value="setFieldValue('see_also', $event as string[])"
+            >
+              <TagsInputItem
+                v-for="t in seeAlso ?? []"
+                :key="t"
+                :value="t"
+                class="h-auto rounded bg-muted px-2 py-0.5 text-xs italic text-foreground/80"
+              >
                 <TagsInputItemText />
                 <TagsInputItemDelete />
               </TagsInputItem>
             </TagsInput>
 
             <!-- Search input + floating dropdown -->
-            <IndexEntrySearchInput :module-id="props.entry.module_id" :excluded-ids="excludedSeeAlsoIds"
-              :excluded-terms="excludedSeeAlsoTerms" :root-only="true" @select="addSeeAlso" />
+            <IndexEntrySearchInput
+              :module-id="props.entry.module_id"
+              :excluded-ids="excludedSeeAlsoIds"
+              :excluded-terms="excludedSeeAlsoTerms"
+              :root-only="true"
+              @select="addSeeAlso"
+            />
 
             <div v-if="errors.see_also" class="text-destructive text-sm">{{ errors.see_also }}</div>
           </Field>
@@ -259,17 +302,30 @@ const onSubmit = handleSubmit(async (values) => {
           <!-- Definition -->
           <Field>
             <FieldLabel for="entry-definition">Definition</FieldLabel>
-            <textarea id="entry-definition" v-model="definition" v-bind="definitionAttrs" rows="4"
+            <textarea
+              id="entry-definition"
+              v-model="definition"
+              v-bind="definitionAttrs"
+              rows="4"
               placeholder="Definition…"
-              class="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex min-h-[60px] w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50" />
-            <div v-if="errors.definition" class="text-destructive text-sm">{{ errors.definition }}</div>
+              class="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex min-h-[60px] w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
+            />
+            <div v-if="errors.definition" class="text-destructive text-sm">
+              {{ errors.definition }}
+            </div>
           </Field>
 
           <!-- Notes -->
           <Field>
             <FieldLabel for="entry-notes">Notes</FieldLabel>
-            <textarea id="entry-notes" v-model="notes" v-bind="notesAttrs" rows="3" placeholder="Notes…"
-              class="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex min-h-[60px] w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50" />
+            <textarea
+              id="entry-notes"
+              v-model="notes"
+              v-bind="notesAttrs"
+              rows="3"
+              placeholder="Notes…"
+              class="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex min-h-[60px] w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
+            />
             <div v-if="errors.notes" class="text-destructive text-sm">{{ errors.notes }}</div>
           </Field>
         </FieldGroup>

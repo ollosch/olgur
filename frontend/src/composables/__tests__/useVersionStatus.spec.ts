@@ -53,14 +53,20 @@ describe('useVersionStatus', () => {
 
     it('returns "v1.4" when revision is 0', () => {
       const contentStore = useContentStore()
-      contentStore.manifestByModule['mod1'] = makeManifestEntry({ version_string: '1.4', revision: 0 })
+      contentStore.manifestByModule['mod1'] = makeManifestEntry({
+        version_string: '1.4',
+        revision: 0,
+      })
       const { displayVersion } = useVersionStatus('mod1')
       expect(displayVersion.value).toBe('v1.4')
     })
 
     it('returns "v1.4 rev3" when revision is 3', () => {
       const contentStore = useContentStore()
-      contentStore.manifestByModule['mod1'] = makeManifestEntry({ version_string: '1.4', revision: 3 })
+      contentStore.manifestByModule['mod1'] = makeManifestEntry({
+        version_string: '1.4',
+        revision: 3,
+      })
       const { displayVersion } = useVersionStatus('mod1')
       expect(displayVersion.value).toBe('v1.4 rev3')
     })

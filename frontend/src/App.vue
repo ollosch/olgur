@@ -24,7 +24,9 @@ const authStore = useAuthStore()
     </template>
     <template v-else>
       <div class="bg-background text-foreground flex min-h-screen items-center justify-center">
-        <div class="h-8 w-8 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
+        <div
+          class="h-8 w-8 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent"
+        />
       </div>
     </template>
   </div>

@@ -6,49 +6,50 @@ import HomeView from '@/views/HomeView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [...authRoutes,
-  {
-    name: 'home',
-    path: '/',
-    meta: { requiresAuth: true },
-    component: HomeView,
-  },
-  {
-    name: 'profile',
-    path: '/profile',
-    meta: { requiresAuth: true },
-    component: () => import('@/views/UserProfileView.vue'),
-  },
-  {
-    name: 'settings',
-    path: '/settings',
-    meta: { requiresAuth: true },
-    component: () => import('@/views/AppSettingsView.vue'),
-  },
-  {
-    name: 'system',
-    path: '/systems/:systemId',
-    meta: { requiresAuth: true },
-    component: () => import('@/views/SystemView.vue'),
-    children: [
-      // Rule detail view
-      {
-        path: 'rule/:ruleId',
-        name: 'system-rule',
-        component: () => import('@/views/RuleDetailView.vue'),
-      },
-      // Game data (tables, SOPs, ordnance, vehicles) — deep link from search
-      {
-        path: 'game-data/:gameDatumId',
-        name: 'system-game-datum',
-        component: () => import('@/views/GameDataView.vue'),
-      },
-    ],
-  },
-  {
-    path: '/:pathMatch(.*)*',
-    redirect: { name: 'home' },
-  },
+  routes: [
+    ...authRoutes,
+    {
+      name: 'home',
+      path: '/',
+      meta: { requiresAuth: true },
+      component: HomeView,
+    },
+    {
+      name: 'profile',
+      path: '/profile',
+      meta: { requiresAuth: true },
+      component: () => import('@/views/UserProfileView.vue'),
+    },
+    {
+      name: 'settings',
+      path: '/settings',
+      meta: { requiresAuth: true },
+      component: () => import('@/views/AppSettingsView.vue'),
+    },
+    {
+      name: 'system',
+      path: '/systems/:systemId',
+      meta: { requiresAuth: true },
+      component: () => import('@/views/SystemView.vue'),
+      children: [
+        // Rule detail view
+        {
+          path: 'rule/:ruleId',
+          name: 'system-rule',
+          component: () => import('@/views/RuleDetailView.vue'),
+        },
+        // Game data (tables, SOPs, ordnance, vehicles) — deep link from search
+        {
+          path: 'game-data/:gameDatumId',
+          name: 'system-game-datum',
+          component: () => import('@/views/GameDataView.vue'),
+        },
+      ],
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      redirect: { name: 'home' },
+    },
   ],
 })
 

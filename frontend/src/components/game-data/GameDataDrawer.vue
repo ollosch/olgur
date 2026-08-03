@@ -76,16 +76,8 @@ const pinnedStyle = computed(() => ({
   </div>
 
   <!-- ── Floating sheet (unpinned) ─────────────────────────────────────────── -->
-  <Sheet
-    v-else
-    :open="props.open"
-    @update:open="emit('update:open', $event)"
-  >
-    <SheetContent
-      side="right"
-      class="sm:max-w-none flex flex-col p-0 gap-0"
-      :style="drawerStyle"
-    >
+  <Sheet v-else :open="props.open" @update:open="emit('update:open', $event)">
+    <SheetContent side="right" class="sm:max-w-none flex flex-col p-0 gap-0" :style="drawerStyle">
       <GameDataDrawerContent
         :mode="props.mode"
         :is-pinned="false"

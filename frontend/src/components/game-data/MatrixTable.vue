@@ -79,10 +79,7 @@ function maxAnnotationRows(columns: MatrixColumn[]): number {
       <template v-if="maxAnnotationRows(props.content.columns) > 0">
         <thead>
           <!-- One row per annotation slot -->
-          <tr
-            v-for="i in maxAnnotationRows(props.content.columns)"
-            :key="`ann-${i}`"
-          >
+          <tr v-for="i in maxAnnotationRows(props.content.columns)" :key="`ann-${i}`">
             <!-- row-header cell -->
             <th
               v-if="i === 1"
@@ -92,10 +89,7 @@ function maxAnnotationRows(columns: MatrixColumn[]): number {
               {{ props.content.row_header ?? '' }}
             </th>
             <!-- empty spacer if not first annotation row but no rowspan slot -->
-            <th
-              v-else-if="false"
-              class="border border-border"
-            />
+            <th v-else-if="false" class="border border-border" />
 
             <!-- annotation cell per column -->
             <th
@@ -147,14 +141,19 @@ function maxAnnotationRows(columns: MatrixColumn[]): number {
       <tbody>
         <tr v-for="row in props.content.rows" :key="row.id">
           <!-- Row label -->
-          <th class="border border-border px-2 py-1 text-center font-semibold text-foreground whitespace-nowrap">
+          <th
+            class="border border-border px-2 py-1 text-center font-semibold text-foreground whitespace-nowrap"
+          >
             {{ row.label }}
           </th>
           <!-- Cells -->
           <td
             v-for="col in props.content.columns"
             :key="col.id"
-            :class="['border border-border px-2 py-1 text-center relative', cellClass(props.content.cells[row.id]?.[col.id])]"
+            :class="[
+              'border border-border px-2 py-1 text-center relative',
+              cellClass(props.content.cells[row.id]?.[col.id]),
+            ]"
           >
             {{ props.content.cells[row.id]?.[col.id]?.value ?? '' }}
             <!-- Markers -->
@@ -174,11 +173,7 @@ function maxAnnotationRows(columns: MatrixColumn[]): number {
       v-if="props.content.footnotes && Object.keys(props.content.footnotes).length > 0"
       class="mt-3 space-y-1"
     >
-      <div
-        v-for="(fn, key) in props.content.footnotes"
-        :key="key"
-        class="flex gap-1.5 text-xs"
-      >
+      <div v-for="(fn, key) in props.content.footnotes" :key="key" class="flex gap-1.5 text-xs">
         <dt class="font-semibold text-primary shrink-0">[{{ key }}]</dt>
         <!-- eslint-disable-next-line vue/no-v-html -->
         <dd :class="footnoteClass(fn)" v-html="renderContent(fn.text)" />

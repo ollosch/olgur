@@ -71,10 +71,7 @@ function onKeyDown(e: KeyboardEvent): void {
 
 <template>
   <div>
-    <div
-      class="flex items-center gap-0.5 group"
-      :style="{ paddingLeft: `${depth * 12}px` }"
-    >
+    <div class="flex items-center gap-0.5 group" :style="{ paddingLeft: `${depth * 12}px` }">
       <!-- chevron for parent nodes -->
       <button
         v-if="hasChildren"
@@ -92,10 +89,12 @@ function onKeyDown(e: KeyboardEvent): void {
 
       <!-- label -->
       <button
-        :class="cn(
-          'flex-1 flex items-baseline gap-1.5 px-1 py-0.5 text-sm rounded text-left hover:bg-muted/30 transition-colors truncate focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
-          selectedId === rule.id ? 'text-primary bg-muted/50' : 'text-foreground/80',
-        )"
+        :class="
+          cn(
+            'flex-1 flex items-baseline gap-1.5 px-1 py-0.5 text-sm rounded text-left hover:bg-muted/30 transition-colors truncate focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+            selectedId === rule.id ? 'text-primary bg-muted/50' : 'text-foreground/80',
+          )
+        "
         tabindex="0"
         data-tree-node
         :data-rule-id="rule.id"

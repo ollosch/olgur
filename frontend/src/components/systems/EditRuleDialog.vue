@@ -141,14 +141,21 @@ const onSubmit = handleSubmit(async (values) => {
     <DialogContent class="overflow-y-auto max-h-[98dvh] sm:max-h-[95dvh]">
       <DialogHeader>
         <DialogTitle>Edit Rule</DialogTitle>
-        <DialogDescription class="sr-only">Edit the rule number, title, content and parent</DialogDescription>
+        <DialogDescription class="sr-only"
+          >Edit the rule number, title, content and parent</DialogDescription
+        >
       </DialogHeader>
 
       <form class="space-y-4" @submit.prevent="onSubmit">
         <FieldGroup>
           <Field>
             <FieldLabel for="rule-number">Number</FieldLabel>
-            <Input id="rule-number" v-model="ruleNumber" v-bind="ruleNumberAttrs" placeholder="A.1.2" />
+            <Input
+              id="rule-number"
+              v-model="ruleNumber"
+              v-bind="ruleNumberAttrs"
+              placeholder="A.1.2"
+            />
             <div v-if="errors.number" class="text-destructive text-sm">{{ errors.number }}</div>
           </Field>
 
@@ -162,23 +169,37 @@ const onSubmit = handleSubmit(async (values) => {
             <FieldLabel>Parent</FieldLabel>
 
             <!-- Selected parent display -->
-            <div v-if="selectedParent"
-              class="flex items-center gap-2 rounded-md border border-input bg-muted/40 px-3 py-2 text-sm">
+            <div
+              v-if="selectedParent"
+              class="flex items-center gap-2 rounded-md border border-input bg-muted/40 px-3 py-2 text-sm"
+            >
               <span class="font-mono text-primary">{{ selectedParent.number }}</span>
               <!-- eslint-disable-next-line vue/no-v-html -->
-              <span class="text-foreground/80 min-w-0 truncate" v-html="renderContent(selectedParent.title)" />
-              <button type="button"
+              <span
+                class="text-foreground/80 min-w-0 truncate"
+                v-html="renderContent(selectedParent.title)"
+              />
+              <button
+                type="button"
                 class="ml-auto text-muted-foreground hover:text-foreground transition-colors shrink-0"
-                title="Clear parent" @click="clearParent">
+                title="Clear parent"
+                @click="clearParent"
+              >
                 ✕
               </button>
             </div>
 
             <!-- Search input + floating dropdown -->
-            <RuleSearchInput v-else :module-id="props.rule.module_id" :excluded-ids="excludedIds"
-              @select="selectParent" />
+            <RuleSearchInput
+              v-else
+              :module-id="props.rule.module_id"
+              :excluded-ids="excludedIds"
+              @select="selectParent"
+            />
 
-            <div v-if="errors.parent_id" class="text-destructive text-sm">{{ errors.parent_id }}</div>
+            <div v-if="errors.parent_id" class="text-destructive text-sm">
+              {{ errors.parent_id }}
+            </div>
             <p class="text-muted-foreground text-xs">
               Note: changing the parent does not automatically update the rule number.
             </p>
@@ -186,15 +207,27 @@ const onSubmit = handleSubmit(async (values) => {
 
           <Field>
             <FieldLabel for="rule-content">Content</FieldLabel>
-            <textarea id="rule-content" v-model="content" v-bind="contentAttrs" rows="6" placeholder="Rule content…"
-              class="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex min-h-[80px] w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50" />
+            <textarea
+              id="rule-content"
+              v-model="content"
+              v-bind="contentAttrs"
+              rows="6"
+              placeholder="Rule content…"
+              class="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex min-h-[80px] w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
+            />
             <div v-if="errors.content" class="text-destructive text-sm">{{ errors.content }}</div>
           </Field>
 
           <Field>
             <FieldLabel for="rule-markdown">Markdown</FieldLabel>
-            <textarea id="rule-markdown" v-model="markdown" v-bind="markdownAttrs" rows="6" placeholder="Rule markdown…"
-              class="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex min-h-[80px] w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50" />
+            <textarea
+              id="rule-markdown"
+              v-model="markdown"
+              v-bind="markdownAttrs"
+              rows="6"
+              placeholder="Rule markdown…"
+              class="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex min-h-[80px] w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
+            />
             <div v-if="errors.markdown" class="text-destructive text-sm">{{ errors.markdown }}</div>
           </Field>
         </FieldGroup>

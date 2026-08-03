@@ -5,7 +5,11 @@ import { useAuthStore } from '@/stores/auth'
 import { toast } from 'vue-sonner'
 import { redirectAlreadyAuthenticated, redirectOnSessionExpiry } from '@/lib/sessionNavigation'
 
-export async function globalErrorHandler(err: unknown, instance: ComponentPublicInstance | null, info?: string) {
+export async function globalErrorHandler(
+  err: unknown,
+  instance: ComponentPublicInstance | null,
+  info?: string,
+) {
   const error = err as ApiError
 
   // Only log debug information when explicitly enabled and not running tests

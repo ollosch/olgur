@@ -20,8 +20,8 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
   const { patch } = useApi()
 
   /** Current bookmarks from the active membership config */
-  const bookmarks = computed((): BookmarkEntry[] =>
-    membershipStore.membership?.config?.bookmarks ?? [],
+  const bookmarks = computed(
+    (): BookmarkEntry[] => membershipStore.membership?.config?.bookmarks ?? [],
   )
 
   const resolvedBookmarks = computed((): ResolvedBookmark[] => {

@@ -61,7 +61,10 @@ export function useRuleDelegation(
       target.closest<HTMLElement>('[data-acronym-term]')
 
     if (!trigger) {
-      if (showTimer) { clearTimeout(showTimer); showTimer = null }
+      if (showTimer) {
+        clearTimeout(showTimer)
+        showTimer = null
+      }
       activeEl = null
       interactionStore.hide()
       return
@@ -73,7 +76,10 @@ export function useRuleDelegation(
     if (trigger === activeEl) return // still on same trigger
 
     activeEl = trigger
-    if (showTimer) { clearTimeout(showTimer); showTimer = null }
+    if (showTimer) {
+      clearTimeout(showTimer)
+      showTimer = null
+    }
 
     const rect = trigger.getBoundingClientRect()
 
@@ -86,9 +92,21 @@ export function useRuleDelegation(
           const { y, above } = popupY(rect)
           const isActive = contentStore.activeModules.some((m) => m.id === rule.module_id)
           if (!isActive) {
-            state.value = { visible: true, content: { type: 'inactive_module' }, x: popupX(rect), y, above }
+            state.value = {
+              visible: true,
+              content: { type: 'inactive_module' },
+              x: popupX(rect),
+              y,
+              above,
+            }
           } else {
-            state.value = { visible: true, content: { type: 'rule', rule }, x: popupX(rect), y, above }
+            state.value = {
+              visible: true,
+              content: { type: 'rule', rule },
+              x: popupX(rect),
+              y,
+              above,
+            }
           }
         }
       }, 150)
@@ -107,9 +125,18 @@ export function useRuleDelegation(
         const flattened = contentStore.flattenedRulesByModule.get(fromRule.module_id) ?? []
         const fromIdx = flattened.findIndex((r) => r.id === fromRule.id)
         const toIdx = flattened.findIndex((r) => r.id === toRule.id)
-        const rules = fromIdx !== -1 && toIdx >= fromIdx ? flattened.slice(fromIdx, toIdx + 1) : [fromRule, toRule]
+        const rules =
+          fromIdx !== -1 && toIdx >= fromIdx
+            ? flattened.slice(fromIdx, toIdx + 1)
+            : [fromRule, toRule]
         const { y, above } = popupY(rect)
-        state.value = { visible: true, content: { type: 'range', rules }, x: popupX(rect), y, above }
+        state.value = {
+          visible: true,
+          content: { type: 'range', rules },
+          x: popupX(rect),
+          y,
+          above,
+        }
       }, 150)
     } else if (trigger.dataset['acronymTerm'] !== undefined) {
       if (!appSettings.acronymPopups) return
@@ -119,7 +146,13 @@ export function useRuleDelegation(
         const entry = getIndexEntriesMap?.().get(term)
         if (entry) {
           const { y, above } = popupY(rect)
-          state.value = { visible: true, content: { type: 'acronym', entry }, x: popupX(rect), y, above }
+          state.value = {
+            visible: true,
+            content: { type: 'acronym', entry },
+            x: popupX(rect),
+            y,
+            above,
+          }
         }
       }, 150)
     }

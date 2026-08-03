@@ -193,16 +193,13 @@ describe('useRetrofix', () => {
 
       await applyAmendment('correction', 'Fixed a typo')
 
-      expect(mockPost).toHaveBeenCalledWith(
-        '/systems/sys1/modules/mod1/versions/v1/amendments',
-        {
-          entity_type: 'rule',
-          entity_id: 'rule1',
-          change_type: 'correction',
-          description: 'Fixed a typo',
-          content: { content: 'Fixed content' },
-        },
-      )
+      expect(mockPost).toHaveBeenCalledWith('/systems/sys1/modules/mod1/versions/v1/amendments', {
+        entity_type: 'rule',
+        entity_id: 'rule1',
+        change_type: 'correction',
+        description: 'Fixed a typo',
+        content: { content: 'Fixed content' },
+      })
     })
 
     it('converts newlines to <br> in the posted content', async () => {

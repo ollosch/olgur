@@ -35,7 +35,7 @@ const emit = defineEmits<{
 const contentStore = useContentStore()
 
 const tables = computed(() => contentStore.allGameData.filter((d) => d.type === 'table'))
-const sops   = computed(() => contentStore.allGameData.filter((d) => d.type === 'sop'))
+const sops = computed(() => contentStore.allGameData.filter((d) => d.type === 'sop'))
 
 // Backed by a store (rather than local refs) so the active tab and each
 // SOP's expand/collapse + search state survive the drawer's Sheet being
@@ -57,11 +57,11 @@ const activeSop = computed((): string => {
 })
 
 function tableContent(item: GameDatum): TableContent | null {
-  return (item.content as unknown) as TableContent
+  return item.content as unknown as TableContent
 }
 
 function sopContent(item: GameDatum): SopContent | null {
-  return (item.content as unknown) as SopContent
+  return item.content as unknown as SopContent
 }
 </script>
 
@@ -76,26 +76,32 @@ function sopContent(item: GameDatum): SopContent | null {
   <!-- Header -->
   <component
     :is="isPinned ? 'div' : SheetHeader"
-    :class="isPinned
-      ? 'shrink-0 border-b border-border px-4 flex-row items-center gap-0 h-[53px] flex'
-      : 'shrink-0 border-b border-border px-4 py-0 flex-row items-center gap-0 space-y-0 h-[53px]'"
+    :class="
+      isPinned
+        ? 'shrink-0 border-b border-border px-4 flex-row items-center gap-0 h-[53px] flex'
+        : 'shrink-0 border-b border-border px-4 py-0 flex-row items-center gap-0 space-y-0 h-[53px]'
+    "
   >
     <!-- Mode tabs -->
     <div class="flex items-center gap-1">
       <button
-        :class="['px-3 h-[53px] text-xs font-medium border-b-2 transition-colors',
-                 props.mode === 'tables'
-                   ? 'border-primary text-foreground'
-                   : 'border-transparent text-muted-foreground hover:text-foreground']"
+        :class="[
+          'px-3 h-[53px] text-xs font-medium border-b-2 transition-colors',
+          props.mode === 'tables'
+            ? 'border-primary text-foreground'
+            : 'border-transparent text-muted-foreground hover:text-foreground',
+        ]"
         @click="emit('update:mode', 'tables')"
       >
         Tables
       </button>
       <button
-        :class="['px-3 h-[53px] text-xs font-medium border-b-2 transition-colors',
-                 props.mode === 'sop'
-                   ? 'border-primary text-foreground'
-                   : 'border-transparent text-muted-foreground hover:text-foreground']"
+        :class="[
+          'px-3 h-[53px] text-xs font-medium border-b-2 transition-colors',
+          props.mode === 'sop'
+            ? 'border-primary text-foreground'
+            : 'border-transparent text-muted-foreground hover:text-foreground',
+        ]"
         @click="emit('update:mode', 'sop')"
       >
         SOP
@@ -111,23 +117,30 @@ function sopContent(item: GameDatum): SopContent | null {
       <PinOff v-if="isPinned" class="w-3.5 h-3.5" />
       <Pin v-else class="w-3.5 h-3.5" />
     </button>
-    <SheetTitle v-if="!isPinned" class="sr-only">
-      Game Data
-    </SheetTitle>
+    <SheetTitle v-if="!isPinned" class="sr-only"> Game Data </SheetTitle>
   </component>
 
   <!-- Tables pane -->
   <div v-if="props.mode === 'tables'" class="flex flex-col flex-1 overflow-hidden">
-    <div v-if="tables.length === 0" class="flex-1 flex items-center justify-center text-sm text-muted-foreground">
+    <div
+      v-if="tables.length === 0"
+      class="flex-1 flex items-center justify-center text-sm text-muted-foreground"
+    >
       No tables available.
     </div>
     <Tabs
       v-else
       :model-value="activeTable"
       class="flex flex-col flex-1 overflow-hidden"
-      @update:model-value="(v) => { activeTableId = v as string }"
+      @update:model-value="
+        (v) => {
+          activeTableId = v as string
+        }
+      "
     >
-      <TabsList class="shrink-0 w-full rounded-none border-b border-border justify-start px-2 gap-0.5 h-9 overflow-x-auto flex-nowrap">
+      <TabsList
+        class="shrink-0 w-full rounded-none border-b border-border justify-start px-2 gap-0.5 h-9 overflow-x-auto flex-nowrap"
+      >
         <TabsTrigger
           v-for="table in tables"
           :key="table.id"
@@ -146,15 +159,15 @@ function sopContent(item: GameDatum): SopContent | null {
         <template v-if="tableContent(table)">
           <MatrixTable
             v-if="tableContent(table)!.kind === 'matrix'"
-            :content="(tableContent(table) as MatrixContent)"
+            :content="tableContent(table) as MatrixContent"
           />
           <AttributeTable
             v-else-if="tableContent(table)!.kind === 'attribute_table'"
-            :content="(tableContent(table) as AttributeTableContent)"
+            :content="tableContent(table) as AttributeTableContent"
           />
           <ModifierList
             v-else-if="tableContent(table)!.kind === 'modifier_list'"
-            :content="(tableContent(table) as ModifierListContent)"
+            :content="tableContent(table) as ModifierListContent"
           />
         </template>
       </TabsContent>
@@ -163,16 +176,25 @@ function sopContent(item: GameDatum): SopContent | null {
 
   <!-- SOP pane -->
   <div v-else-if="props.mode === 'sop'" class="flex flex-col flex-1 overflow-hidden">
-    <div v-if="sops.length === 0" class="flex-1 flex items-center justify-center text-sm text-muted-foreground">
+    <div
+      v-if="sops.length === 0"
+      class="flex-1 flex items-center justify-center text-sm text-muted-foreground"
+    >
       No sequence of play data available.
     </div>
     <Tabs
       v-else
       :model-value="activeSop"
       class="flex flex-col flex-1 overflow-hidden"
-      @update:model-value="(v) => { activeSopId = v as string }"
+      @update:model-value="
+        (v) => {
+          activeSopId = v as string
+        }
+      "
     >
-      <TabsList class="shrink-0 w-full rounded-none border-b border-border justify-start px-2 gap-0.5 h-9 overflow-x-auto flex-nowrap">
+      <TabsList
+        class="shrink-0 w-full rounded-none border-b border-border justify-start px-2 gap-0.5 h-9 overflow-x-auto flex-nowrap"
+      >
         <TabsTrigger
           v-for="sop in sops"
           :key="sop.id"
@@ -191,7 +213,7 @@ function sopContent(item: GameDatum): SopContent | null {
         <SopViewer
           v-if="sopContent(sop)"
           :sop-id="sop.id"
-          :content="(sopContent(sop) as SopContent)"
+          :content="sopContent(sop) as SopContent"
         />
       </TabsContent>
     </Tabs>

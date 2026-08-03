@@ -110,7 +110,10 @@ describe('useAuthStore', () => {
         password_confirmation: 'secret123',
       })
 
-      expect(mockPost).toHaveBeenCalledWith('/register', expect.objectContaining({ email: 'a@b.com' }))
+      expect(mockPost).toHaveBeenCalledWith(
+        '/register',
+        expect.objectContaining({ email: 'a@b.com' }),
+      )
       expect(auth.user).toEqual(mockUser)
     })
 

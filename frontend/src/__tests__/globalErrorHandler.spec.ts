@@ -58,9 +58,7 @@ describe('globalErrorHandler', () => {
     it('shows a session-expiry toast when the user was authenticated', async () => {
       mockUser.value = { id: '1', name: 'Alice' }
       await globalErrorHandler({ type: 'auth', message: 'Unauthenticated.' }, null)
-      expect(mockToastError).toHaveBeenCalledWith(
-        'Your session has expired. Please log in again.',
-      )
+      expect(mockToastError).toHaveBeenCalledWith('Your session has expired. Please log in again.')
     })
 
     it('does not show a toast when the user was not authenticated', async () => {

@@ -68,12 +68,7 @@ function goBack(): void {
               </Field>
               <Field>
                 <FieldLabel>Email</FieldLabel>
-                <Input
-                  v-model="email"
-                  v-bind="emailAttrs"
-                  type="email"
-                  autocomplete="email"
-                />
+                <Input v-model="email" v-bind="emailAttrs" type="email" autocomplete="email" />
               </Field>
             </FieldGroup>
 

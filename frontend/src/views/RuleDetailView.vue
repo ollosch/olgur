@@ -94,7 +94,7 @@ const rulesInRange = computed((): Rule[] => {
 // ---------------------------------------------------------------------------
 
 interface BreadcrumbSegment {
-  label: string   // the partial number up to this point, e.g. "A.11.2"
+  label: string // the partial number up to this point, e.g. "A.11.2"
   rule: Rule | null
   isCurrent: boolean
 }
@@ -142,12 +142,10 @@ watch(ruleId, () => {
 
 <template>
   <div ref="scrollEl" class="overflow-auto p-6 h-full">
-
     <!-- ------------------------------------------------------------------ -->
     <!-- Range mode                                                           -->
     <!-- ------------------------------------------------------------------ -->
     <div v-if="isRangeMode">
-
       <!-- Nav bar -->
       <div class="flex items-center justify-between mb-4">
         <Button
@@ -160,7 +158,10 @@ watch(ruleId, () => {
           Back
         </Button>
 
-        <span v-if="rangeValidation.valid && selectedRule && toRule" class="font-mono text-xs text-muted-foreground/60 mx-2">
+        <span
+          v-if="rangeValidation.valid && selectedRule && toRule"
+          class="font-mono text-xs text-muted-foreground/60 mx-2"
+        >
           {{ selectedRule.number }} – {{ toRule.number }}
           <span class="ml-1">({{ rulesInRange.length }} rules)</span>
         </span>
@@ -201,7 +202,6 @@ watch(ruleId, () => {
     <!-- Single-rule mode                                                     -->
     <!-- ------------------------------------------------------------------ -->
     <div v-else-if="selectedRule">
-
       <!-- Nav bar: Back | breadcrumb | Forward -->
       <div class="flex items-center justify-between mb-4">
         <Button
@@ -222,7 +222,9 @@ watch(ruleId, () => {
               v-if="!seg.isCurrent && seg.rule"
               class="text-muted-foreground hover:text-primary transition-colors"
               @click="selectRule(seg.rule)"
-            >{{ seg.label.split('.').pop() }}</button>
+            >
+              {{ seg.label.split('.').pop() }}
+            </button>
             <span v-else class="text-muted-foreground/40">{{ seg.label.split('.').pop() }}</span>
           </template>
         </nav>
@@ -259,9 +261,6 @@ watch(ruleId, () => {
     </div>
 
     <!-- Rule not found -->
-    <div v-else class="text-muted-foreground text-sm">
-      Rule not found.
-    </div>
-
+    <div v-else class="text-muted-foreground text-sm">Rule not found.</div>
   </div>
 </template>

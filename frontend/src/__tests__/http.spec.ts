@@ -109,24 +109,24 @@ describe('axios response interceptor', () => {
 
   it('rejects with auth error for 401', async () => {
     const handler = capturedInterceptorError.get()!
-    await expect(
-      handler(makeAxiosError(401, { message: 'Unauthenticated.' })),
-    ).rejects.toEqual({ type: 'auth', message: 'Unauthenticated.' })
+    await expect(handler(makeAxiosError(401, { message: 'Unauthenticated.' }))).rejects.toEqual({
+      type: 'auth',
+      message: 'Unauthenticated.',
+    })
   })
 
   it('rejects with forbidden error for 403', async () => {
     const handler = capturedInterceptorError.get()!
-    await expect(
-      handler(makeAxiosError(403, { message: 'Forbidden.' })),
-    ).rejects.toEqual({ type: 'forbidden', message: 'Forbidden.' })
+    await expect(handler(makeAxiosError(403, { message: 'Forbidden.' }))).rejects.toEqual({
+      type: 'forbidden',
+      message: 'Forbidden.',
+    })
   })
 
   it('rejects with validation error for 422', async () => {
     const handler = capturedInterceptorError.get()!
     await expect(
-      handler(
-        makeAxiosError(422, { errors: { email: ['Invalid email.'] } }),
-      ),
+      handler(makeAxiosError(422, { errors: { email: ['Invalid email.'] } })),
     ).rejects.toEqual({ type: 'validation', errors: { email: 'Invalid email.' } })
   })
 
@@ -148,8 +148,9 @@ describe('axios response interceptor', () => {
 
   it('rejects with unknown error for 422 without errors field', async () => {
     const handler = capturedInterceptorError.get()!
-    await expect(
-      handler(makeAxiosError(422, {})),
-    ).rejects.toEqual({ type: 'unknown', original: {} })
+    await expect(handler(makeAxiosError(422, {}))).rejects.toEqual({
+      type: 'unknown',
+      original: {},
+    })
   })
 })

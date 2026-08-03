@@ -3,7 +3,13 @@ import { defineStore } from 'pinia'
 
 import { useApi } from '@/composables/useApi'
 import type { ApiResult } from '@/lib/http'
-import type { User, LoginRequest, RegisterRequest, UpdateProfileRequest, ApiResource } from '@/types/domain'
+import type {
+  User,
+  LoginRequest,
+  RegisterRequest,
+  UpdateProfileRequest,
+  ApiResource,
+} from '@/types/domain'
 
 export const useAuthStore = defineStore('auth', () => {
   const { get, post, patch, loading } = useApi()

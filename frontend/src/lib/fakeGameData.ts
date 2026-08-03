@@ -40,17 +40,138 @@ export const fakeIft: MatrixContent = {
     { id: 'dr12', label: '12' },
   ],
   cells: {
-    dr2: { fp1: { value: '-' }, fp2: { value: 'NMC', style: 'green' }, fp4: { value: 'NMC', style: 'green' }, fp6: { value: '1MC', style: 'green' }, fp8: { value: '1MC', style: 'green' }, fp12: { value: '2MC', style: 'yellow' }, fp16: { value: '2MC', style: 'yellow' }, fp20: { value: 'KIA', style: 'red' }, fp24: { value: 'KIA', style: 'red' }, fp30: { value: 'KIA', style: 'red' } },
-    dr3: { fp1: { value: '-' }, fp2: { value: '-' }, fp4: { value: 'NMC', style: 'green' }, fp6: { value: 'NMC', style: 'green' }, fp8: { value: '1MC', style: 'green' }, fp12: { value: '1MC', style: 'green' }, fp16: { value: '2MC', style: 'yellow' }, fp20: { value: '2MC', style: 'yellow' }, fp24: { value: 'KIA', style: 'red' }, fp30: { value: 'KIA', style: 'red' } },
-    dr4: { fp1: { value: '-' }, fp2: { value: '-' }, fp4: { value: '-' }, fp6: { value: 'NMC', style: 'green' }, fp8: { value: 'NMC', style: 'green' }, fp12: { value: '1MC', style: 'green' }, fp16: { value: '1MC', style: 'green' }, fp20: { value: '2MC', style: 'yellow' }, fp24: { value: '2MC', style: 'yellow' }, fp30: { value: 'KIA', style: 'red' } },
-    dr5: { fp1: { value: '-' }, fp2: { value: '-' }, fp4: { value: '-' }, fp6: { value: '-' }, fp8: { value: 'NMC', style: 'green' }, fp12: { value: 'NMC', style: 'green' }, fp16: { value: '1MC', style: 'green' }, fp20: { value: '1MC', style: 'green' }, fp24: { value: '2MC', style: 'yellow' }, fp30: { value: '2MC', style: 'yellow' } },
-    dr6: { fp1: { value: '-' }, fp2: { value: '-' }, fp4: { value: '-' }, fp6: { value: '-' }, fp8: { value: '-' }, fp12: { value: 'NMC', style: 'green' }, fp16: { value: 'NMC', style: 'green' }, fp20: { value: '1MC', style: 'green' }, fp24: { value: '1MC', style: 'green' }, fp30: { value: '2MC', style: 'yellow' } },
-    dr7: { fp1: { value: '-' }, fp2: { value: '-' }, fp4: { value: '-' }, fp6: { value: '-' }, fp8: { value: '-' }, fp12: { value: '-' }, fp16: { value: 'NMC', style: 'green' }, fp20: { value: 'NMC', style: 'green' }, fp24: { value: '1MC', style: 'green' }, fp30: { value: '1MC', style: 'green' } },
-    dr8: { fp1: { value: '-' }, fp2: { value: '-' }, fp4: { value: '-' }, fp6: { value: '-' }, fp8: { value: '-' }, fp12: { value: '-' }, fp16: { value: '-' }, fp20: { value: 'NMC', style: 'green' }, fp24: { value: 'NMC', style: 'green' }, fp30: { value: '1MC', style: 'green' } },
-    dr9: { fp1: { value: '-' }, fp2: { value: '-' }, fp4: { value: '-' }, fp6: { value: '-' }, fp8: { value: '-' }, fp12: { value: '-' }, fp16: { value: '-' }, fp20: { value: '-' }, fp24: { value: 'NMC', style: 'green' }, fp30: { value: 'NMC', style: 'green' } },
-    dr10: { fp1: { value: '-' }, fp2: { value: '-' }, fp4: { value: '-' }, fp6: { value: '-' }, fp8: { value: '-' }, fp12: { value: '-' }, fp16: { value: '-' }, fp20: { value: '-' }, fp24: { value: '-' }, fp30: { value: 'NMC', style: 'green' } },
-    dr11: { fp1: { value: '-' }, fp2: { value: '-' }, fp4: { value: '-' }, fp6: { value: '-' }, fp8: { value: '-' }, fp12: { value: '-' }, fp16: { value: '-' }, fp20: { value: '-' }, fp24: { value: '-' }, fp30: { value: '-' } },
-    dr12: { fp1: { value: 'KIA', style: 'red', markers: ['A'] }, fp2: { value: 'KIA', style: 'red' }, fp4: { value: 'KIA', style: 'red' }, fp6: { value: 'KIA', style: 'red' }, fp8: { value: 'KIA', style: 'red' }, fp12: { value: 'KIA', style: 'red' }, fp16: { value: 'KIA', style: 'red' }, fp20: { value: 'KIA', style: 'red' }, fp24: { value: 'KIA', style: 'red' }, fp30: { value: 'KIA', style: 'red' } },
+    dr2: {
+      fp1: { value: '-' },
+      fp2: { value: 'NMC', style: 'green' },
+      fp4: { value: 'NMC', style: 'green' },
+      fp6: { value: '1MC', style: 'green' },
+      fp8: { value: '1MC', style: 'green' },
+      fp12: { value: '2MC', style: 'yellow' },
+      fp16: { value: '2MC', style: 'yellow' },
+      fp20: { value: 'KIA', style: 'red' },
+      fp24: { value: 'KIA', style: 'red' },
+      fp30: { value: 'KIA', style: 'red' },
+    },
+    dr3: {
+      fp1: { value: '-' },
+      fp2: { value: '-' },
+      fp4: { value: 'NMC', style: 'green' },
+      fp6: { value: 'NMC', style: 'green' },
+      fp8: { value: '1MC', style: 'green' },
+      fp12: { value: '1MC', style: 'green' },
+      fp16: { value: '2MC', style: 'yellow' },
+      fp20: { value: '2MC', style: 'yellow' },
+      fp24: { value: 'KIA', style: 'red' },
+      fp30: { value: 'KIA', style: 'red' },
+    },
+    dr4: {
+      fp1: { value: '-' },
+      fp2: { value: '-' },
+      fp4: { value: '-' },
+      fp6: { value: 'NMC', style: 'green' },
+      fp8: { value: 'NMC', style: 'green' },
+      fp12: { value: '1MC', style: 'green' },
+      fp16: { value: '1MC', style: 'green' },
+      fp20: { value: '2MC', style: 'yellow' },
+      fp24: { value: '2MC', style: 'yellow' },
+      fp30: { value: 'KIA', style: 'red' },
+    },
+    dr5: {
+      fp1: { value: '-' },
+      fp2: { value: '-' },
+      fp4: { value: '-' },
+      fp6: { value: '-' },
+      fp8: { value: 'NMC', style: 'green' },
+      fp12: { value: 'NMC', style: 'green' },
+      fp16: { value: '1MC', style: 'green' },
+      fp20: { value: '1MC', style: 'green' },
+      fp24: { value: '2MC', style: 'yellow' },
+      fp30: { value: '2MC', style: 'yellow' },
+    },
+    dr6: {
+      fp1: { value: '-' },
+      fp2: { value: '-' },
+      fp4: { value: '-' },
+      fp6: { value: '-' },
+      fp8: { value: '-' },
+      fp12: { value: 'NMC', style: 'green' },
+      fp16: { value: 'NMC', style: 'green' },
+      fp20: { value: '1MC', style: 'green' },
+      fp24: { value: '1MC', style: 'green' },
+      fp30: { value: '2MC', style: 'yellow' },
+    },
+    dr7: {
+      fp1: { value: '-' },
+      fp2: { value: '-' },
+      fp4: { value: '-' },
+      fp6: { value: '-' },
+      fp8: { value: '-' },
+      fp12: { value: '-' },
+      fp16: { value: 'NMC', style: 'green' },
+      fp20: { value: 'NMC', style: 'green' },
+      fp24: { value: '1MC', style: 'green' },
+      fp30: { value: '1MC', style: 'green' },
+    },
+    dr8: {
+      fp1: { value: '-' },
+      fp2: { value: '-' },
+      fp4: { value: '-' },
+      fp6: { value: '-' },
+      fp8: { value: '-' },
+      fp12: { value: '-' },
+      fp16: { value: '-' },
+      fp20: { value: 'NMC', style: 'green' },
+      fp24: { value: 'NMC', style: 'green' },
+      fp30: { value: '1MC', style: 'green' },
+    },
+    dr9: {
+      fp1: { value: '-' },
+      fp2: { value: '-' },
+      fp4: { value: '-' },
+      fp6: { value: '-' },
+      fp8: { value: '-' },
+      fp12: { value: '-' },
+      fp16: { value: '-' },
+      fp20: { value: '-' },
+      fp24: { value: 'NMC', style: 'green' },
+      fp30: { value: 'NMC', style: 'green' },
+    },
+    dr10: {
+      fp1: { value: '-' },
+      fp2: { value: '-' },
+      fp4: { value: '-' },
+      fp6: { value: '-' },
+      fp8: { value: '-' },
+      fp12: { value: '-' },
+      fp16: { value: '-' },
+      fp20: { value: '-' },
+      fp24: { value: '-' },
+      fp30: { value: 'NMC', style: 'green' },
+    },
+    dr11: {
+      fp1: { value: '-' },
+      fp2: { value: '-' },
+      fp4: { value: '-' },
+      fp6: { value: '-' },
+      fp8: { value: '-' },
+      fp12: { value: '-' },
+      fp16: { value: '-' },
+      fp20: { value: '-' },
+      fp24: { value: '-' },
+      fp30: { value: '-' },
+    },
+    dr12: {
+      fp1: { value: 'KIA', style: 'red', markers: ['A'] },
+      fp2: { value: 'KIA', style: 'red' },
+      fp4: { value: 'KIA', style: 'red' },
+      fp6: { value: 'KIA', style: 'red' },
+      fp8: { value: 'KIA', style: 'red' },
+      fp12: { value: 'KIA', style: 'red' },
+      fp16: { value: 'KIA', style: 'red' },
+      fp20: { value: 'KIA', style: 'red' },
+      fp24: { value: 'KIA', style: 'red' },
+      fp30: { value: 'KIA', style: 'red' },
+    },
   },
   footnotes: {
     A: { text: 'Original: Sniper check. See {{L:A14.3}}.', style: 'green' },
@@ -68,19 +189,162 @@ export const fakeTec: AttributeTableContent = {
     { id: 'sw_mf', label: 'SW MF', tags: ['sw'] },
   ],
   rows: [
-    { id: 'open', label: 'Open Ground', tags: [], cells: { hindrance: { value: '-' }, tem: { value: '0' }, inf_mf: { value: '1' }, veh_mp: { value: '2' }, sw_mf: { value: '1' } } },
-    { id: 'road', label: 'Road', tags: [], cells: { hindrance: { value: '-' }, tem: { value: '0' }, inf_mf: { value: '½' }, veh_mp: { value: '1' }, sw_mf: { value: '½' } } },
-    { id: 'brush', label: 'Brush', tags: [], cells: { hindrance: { value: '1' }, tem: { value: '+1' }, inf_mf: { value: '2' }, veh_mp: { value: '4' }, sw_mf: { value: '2' } } },
-    { id: 'woods', label: 'Woods', tags: ['woods'], cells: { hindrance: { value: '1', markers: ['1'] }, tem: { value: '+1' }, inf_mf: { value: '2' }, veh_mp: { value: '4', markers: ['A'] }, sw_mf: { value: '3' } } },
-    { id: 'orchard', label: 'Orchard', tags: ['woods'], cells: { hindrance: { value: '1' }, tem: { value: '+1' }, inf_mf: { value: '1½' }, veh_mp: { value: '3' }, sw_mf: { value: '2' } } },
-    { id: 'stream', label: 'Stream', tags: [], cells: { hindrance: { value: '-' }, tem: { value: '0' }, inf_mf: { value: '2' }, veh_mp: { value: 'P' }, sw_mf: { value: '2' } } },
-    { id: 'river', label: 'River', tags: [], cells: { hindrance: { value: '-' }, tem: { value: '0' }, inf_mf: { value: 'P' }, veh_mp: { value: 'P' }, sw_mf: { value: 'P' } } },
-    { id: 'building', label: 'Building (stone)', tags: [], cells: { hindrance: { value: '-' }, tem: { value: '+3' }, inf_mf: { value: '2' }, veh_mp: { value: 'N' }, sw_mf: { value: '2' } } },
-    { id: 'rubble', label: 'Rubble', tags: [], cells: { hindrance: { value: '-' }, tem: { value: '+2' }, inf_mf: { value: '3' }, veh_mp: { value: 'N' }, sw_mf: { value: '3' } } },
-    { id: 'slope', label: 'Slope', tags: [], cells: { hindrance: { value: '-' }, tem: { value: '+1' }, inf_mf: { value: '2' }, veh_mp: { value: '3' }, sw_mf: { value: '2' } } },
-    { id: 'crest', label: 'Crest', tags: [], cells: { hindrance: { value: '-' }, tem: { value: '+1' }, inf_mf: { value: '0' }, veh_mp: { value: '0' }, sw_mf: { value: '0' } } },
-    { id: 'wall', label: 'Wall/Hedge', tags: [], cells: { hindrance: { value: '-' }, tem: { value: '+1' }, inf_mf: { value: '1' }, veh_mp: { value: 'P' }, sw_mf: { value: '1' } } },
-    { id: 'trench', label: 'Trench', tags: [], cells: { hindrance: { value: '-' }, tem: { value: '+2' }, inf_mf: { value: '2' }, veh_mp: { value: 'N' }, sw_mf: { value: '2' } } },
+    {
+      id: 'open',
+      label: 'Open Ground',
+      tags: [],
+      cells: {
+        hindrance: { value: '-' },
+        tem: { value: '0' },
+        inf_mf: { value: '1' },
+        veh_mp: { value: '2' },
+        sw_mf: { value: '1' },
+      },
+    },
+    {
+      id: 'road',
+      label: 'Road',
+      tags: [],
+      cells: {
+        hindrance: { value: '-' },
+        tem: { value: '0' },
+        inf_mf: { value: '½' },
+        veh_mp: { value: '1' },
+        sw_mf: { value: '½' },
+      },
+    },
+    {
+      id: 'brush',
+      label: 'Brush',
+      tags: [],
+      cells: {
+        hindrance: { value: '1' },
+        tem: { value: '+1' },
+        inf_mf: { value: '2' },
+        veh_mp: { value: '4' },
+        sw_mf: { value: '2' },
+      },
+    },
+    {
+      id: 'woods',
+      label: 'Woods',
+      tags: ['woods'],
+      cells: {
+        hindrance: { value: '1', markers: ['1'] },
+        tem: { value: '+1' },
+        inf_mf: { value: '2' },
+        veh_mp: { value: '4', markers: ['A'] },
+        sw_mf: { value: '3' },
+      },
+    },
+    {
+      id: 'orchard',
+      label: 'Orchard',
+      tags: ['woods'],
+      cells: {
+        hindrance: { value: '1' },
+        tem: { value: '+1' },
+        inf_mf: { value: '1½' },
+        veh_mp: { value: '3' },
+        sw_mf: { value: '2' },
+      },
+    },
+    {
+      id: 'stream',
+      label: 'Stream',
+      tags: [],
+      cells: {
+        hindrance: { value: '-' },
+        tem: { value: '0' },
+        inf_mf: { value: '2' },
+        veh_mp: { value: 'P' },
+        sw_mf: { value: '2' },
+      },
+    },
+    {
+      id: 'river',
+      label: 'River',
+      tags: [],
+      cells: {
+        hindrance: { value: '-' },
+        tem: { value: '0' },
+        inf_mf: { value: 'P' },
+        veh_mp: { value: 'P' },
+        sw_mf: { value: 'P' },
+      },
+    },
+    {
+      id: 'building',
+      label: 'Building (stone)',
+      tags: [],
+      cells: {
+        hindrance: { value: '-' },
+        tem: { value: '+3' },
+        inf_mf: { value: '2' },
+        veh_mp: { value: 'N' },
+        sw_mf: { value: '2' },
+      },
+    },
+    {
+      id: 'rubble',
+      label: 'Rubble',
+      tags: [],
+      cells: {
+        hindrance: { value: '-' },
+        tem: { value: '+2' },
+        inf_mf: { value: '3' },
+        veh_mp: { value: 'N' },
+        sw_mf: { value: '3' },
+      },
+    },
+    {
+      id: 'slope',
+      label: 'Slope',
+      tags: [],
+      cells: {
+        hindrance: { value: '-' },
+        tem: { value: '+1' },
+        inf_mf: { value: '2' },
+        veh_mp: { value: '3' },
+        sw_mf: { value: '2' },
+      },
+    },
+    {
+      id: 'crest',
+      label: 'Crest',
+      tags: [],
+      cells: {
+        hindrance: { value: '-' },
+        tem: { value: '+1' },
+        inf_mf: { value: '0' },
+        veh_mp: { value: '0' },
+        sw_mf: { value: '0' },
+      },
+    },
+    {
+      id: 'wall',
+      label: 'Wall/Hedge',
+      tags: [],
+      cells: {
+        hindrance: { value: '-' },
+        tem: { value: '+1' },
+        inf_mf: { value: '1' },
+        veh_mp: { value: 'P' },
+        sw_mf: { value: '1' },
+      },
+    },
+    {
+      id: 'trench',
+      label: 'Trench',
+      tags: [],
+      cells: {
+        hindrance: { value: '-' },
+        tem: { value: '+2' },
+        inf_mf: { value: '2' },
+        veh_mp: { value: 'N' },
+        sw_mf: { value: '2' },
+      },
+    },
   ],
   footnotes: {
     '1': { text: 'Applies only in Season {{L:E3.1}}.' },
@@ -133,7 +397,11 @@ export const fakeSop: SopContent = {
   },
   pre_game: {
     segments: [
-      { mpath: '0.1', player: 'B', runs: [{ text: 'Set up scenario forces per scenario special rules.', tags: [] }] },
+      {
+        mpath: '0.1',
+        player: 'B',
+        runs: [{ text: 'Set up scenario forces per scenario special rules.', tags: [] }],
+      },
     ],
   },
   phases: [
@@ -145,24 +413,41 @@ export const fakeSop: SopContent = {
           slug: 'start-of-rph',
           label: 'Start of RPh',
           segments: [
-            { mpath: '1.1', player: 'B', runs: [{ text: 'Remove all Prep Fire (PF) markers from units of both sides.', tags: [] }] },
+            {
+              mpath: '1.1',
+              player: 'B',
+              runs: [
+                { text: 'Remove all Prep Fire (PF) markers from units of both sides.', tags: [] },
+              ],
+            },
           ],
         },
         {
           slug: 'during-rph',
           label: 'During RPh',
           segments: [
-            { mpath: '1.2', player: 'A', runs: [{ text: 'Attempt to repair Malfunctioned SW or recover SW from adjacent hex.', tags: [] }] },
             {
-              mpath: '1.3', player: 'A', runs: [
-                { text: 'Roll for each broken unit: ≤ current morale → rallied.', tags: [] },
-                { text: ' Japanese fanatic units add +2 DRM.', tags: ['japanese'] },
-              ]
+              mpath: '1.2',
+              player: 'A',
+              runs: [
+                {
+                  text: 'Attempt to repair Malfunctioned SW or recover SW from adjacent hex.',
+                  tags: [],
+                },
+              ],
             },
             {
-              mpath: '1.4', player: 'A', runs: [
-                { text: 'Night rally: ELR check applies.', tags: ['night'] },
-              ]
+              mpath: '1.3',
+              player: 'A',
+              runs: [
+                { text: 'Roll for each broken unit: ≤ current morale → rallied.', tags: [] },
+                { text: ' Japanese fanatic units add +2 DRM.', tags: ['japanese'] },
+              ],
+            },
+            {
+              mpath: '1.4',
+              player: 'A',
+              runs: [{ text: 'Night rally: ELR check applies.', tags: ['night'] }],
             },
           ],
         },
@@ -170,7 +455,11 @@ export const fakeSop: SopContent = {
           slug: 'end-of-rph',
           label: 'End of RPh',
           segments: [
-            { mpath: '1.9', player: 'B', runs: [{ text: 'Remove DM markers from all rallied units.', tags: [] }] },
+            {
+              mpath: '1.9',
+              player: 'B',
+              runs: [{ text: 'Remove DM markers from all rallied units.', tags: [] }],
+            },
           ],
         },
       ],
@@ -183,8 +472,23 @@ export const fakeSop: SopContent = {
           slug: 'during-pfph',
           label: 'During PFPh',
           segments: [
-            { mpath: '2.1', player: 'A', runs: [{ text: 'Phasing player fires any non-moving units; place PF marker.', tags: [] }] },
-            { mpath: '2.2', player: 'A', runs: [{ text: 'Resolve fire on IFT / TH / TK as appropriate. Apply results immediately.', tags: [] }] },
+            {
+              mpath: '2.1',
+              player: 'A',
+              runs: [
+                { text: 'Phasing player fires any non-moving units; place PF marker.', tags: [] },
+              ],
+            },
+            {
+              mpath: '2.2',
+              player: 'A',
+              runs: [
+                {
+                  text: 'Resolve fire on IFT / TH / TK as appropriate. Apply results immediately.',
+                  tags: [],
+                },
+              ],
+            },
           ],
         },
       ],
@@ -198,8 +502,26 @@ export const fakeSop: SopContent = {
           slug: 'during-mph',
           label: 'During MPh',
           segments: [
-            { mpath: '3.1', player: 'A', runs: [{ text: 'Spend MF/MP to enter hexes. Announce each move before executing.', tags: [] }] },
-            { mpath: '3.2', player: 'D', runs: [{ text: 'Non-phasing player may fire Defensive First Fire at any point in a unit\'s movement.', tags: [] }] },
+            {
+              mpath: '3.1',
+              player: 'A',
+              runs: [
+                {
+                  text: 'Spend MF/MP to enter hexes. Announce each move before executing.',
+                  tags: [],
+                },
+              ],
+            },
+            {
+              mpath: '3.2',
+              player: 'D',
+              runs: [
+                {
+                  text: "Non-phasing player may fire Defensive First Fire at any point in a unit's movement.",
+                  tags: [],
+                },
+              ],
+            },
           ],
         },
       ],
@@ -207,7 +529,12 @@ export const fakeSop: SopContent = {
   ],
 }
 
-export type FakeTableItem = { id: string; name: string; type: 'table'; content: MatrixContent | AttributeTableContent | ModifierListContent }
+export type FakeTableItem = {
+  id: string
+  name: string
+  type: 'table'
+  content: MatrixContent | AttributeTableContent | ModifierListContent
+}
 export type FakeSopItem = { id: string; name: string; type: 'sop'; content: SopContent }
 
 export const fakeTables: FakeTableItem[] = [

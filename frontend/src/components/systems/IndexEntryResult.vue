@@ -38,12 +38,18 @@ function activeRuleRefs(entry: IndexEntry): string[] {
 </script>
 
 <template>
-  <div :style="depth > 0 ? { paddingLeft: `${depth * 12}px` } : {}" class="py-2 border-b border-border/50 last:border-0">
+  <div
+    :style="depth > 0 ? { paddingLeft: `${depth * 12}px` } : {}"
+    class="py-2 border-b border-border/50 last:border-0"
+  >
     <!-- Term line -->
     <div class="flex items-baseline justify-between gap-2 group">
       <p class="text-xs font-semibold text-foreground">
         <span v-if="depth === 0 && entry.parent_id" class="text-xs text-muted-foreground">
-          <span v-html="renderContent(contentStore.indexEntriesById.get(entry.parent_id)?.term ?? '')"></span> ›
+          <span
+            v-html="renderContent(contentStore.indexEntriesById.get(entry.parent_id)?.term ?? '')"
+          ></span>
+          ›
         </span>
         <span v-html="renderContent(entry.term)"></span>
         <button
@@ -85,12 +91,14 @@ function activeRuleRefs(entry: IndexEntry): string[] {
           v-if="ref.includes('-')"
           :data-rule-range="ref"
           class="ml-2 font-mono text-xs text-primary underline decoration-dotted hover:text-primary/80 transition-colors cursor-pointer"
-        >{{ ref }}</a>
+          >{{ ref }}</a
+        >
         <a
           v-else
           :data-rule-number="ref"
           class="ml-2 font-mono text-xs text-primary underline decoration-dotted hover:text-primary/80 transition-colors cursor-pointer"
-        >{{ ref }}</a>
+          >{{ ref }}</a
+        >
       </template>
     </div>
     <div v-if="entry.relations?.see_also?.length" class="mt-1 flex flex-wrap gap-1.5 items-center">
@@ -101,7 +109,9 @@ function activeRuleRefs(entry: IndexEntry): string[] {
         type="button"
         class="text-xs text-primary underline decoration-dotted hover:text-primary/80 italic transition-colors cursor-pointer"
         @click="emit('seeAlsoClick', term)"
-      >{{ term }}</button>
+      >
+        {{ term }}
+      </button>
     </div>
 
     <!-- Expanded children -->

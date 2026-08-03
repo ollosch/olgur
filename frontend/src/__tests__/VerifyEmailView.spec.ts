@@ -63,7 +63,7 @@ describe('VerifyEmailView', () => {
 
   it('shows verifying state initially (before onMounted resolves)', async () => {
     // Never resolves so stays in verifying state
-    mockVerifyEmail.mockReturnValue(new Promise(() => { }))
+    mockVerifyEmail.mockReturnValue(new Promise(() => {}))
     const wrapper = await mountView({ url: '/email/verify/123?expires=123&signature=abc' })
     expect(wrapper.text()).toContain('Verifying')
   })

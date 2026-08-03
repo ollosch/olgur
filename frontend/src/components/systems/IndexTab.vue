@@ -92,25 +92,42 @@ function toggleLetter(letter: string): void {
 
     <!-- Letter filter (shown when search is empty) -->
     <div v-if="!search.trim()" class="px-3 pb-2 flex flex-wrap gap-1 shrink-0">
-      <button v-for="letter in availableLetters" :key="letter" :class="[
-        'w-6 h-6 text-xs rounded font-mono transition-colors',
-        activeLetter === letter
-          ? 'bg-primary text-primary-foreground'
-          : 'bg-muted/50 hover:bg-muted text-foreground/70',
-      ]" @click="toggleLetter(letter)">
+      <button
+        v-for="letter in availableLetters"
+        :key="letter"
+        :class="[
+          'w-6 h-6 text-xs rounded font-mono transition-colors',
+          activeLetter === letter
+            ? 'bg-primary text-primary-foreground'
+            : 'bg-muted/50 hover:bg-muted text-foreground/70',
+        ]"
+        @click="toggleLetter(letter)"
+      >
         {{ letter }}
       </button>
     </div>
 
     <div class="flex-1 overflow-y-auto px-3 pb-3">
-      <div v-if="visibleRoots.length === 0 && visibleNested.length === 0 && nestedResults.length === 0" class="text-xs text-muted-foreground py-4 text-center">
+      <div
+        v-if="visibleRoots.length === 0 && visibleNested.length === 0 && nestedResults.length === 0"
+        class="text-xs text-muted-foreground py-4 text-center"
+      >
         <span v-if="search.trim() || activeLetter">No results.</span>
         <span v-else>Select a letter or search above.</span>
       </div>
 
       <!-- Root results -->
-      <IndexEntryResult v-for="entry in visibleRoots" :key="entry.id" :entry="entry"
-        @see-also-click="(t) => { search = t; activeLetter = null }" />
+      <IndexEntryResult
+        v-for="entry in visibleRoots"
+        :key="entry.id"
+        :entry="entry"
+        @see-also-click="
+          (t) => {
+            search = t
+            activeLetter = null
+          }
+        "
+      />
 
       <!-- Show remaining root results -->
       <button
@@ -124,8 +141,17 @@ function toggleLetter(letter: string): void {
       <!-- Nested results (once expanded) -->
       <template v-if="visibleNested.length > 0">
         <div class="border-t border-border/50 my-2" />
-        <IndexEntryResult v-for="entry in visibleNested" :key="entry.id" :entry="entry"
-          @see-also-click="(t) => { search = t; activeLetter = null }" />
+        <IndexEntryResult
+          v-for="entry in visibleNested"
+          :key="entry.id"
+          :entry="entry"
+          @see-also-click="
+            (t) => {
+              search = t
+              activeLetter = null
+            }
+          "
+        />
       </template>
 
       <!-- Show nested results button -->

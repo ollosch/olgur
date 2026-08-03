@@ -11,17 +11,20 @@ import { useUnitBrowserStore } from '@/stores/unitBrowser'
 import UnitDetailCard from '@/components/layout/UnitDetailCard.vue'
 import type { GameDatum } from '@/types/domain'
 
-const props = withDefaults(defineProps<{
-  initialUnit?: GameDatum | null
-  showCompareButton?: boolean
-  mode?: 'full' | 'list-only' | 'detail-only'
-  detailUnit?: GameDatum | null
-}>(), {
-  initialUnit: null,
-  showCompareButton: true,
-  mode: 'full',
-  detailUnit: null,
-})
+const props = withDefaults(
+  defineProps<{
+    initialUnit?: GameDatum | null
+    showCompareButton?: boolean
+    mode?: 'full' | 'list-only' | 'detail-only'
+    detailUnit?: GameDatum | null
+  }>(),
+  {
+    initialUnit: null,
+    showCompareButton: true,
+    mode: 'full',
+    detailUnit: null,
+  },
+)
 
 const emit = defineEmits<{
   compare: [unit: GameDatum]
@@ -42,11 +45,14 @@ if (props.initialUnit) {
   selectedUnit.value = props.initialUnit
 }
 
-watch(() => props.initialUnit, (unit) => {
-  if (unit) {
-    selectedUnit.value = unit
-  }
-})
+watch(
+  () => props.initialUnit,
+  (unit) => {
+    if (unit) {
+      selectedUnit.value = unit
+    }
+  },
+)
 
 watch(search, () => {
   activeLetter.value = null
@@ -82,10 +88,11 @@ const availableNations = computed((): string[] => {
 
 // ── Filtered results ──────────────────────────────────────────────────────────
 
-const isFiltering = computed((): boolean =>
-  debouncedSearch.value.trim().length > 0 ||
-  typeFilter.value !== 'all' ||
-  nationFilter.value !== 'all',
+const isFiltering = computed(
+  (): boolean =>
+    debouncedSearch.value.trim().length > 0 ||
+    typeFilter.value !== 'all' ||
+    nationFilter.value !== 'all',
 )
 
 const filteredUnits = computed((): GameDatum[] => {
@@ -147,7 +154,10 @@ function back(): void {
   <div class="flex flex-col h-full">
     <!-- detail-only mode: always render the detail view for detailUnit -->
     <template v-if="props.mode === 'detail-only'">
-      <div v-if="!props.detailUnit" class="flex-1 flex items-center justify-center text-xs text-muted-foreground">
+      <div
+        v-if="!props.detailUnit"
+        class="flex-1 flex items-center justify-center text-xs text-muted-foreground"
+      >
         Select a unit from the list.
       </div>
       <template v-else>
@@ -201,7 +211,11 @@ function back(): void {
         <div class="px-3 pb-2 shrink-0 flex flex-wrap items-center gap-2">
           <div class="flex gap-0.5 bg-muted/50 rounded p-0.5">
             <button
-              v-for="opt in ([{ value: 'all', label: 'All' }, { value: 'vehicle', label: 'Vehicles' }, { value: 'ordnance', label: 'Ordnance' }] as const)"
+              v-for="opt in [
+                { value: 'all', label: 'All' },
+                { value: 'vehicle', label: 'Vehicles' },
+                { value: 'ordnance', label: 'Ordnance' },
+              ] as const"
               :key="opt.value"
               :class="[
                 'px-2 py-0.5 text-[11px] rounded transition-colors',
@@ -245,7 +259,10 @@ function back(): void {
           <div v-if="!showList" class="text-xs text-muted-foreground py-4 text-center">
             Select a letter or search above.
           </div>
-          <div v-else-if="filteredUnits.length === 0" class="text-xs text-muted-foreground py-4 text-center">
+          <div
+            v-else-if="filteredUnits.length === 0"
+            class="text-xs text-muted-foreground py-4 text-center"
+          >
             No units found.
           </div>
           <div
@@ -259,7 +276,9 @@ function back(): void {
             @keydown.enter="selectUnit(unit)"
           >
             <span class="text-xs text-foreground flex-1 truncate">{{ unit.name }}</span>
-            <span v-if="unitNation(unit)" class="text-[10px] text-muted-foreground shrink-0">{{ unitNation(unit) }}</span>
+            <span v-if="unitNation(unit)" class="text-[10px] text-muted-foreground shrink-0">{{
+              unitNation(unit)
+            }}</span>
             <span
               :class="[
                 'text-[10px] font-medium rounded px-1.5 py-0.5 shrink-0',
@@ -267,7 +286,8 @@ function back(): void {
                   ? 'bg-green-500/15 text-green-700 dark:text-green-400'
                   : 'bg-purple-500/15 text-purple-700 dark:text-purple-400',
               ]"
-            >{{ unitTypeLabel(unit) }}</span>
+              >{{ unitTypeLabel(unit) }}</span
+            >
           </div>
         </div>
       </template>

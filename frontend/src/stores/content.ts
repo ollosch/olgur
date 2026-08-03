@@ -6,7 +6,17 @@ import type { ApiResult } from '@/lib/http'
 import { useAuthStore } from '@/stores/auth'
 import { useSystemStore } from '@/stores/system'
 import { useMembershipStore } from '@/stores/membership'
-import type { Rule, IndexEntry, Module, GameDatum, ManifestEntry, ApiCollection, ApiResource, UpdateRuleRequest, UpdateIndexEntryRequest } from '@/types/domain'
+import type {
+  Rule,
+  IndexEntry,
+  Module,
+  GameDatum,
+  ManifestEntry,
+  ApiCollection,
+  ApiResource,
+  UpdateRuleRequest,
+  UpdateIndexEntryRequest,
+} from '@/types/domain'
 
 export const useContentStore = defineStore('content', () => {
   const { get, put, loading } = useApi()
@@ -23,8 +33,8 @@ export const useContentStore = defineStore('content', () => {
   // Derived state
   // ---------------------------------------------------------------------------
 
-  const activeIds = computed((): string[] =>
-    membershipStore.membership?.config?.active_module_ids ?? [],
+  const activeIds = computed(
+    (): string[] => membershipStore.membership?.config?.active_module_ids ?? [],
   )
 
   const activeModules = computed((): Module[] =>
@@ -189,7 +199,9 @@ export const useContentStore = defineStore('content', () => {
     const memo = new Map<string, boolean>()
 
     function hasContent(entry: IndexEntry): boolean {
-      const filteredRefs = (entry.relations?.rule_refs ?? []).filter((r) => ruleNums.has(r) || r.includes('-'))
+      const filteredRefs = (entry.relations?.rule_refs ?? []).filter(
+        (r) => ruleNums.has(r) || r.includes('-'),
+      )
       const seeAlso = entry.relations?.see_also ?? []
       return !!(entry.definition || entry.notes || filteredRefs.length > 0 || seeAlso.length > 0)
     }
@@ -216,7 +228,6 @@ export const useContentStore = defineStore('content', () => {
   // Actions
   // ---------------------------------------------------------------------------
 
-
   /**
    * Fetch the versioned manifest for the given system and store entries keyed
    * by module_id.  Always called on system entry so the manifest is ready
@@ -226,7 +237,9 @@ export const useContentStore = defineStore('content', () => {
     // The backend returns { data: { system_id, name, modules: ManifestEntry[] } }
     // `useApi()` returns `res.data` as `result.data`, so modules live at
     // result.data.data.modules.
-    const result = await get<ApiResource<{ system_id: string; name?: string; modules?: ManifestEntry[] }>>(`/systems/${systemId}/manifest`)
+    const result = await get<
+      ApiResource<{ system_id: string; name?: string; modules?: ManifestEntry[] }>
+    >(`/systems/${systemId}/manifest`)
     if (result.ok) {
       const map: Record<string, ManifestEntry> = {}
       // Support two response shapes used in tests and different backends:
@@ -276,14 +289,21 @@ export const useContentStore = defineStore('content', () => {
     }
   }
 
-  async function updateRule(systemId: string, rule: Rule, data: UpdateRuleRequest): Promise<ApiResult<Rule>> {
+  async function updateRule(
+    systemId: string,
+    rule: Rule,
+    data: UpdateRuleRequest,
+  ): Promise<ApiResult<Rule>> {
     const result = await put<ApiResource<Rule>, UpdateRuleRequest>(
       `/systems/${systemId}/modules/${rule.module_id}/rules/${rule.id}`,
       { ...data, content: data.content.split('\n').join('<br>') },
     )
 
     if (result.ok) {
-      const stored = markRaw({ ...result.data.data, content: result.data.data.content.split('<br>').join('\n') })
+      const stored = markRaw({
+        ...result.data.data,
+        content: result.data.data.content.split('<br>').join('\n'),
+      })
       const list = rulesByModule.value[rule.module_id] ?? []
       const idx = list.indexOf(rulesById.value.get(rule.id)!)
       if (idx !== -1) list[idx] = stored
@@ -293,7 +313,11 @@ export const useContentStore = defineStore('content', () => {
     return result
   }
 
-  async function updateIndexEntry(systemId: string, entry: IndexEntry, data: UpdateIndexEntryRequest): Promise<ApiResult<IndexEntry>> {
+  async function updateIndexEntry(
+    systemId: string,
+    entry: IndexEntry,
+    data: UpdateIndexEntryRequest,
+  ): Promise<ApiResult<IndexEntry>> {
     const result = await put<ApiResource<IndexEntry>, UpdateIndexEntryRequest>(
       `/systems/${systemId}/modules/${entry.module_id}/index-entries/${entry.id}`,
       data,

@@ -27,7 +27,11 @@ export const useMemberManagementStore = defineStore('memberManagement', () => {
     }
   }
 
-  async function updateMembershipAdmin(systemId: string, membershipId: string, admin: boolean): Promise<ApiResult<void>> {
+  async function updateMembershipAdmin(
+    systemId: string,
+    membershipId: string,
+    admin: boolean,
+  ): Promise<ApiResult<void>> {
     const result = await put<ApiResource<MembershipWithUser>, { admin: boolean }>(
       `/systems/${systemId}/memberships/${membershipId}`,
       { admin },
@@ -35,7 +39,10 @@ export const useMemberManagementStore = defineStore('memberManagement', () => {
     if (result.ok) {
       const idx = adminMemberships.value.findIndex((m) => m.id === membershipId)
       if (idx !== -1) {
-        adminMemberships.value[idx] = { ...adminMemberships.value[idx]!, admin: result.data.data.admin }
+        adminMemberships.value[idx] = {
+          ...adminMemberships.value[idx]!,
+          admin: result.data.data.admin,
+        }
       }
       return { ok: true, data: undefined }
     }

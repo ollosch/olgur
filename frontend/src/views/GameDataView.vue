@@ -18,25 +18,20 @@ const contentStore = useContentStore()
 
 const gameDatumId = computed(() => route.params['gameDatumId'] as string)
 
-const gameDatum = computed(() =>
-  contentStore.allGameData.find((d) => d.id === gameDatumId.value) ?? null,
+const gameDatum = computed(
+  () => contentStore.allGameData.find((d) => d.id === gameDatumId.value) ?? null,
 )
 
 const content = computed((): TableContent | null => {
   if (!gameDatum.value) return null
-  return (gameDatum.value.content as unknown) as TableContent
+  return gameDatum.value.content as unknown as TableContent
 })
 </script>
 
 <template>
   <div class="overflow-auto p-6 h-full">
     <!-- Not found -->
-    <div
-      v-if="!gameDatum"
-      class="text-sm text-muted-foreground"
-    >
-      Table not found.
-    </div>
+    <div v-if="!gameDatum" class="text-sm text-muted-foreground">Table not found.</div>
 
     <template v-else>
       <h1 class="text-lg font-semibold text-foreground mb-1">
@@ -49,24 +44,26 @@ const content = computed((): TableContent | null => {
       <div v-if="content">
         <MatrixTable
           v-if="gameDatum.type === 'table' && (content as MatrixContent).cells !== undefined"
-          :content="(content as MatrixContent)"
+          :content="content as MatrixContent"
         />
         <AttributeTable
-          v-else-if="gameDatum.type === 'table' && (content as AttributeTableContent).rows !== undefined"
-          :content="(content as AttributeTableContent)"
+          v-else-if="
+            gameDatum.type === 'table' && (content as AttributeTableContent).rows !== undefined
+          "
+          :content="content as AttributeTableContent"
         />
         <ModifierList
-          v-else-if="gameDatum.type === 'table' && (content as ModifierListContent).entries !== undefined"
-          :content="(content as ModifierListContent)"
+          v-else-if="
+            gameDatum.type === 'table' && (content as ModifierListContent).entries !== undefined
+          "
+          :content="content as ModifierListContent"
         />
         <SopViewer
           v-else-if="gameDatum.type === 'sop'"
           :sop-id="gameDatum.id"
-          :content="(content as SopContent)"
+          :content="content as SopContent"
         />
-        <div v-else class="text-sm text-muted-foreground italic">
-          Unknown table kind.
-        </div>
+        <div v-else class="text-sm text-muted-foreground italic">Unknown table kind.</div>
       </div>
     </template>
   </div>

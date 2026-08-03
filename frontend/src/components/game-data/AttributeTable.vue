@@ -90,11 +90,7 @@ function footnoteClass(fn: AttributeFootnote): string {
         </tr>
       </thead>
       <tbody>
-        <tr
-          v-for="row in visibleRows"
-          :key="row.id"
-          class="hover:bg-muted/20 transition-colors"
-        >
+        <tr v-for="row in visibleRows" :key="row.id" class="hover:bg-muted/20 transition-colors">
           <td class="border border-border px-2 py-1 font-medium text-foreground whitespace-nowrap">
             {{ row.label }}
           </td>
@@ -121,11 +117,7 @@ function footnoteClass(fn: AttributeFootnote): string {
       v-if="props.content.footnotes && Object.keys(props.content.footnotes).length > 0"
       class="mt-3 space-y-1"
     >
-      <div
-        v-for="(fn, key) in props.content.footnotes"
-        :key="key"
-        class="flex gap-1.5 text-xs"
-      >
+      <div v-for="(fn, key) in props.content.footnotes" :key="key" class="flex gap-1.5 text-xs">
         <dt class="font-semibold text-primary shrink-0">[{{ key }}]</dt>
         <!-- eslint-disable-next-line vue/no-v-html -->
         <dd :class="footnoteClass(fn)" v-html="renderContent(fn.text)" />

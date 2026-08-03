@@ -28,8 +28,14 @@ let indexEntriesMapRef: (() => Map<string, IndexEntry>) | null = null
 
 export function useRulePopup() {
   function hide() {
-    if (showTimer) { clearTimeout(showTimer); showTimer = null }
-    if (hideTimer) { clearTimeout(hideTimer); hideTimer = null }
+    if (showTimer) {
+      clearTimeout(showTimer)
+      showTimer = null
+    }
+    if (hideTimer) {
+      clearTimeout(hideTimer)
+      hideTimer = null
+    }
     hideTimer = setTimeout(() => {
       state.value.visible = false
       hideTimer = null
@@ -37,7 +43,10 @@ export function useRulePopup() {
   }
 
   function keepOpen() {
-    if (hideTimer) { clearTimeout(hideTimer); hideTimer = null }
+    if (hideTimer) {
+      clearTimeout(hideTimer)
+      hideTimer = null
+    }
   }
 
   function registerNavigate(

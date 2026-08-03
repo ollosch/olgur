@@ -167,7 +167,13 @@ watch(
     const rule = contentStore.rulesById.get(ruleId)
     const id = systemStore.currentSystem?.id
     if (!rule || !id) return
-    historyStore.record({ type: 'rule', id: rule.id, systemId: id, title: rule.title, number: rule.number })
+    historyStore.record({
+      type: 'rule',
+      id: rule.id,
+      systemId: id,
+      title: rule.title,
+      number: rule.number,
+    })
   },
 )
 
@@ -229,21 +235,28 @@ function toggleModule(moduleId: string): void {
 }
 
 function buildTopLevelRules(rules: Rule[]): Rule[] {
-  return rules
-    .filter((r) => r.parent_id === null)
-    .sort((a, b) => a.sort_order - b.sort_order)
+  return rules.filter((r) => r.parent_id === null).sort((a, b) => a.sort_order - b.sort_order)
 }
 
 function getModuleRules(mod: Module): Rule[] {
   return contentStore.rulesByModule[mod.id] ?? []
 }
 
-useRuleDelegation(() => contentStore.rulesByNumber, selectRule, () => contentStore.indexEntriesByTerm)
+useRuleDelegation(
+  () => contentStore.rulesByNumber,
+  selectRule,
+  () => contentStore.indexEntriesByTerm,
+)
 useInteractionStore().registerNavigate(
   selectRule,
   () => contentStore.rulesByNumber,
   () => contentStore.indexEntriesByTerm,
-  (fromRule, toRule) => router.push({ name: 'system-rule', params: { systemId: systemId.value, ruleId: fromRule.id }, query: { to: toRule.id } }),
+  (fromRule, toRule) =>
+    router.push({
+      name: 'system-rule',
+      params: { systemId: systemId.value, ruleId: fromRule.id },
+      query: { to: toRule.id },
+    }),
 )
 
 // ---------------------------------------------------------------------------
@@ -289,7 +302,10 @@ function openDrawer(mode: DrawerMode): void {
       <div class="flex flex-1 overflow-hidden relative">
         <!-- Left panel -->
         <div
-          :class="['border-r border-border shrink-0 h-full flex-col relative', appSettings.sidebarPinned ? 'flex' : 'hidden md:flex']"
+          :class="[
+            'border-r border-border shrink-0 h-full flex-col relative',
+            appSettings.sidebarPinned ? 'flex' : 'hidden md:flex',
+          ]"
           :style="leftPanelStyle"
         >
           <LeftPanelContent
@@ -320,11 +336,10 @@ function openDrawer(mode: DrawerMode): void {
               <!-- Top-level TOC: shown when no child route is active -->
               <div v-else class="overflow-auto p-6 h-full">
                 <template v-for="mod in contentStore.activeModules" :key="mod.id">
-                  <div
-                    v-if="buildTopLevelRules(getModuleRules(mod)).length > 0"
-                    class="mb-8"
-                  >
-                    <h2 class="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+                  <div v-if="buildTopLevelRules(getModuleRules(mod)).length > 0" class="mb-8">
+                    <h2
+                      class="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3"
+                    >
                       {{ mod.name }}
                     </h2>
                     <button
@@ -333,10 +348,14 @@ function openDrawer(mode: DrawerMode): void {
                       class="w-full flex items-baseline gap-3 px-3 py-2.5 rounded-md hover:bg-muted/40 transition-colors text-left group"
                       @click="selectRule(rule)"
                     >
-                      <span class="font-mono text-sm text-primary font-semibold shrink-0 w-16 text-right">
+                      <span
+                        class="font-mono text-sm text-primary font-semibold shrink-0 w-16 text-right"
+                      >
                         {{ rule.number }}
                       </span>
-                      <span class="text-foreground/90 text-sm group-hover:text-foreground transition-colors">
+                      <span
+                        class="text-foreground/90 text-sm group-hover:text-foreground transition-colors"
+                      >
                         <!-- eslint-disable-next-line vue/no-v-html -->
                         <span v-html="renderContent(rule.title)" />
                       </span>
@@ -352,10 +371,7 @@ function openDrawer(mode: DrawerMode): void {
         </div>
 
         <!-- Right panel (pinned inline or sheet overlay) -->
-        <GameDataDrawer
-          v-model:open="drawerOpen"
-          v-model:mode="drawerMode"
-        />
+        <GameDataDrawer v-model:open="drawerOpen" v-model:mode="drawerMode" />
       </div>
     </div>
   </div>

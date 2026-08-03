@@ -17,7 +17,14 @@ useModalShortcutGuard(open)
 </script>
 
 <template>
-  <Dialog :open="open" @update:open="(value) => { if (!value) cancel() }">
+  <Dialog
+    :open="open"
+    @update:open="
+      (value) => {
+        if (!value) cancel()
+      }
+    "
+  >
     <DialogContent class="sm:max-w-md">
       <DialogHeader>
         <DialogTitle>Leave this system?</DialogTitle>

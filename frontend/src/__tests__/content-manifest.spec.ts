@@ -30,7 +30,16 @@ import { useContentStore } from '@/stores/content'
 import { useSystemStore } from '@/stores/system'
 import { useAuthStore } from '@/stores/auth'
 import { useMembershipStore } from '@/stores/membership'
-import type { User, System, Module, Membership, ManifestEntry, Rule, IndexEntry, GameDatum } from '@/types/domain'
+import type {
+  User,
+  System,
+  Module,
+  Membership,
+  ManifestEntry,
+  Rule,
+  IndexEntry,
+  GameDatum,
+} from '@/types/domain'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -52,7 +61,12 @@ function makeSystem(id: string): System {
     slug: id,
     name: `System ${id}`,
     description: null,
-    config: { system_structure: 'core_plus_many', sort_rules_by: 'number', toc_depth: 3, cover_image: null },
+    config: {
+      system_structure: 'core_plus_many',
+      sort_rules_by: 'number',
+      toc_depth: 3,
+      cover_image: null,
+    },
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
   }

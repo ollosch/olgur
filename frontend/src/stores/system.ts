@@ -58,7 +58,11 @@ export const useSystemStore = defineStore('system', () => {
 
   async function updateSystem(
     systemId: string,
-    data: Partial<{ name: string; description: string | null; config: Partial<import('@/types/domain').SystemConfig> }>,
+    data: Partial<{
+      name: string
+      description: string | null
+      config: Partial<import('@/types/domain').SystemConfig>
+    }>,
   ): Promise<ApiResult<System>> {
     const system = currentSystem.value ?? systems.value.find((s) => s.id === systemId)
     const payload = {
@@ -122,8 +126,14 @@ export const useSystemStore = defineStore('system', () => {
     }
   }
 
-  async function createModule(systemId: string, data: CreateModuleRequest): Promise<ApiResult<Module>> {
-    const result = await post<ApiResource<Module>, CreateModuleRequest>(`/systems/${systemId}/modules`, data)
+  async function createModule(
+    systemId: string,
+    data: CreateModuleRequest,
+  ): Promise<ApiResult<Module>> {
+    const result = await post<ApiResource<Module>, CreateModuleRequest>(
+      `/systems/${systemId}/modules`,
+      data,
+    )
     if (result.ok) {
       const existing = modulesBySystem.value[systemId] ?? []
       modulesBySystem.value[systemId] = [...existing, result.data.data]

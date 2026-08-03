@@ -52,15 +52,24 @@ function onClick(e: MouseEvent) {
               type="button"
               class="text-[10px] text-primary underline decoration-dotted hover:text-primary/80 transition-colors shrink-0"
               @click.stop="interaction.navigateToNumber(state.content.rule.number)"
-            >Open</button>
+            >
+              Open
+            </button>
           </div>
           <!-- eslint-disable-next-line vue/no-v-html -->
-          <p class="font-semibold text-foreground mb-1" v-html="renderContent(state.content.rule.title)" />
+          <p
+            class="font-semibold text-foreground mb-1"
+            v-html="renderContent(state.content.rule.title)"
+          />
           <!-- eslint-disable-next-line vue/no-v-html -->
           <p
             v-if="state.content.rule.content"
             class="text-foreground/70 leading-relaxed whitespace-pre-wrap"
-            v-html="renderContent(state.content.rule.content, { acronymPopups: appSettings.acronymPopups })"
+            v-html="
+              renderContent(state.content.rule.content, {
+                acronymPopups: appSettings.acronymPopups,
+              })
+            "
           />
         </template>
 
@@ -68,13 +77,20 @@ function onClick(e: MouseEvent) {
         <template v-else-if="state.content.type === 'range'">
           <div class="flex items-baseline justify-between gap-2 mb-2">
             <p class="font-mono text-primary font-bold">
-              {{ state.content.rules[0]?.number }} – {{ state.content.rules[state.content.rules.length - 1]?.number }}
+              {{ state.content.rules[0]?.number }} –
+              {{ state.content.rules[state.content.rules.length - 1]?.number }}
             </p>
             <button
               type="button"
               class="text-[10px] text-primary underline decoration-dotted hover:text-primary/80 transition-colors shrink-0"
-              @click.stop="interaction.navigateToRange(`${state.content.rules[0]?.number}-${state.content.rules[state.content.rules.length - 1]?.number}`)"
-            >Open range</button>
+              @click.stop="
+                interaction.navigateToRange(
+                  `${state.content.rules[0]?.number}-${state.content.rules[state.content.rules.length - 1]?.number}`,
+                )
+              "
+            >
+              Open range
+            </button>
           </div>
           <div
             v-for="(rule, i) in state.content.rules"
@@ -98,23 +114,27 @@ function onClick(e: MouseEvent) {
         <!-- Acronym popup -->
         <template v-else-if="state.content.type === 'acronym'">
           <p class="font-semibold text-foreground mb-1">{{ state.content.entry.term }}</p>
+          <p v-if="state.content.entry.definition" class="text-foreground/70 leading-relaxed mb-2">
+            {{ state.content.entry.definition }}
+          </p>
           <p
-            v-if="state.content.entry.definition"
-            class="text-foreground/70 leading-relaxed mb-2"
-          >{{ state.content.entry.definition }}</p>
-          <p v-if="state.content.entry.relations?.rule_refs?.length" class="text-foreground/60 mb-1">
+            v-if="state.content.entry.relations?.rule_refs?.length"
+            class="text-foreground/60 mb-1"
+          >
             <span class="font-medium text-foreground/80">See rules: </span>
             <template v-for="(ref, i) in state.content.entry.relations.rule_refs" :key="ref">
               <a
                 v-if="ref.includes('-')"
                 :data-rule-range="ref"
                 class="underline decoration-dotted cursor-pointer text-primary font-medium hover:text-primary/80 transition-colors"
-              >{{ ref }}</a>
+                >{{ ref }}</a
+              >
               <a
                 v-else
                 :data-rule-number="ref"
                 class="underline decoration-dotted cursor-pointer text-primary font-medium hover:text-primary/80 transition-colors"
-              >{{ ref }}</a><span v-if="i < (state.content.entry.relations.rule_refs?.length ?? 0) - 1">, </span>
+                >{{ ref }}</a
+              ><span v-if="i < (state.content.entry.relations.rule_refs?.length ?? 0) - 1">, </span>
             </template>
           </p>
           <p v-if="state.content.entry.relations?.see_also?.length" class="text-foreground/60">
@@ -135,7 +155,9 @@ function onClick(e: MouseEvent) {
 <style scoped>
 .popup-enter-active,
 .popup-leave-active {
-  transition: opacity 0.1s ease, transform 0.1s ease;
+  transition:
+    opacity 0.1s ease,
+    transform 0.1s ease;
 }
 .popup-enter-from,
 .popup-leave-to {

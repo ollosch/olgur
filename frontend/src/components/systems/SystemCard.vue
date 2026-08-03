@@ -26,7 +26,8 @@ const membershipStore = useMembershipStore()
 const { modulesBySystem, loading } = storeToRefs(systemStore)
 const { subscriptions } = storeToRefs(membershipStore)
 const { fetchModules, deleteSystem, deleteModule, createVersion } = systemStore
-const { activateModule, deactivateModule, subscribe, unsubscribe, canSubscribeToModule } = membershipStore
+const { activateModule, deactivateModule, subscribe, unsubscribe, canSubscribeToModule } =
+  membershipStore
 
 const expanded = ref(false)
 const showCreateModule = ref(false)
@@ -98,7 +99,10 @@ function openSystem() {
       class="px-4 py-3 flex items-center gap-3 cursor-pointer hover:bg-muted/30 transition-colors"
       @click="toggle"
     >
-      <component :is="expanded ? ChevronDown : ChevronRight" class="w-4 h-4 text-muted-foreground shrink-0" />
+      <component
+        :is="expanded ? ChevronDown : ChevronRight"
+        class="w-4 h-4 text-muted-foreground shrink-0"
+      />
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2 flex-wrap">
           <span class="text-foreground font-medium">{{ system.name }}</span>
@@ -125,24 +129,29 @@ function openSystem() {
       <div>
         <div class="flex items-center justify-between mb-2">
           <span class="text-xs text-muted-foreground uppercase tracking-widest">Modules</span>
-          <Button v-if="isAdmin" variant="ghost" size="sm" class="text-xs h-6" @click="showCreateModule = true">
+          <Button
+            v-if="isAdmin"
+            variant="ghost"
+            size="sm"
+            class="text-xs h-6"
+            @click="showCreateModule = true"
+          >
             + New Module
           </Button>
         </div>
 
-        <div v-if="modules.length === 0" class="text-xs text-muted-foreground">
-          No modules yet.
-        </div>
+        <div v-if="modules.length === 0" class="text-xs text-muted-foreground">No modules yet.</div>
 
         <ul v-else class="space-y-1">
-          <li
-            v-for="mod in modules"
-            :key="mod.id"
-            class="flex items-center gap-2 text-sm py-1"
-          >
+          <li v-for="mod in modules" :key="mod.id" class="flex items-center gap-2 text-sm py-1">
             <span class="flex-1 text-foreground">{{ mod.name }}</span>
             <Badge v-if="mod.is_core" variant="secondary" class="text-xs">core</Badge>
-            <Badge v-if="subscriptions[mod.id]?.editor" variant="outline" class="text-xs text-amber-600 border-amber-400/50">editor</Badge>
+            <Badge
+              v-if="subscriptions[mod.id]?.editor"
+              variant="outline"
+              class="text-xs text-amber-600 border-amber-400/50"
+              >editor</Badge
+            >
             <template v-if="isMember">
               <template v-if="mod.is_core">
                 <Badge variant="outline" class="text-xs text-primary border-primary/40">
@@ -151,36 +160,36 @@ function openSystem() {
               </template>
               <template v-else>
                 <template v-if="subscriptions[mod.id]">
-                <Badge
-                  v-if="activeModuleIds.includes(mod.id)"
-                  variant="outline"
-                  class="text-xs text-primary border-primary/40"
-                >
-                  <CircleDot class="w-3 h-3 mr-1" />active
-                </Badge>
-                <Badge v-else variant="outline" class="text-xs text-muted-foreground">
-                  <Circle class="w-3 h-3 mr-1" />inactive
-                </Badge>
-                <Button
-                  v-if="activeModuleIds.includes(mod.id)"
-                  variant="ghost"
-                  size="sm"
-                  class="text-xs h-6"
-                   :disabled="loading"
-                   @click="handleDeactivate(mod.id)"
-                >
-                  Deactivate
-                </Button>
-                <Button
-                  v-else
-                  variant="ghost"
-                  size="sm"
-                  class="text-xs h-6"
-                   :disabled="loading"
-                   @click="handleActivate(mod.id)"
-                >
-                  Activate
-                </Button>
+                  <Badge
+                    v-if="activeModuleIds.includes(mod.id)"
+                    variant="outline"
+                    class="text-xs text-primary border-primary/40"
+                  >
+                    <CircleDot class="w-3 h-3 mr-1" />active
+                  </Badge>
+                  <Badge v-else variant="outline" class="text-xs text-muted-foreground">
+                    <Circle class="w-3 h-3 mr-1" />inactive
+                  </Badge>
+                  <Button
+                    v-if="activeModuleIds.includes(mod.id)"
+                    variant="ghost"
+                    size="sm"
+                    class="text-xs h-6"
+                    :disabled="loading"
+                    @click="handleDeactivate(mod.id)"
+                  >
+                    Deactivate
+                  </Button>
+                  <Button
+                    v-else
+                    variant="ghost"
+                    size="sm"
+                    class="text-xs h-6"
+                    :disabled="loading"
+                    @click="handleActivate(mod.id)"
+                  >
+                    Activate
+                  </Button>
                 </template>
               </template>
             </template>
@@ -199,7 +208,11 @@ function openSystem() {
               size="sm"
               class="text-xs h-6"
               :disabled="loading || !canSubscribeToModule(props.system.id, mod.id)"
-              :title="!canSubscribeToModule(props.system.id, mod.id) ? 'Subscribe to the core module first' : undefined"
+              :title="
+                !canSubscribeToModule(props.system.id, mod.id)
+                  ? 'Subscribe to the core module first'
+                  : undefined
+              "
               @click="handleSubscribe(mod.id)"
             >
               Subscribe

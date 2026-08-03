@@ -108,9 +108,7 @@ const hiddenEntriesCount = computed((): number =>
 const visibleRules = computed((): RuleResult[] =>
   showAllRules.value ? ruleResults.value : ruleResults.value.slice(0, DEFAULT_CAP),
 )
-const hiddenRulesCount = computed((): number =>
-  Math.max(0, ruleResults.value.length - DEFAULT_CAP),
-)
+const hiddenRulesCount = computed((): number => Math.max(0, ruleResults.value.length - DEFAULT_CAP))
 
 const gameDataResults = computed((): GameDataResult[] => {
   const q = query.value.trim().toLowerCase()
@@ -154,9 +152,7 @@ const hiddenGameDataCount = computed((): number =>
 const visibleUnits = computed((): GameDataResult[] =>
   showAllUnits.value ? unitResults.value : unitResults.value.slice(0, DEFAULT_CAP),
 )
-const hiddenUnitsCount = computed((): number =>
-  Math.max(0, unitResults.value.length - DEFAULT_CAP),
-)
+const hiddenUnitsCount = computed((): number => Math.max(0, unitResults.value.length - DEFAULT_CAP))
 
 const hasResults = computed(
   (): boolean =>
@@ -241,10 +237,7 @@ function onKeyDown(e: KeyboardEvent): void {
       </div>
 
       <!-- Results -->
-      <div
-        ref="listRef"
-        class="overflow-y-auto max-h-[70vh] py-2"
-      >
+      <div ref="listRef" class="overflow-y-auto max-h-[70vh] py-2">
         <!-- Has results -->
         <template v-if="query.trim() && hasResults">
           <!-- Index group -->
@@ -255,15 +248,16 @@ function onKeyDown(e: KeyboardEvent): void {
               </p>
             </div>
 
-            <div
-              class="mx-2"
-              @click="handleEntryClick"
-            >
+            <div class="mx-2" @click="handleEntryClick">
               <IndexEntryResult
                 v-for="{ entry } in visibleEntries"
                 :key="entry.id"
                 :entry="entry"
-                @see-also-click="(t) => { query = t }"
+                @see-also-click="
+                  (t) => {
+                    query = t
+                  }
+                "
               />
             </div>
 
@@ -299,7 +293,11 @@ function onKeyDown(e: KeyboardEvent): void {
               @click="selectRule(rule)"
               @keydown.enter="selectRule(rule)"
             >
-              <span :data-rule-number="rule.number" class="font-mono text-xs text-primary font-semibold shrink-0">{{ rule.number }}</span>
+              <span
+                :data-rule-number="rule.number"
+                class="font-mono text-xs text-primary font-semibold shrink-0"
+                >{{ rule.number }}</span
+              >
               <!-- eslint-disable-next-line vue/no-v-html -->
               <span class="text-foreground text-xs truncate" v-html="renderContent(rule.title)" />
             </div>
@@ -336,7 +334,10 @@ function onKeyDown(e: KeyboardEvent): void {
               @click="selectGameDatum(item)"
               @keydown.enter="selectGameDatum(item)"
             >
-              <span class="text-[10px] font-medium text-muted-foreground bg-muted rounded px-1.5 py-0.5 shrink-0">{{ item.type }}</span>
+              <span
+                class="text-[10px] font-medium text-muted-foreground bg-muted rounded px-1.5 py-0.5 shrink-0"
+                >{{ item.type }}</span
+              >
               <span class="text-foreground text-xs truncate">{{ item.name }}</span>
             </div>
 
@@ -351,7 +352,10 @@ function onKeyDown(e: KeyboardEvent): void {
 
           <!-- Separator between groups -->
           <div
-            v-if="(gameDataResults.length > 0 || ruleResults.length > 0 || entryResults.length > 0) && unitResults.length > 0"
+            v-if="
+              (gameDataResults.length > 0 || ruleResults.length > 0 || entryResults.length > 0) &&
+              unitResults.length > 0
+            "
             class="border-t border-border/50 my-2"
           />
 
@@ -372,9 +376,14 @@ function onKeyDown(e: KeyboardEvent): void {
               @click="selectUnit(item)"
               @keydown.enter="selectUnit(item)"
             >
-              <span class="text-[10px] font-medium text-muted-foreground bg-muted rounded px-1.5 py-0.5 shrink-0">{{ unitTypeLabel(item) }}</span>
+              <span
+                class="text-[10px] font-medium text-muted-foreground bg-muted rounded px-1.5 py-0.5 shrink-0"
+                >{{ unitTypeLabel(item) }}</span
+              >
               <span class="text-foreground text-xs truncate flex-1">{{ item.name }}</span>
-              <span v-if="unitNation(item)" class="text-[10px] text-muted-foreground shrink-0">{{ unitNation(item) }}</span>
+              <span v-if="unitNation(item)" class="text-[10px] text-muted-foreground shrink-0">{{
+                unitNation(item)
+              }}</span>
             </div>
 
             <button
@@ -396,10 +405,7 @@ function onKeyDown(e: KeyboardEvent): void {
         </div>
 
         <!-- Empty state (no query) -->
-        <div
-          v-else
-          class="px-4 py-8 text-xs text-muted-foreground text-center"
-        >
+        <div v-else class="px-4 py-8 text-xs text-muted-foreground text-center">
           Type to search rules &amp; index entries…
         </div>
       </div>

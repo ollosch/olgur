@@ -47,12 +47,16 @@ function navigate(bookmark: ResolvedBookmark): void {
           >
             {{ bookmark.sublabel }}
           </span>
-          <span class="text-xs text-foreground/80 truncate">{{ bookmark.label.replace(bookmark.sublabel ? bookmark.sublabel + ' ' : '', '') }}</span>
+          <span class="text-xs text-foreground/80 truncate">{{
+            bookmark.label.replace(bookmark.sublabel ? bookmark.sublabel + ' ' : '', '')
+          }}</span>
         </button>
         <button
           class="shrink-0 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all"
           :title="`Remove bookmark`"
-          @click.stop="bookmarkStore.removeBookmark(bookmark.entry.type as 'rule', bookmark.entry.id)"
+          @click.stop="
+            bookmarkStore.removeBookmark(bookmark.entry.type as 'rule', bookmark.entry.id)
+          "
         >
           <X class="w-3 h-3" />
         </button>

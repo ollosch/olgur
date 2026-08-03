@@ -123,7 +123,11 @@ function formError(key: string): string | undefined {
 
         <div class="space-y-1.5">
           <Label for="sys-description">Description</Label>
-          <Input id="sys-description" v-model="description" placeholder="A short description (optional)" />
+          <Input
+            id="sys-description"
+            v-model="description"
+            placeholder="A short description (optional)"
+          />
           <p v-if="errors.description" class="text-destructive text-xs">
             {{ errors.description }}
           </p>
@@ -140,10 +144,7 @@ function formError(key: string): string | undefined {
             <option value="core_plus_one">Core + One (BCS-style)</option>
             <option value="grouping_only">Grouping Only (ZOC-style)</option>
           </select>
-          <p
-            v-if="formError('config.system_structure')"
-            class="text-destructive text-xs"
-          >
+          <p v-if="formError('config.system_structure')" class="text-destructive text-xs">
             {{ formError('config.system_structure') }}
           </p>
         </div>
@@ -158,10 +159,7 @@ function formError(key: string): string | undefined {
             <option value="sort_order">Manual order</option>
             <option value="number">Rule number</option>
           </select>
-          <p
-            v-if="formError('config.sort_rules_by')"
-            class="text-destructive text-xs"
-          >
+          <p v-if="formError('config.sort_rules_by')" class="text-destructive text-xs">
             {{ formError('config.sort_rules_by') }}
           </p>
         </div>

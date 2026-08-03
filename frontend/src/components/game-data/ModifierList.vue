@@ -62,7 +62,9 @@ function footnoteClass(fn: ModifierFootnote): string {
           <th class="border border-border px-3 py-1.5 text-left font-semibold text-foreground">
             {{ props.content.columns[0] }}
           </th>
-          <th class="border border-border px-3 py-1.5 text-center font-semibold text-foreground w-16">
+          <th
+            class="border border-border px-3 py-1.5 text-center font-semibold text-foreground w-16"
+          >
             {{ props.content.columns[1] }}
           </th>
         </tr>
@@ -75,19 +77,21 @@ function footnoteClass(fn: ModifierFootnote): string {
         >
           <td class="border border-border px-3 py-1.5 text-foreground">
             {{ entry.label }}
-            <sup
-              v-if="entry.markers.length > 0"
-              class="text-[9px] ml-0.5 text-primary"
-            >
+            <sup v-if="entry.markers.length > 0" class="text-[9px] ml-0.5 text-primary">
               {{ entry.markers.join('') }}
             </sup>
           </td>
-          <td class="border border-border px-3 py-1.5 text-center font-mono font-semibold text-foreground">
+          <td
+            class="border border-border px-3 py-1.5 text-center font-mono font-semibold text-foreground"
+          >
             {{ entry.value }}
           </td>
         </tr>
         <tr v-if="visibleEntries.length === 0">
-          <td colspan="2" class="border border-border px-3 py-3 text-muted-foreground text-center italic">
+          <td
+            colspan="2"
+            class="border border-border px-3 py-3 text-muted-foreground text-center italic"
+          >
             No entries for current conditions.
           </td>
         </tr>
@@ -99,11 +103,7 @@ function footnoteClass(fn: ModifierFootnote): string {
       v-if="props.content.footnotes && Object.keys(props.content.footnotes).length > 0"
       class="mt-3 space-y-1"
     >
-      <div
-        v-for="(fn, key) in props.content.footnotes"
-        :key="key"
-        class="flex gap-1.5 text-xs"
-      >
+      <div v-for="(fn, key) in props.content.footnotes" :key="key" class="flex gap-1.5 text-xs">
         <dt class="font-semibold text-primary shrink-0">[{{ key }}]</dt>
         <!-- eslint-disable-next-line vue/no-v-html -->
         <dd :class="footnoteClass(fn)" v-html="renderContent(fn.text)" />

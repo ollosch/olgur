@@ -25,7 +25,7 @@ const authStore = useAuthStore()
 async function bootstrap(): Promise<void> {
   try {
     await authStore.fetchCsrfCookie()
-    await authStore.fetchUser().catch(() => { })
+    await authStore.fetchUser().catch(() => {})
 
     if (authStore.user) {
       await useSystemStore().init()
@@ -35,7 +35,4 @@ async function bootstrap(): Promise<void> {
   }
 }
 
-bootstrap()
-  .catch(
-    (err: unknown) => globalErrorHandler(err, null)
-  )
+bootstrap().catch((err: unknown) => globalErrorHandler(err, null))

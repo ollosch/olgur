@@ -127,8 +127,6 @@ describe('useApi', () => {
     mockRequest.mockResolvedValue({ data: null })
     const { get } = useApi()
     await get('/me')
-    expect(mockRequest).toHaveBeenCalledWith(
-      expect.objectContaining({ url: '/me', method: 'GET' }),
-    )
+    expect(mockRequest).toHaveBeenCalledWith(expect.objectContaining({ url: '/me', method: 'GET' }))
   })
 })

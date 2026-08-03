@@ -43,10 +43,15 @@ const modules = () => systemStore.modulesBySystem[props.systemId] ?? []
     <DialogContent class="sm:max-w-lg max-h-[80vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle>Manage Members</DialogTitle>
-        <DialogDescription class="sr-only">Add or remove system members and manage their roles</DialogDescription>
+        <DialogDescription class="sr-only"
+          >Add or remove system members and manage their roles</DialogDescription
+        >
       </DialogHeader>
 
-      <div v-if="memberManagementStore.adminLoading" class="text-sm text-muted-foreground py-4 text-center">
+      <div
+        v-if="memberManagementStore.adminLoading"
+        class="text-sm text-muted-foreground py-4 text-center"
+      >
         Loading…
       </div>
 
@@ -75,7 +80,10 @@ const modules = () => systemStore.modulesBySystem[props.systemId] ?? []
               {{ m.admin ? 'Remove Admin' : 'Make Admin' }}
             </Button>
           </div>
-          <p v-if="memberManagementStore.adminMemberships.length === 0" class="text-sm text-muted-foreground px-3 py-2">
+          <p
+            v-if="memberManagementStore.adminMemberships.length === 0"
+            class="text-sm text-muted-foreground px-3 py-2"
+          >
             No members yet.
           </p>
         </section>
@@ -99,7 +107,14 @@ const modules = () => systemStore.modulesBySystem[props.systemId] ?? []
               size="sm"
               :disabled="memberManagementStore.loading"
               class="ml-4 shrink-0 text-xs"
-              @click="memberManagementStore.updateSubscriptionEditor(props.systemId, mod.id, sub.id, !sub.editor)"
+              @click="
+                memberManagementStore.updateSubscriptionEditor(
+                  props.systemId,
+                  mod.id,
+                  sub.id,
+                  !sub.editor,
+                )
+              "
             >
               {{ sub.editor ? 'Remove Editor' : 'Make Editor' }}
             </Button>

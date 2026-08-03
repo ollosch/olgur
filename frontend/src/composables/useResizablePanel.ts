@@ -44,7 +44,10 @@ export function useResizablePanel(options: ResizablePanelOptions): ResizablePane
     if (!isDragging.value) return
     const currentPos = direction === 'horizontal' ? e.clientX : e.clientY
     const delta = inverted ? dragStartPos - currentPos : currentPos - dragStartPos
-    size.value = Math.max(resolve(options.min), Math.min(dragStartSize + delta, resolve(options.max)))
+    size.value = Math.max(
+      resolve(options.min),
+      Math.min(dragStartSize + delta, resolve(options.max)),
+    )
   }
 
   function onEnd(): void {

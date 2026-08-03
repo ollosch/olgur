@@ -23,7 +23,9 @@ export const useMembershipStore = defineStore('membership', () => {
 
   // ── Computed shortcuts for current system ─────────────────────────────────────
   const membership = computed((): Membership | null =>
-    systemStore.currentSystem ? (membershipsBySystem.value[systemStore.currentSystem.id] ?? null) : null,
+    systemStore.currentSystem
+      ? (membershipsBySystem.value[systemStore.currentSystem.id] ?? null)
+      : null,
   )
 
   // ── Computed shortcuts for home view ──────────────────────────────────────────
@@ -143,7 +145,10 @@ export const useMembershipStore = defineStore('membership', () => {
     await fetchMemberships()
   }
 
-  async function updateMembership(systemId: string, config: Record<string, unknown>): Promise<ApiResult<void>> {
+  async function updateMembership(
+    systemId: string,
+    config: Record<string, unknown>,
+  ): Promise<ApiResult<void>> {
     const result = await patch<ApiResource<Membership>, { config: Record<string, unknown> }>(
       `/me/memberships/${systemId}`,
       { config },

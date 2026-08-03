@@ -4,10 +4,10 @@ export const BREAKPOINT_MD = 768
 /** Debounce delay for search inputs in milliseconds */
 export const SEARCH_DEBOUNCE_MS = 200
 
-import type { ClassValue } from "clsx"
-import { clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
-import type { IndexEntry } from "@/types/domain"
+import type { ClassValue } from 'clsx'
+import { clsx } from 'clsx'
+import { twMerge } from 'tailwind-merge'
+import type { IndexEntry } from '@/types/domain'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))

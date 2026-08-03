@@ -29,15 +29,27 @@ export function useApi() {
     return request(() => api.request<T>({ url, method: 'GET', ...config }))
   }
 
-  function post<T, D = unknown>(url: string, data?: D, config?: AxiosRequestConfig): Promise<ApiResult<T>> {
+  function post<T, D = unknown>(
+    url: string,
+    data?: D,
+    config?: AxiosRequestConfig,
+  ): Promise<ApiResult<T>> {
     return request(() => api.request<T>({ url, method: 'POST', data, ...config }))
   }
 
-  function put<T, D = unknown>(url: string, data: D, config?: AxiosRequestConfig): Promise<ApiResult<T>> {
+  function put<T, D = unknown>(
+    url: string,
+    data: D,
+    config?: AxiosRequestConfig,
+  ): Promise<ApiResult<T>> {
     return request(() => api.request<T>({ url, method: 'PUT', data, ...config }))
   }
 
-  function patch<T, D = unknown>(url: string, data: D, config?: AxiosRequestConfig): Promise<ApiResult<T>> {
+  function patch<T, D = unknown>(
+    url: string,
+    data: D,
+    config?: AxiosRequestConfig,
+  ): Promise<ApiResult<T>> {
     return request(() => api.request<T>({ url, method: 'PATCH', data, ...config }))
   }
 

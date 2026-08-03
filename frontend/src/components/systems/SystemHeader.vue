@@ -58,7 +58,11 @@ async function logout(): Promise<void> {
     <div class="flex items-center gap-2 shrink-0">
       <Sheet v-model:open="panelStore.mobileOpen">
         <SheetTrigger as-child>
-          <Button variant="ghost" size="icon" :class="['w-8 h-8', appSettings.sidebarPinned ? 'hidden' : 'md:hidden']">
+          <Button
+            variant="ghost"
+            size="icon"
+            :class="['w-8 h-8', appSettings.sidebarPinned ? 'hidden' : 'md:hidden']"
+          >
             <Menu class="w-4 h-4" />
           </Button>
         </SheetTrigger>
@@ -123,9 +127,7 @@ async function logout(): Promise<void> {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" class="w-48">
-        <DropdownMenuItem @click="router.push({ name: 'home' })">
-          Exit System
-        </DropdownMenuItem>
+        <DropdownMenuItem @click="router.push({ name: 'home' })"> Exit System </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           v-if="membershipStore.membership?.admin"
@@ -141,9 +143,7 @@ async function logout(): Promise<void> {
           App Settings
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem class="text-destructive" @click="logout">
-          Logout
-        </DropdownMenuItem>
+        <DropdownMenuItem class="text-destructive" @click="logout"> Logout </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   </header>

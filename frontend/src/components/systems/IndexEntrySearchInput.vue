@@ -48,16 +48,26 @@ function select(entry: IndexEntry): void {
 
 <template>
   <div class="relative">
-    <Input v-model="search" placeholder="Search by term…" autocomplete="off"
-      @keydown.enter.prevent />
-    <div v-if="search.trim()"
-      class="absolute z-50 top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto rounded-md border border-border bg-popover shadow-md">
+    <Input
+      v-model="search"
+      placeholder="Search by term…"
+      autocomplete="off"
+      @keydown.enter.prevent
+    />
+    <div
+      v-if="search.trim()"
+      class="absolute z-50 top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto rounded-md border border-border bg-popover shadow-md"
+    >
       <div v-if="results.length === 0" class="py-6 text-center text-sm text-muted-foreground">
         No matching entries
       </div>
-      <button v-for="result in results" :key="result.id" type="button"
+      <button
+        v-for="result in results"
+        :key="result.id"
+        type="button"
         class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent cursor-pointer"
-        @click="select(result)">
+        @click="select(result)"
+      >
         <span class="text-foreground/80 min-w-0 truncate">{{ result.term }}</span>
       </button>
     </div>

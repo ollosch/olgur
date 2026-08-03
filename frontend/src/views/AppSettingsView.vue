@@ -39,12 +39,11 @@ function goBack(): void {
 }
 
 /** Whether the current system has any rules with non-null markdown */
-const hasMarkdownRules = computed(() =>
-  contentStore.allRules.some((r) => r.markdown !== null),
-)
+const hasMarkdownRules = computed(() => contentStore.allRules.some((r) => r.markdown !== null))
 
-const preferredFormat = computed((): 'content' | 'markdown' =>
-  membershipStore.membership?.config?.preferred_rule_format ?? 'content',
+const preferredFormat = computed(
+  (): 'content' | 'markdown' =>
+    membershipStore.membership?.config?.preferred_rule_format ?? 'content',
 )
 
 async function toggleFormat(): Promise<void> {
@@ -74,7 +73,8 @@ async function toggleFormat(): Promise<void> {
           </CardDescription>
         </CardHeader>
         <CardContent class="flex items-center space-x-2">
-          <Switch id="acronym-popups"
+          <Switch
+            id="acronym-popups"
             :model-value="settings.acronymPopups"
             @click="settings.acronymPopups = !settings.acronymPopups"
           />
@@ -91,7 +91,8 @@ async function toggleFormat(): Promise<void> {
           </CardDescription>
         </CardHeader>
         <CardContent class="flex items-center space-x-2">
-          <Switch id="prefer-markdown"
+          <Switch
+            id="prefer-markdown"
             :model-value="preferredFormat === 'markdown'"
             @click="toggleFormat"
           />

@@ -91,7 +91,11 @@ watch(
   <Tabs
     :model-value="panelStore.activeTab"
     class="flex flex-col h-full"
-    @update:model-value="(v) => { panelStore.activeTab = v as PanelTab }"
+    @update:model-value="
+      (v) => {
+        panelStore.activeTab = v as PanelTab
+      }
+    "
   >
     <TabsList
       class="shrink-0 w-full rounded-none border-b border-border justify-start px-2 gap-1 h-9"
@@ -119,12 +123,7 @@ watch(
     <TabsContent value="tree" class="flex-1 overflow-hidden mt-0">
       <ScrollArea class="h-full">
         <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
-        <div
-          ref="treeContainerRef"
-          class="py-4"
-          data-tree-container
-          @keydown="onTreeKeyDown"
-        >
+        <div ref="treeContainerRef" class="py-4" data-tree-container @keydown="onTreeKeyDown">
           <div v-for="mod in contentStore.activeModules" :key="mod.id" class="mb-2">
             <button
               class="w-full flex items-center gap-2 px-4 py-2 hover:bg-muted/30 transition-colors text-left"
@@ -152,7 +151,10 @@ watch(
             </div>
           </div>
 
-          <div v-if="contentStore.activeModules.length === 0" class="px-4 text-xs text-muted-foreground">
+          <div
+            v-if="contentStore.activeModules.length === 0"
+            class="px-4 text-xs text-muted-foreground"
+          >
             No active modules.
           </div>
         </div>
