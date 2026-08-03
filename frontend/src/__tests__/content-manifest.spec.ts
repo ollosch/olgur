@@ -301,7 +301,7 @@ describe('useContentStore — manifest & content routing', () => {
       contentStore.manifestByModule['mod1'] = entry
 
       const rules = [makeRule('r1')]
-      mockRequest.mockResolvedValue({ data: rules })
+      mockRequest.mockResolvedValue(rules)
 
       await contentStore.fetchRules('sys1', 'mod1')
 
@@ -346,7 +346,7 @@ describe('useContentStore — manifest & content routing', () => {
       contentStore.manifestByModule['mod1'] = entry
 
       const rule: Rule = { ...makeRule('r1'), content: 'line1<br>line2' }
-      mockRequest.mockResolvedValue({ data: [rule] })
+      mockRequest.mockResolvedValue([rule])
 
       await contentStore.fetchRules('sys1', 'mod1')
 
@@ -364,7 +364,7 @@ describe('useContentStore — manifest & content routing', () => {
       const entry = makeManifestEntry('mod1')
       contentStore.manifestByModule['mod1'] = entry
 
-      mockRequest.mockResolvedValue({ data: [makeIndexEntry('e1')] })
+      mockRequest.mockResolvedValue([makeIndexEntry('e1')])
 
       await contentStore.fetchIndexEntries('sys1', 'mod1')
 
@@ -406,7 +406,7 @@ describe('useContentStore — manifest & content routing', () => {
       const entry = makeManifestEntry('mod1')
       contentStore.manifestByModule['mod1'] = entry
 
-      mockRequest.mockResolvedValue({ data: [makeGameDatum('gd1')] })
+      mockRequest.mockResolvedValue([makeGameDatum('gd1')])
 
       await contentStore.fetchGameData('sys1', 'mod1')
 

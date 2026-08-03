@@ -248,8 +248,8 @@ export const useContentStore = defineStore('content', () => {
    */
   async function fetchAuthenticatedCollection<T>(url: string): Promise<T[] | null> {
     try {
-      const json = await request<ApiCollection<T>>({ method: 'GET', url })
-      return Array.isArray(json.data) ? json.data : null
+      const json = await request<T[]>({ method: 'GET', url })
+      return Array.isArray(json) ? json : null
     } catch {
       return null
     }
