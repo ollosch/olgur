@@ -37,10 +37,10 @@ describe('Router navigation guards', () => {
     setActivePinia(createPinia())
     // Mark auth as initialized so the guard does not wait in normal tests.
     useAuthStore().initialized = true
-    // Reset to /register (a guest route that is never the target of any test
+    // Reset to /reset-password-request (a guest route that is never the target of any test
     // below) so that pushes to /login are never treated as NavigationDuplicated
     // — Vue Router skips guards entirely for duplicate navigations.
-    await router.push('/register')
+    await router.push('/reset-password-request')
   })
 
   // ── Unauthenticated user ─────────────────────────────────────────────────────
@@ -124,7 +124,7 @@ describe('Router navigation guards', () => {
 
       // Guard is suspended — current route has not changed.
       await nextTick()
-      expect(router.currentRoute.value.path).toBe('/register')
+      expect(router.currentRoute.value.path).toBe('/reset-password-request')
 
       // Bootstrap completes.
       authStore.initialized = true
@@ -142,7 +142,7 @@ describe('Router navigation guards', () => {
       const navPromise = router.push('/')
 
       await nextTick()
-      expect(router.currentRoute.value.path).toBe('/register')
+      expect(router.currentRoute.value.path).toBe('/reset-password-request')
 
       authStore.initialized = true
 
