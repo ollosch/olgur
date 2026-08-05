@@ -22,14 +22,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
  && docker-php-ext-enable redis \
  && apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
-
 WORKDIR /var/www
 
 # `composer install` may trigger scripts that need access to the entire app code
 COPY ./backend /var/www
-
-RUN composer install --no-interaction --no-progress --prefer-dist
 
 ##########################################################
 # Stage 2: Shared base — extensions installed, no app code
@@ -81,9 +77,11 @@ COPY --from=builder /var/www /var/www
 # Copy a clean storage skeleton for runtime initialisation in the entrypoint
 COPY ./backend/storage /var/www/storage-init
 
+COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
+
 WORKDIR /var/www
 
-# Re-run composer with production flags to strip dev dependencies and optimise autoloader
+# Run composer with production flags to strip dev dependencies and optimise autoloader
 RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress --prefer-dist \
  && rm /usr/local/bin/composer
 
