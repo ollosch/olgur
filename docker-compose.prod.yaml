@@ -3,8 +3,8 @@ services:
     image: nginx:1
     volumes:
       - ${PWD}/backend/:/var/www
-      - ${PWD}/docker/development/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ${PWD}/docker/development/nginx/log/:/var/log/nginx
+      - ${PWD}/docker/production/nginx/api.conf:/etc/nginx/nginx.conf:ro
+      - ${PWD}/docker/production/nginx/log/api/:/var/log/nginx
     networks:
       - olgur
       - web
@@ -14,15 +14,38 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=web
-      - traefik.http.routers.olgur.entrypoints=websecure
-      - traefik.http.routers.olgur.rule=Host(`api.olgur.de`)
-      - traefik.http.routers.olgur.tls=true
-      - traefik.http.routers.olgur.tls.certresolver=letsencrypt
+      - traefik.http.routers.olgur-api.entrypoints=websecure
+      - traefik.http.routers.olgur-api.rule=Host(`api.olgur.de`)
+      - traefik.http.routers.olgur-api.tls=true
+      - traefik.http.routers.olgur-api.tls.certresolver=letsencrypt
     deploy:
       resources:
         limits:
           memory: 128m
           cpus: "0.5"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ${PWD}/docker/production/frontend/Dockerfile
+      target: production
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-https://api.olgur.de/api}
+        VITE_COOKIE_URL: ${VITE_COOKIE_URL:-https://api.olgur.de/sanctum/csrf-cookie}
+    networks:
+      - web
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=web
+      - traefik.http.routers.olgur-frontend.entrypoints=websecure
+      - traefik.http.routers.olgur-frontend.rule=Host(`olgur.de`)
+      - traefik.http.routers.olgur-frontend.tls=true
+      - traefik.http.routers.olgur-frontend.tls.certresolver=letsencrypt
+    deploy:
+      resources:
+        limits:
+          memory: 64m
+          cpus: "0.25"
 
   php-fpm:
     build:
