@@ -19,18 +19,20 @@ return [
 
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
 
-    'allowed_methods' => ['*'],
+    'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 
     'allowed_origins' => [env('FRONTEND_URL', 'http://localhost:5173')],
 
     'allowed_origins_patterns' => [],
 
-    'allowed_headers' => ['*'],
+    'allowed_headers' => ['Content-Type', 'Accept', 'X-XSRF-TOKEN', 'X-Requested-With'],
 
     'exposed_headers' => [],
 
-    'max_age' => 0,
+    // Cache the preflight for 2 hours to reduce OPTIONS round-trips
+    'max_age' => 7200,
 
+    // Required for cookie-based session auth
     'supports_credentials' => true,
 
 ];
