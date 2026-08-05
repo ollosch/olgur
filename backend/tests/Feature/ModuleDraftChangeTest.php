@@ -270,6 +270,7 @@ test('manifest files URLs include revision query param when revision is greater 
         'version_string' => '1.0',
         'revision' => 3,
     ]);
+    Membership::factory()->for($user)->for($system)->create();
 
     actingAs($user);
 
@@ -291,6 +292,7 @@ test('manifest files URLs do not include revision query param when revision is z
         'version_string' => '1.0',
         'revision' => 0,
     ]);
+    Membership::factory()->for($user)->for($system)->create();
 
     actingAs($user);
 

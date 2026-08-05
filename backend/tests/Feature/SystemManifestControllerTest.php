@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\Membership;
 use App\Models\Module;
 use App\Models\ModuleVersion;
 use App\Models\System;
@@ -24,6 +25,7 @@ test('unauthenticated request is rejected', function (): void {
 test('manifest returns all modules with their latest version', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->create();
+    Membership::factory()->for($user)->for($system)->create();
     $moduleA = Module::factory()->for($system)->create(['name' => 'Core', 'sort_order' => 1]);
     $moduleB = Module::factory()->for($system)->create(['name' => 'Expansion', 'sort_order' => 2, 'slug' => 'expansion']);
 
@@ -52,6 +54,7 @@ test('manifest returns all modules with their latest version', function (): void
 test('manifest includes modules with no released version', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->create();
+    Membership::factory()->for($user)->for($system)->create();
     Module::factory()->for($system)->create(['name' => 'No Version', 'sort_order' => 1]);
 
     actingAs($user);
@@ -70,6 +73,7 @@ test('manifest includes modules with no released version', function (): void {
 test('manifest file paths reference correct version ids', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->create();
+    Membership::factory()->for($user)->for($system)->create();
     $module = Module::factory()->for($system)->create();
     $version = ModuleVersion::factory()->for($module)->released()->create(['version_string' => '1.0']);
 
@@ -107,6 +111,7 @@ test('manifest returns 404 for unknown system', function (): void {
 test('core module has type core in manifest', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->create();
+    Membership::factory()->for($user)->for($system)->create();
     Module::factory()->for($system)->create(['is_core' => true]);
 
     actingAs($user);
@@ -120,6 +125,7 @@ test('core module has type core in manifest', function (): void {
 test('expansion module has type expansion in manifest', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->create();
+    Membership::factory()->for($user)->for($system)->create();
     Module::factory()->for($system)->create(['is_core' => false]);
 
     actingAs($user);
@@ -135,6 +141,7 @@ test('expansion module has type expansion in manifest', function (): void {
 test('manifest response contains system_id and name', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->create(['name' => 'Advanced Squad Leader']);
+    Membership::factory()->for($user)->for($system)->create();
 
     actingAs($user);
 
@@ -148,6 +155,7 @@ test('manifest response contains system_id and name', function (): void {
 test('manifest modules include required fields', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->create();
+    Membership::factory()->for($user)->for($system)->create();
     $module = Module::factory()->for($system)->create();
     ModuleVersion::factory()->for($module)->released()->create(['version_string' => '1.0']);
 
@@ -179,8 +187,9 @@ test('manifest modules include required fields', function (): void {
 test('manifest returns modules ordered by sort_order', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->create();
+    Membership::factory()->for($user)->for($system)->create();
     Module::factory()->for($system)->create(['name' => 'Third', 'sort_order' => 3, 'slug' => 'third']);
-    $first = Module::factory()->for($system)->create(['name' => 'First', 'sort_order' => 1, 'slug' => 'first']);
+    Module::factory()->for($system)->create(['name' => 'First', 'sort_order' => 1, 'slug' => 'first']);
     Module::factory()->for($system)->create(['name' => 'Second', 'sort_order' => 2, 'slug' => 'second']);
 
     actingAs($user);
