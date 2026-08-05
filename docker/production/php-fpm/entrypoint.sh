@@ -7,9 +7,6 @@ set -e
 echo "Setting storage permissions..."
 chmod -R 775 /var/www/storage /var/www/bootstrap/cache
 
-echo "Running database migrations..."
-php artisan migrate --force
-
 echo "Caching configurations..."
 php artisan config:cache
 php artisan route:cache
