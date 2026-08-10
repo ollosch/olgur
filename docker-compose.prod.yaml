@@ -53,6 +53,7 @@ services:
       dockerfile: ${PWD}/docker/common/php-fpm/Dockerfile
       target: production
     environment:
+      APP_KEY: ${APP_KEY}
       XDEBUG_MODE: ${XDEBUG_MODE:-off}
       XDEBUG_HOST: ${XDEBUG_HOST:-host.docker.internal}
       XDEBUG_IDE_KEY: ${XDEBUG_IDE_KEY:-DOCKER}
