@@ -79,7 +79,7 @@ function sopContent(item: GameDatum): SopContent | null {
     :class="
       isPinned
         ? 'shrink-0 border-b border-border px-4 flex-row items-center gap-0 h-[53px] flex'
-        : 'shrink-0 border-b border-border px-4 py-0 flex-row items-center gap-0 space-y-0 h-[53px]'
+        : 'shrink-0 border-b border-border px-4 pr-12 py-0 flex-row items-center gap-0 space-y-0 h-[53px]'
     "
   >
     <!-- Mode tabs -->
@@ -110,7 +110,7 @@ function sopContent(item: GameDatum): SopContent | null {
     <div class="flex-1" />
     <!-- Pin/Unpin button -->
     <button
-      class="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+      class="shrink-0 p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
       :title="isPinned ? 'Unpin panel' : 'Pin panel'"
       @click="emit('toggle-pin')"
     >

@@ -121,7 +121,7 @@ watch(
       </TabsTrigger>
       <!-- Pin button -->
       <button
-        class="ml-auto w-6 h-6 flex items-center justify-center rounded transition-colors hover:bg-muted/50"
+        class="ml-auto shrink-0 w-6 h-6 flex items-center justify-center rounded transition-colors hover:bg-muted/50"
         :title="pinned ? 'Unpin panel' : 'Pin panel'"
         @click.stop="emit('togglePin')"
       >

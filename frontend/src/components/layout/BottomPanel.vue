@@ -117,26 +117,28 @@ const clampedHeight = computed(() => {
 
     <!-- Tab bar -->
     <div class="shrink-0 flex items-center border-b border-border h-9 px-2 gap-1">
-      <button
-        v-for="tab in store.tabs"
-        :key="tab.id"
-        :class="[
-          'flex items-center gap-1.5 px-3 h-7 rounded text-xs transition-colors',
-          store.activeTabId === tab.id
-            ? 'bg-muted text-foreground'
-            : 'text-muted-foreground hover:text-foreground',
-        ]"
-        @click="store.setActiveTab(tab.id)"
-      >
-        <Database v-if="tab.icon === 'database'" class="w-3 h-3" />
-        {{ tab.label }}
-      </button>
-
-      <div class="flex-1" />
+      <div class="flex-1 min-w-0 overflow-x-auto">
+        <div class="flex w-max gap-1">
+          <button
+            v-for="tab in store.tabs"
+            :key="tab.id"
+            :class="[
+              'flex items-center gap-1.5 px-3 h-7 rounded text-xs transition-colors',
+              store.activeTabId === tab.id
+                ? 'bg-muted text-foreground'
+                : 'text-muted-foreground hover:text-foreground',
+            ]"
+            @click="store.setActiveTab(tab.id)"
+          >
+            <Database v-if="tab.icon === 'database'" class="w-3 h-3" />
+            {{ tab.label }}
+          </button>
+        </div>
+      </div>
 
       <!-- Pin button (desktop only) -->
       <button
-        class="hidden lg:flex w-6 h-6 items-center justify-center rounded transition-colors hover:bg-muted/50"
+        class="hidden lg:flex shrink-0 w-6 h-6 items-center justify-center rounded transition-colors hover:bg-muted/50"
         :title="store.isPinned ? 'Unpin panel' : 'Pin panel'"
         @click="store.isPinned ? store.unpin() : store.pin()"
       >
@@ -146,7 +148,7 @@ const clampedHeight = computed(() => {
 
       <!-- Close button -->
       <button
-        class="w-6 h-6 flex items-center justify-center rounded transition-colors hover:bg-muted/50"
+        class="shrink-0 w-6 h-6 flex items-center justify-center rounded transition-colors hover:bg-muted/50"
         title="Close panel"
         @click="store.close()"
       >
