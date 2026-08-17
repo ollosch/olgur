@@ -58,6 +58,7 @@ export function useRuleDelegation(
   }
 
   function onDocMouseOver(e: MouseEvent) {
+    if (!window.matchMedia('(hover: hover)').matches) return
     if (!(e.target instanceof HTMLElement)) return
     const target = e.target
 
