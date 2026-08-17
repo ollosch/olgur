@@ -11,9 +11,7 @@ docker/**/log*
 /docs
 /plans
 AGENTS.md
-CONTEXT.md
-DOMAIN.md
-INSTRUCTIONS.md
+REFERENCE.md
 opencode.json
 skills-lock.json
 /backend/data
