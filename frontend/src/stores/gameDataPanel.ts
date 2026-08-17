@@ -32,12 +32,10 @@ export const useGameDataPanelStore = defineStore('gameDataPanel', () => {
   const sopUiState = ref<Record<string, SopUiState>>({})
 
   function getSopState(sopId: string): SopUiState {
-    let state = sopUiState.value[sopId]
-    if (!state) {
-      state = createSopUiState()
-      sopUiState.value[sopId] = state
+    if (!sopUiState.value[sopId]) {
+      sopUiState.value[sopId] = createSopUiState()
     }
-    return state
+    return sopUiState.value[sopId]
   }
 
   return { activeTableId, activeSopId, sopUiState, getSopState }
