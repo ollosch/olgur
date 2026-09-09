@@ -26,6 +26,7 @@ final class ModuleVersionResource extends JsonResource
             'module_id' => $version->module_id,
             'version_string' => $version->version_string,
             'notes' => $version->notes,
+            'revision' => $version->revision,
             'released_by' => $version->released_by,
             'released_at' => $version->released_at?->toIso8601String(),
             'created_at' => $version->created_at,

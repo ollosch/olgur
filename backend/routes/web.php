@@ -9,9 +9,8 @@ use App\Http\Controllers\MembershipController;
 use App\Http\Controllers\ModuleActivationController;
 use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\ModuleDraftChangeController;
-use App\Http\Controllers\ModuleVersionAmendmentController;
+use App\Http\Controllers\ModuleVersionContentController;
 use App\Http\Controllers\ModuleVersionController;
-use App\Http\Controllers\ModuleVersionFileController;
 use App\Http\Controllers\RuleController;
 use App\Http\Controllers\RuleImageController;
 use App\Http\Controllers\SubscriptionController;
@@ -48,15 +47,14 @@ Route::prefix('api')->group(function (): void {
             Route::post('/systems/{system}/modules/{module}/activate', [ModuleActivationController::class, 'store']);
             Route::delete('/systems/{system}/modules/{module}/activate', [ModuleActivationController::class, 'destroy']);
 
-            Route::get('/systems/{system}/modules/{module}/versions/{version}/rules', [ModuleVersionFileController::class, 'rules'])
+            Route::get('/systems/{system}/modules/{module}/versions/{version}/rules', [ModuleVersionContentController::class, 'rules'])
                 ->name('versions.rules');
-            Route::get('/systems/{system}/modules/{module}/versions/{version}/index', [ModuleVersionFileController::class, 'index'])
+            Route::get('/systems/{system}/modules/{module}/versions/{version}/index', [ModuleVersionContentController::class, 'index'])
                 ->name('versions.index');
-            Route::get('/systems/{system}/modules/{module}/versions/{version}/game-data', [ModuleVersionFileController::class, 'gameData'])
+            Route::get('/systems/{system}/modules/{module}/versions/{version}/game-data', [ModuleVersionContentController::class, 'gameData'])
                 ->name('versions.game-data');
-
-            Route::get('/systems/{system}/modules/{module}/versions/{version}/amendments', [ModuleVersionAmendmentController::class, 'index']);
-            Route::post('/systems/{system}/modules/{module}/versions/{version}/amendments', [ModuleVersionAmendmentController::class, 'store']);
+            Route::patch('/systems/{system}/modules/{module}/versions/{version}/amend', [ModuleVersionController::class, 'amend'])
+                ->name('versions.amend');
 
             Route::get('/systems/{system}/modules/{module}/draft-changes', [ModuleDraftChangeController::class, 'index']);
         });

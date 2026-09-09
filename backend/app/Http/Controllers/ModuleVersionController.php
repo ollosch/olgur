@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Actions\ApplyModuleVersionBackEdit;
 use App\Actions\PublishModuleVersion;
+use App\Http\Requests\AmendModuleVersionRequest;
 use App\Http\Requests\StoreModuleVersionRequest;
 use App\Http\Resources\ModuleVersionResource;
 use App\Models\Module;
@@ -61,6 +63,44 @@ final class ModuleVersionController
             $user,
             $versionString,
             $notes,
+        );
+
+        return new ModuleVersionResource($moduleVersion);
+    }
+
+    /**
+     * Apply a constrained, latest-only back-edit to a single snapshot record.
+     */
+    public function amend(
+        AmendModuleVersionRequest $request,
+        System $system,
+        Module $module,
+        ModuleVersion $version,
+        ApplyModuleVersionBackEdit $applyBackEdit,
+    ): ModuleVersionResource {
+        Gate::authorize('amendLatest', [ModuleVersion::class, $module]);
+
+        $validated = $request->validated();
+
+        /** @var string $entityType */
+        $entityType = $validated['entity_type'];
+
+        /** @var string $entityId */
+        $entityId = $validated['entity_id'];
+
+        /** @var int $expectedRevision */
+        $expectedRevision = $validated['expected_revision'];
+
+        /** @var array<string, mixed> $content */
+        $content = $validated['content'];
+
+        $moduleVersion = $applyBackEdit->execute(
+            $module,
+            $version,
+            $entityType,
+            $entityId,
+            $expectedRevision,
+            $content,
         );
 
         return new ModuleVersionResource($moduleVersion);

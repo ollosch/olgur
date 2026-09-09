@@ -7,7 +7,7 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-final class StoreModuleVersionAmendmentRequest extends FormRequest
+final class AmendModuleVersionRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -27,8 +27,7 @@ final class StoreModuleVersionAmendmentRequest extends FormRequest
         return [
             'entity_type' => ['required', 'string', Rule::in(['rule', 'index_entry', 'game_datum'])],
             'entity_id' => ['required', 'string'],
-            'change_type' => ['required', 'string', Rule::in(['correction', 'update'])],
-            'description' => ['required', 'string', 'min:1'],
+            'expected_revision' => ['required', 'integer', 'min:0'],
             'content' => ['required', 'array'],
         ];
     }

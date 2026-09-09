@@ -20,12 +20,9 @@ use Illuminate\Support\Str;
 
 final readonly class PublishModuleVersion
 {
-    public function __construct(private GenerateModuleVersionFiles $generateFiles) {}
-
     public function execute(Module $module, User $releasedBy, string $version, string $notes = ''): ModuleVersion
     {
-        $version = DB::transaction(function () use ($module, $releasedBy, $version, $notes): ModuleVersion {
-
+        return DB::transaction(function () use ($module, $releasedBy, $version, $notes): ModuleVersion {
             $moduleVersion = ModuleVersion::query()->create([
                 'module_id' => $module->id,
                 'version_string' => $version,
@@ -45,11 +42,6 @@ final readonly class PublishModuleVersion
 
             return $moduleVersion;
         });
-
-        $this->generateFiles->generateAll($version);
-
-        return $version;
-
     }
 
     private function publishRules(Module $module, ModuleVersion $version): void

@@ -67,10 +67,11 @@ test('manifest includes modules with no released version', function (): void {
     expect($module['version_id'])->toBeNull()
         ->and($module['version_string'])->toBeNull()
         ->and($module['released_at'])->toBeNull()
-        ->and($module['files'])->toBeNull();
+        ->and($module['revision'])->toBe(0)
+        ->and($module['content'])->toBeNull();
 });
 
-test('manifest file paths reference correct version ids', function (): void {
+test('manifest content URLs reference correct version ids', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->create();
     Membership::factory()->for($user)->for($system)->create();
@@ -82,19 +83,19 @@ test('manifest file paths reference correct version ids', function (): void {
     $response = getJson(sprintf('/api/systems/%s/manifest', $system->id))
         ->assertSuccessful();
 
-    $files = $response->json('data.modules.0.files');
+    $content = $response->json('data.modules.0.content');
 
-    expect($files['rules'])
+    expect($content['rules'])
         ->toStartWith('http')
         ->toContain($version->id)
         ->toContain('rules');
 
-    expect($files['index'])
+    expect($content['index'])
         ->toStartWith('http')
         ->toContain($version->id)
         ->toContain('index');
 
-    expect($files['game-data'])
+    expect($content['game-data'])
         ->toStartWith('http')
         ->toContain($version->id)
         ->toContain('game-data');
@@ -177,7 +178,8 @@ test('manifest modules include required fields', function (): void {
                     'version_id',
                     'version_string',
                     'released_at',
-                    'files',
+                    'revision',
+                    'content',
                 ],
             ],
         ],

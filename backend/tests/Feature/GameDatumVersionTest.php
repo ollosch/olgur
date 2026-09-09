@@ -10,7 +10,6 @@ use App\Models\Module;
 use App\Models\ModuleVersion;
 use App\Models\System;
 use App\Models\User;
-use Illuminate\Support\Facades\Storage;
 
 test('a game_datum_version can be created with factory defaults', function (): void {
     $gameDatumVersion = GameDatumVersion::factory()->create();
@@ -78,9 +77,7 @@ test('deleting a module_version cascades to its game_datum_versions', function (
     expect(GameDatumVersion::query()->find($gameDatumVersion->id))->toBeNull();
 });
 
-test('publish snapshots game data into game_datum_versions and writes static file', function (): void {
-    Storage::fake('local');
-
+test('publish snapshots game data into game_datum_versions', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
@@ -90,10 +87,4 @@ test('publish snapshots game data into game_datum_versions and writes static fil
     $moduleVersion = resolve(PublishModuleVersion::class)->execute($module, $user, '1.0.0');
 
     expect(GameDatumVersion::query()->where('module_version_id', $moduleVersion->id)->count())->toBe(2);
-
-    $path = sprintf('versions/%s/game-data.json', $moduleVersion->id);
-    Storage::disk('local')->assertExists($path);
-
-    $content = json_decode((string) Storage::disk('local')->get($path), true);
-    expect($content)->toHaveCount(2);
 });

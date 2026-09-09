@@ -84,12 +84,4 @@ final class ModuleVersion extends Model
     {
         return $this->hasMany(IndexEntryVersion::class);
     }
-
-    /**
-     * @return HasMany<ModuleVersionAmendment, $this>
-     */
-    public function amendments(): HasMany
-    {
-        return $this->hasMany(ModuleVersionAmendment::class);
-    }
 }

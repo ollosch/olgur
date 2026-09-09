@@ -12,17 +12,12 @@ use App\Models\Rule;
 use App\Models\Subscription;
 use App\Models\System;
 use App\Models\User;
-use Illuminate\Support\Facades\Storage;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\assertDatabaseCount;
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\patchJson;
 use function Pest\Laravel\postJson;
-
-beforeEach(function (): void {
-    Storage::fake('local');
-});
 
 // ── draft change recording ────────────────────────────────────────────────────
 
@@ -277,11 +272,11 @@ test('manifest files URLs include revision query param when revision is greater 
     $response = getJson('/api/systems/'.$system->id.'/manifest')
         ->assertSuccessful();
 
-    $files = $response->json('data.modules.0.files');
+    $content = $response->json('data.modules.0.content');
 
-    expect($files['rules'])->toContain('?rev=3')
-        ->and($files['index'])->toContain('?rev=3')
-        ->and($files['game-data'])->toContain('?rev=3');
+    expect($content['rules'])->toContain('?rev=3')
+        ->and($content['index'])->toContain('?rev=3')
+        ->and($content['game-data'])->toContain('?rev=3');
 });
 
 test('manifest files URLs do not include revision query param when revision is zero', function (): void {
@@ -299,11 +294,11 @@ test('manifest files URLs do not include revision query param when revision is z
     $response = getJson('/api/systems/'.$system->id.'/manifest')
         ->assertSuccessful();
 
-    $files = $response->json('data.modules.0.files');
+    $content = $response->json('data.modules.0.content');
 
-    expect($files['rules'])->not->toContain('?rev=')
-        ->and($files['index'])->not->toContain('?rev=')
-        ->and($files['game-data'])->not->toContain('?rev=');
+    expect($content['rules'])->not->toContain('?rev=')
+        ->and($content['index'])->not->toContain('?rev=')
+        ->and($content['game-data'])->not->toContain('?rev=');
 });
 
 test('draft changes resource includes all required fields', function (): void {

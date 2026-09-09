@@ -13,7 +13,8 @@ use Illuminate\Support\Facades\Gate;
 final class SystemManifestController
 {
     /**
-     * Return the system manifest: each module's latest released version with file paths.
+     * Return the system manifest: each module's latest released version with
+     * cached content URLs that include the snapshot revision as a cache-buster.
      */
     public function __invoke(System $system): JsonResponse
     {
@@ -38,10 +39,11 @@ final class SystemManifestController
                     'version_id' => $latestVersion?->id,
                     'version_string' => $latestVersion?->version_string,
                     'released_at' => $latestVersion?->released_at?->toIso8601String(),
-                    'files' => $latestVersion !== null ? [
-                        'rules' => $this->fileUrl('versions.rules', [$system, $module, $latestVersion], $latestVersion->revision),
-                        'index' => $this->fileUrl('versions.index', [$system, $module, $latestVersion], $latestVersion->revision),
-                        'game-data' => $this->fileUrl('versions.game-data', [$system, $module, $latestVersion], $latestVersion->revision),
+                    'revision' => $latestVersion === null ? 0 : $latestVersion->revision,
+                    'content' => $latestVersion !== null ? [
+                        'rules' => $this->contentUrl('versions.rules', [$system, $module, $latestVersion], $latestVersion->revision),
+                        'index' => $this->contentUrl('versions.index', [$system, $module, $latestVersion], $latestVersion->revision),
+                        'game-data' => $this->contentUrl('versions.game-data', [$system, $module, $latestVersion], $latestVersion->revision),
                     ] : null,
                 ];
             })
@@ -59,7 +61,7 @@ final class SystemManifestController
     /**
      * @param  array<mixed>  $parameters
      */
-    private function fileUrl(string $name, array $parameters, int $revision): string
+    private function contentUrl(string $name, array $parameters, int $revision): string
     {
         $url = route($name, $parameters);
 
