@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Enums\GameDataType;
+use App\Models\GameDatum;
 use App\Models\Membership;
 use App\Models\Module;
 use App\Models\Subscription;
@@ -265,4 +267,58 @@ test('deactivating preserves other config keys like bookmarks', function (): voi
         ->first();
 
     expect($membership?->config?->bookmarks ?? [])->toBe([$bookmark]);
+});
+
+// ── selected SOP module clearing ─────────────────────────────────────────────
+
+test('deactivating clears the selected SOP module when it is the deactivated module', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    GameDatum::factory()->for($module)->create(['type' => GameDataType::Sop]);
+    Membership::factory()->for($user)->for($system)->create([
+        'config' => [
+            'active_module_ids' => [$module->id],
+            'selected_sop_module_id' => $module->id,
+        ],
+    ]);
+    Subscription::factory()->for($user)->for($module)->create();
+    actingAs($user);
+
+    deleteJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/activate')
+        ->assertNoContent();
+
+    $membership = Membership::query()
+        ->where('user_id', $user->id)
+        ->where('system_id', $system->id)
+        ->first();
+
+    expect($membership?->config?->selectedSopModuleId)->toBeNull();
+});
+
+test('deactivating preserves the selected SOP module when it is a different module', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $sopModule = Module::factory()->for($system)->create();
+    GameDatum::factory()->for($sopModule)->create(['type' => GameDataType::Sop]);
+    Membership::factory()->for($user)->for($system)->create([
+        'config' => [
+            'active_module_ids' => [$module->id, $sopModule->id],
+            'selected_sop_module_id' => $sopModule->id,
+        ],
+    ]);
+    Subscription::factory()->for($user)->for($module)->create();
+    Subscription::factory()->for($user)->for($sopModule)->create();
+    actingAs($user);
+
+    deleteJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/activate')
+        ->assertNoContent();
+
+    $membership = Membership::query()
+        ->where('user_id', $user->id)
+        ->where('system_id', $system->id)
+        ->first();
+
+    expect($membership?->config?->selectedSopModuleId)->toBe($sopModule->id);
 });

@@ -345,6 +345,19 @@ test('destroy returns 404 for unknown module', function (): void {
         ->assertNotFound();
 });
 
+test('destroy rejects deleting a core module', function (): void {
+    $system = System::factory()->create();
+    $admin = User::factory()->create();
+    Membership::factory()->for($admin)->for($system)->admin()->create();
+    $core = Module::factory()->for($system)->core()->create();
+    actingAs($admin);
+
+    deleteJson('/api/systems/'.$system->id.'/modules/'.$core->id)
+        ->assertUnprocessable();
+
+    assertDatabaseHas('modules', ['id' => $core->id]);
+});
+
 test('store rejects a second core module in the same system', function (): void {
     $user = User::factory()->superAdmin()->create();
     $system = System::factory()->create();

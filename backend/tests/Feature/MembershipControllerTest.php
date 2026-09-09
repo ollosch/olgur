@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Models\Membership;
+use App\Models\Module;
+use App\Models\Subscription;
 use App\Models\System;
 use App\Models\User;
 
@@ -255,4 +257,29 @@ test('destroy returns 404 for unknown membership', function (): void {
 
     deleteJson('/api/systems/'.$system->id.'/memberships/nonexistent')
         ->assertNotFound();
+});
+
+// ── membership removal cascades ──────────────────────────────────────────────
+
+test('deleting a membership deletes the member subscriptions in that system', function (): void {
+    $system = System::factory()->create();
+    $admin = User::factory()->create();
+    Membership::factory()->for($admin)->for($system)->admin()->create();
+    $member = User::factory()->create();
+    $membership = Membership::factory()->for($member)->for($system)->create();
+    $module = Module::factory()->for($system)->create();
+    Subscription::factory()->for($member)->for($module)->create();
+
+    $otherSystem = System::factory()->create();
+    $otherModule = Module::factory()->for($otherSystem)->create();
+    $otherSubscription = Subscription::factory()->for($member)->for($otherModule)->create();
+
+    actingAs($admin);
+
+    deleteJson('/api/systems/'.$system->id.'/memberships/'.$membership->id)
+        ->assertNoContent();
+
+    assertDatabaseMissing('memberships', ['id' => $membership->id]);
+    assertDatabaseMissing('subscriptions', ['user_id' => $member->id, 'module_id' => $module->id]);
+    assertDatabaseHas('subscriptions', ['id' => $otherSubscription->id]);
 });

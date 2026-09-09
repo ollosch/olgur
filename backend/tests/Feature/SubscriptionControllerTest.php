@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Enums\GameDataType;
+use App\Models\GameDatum;
 use App\Models\Membership;
 use App\Models\Module;
 use App\Models\Subscription;
@@ -507,4 +509,28 @@ test('unsubscribing preserves other config keys like bookmarks', function (): vo
         ->first();
 
     expect($membership?->config?->bookmarks ?? [])->toBe([$bookmark]);
+});
+
+test('unsubscribing clears the selected SOP module when it is the unsubscribed module', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $expansion = Module::factory()->for($system)->create();
+    GameDatum::factory()->for($expansion)->create(['type' => GameDataType::Sop]);
+    $subscription = Subscription::factory()->for($user)->for($expansion)->create();
+    Membership::factory()->for($user)->for($system)->create([
+        'config' => [
+            'active_module_ids' => [$expansion->id],
+            'selected_sop_module_id' => $expansion->id,
+        ],
+    ]);
+    actingAs($user);
+
+    deleteJson(subscriptionUrl($system, $expansion, $subscription))->assertNoContent();
+
+    $membership = Membership::query()
+        ->where('user_id', $user->id)
+        ->where('system_id', $system->id)
+        ->first();
+
+    expect($membership?->config?->selectedSopModuleId)->toBeNull();
 });
