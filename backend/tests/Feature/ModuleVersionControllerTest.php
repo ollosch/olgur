@@ -106,6 +106,8 @@ test('store publishes a new version', function (): void {
     $response = postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/versions', [
         'version_string' => '1.0.0',
         'notes' => 'Initial release',
+        'expected_draft_revision' => 0,
+        'release_notes' => [],
     ])->assertCreated();
 
     $response->assertJsonPath('data.version_string', '1.0.0');
@@ -129,6 +131,8 @@ test('store snapshots rules including parent-child relationships', function (): 
     $response = postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/versions', [
         'version_string' => '1.0.0',
         'notes' => 'Snapshot release.',
+        'expected_draft_revision' => 0,
+        'release_notes' => [],
     ])->assertCreated();
 
     $versionId = $response->json('data.id');
@@ -164,6 +168,8 @@ test('store snapshots index entries including parent-child relationships', funct
     $response = postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/versions', [
         'version_string' => '1.0.0',
         'notes' => 'Snapshot release.',
+        'expected_draft_revision' => 0,
+        'release_notes' => [],
     ])->assertCreated();
 
     $versionId = $response->json('data.id');
@@ -226,6 +232,8 @@ test('store allows same version_string in a different module', function (): void
     postJson('/api/systems/'.$system->id.'/modules/'.$moduleA->id.'/versions', [
         'version_string' => '1.0.0',
         'notes' => 'First release.',
+        'expected_draft_revision' => 0,
+        'release_notes' => [],
     ])->assertCreated();
 });
 
@@ -241,6 +249,8 @@ test('regular user cannot publish a version', function (): void {
     postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/versions', [
         'version_string' => '1.0.0',
         'notes' => 'Initial release.',
+        'expected_draft_revision' => 0,
+        'release_notes' => [],
     ])->assertForbidden();
 });
 
@@ -255,6 +265,8 @@ test('system admin can publish a version', function (): void {
     postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/versions', [
         'version_string' => '1.0.0',
         'notes' => 'Admin release.',
+        'expected_draft_revision' => 0,
+        'release_notes' => [],
     ])->assertCreated();
 });
 
@@ -268,5 +280,7 @@ test('super_admin can publish a version', function (): void {
     postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/versions', [
         'version_string' => '1.0.0',
         'notes' => 'Super admin release.',
+        'expected_draft_revision' => 0,
+        'release_notes' => [],
     ])->assertCreated();
 });

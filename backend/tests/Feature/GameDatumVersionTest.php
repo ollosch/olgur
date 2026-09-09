@@ -84,7 +84,7 @@ test('publish snapshots game data into game_datum_versions', function (): void {
     GameDatum::factory()->for($module)->create(['type' => GameDataType::Sop, 'slug' => 'asop', 'content' => ['phases' => []]]);
     GameDatum::factory()->for($module)->create(['type' => GameDataType::Vehicle, 'slug' => 'pzib', 'content' => ['name' => 'PzKpfw IB']]);
 
-    $moduleVersion = resolve(PublishModuleVersion::class)->execute($module, $user, '1.0.0');
+    $moduleVersion = resolve(PublishModuleVersion::class)->execute($module, $user, '1.0.0', '', 0, []);
 
     expect(GameDatumVersion::query()->where('module_version_id', $moduleVersion->id)->count())->toBe(2);
 });

@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
+use App\Enums\DraftChangeClassification;
 use App\Models\GameDatum;
 use App\Models\IndexEntry;
 use App\Models\Membership;
 use App\Models\Module;
 use App\Models\ModuleDraftChange;
 use App\Models\ModuleVersion;
+use App\Models\ModuleVersionReleaseNote;
 use App\Models\Rule;
 use App\Models\Subscription;
 use App\Models\System;
@@ -15,13 +17,14 @@ use App\Models\User;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\assertDatabaseCount;
+use function Pest\Laravel\deleteJson;
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\patchJson;
 use function Pest\Laravel\postJson;
 
 // ── draft change recording ────────────────────────────────────────────────────
 
-test('updating a rule records a draft change', function (): void {
+test('updating a rule records a draft change with before and after state', function (): void {
     $user = User::factory()->superAdmin()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
@@ -44,10 +47,87 @@ test('updating a rule records a draft change', function (): void {
         ->first();
 
     expect($change)->not->toBeNull()
-        ->and($change->content_after)->toBe(['content' => 'New content.'])
         ->and($change->change_type)->toBe('update')
+        ->and($change->classification)->toBe(DraftChangeClassification::Semantic)
+        ->and($change->content_before['content'])->toBe('Old content.')
+        ->and($change->content_after['content'])->toBe('New content.')
         ->and($change->module_version_id)->toBeNull()
         ->and($change->changed_by)->toBe($user->id);
+});
+
+test('creating a rule records a draft change with null before state', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+
+    actingAs($user);
+
+    $response = postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', [
+        'number' => 'A.1',
+        'title' => 'Title',
+        'content' => 'Content.',
+        'markdown' => null,
+        'sort_order' => 1,
+    ])->assertCreated();
+
+    $ruleId = $response->json('data.id');
+
+    $change = ModuleDraftChange::query()
+        ->where('module_id', $module->id)
+        ->where('entity_type', 'rule')
+        ->where('entity_id', $ruleId)
+        ->first();
+
+    expect($change)->not->toBeNull()
+        ->and($change->change_type)->toBe('create')
+        ->and($change->content_before)->toBeNull()
+        ->and($change->content_after['content'])->toBe('Content.');
+});
+
+test('deleting a rule records a draft change with null after state', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $rule = Rule::factory()->for($module)->create(['content' => 'Old content.']);
+
+    actingAs($user);
+
+    deleteJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id)
+        ->assertNoContent();
+
+    $change = ModuleDraftChange::query()
+        ->where('module_id', $module->id)
+        ->where('entity_type', 'rule')
+        ->where('entity_id', $rule->id)
+        ->first();
+
+    expect($change)->not->toBeNull()
+        ->and($change->change_type)->toBe('delete')
+        ->and($change->classification)->toBe(DraftChangeClassification::Semantic)
+        ->and($change->content_before['content'])->toBe('Old content.')
+        ->and($change->content_after)->toBeNull();
+});
+
+test('a mutation may submit a typo classification', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $rule = Rule::factory()->for($module)->create(['number' => 'A.1', 'title' => 'Title', 'content' => 'Old.', 'markdown' => null, 'sort_order' => 1]);
+
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id, [
+        'number' => 'A.1',
+        'title' => 'Title',
+        'content' => 'New.',
+        'markdown' => null,
+        'sort_order' => 1,
+        'classification' => 'typo',
+    ])->assertSuccessful();
+
+    $change = ModuleDraftChange::query()->where('module_id', $module->id)->first();
+
+    expect($change->classification)->toBe(DraftChangeClassification::Typo);
 });
 
 test('updating an index entry records a draft change', function (): void {
@@ -77,9 +157,9 @@ test('updating an index entry records a draft change', function (): void {
         ->first();
 
     expect($change)->not->toBeNull()
-        ->and($change->content_after['definition'])->toBe('New def.')
         ->and($change->change_type)->toBe('update')
-        ->and($change->module_version_id)->toBeNull()
+        ->and($change->content_before['definition'])->toBe('Old def.')
+        ->and($change->content_after['definition'])->toBe('New def.')
         ->and($change->changed_by)->toBe($user->id);
 });
 
@@ -102,10 +182,30 @@ test('updating a game datum records a draft change', function (): void {
         ->first();
 
     expect($change)->not->toBeNull()
-        ->and($change->content_after)->toBe(['content' => ['updated' => true]])
         ->and($change->change_type)->toBe('update')
-        ->and($change->module_version_id)->toBeNull()
-        ->and($change->changed_by)->toBe($user->id);
+        ->and($change->content_before['content'])->toBe(['old' => true])
+        ->and($change->content_after['content'])->toBe(['updated' => true]);
+});
+
+test('each live mutation advances the module draft revision', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $rule = Rule::factory()->for($module)->create(['number' => 'A.1', 'title' => 'Title', 'content' => 'Old.', 'markdown' => null, 'sort_order' => 1]);
+
+    actingAs($user);
+
+    expect($module->draft_revision)->toBe(0);
+
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id, [
+        'number' => 'A.1',
+        'title' => 'Title',
+        'content' => 'New.',
+        'markdown' => null,
+        'sort_order' => 1,
+    ])->assertSuccessful();
+
+    expect($module->refresh()->draft_revision)->toBe(1);
 });
 
 // ── PublishModuleVersion stamps draft changes ─────────────────────────────────
@@ -120,6 +220,7 @@ test('publishing a version stamps pending draft changes with the version id', fu
         'module_id' => $module->id,
         'module_version_id' => null,
         'entity_id' => $rule->id,
+        'classification' => DraftChangeClassification::Typo,
     ]);
 
     actingAs($user);
@@ -127,6 +228,8 @@ test('publishing a version stamps pending draft changes with the version id', fu
     $response = postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/versions', [
         'version_string' => '1.0',
         'notes' => 'First release.',
+        'expected_draft_revision' => 0,
+        'release_notes' => [],
     ])->assertCreated();
 
     $versionId = $response->json('data.id');
@@ -146,6 +249,7 @@ test('publishing does not stamp draft changes from other modules', function (): 
         'module_id' => $moduleB->id,
         'module_version_id' => null,
         'entity_id' => $rule->id,
+        'classification' => DraftChangeClassification::Typo,
     ]);
 
     actingAs($user);
@@ -153,10 +257,157 @@ test('publishing does not stamp draft changes from other modules', function (): 
     postJson('/api/systems/'.$system->id.'/modules/'.$moduleA->id.'/versions', [
         'version_string' => '1.0',
         'notes' => 'First release.',
+        'expected_draft_revision' => 0,
+        'release_notes' => [],
     ])->assertCreated();
 
     $change = ModuleDraftChange::query()->where('module_id', $moduleB->id)->first();
     expect($change->module_version_id)->toBeNull();
+});
+
+// ── publish-time release notes ────────────────────────────────────────────────
+
+test('publishing stores one release note per semantic draft change group', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $rule = Rule::factory()->for($module)->create(['number' => 'A.1', 'title' => 'Title', 'content' => 'Old.', 'markdown' => null, 'sort_order' => 1]);
+
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id, [
+        'number' => 'A.1',
+        'title' => 'Title',
+        'content' => 'New.',
+        'markdown' => null,
+        'sort_order' => 1,
+    ])->assertSuccessful();
+
+    $response = postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/versions', [
+        'version_string' => '1.0.0',
+        'notes' => 'Release.',
+        'expected_draft_revision' => 1,
+        'release_notes' => [
+            ['entity_type' => 'rule', 'entity_id' => $rule->id, 'note' => 'Clarified the rule.'],
+        ],
+    ])->assertCreated();
+
+    $versionId = $response->json('data.id');
+
+    expect(ModuleVersionReleaseNote::query()->where('module_version_id', $versionId)->count())->toBe(1);
+
+    $note = ModuleVersionReleaseNote::query()->where('module_version_id', $versionId)->first();
+
+    expect($note->entity_type)->toBe('rule')
+        ->and($note->entity_id)->toBe($rule->id)
+        ->and($note->note)->toBe('Clarified the rule.');
+});
+
+test('publishing exposes release notes on the version resource', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $rule = Rule::factory()->for($module)->create(['number' => 'A.1', 'title' => 'Title', 'content' => 'Old.', 'markdown' => null, 'sort_order' => 1]);
+
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id, [
+        'number' => 'A.1',
+        'title' => 'Title',
+        'content' => 'New.',
+        'markdown' => null,
+        'sort_order' => 1,
+    ])->assertSuccessful();
+
+    $response = postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/versions', [
+        'version_string' => '1.0.0',
+        'notes' => 'Release.',
+        'expected_draft_revision' => 1,
+        'release_notes' => [
+            ['entity_type' => 'rule', 'entity_id' => $rule->id, 'note' => 'Clarified the rule.'],
+        ],
+    ])->assertCreated();
+
+    $response->assertJsonPath('data.release_notes.0.entity_type', 'rule')
+        ->assertJsonPath('data.release_notes.0.entity_id', $rule->id)
+        ->assertJsonPath('data.release_notes.0.note', 'Clarified the rule.');
+});
+
+test('a typo-only publish is valid without release notes', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $rule = Rule::factory()->for($module)->create(['number' => 'A.1', 'title' => 'Title', 'content' => 'Old.', 'markdown' => null, 'sort_order' => 1]);
+
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id, [
+        'number' => 'A.1',
+        'title' => 'Title',
+        'content' => 'New.',
+        'markdown' => null,
+        'sort_order' => 1,
+        'classification' => 'typo',
+    ])->assertSuccessful();
+
+    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/versions', [
+        'version_string' => '1.0.0',
+        'notes' => 'Release.',
+        'expected_draft_revision' => 1,
+        'release_notes' => [],
+    ])->assertCreated();
+});
+
+test('publishing rejects release notes that do not cover every semantic group', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $rule = Rule::factory()->for($module)->create(['number' => 'A.1', 'title' => 'Title', 'content' => 'Old.', 'markdown' => null, 'sort_order' => 1]);
+
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id, [
+        'number' => 'A.1',
+        'title' => 'Title',
+        'content' => 'New.',
+        'markdown' => null,
+        'sort_order' => 1,
+    ])->assertSuccessful();
+
+    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/versions', [
+        'version_string' => '1.0.0',
+        'notes' => 'Release.',
+        'expected_draft_revision' => 1,
+        'release_notes' => [],
+    ])->assertStatus(422);
+});
+
+test('publishing rejects an outdated draft revision without creating a snapshot', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $rule = Rule::factory()->for($module)->create(['number' => 'A.1', 'title' => 'Title', 'content' => 'Old.', 'markdown' => null, 'sort_order' => 1]);
+
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id, [
+        'number' => 'A.1',
+        'title' => 'Title',
+        'content' => 'New.',
+        'markdown' => null,
+        'sort_order' => 1,
+    ])->assertSuccessful();
+
+    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/versions', [
+        'version_string' => '1.0.0',
+        'notes' => 'Release.',
+        'expected_draft_revision' => 0,
+        'release_notes' => [
+            ['entity_type' => 'rule', 'entity_id' => $rule->id, 'note' => 'Clarified the rule.'],
+        ],
+    ])->assertStatus(409);
+
+    expect(ModuleVersion::query()->where('module_id', $module->id)->count())->toBe(0);
 });
 
 // ── GET draft-changes ─────────────────────────────────────────────────────────
@@ -231,11 +482,23 @@ test('regular user cannot view draft changes', function (): void {
         ->assertForbidden();
 });
 
-test('module subscriber can view draft changes', function (): void {
+test('module subscriber without editor rights cannot view draft changes', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
     Subscription::factory()->for($user)->for($module)->create();
+
+    actingAs($user);
+
+    getJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/draft-changes')
+        ->assertForbidden();
+});
+
+test('module editor can view draft changes', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    Subscription::factory()->for($user)->for($module)->editor()->create();
 
     actingAs($user);
 
@@ -253,6 +516,128 @@ test('system admin can view draft changes', function (): void {
 
     getJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/draft-changes')
         ->assertSuccessful();
+});
+
+// ── reclassification ──────────────────────────────────────────────────────────
+
+test('a module editor can reclassify a pending draft change', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    Subscription::factory()->for($user)->for($module)->editor()->create();
+    $rule = Rule::factory()->for($module)->create();
+
+    $change = ModuleDraftChange::factory()->create([
+        'module_id' => $module->id,
+        'entity_id' => $rule->id,
+        'classification' => DraftChangeClassification::Semantic,
+    ]);
+
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/draft-changes/'.$change->id, [
+        'classification' => 'typo',
+    ])->assertSuccessful();
+
+    expect($change->refresh()->classification)->toBe(DraftChangeClassification::Typo);
+});
+
+test('a system admin can reclassify a pending draft change', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    Membership::factory()->for($user)->for($system)->admin()->create();
+    $rule = Rule::factory()->for($module)->create();
+
+    $change = ModuleDraftChange::factory()->create([
+        'module_id' => $module->id,
+        'entity_id' => $rule->id,
+        'classification' => DraftChangeClassification::Semantic,
+    ]);
+
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/draft-changes/'.$change->id, [
+        'classification' => 'semantic',
+    ])->assertSuccessful();
+
+    expect($change->refresh()->classification)->toBe(DraftChangeClassification::Semantic);
+});
+
+test('a module subscriber cannot reclassify a draft change', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    Subscription::factory()->for($user)->for($module)->create();
+    $rule = Rule::factory()->for($module)->create();
+
+    $change = ModuleDraftChange::factory()->create([
+        'module_id' => $module->id,
+        'entity_id' => $rule->id,
+    ]);
+
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/draft-changes/'.$change->id, [
+        'classification' => 'typo',
+    ])->assertForbidden();
+});
+
+test('reclassify requires a valid classification', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $rule = Rule::factory()->for($module)->create();
+
+    $change = ModuleDraftChange::factory()->create([
+        'module_id' => $module->id,
+        'entity_id' => $rule->id,
+    ]);
+
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/draft-changes/'.$change->id, [
+        'classification' => 'bogus',
+    ])->assertUnprocessable();
+});
+
+test('a published draft change cannot be reclassified', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $version = ModuleVersion::factory()->for($module)->released()->create();
+    $rule = Rule::factory()->for($module)->create();
+
+    $change = ModuleDraftChange::factory()->create([
+        'module_id' => $module->id,
+        'module_version_id' => $version->id,
+        'entity_id' => $rule->id,
+    ]);
+
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/draft-changes/'.$change->id, [
+        'classification' => 'typo',
+    ])->assertStatus(409);
+});
+
+test('a draft change from another module cannot be reclassified through this module', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    $moduleA = Module::factory()->for($system)->create();
+    $moduleB = Module::factory()->for($system)->create();
+    $rule = Rule::factory()->for($moduleB)->create();
+
+    $change = ModuleDraftChange::factory()->create([
+        'module_id' => $moduleB->id,
+        'entity_id' => $rule->id,
+    ]);
+
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id.'/modules/'.$moduleA->id.'/draft-changes/'.$change->id, [
+        'classification' => 'typo',
+    ])->assertNotFound();
 });
 
 // ── manifest revision ─────────────────────────────────────────────────────────
@@ -314,7 +699,9 @@ test('draft changes resource includes all required fields', function (): void {
         'entity_id' => $rule->id,
         'entity_type' => 'rule',
         'change_type' => 'update',
-        'content_after' => ['content' => 'X'],
+        'classification' => DraftChangeClassification::Semantic,
+        'content_before' => ['content' => 'Old'],
+        'content_after' => ['content' => 'New'],
         'changed_by' => $user->id,
         'changed_at' => now(),
     ]);
@@ -333,7 +720,8 @@ test('draft changes resource includes all required fields', function (): void {
                 'entity_type',
                 'entity_id',
                 'change_type',
-                'description',
+                'classification',
+                'content_before',
                 'content_after',
                 'changed_by',
                 'changed_at',
@@ -390,4 +778,20 @@ test('draft change belongs to the user who changed it', function (): void {
     $change = ModuleDraftChange::factory()->create(['changed_by' => $user->id]);
 
     expect($change->changedBy->id)->toBe($user->id);
+});
+
+test('release note belongs to its module version', function (): void {
+    $version = ModuleVersion::factory()->released()->create();
+    $note = ModuleVersionReleaseNote::factory()->create(['module_version_id' => $version->id]);
+
+    expect($note->moduleVersion->id)->toBe($version->id);
+});
+
+test('module version has many release notes', function (): void {
+    $version = ModuleVersion::factory()->released()->create();
+    ModuleVersionReleaseNote::factory()->create(['module_version_id' => $version->id]);
+    ModuleVersionReleaseNote::factory()->create(['module_version_id' => $version->id]);
+    ModuleVersionReleaseNote::factory()->create(['module_version_id' => $version->id]);
+
+    expect($version->releaseNotes)->toHaveCount(3);
 });
