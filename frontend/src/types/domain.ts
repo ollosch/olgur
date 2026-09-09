@@ -72,6 +72,7 @@ export interface MembershipConfig {
   bookmarks?: BookmarkEntry[]
   ignored_tags?: string[]
   preferred_rule_format?: 'content' | 'markdown'
+  selected_sop_module_id?: string | null
 }
 
 export interface Membership {
