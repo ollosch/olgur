@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Models\Module;
-use App\Models\System;
 use App\Models\User;
 use App\Services\PermissionMap;
 use Illuminate\Http\Request;
@@ -44,12 +43,9 @@ final class ModuleResource extends JsonResource
         /** @var User $user */
         $user = $request->user();
 
-        /** @var System $system */
-        $system = $request->route('system');
-
         /** @var Module $module */
         $module = $this->resource;
 
-        return resolve(PermissionMap::class)->module($user, $system, $module);
+        return resolve(PermissionMap::class)->module($user, $module->system()->firstOrFail(), $module);
     }
 }

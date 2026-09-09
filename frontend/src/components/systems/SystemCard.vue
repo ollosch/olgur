@@ -39,6 +39,10 @@ const isMember = computed(() => !!props.membership)
 
 const activeModuleIds = computed(() => props.membership?.config?.active_module_ids ?? [])
 
+function isUnavailable(mod: Module): boolean {
+  return !mod.permissions['content.view_live'] && !mod.permissions['content.view_released']
+}
+
 const hasCoreModule = computed(() => modules.value.some((m) => m.is_core))
 const systemStructure = computed(() => props.system.config?.system_structure ?? '')
 
@@ -193,6 +197,9 @@ function openSystem() {
             >
               Delete
             </Button>
+            <Badge v-if="isUnavailable(mod)" variant="outline" class="text-xs text-muted-foreground">
+              Unavailable
+            </Badge>
             <Button
               variant="ghost"
               size="sm"

@@ -57,6 +57,17 @@ export const useContentStore = defineStore('content', () => {
   }
 
   /**
+   * Whether the current user can read this module's latest released snapshot.
+   */
+  function canViewReleased(moduleId: string): boolean {
+    return permissionsFor(moduleId)?.['content.view_released'] ?? false
+  }
+
+  function isUnavailable(moduleId: string): boolean {
+    return !canViewLive(moduleId) && !canViewReleased(moduleId)
+  }
+
+  /**
    * Whether the current user can edit this module's content.
    */
   function canEditModule(moduleId: string): boolean {
@@ -282,7 +293,7 @@ export const useContentStore = defineStore('content', () => {
       return
     }
 
-    if (permissionsFor(moduleId)?.['content.view_released'] ?? false) {
+    if (canViewReleased(moduleId)) {
       const manifestEntry = manifestByModule.value[moduleId]
       if (!manifestEntry) return
       const data = await fetchAuthenticatedCollection<Rule>(manifestEntry.files.rules)
@@ -349,7 +360,7 @@ export const useContentStore = defineStore('content', () => {
       return
     }
 
-    if (permissionsFor(moduleId)?.['content.view_released'] ?? false) {
+    if (canViewReleased(moduleId)) {
       const manifestEntry = manifestByModule.value[moduleId]
       if (!manifestEntry) return
       const data = await fetchAuthenticatedCollection<IndexEntry>(manifestEntry.files.index)
@@ -370,7 +381,7 @@ export const useContentStore = defineStore('content', () => {
       return
     }
 
-    if (permissionsFor(moduleId)?.['content.view_released'] ?? false) {
+    if (canViewReleased(moduleId)) {
       const manifestEntry = manifestByModule.value[moduleId]
       if (!manifestEntry) return
       const data = await fetchAuthenticatedCollection<GameDatum>(manifestEntry.files['game-data'])
@@ -414,6 +425,8 @@ export const useContentStore = defineStore('content', () => {
     activeModules,
     permissionsFor,
     canViewLive,
+    canViewReleased,
+    isUnavailable,
     canEditModule,
     allRules,
     rulesById,
