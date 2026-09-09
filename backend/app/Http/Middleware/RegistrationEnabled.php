@@ -17,7 +17,7 @@ final class RegistrationEnabled
      */
     public function handle(Request $request, Closure $next): Response
     {
-        abort_unless(config('app.registration_enabled'), 404);
+        abort_unless((bool) config('app.registration_enabled'), 404);
 
         return $next($request);
     }
