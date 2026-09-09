@@ -51,6 +51,13 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
     }
   }
 
+  function setTabs(nextTabs: BottomPanelTab[]): void {
+    tabs.value = nextTabs
+    if (!nextTabs.some((t) => t.id === activeTabId.value)) {
+      activeTabId.value = nextTabs[0]?.id ?? ''
+    }
+  }
+
   return {
     isOpen,
     isPinned,
@@ -63,5 +70,6 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
     unpin,
     setActiveTab,
     registerTab,
+    setTabs,
   }
 })

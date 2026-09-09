@@ -200,7 +200,7 @@ function selectGameDatum(item: GameDatum): void {
 function selectUnit(item: GameDatum): void {
   unitSelectionStore.selectUnit(item)
   bottomPanelStore.open()
-  bottomPanelStore.setActiveTab('unit-data')
+  bottomPanelStore.setActiveTab('unit_browser')
   shortcutStore.overlayOpen = false
 }
 

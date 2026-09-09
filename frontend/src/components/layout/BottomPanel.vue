@@ -1,18 +1,39 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, watch } from 'vue'
 import { useBottomPanelStore } from '@/stores/bottomPanel'
+import { useContentStore } from '@/stores/content'
 import { useResizablePanel } from '@/composables/useResizablePanel'
+import { activeTools, TOOL_COMPONENTS } from '@/lib/tools'
+import type { ModuleToolKey } from '@/types/domain'
 import { ChevronUp, Database, Pin, PinOff, X } from '@lucide/vue'
-import UnitDataTab from '@/components/layout/UnitDataTab.vue'
 
 const store = useBottomPanelStore()
+const contentStore = useContentStore()
 
 // ---------------------------------------------------------------------------
-// Register tabs
+// Tabs are derived from the tools declared by the active modules. Unknown tool
+// keys are already dropped by the registry, so each tab maps to a deployed
+// implementation below.
 // ---------------------------------------------------------------------------
 
-onMounted(() => {
-  store.registerTab({ id: 'unit-data', label: 'Unit Data', icon: 'database' })
+const tools = computed(() => activeTools(contentStore.activeModules))
+
+watch(
+  tools,
+  (list) => {
+    store.setTabs(list.map((t) => ({ id: t.key, label: t.label, icon: 'database' })))
+  },
+  { immediate: true },
+)
+
+const activeTabKey = computed((): ModuleToolKey | null => {
+  const key = store.activeTabId
+  return key in TOOL_COMPONENTS ? (key as ModuleToolKey) : null
+})
+
+const toggleLabel = computed(() => {
+  const tab = store.tabs.find((t) => t.id === store.activeTabId)
+  return tab?.label ?? 'Tools'
 })
 
 // ---------------------------------------------------------------------------
@@ -56,7 +77,7 @@ const clampedHeight = computed(() => {
     @click="store.open()"
   >
     <Database class="w-3.5 h-3.5" />
-    Unit Data
+    {{ toggleLabel }}
   </button>
 
   <!-- Desktop toggle bar (closed) -->
@@ -67,7 +88,7 @@ const clampedHeight = computed(() => {
   >
     <ChevronUp class="w-3 h-3" />
     <Database class="w-3 h-3" />
-    Unit Data
+    {{ toggleLabel }}
   </button>
 
   <!-- Open panel -->
@@ -132,7 +153,7 @@ const clampedHeight = computed(() => {
 
     <!-- Tab content -->
     <div class="flex-1 overflow-hidden">
-      <UnitDataTab v-if="store.activeTabId === 'unit-data'" />
+      <component :is="TOOL_COMPONENTS[activeTabKey]" v-if="activeTabKey" />
     </div>
   </div>
 </template>
