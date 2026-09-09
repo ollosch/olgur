@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Enums\ModuleTool;
 use App\Models\Module;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -34,6 +35,9 @@ final class UpdateModuleRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'description' => ['present', 'string'],
             'config' => ['present', 'array'],
+            'config.tools' => ['sometimes', 'array'],
+            'config.tools.*.key' => ['required', 'string', Rule::enum(ModuleTool::class)],
+            'config.tools.*.config' => ['sometimes', 'array'],
             'sort_order' => ['required', 'integer', 'min:0', 'max:65535'],
         ];
     }

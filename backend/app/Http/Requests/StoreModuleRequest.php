@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Enums\ModuleTool;
 use App\Enums\SystemStructure;
 use App\Models\System;
 use Closure;
@@ -36,6 +37,9 @@ final class StoreModuleRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'description' => ['present', 'string'],
             'config' => ['present', 'array'],
+            'config.tools' => ['sometimes', 'array'],
+            'config.tools.*.key' => ['required', 'string', Rule::enum(ModuleTool::class)],
+            'config.tools.*.config' => ['sometimes', 'array'],
             'is_core' => [
                 'required',
                 'boolean',

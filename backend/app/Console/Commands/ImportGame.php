@@ -6,6 +6,7 @@ namespace App\Console\Commands;
 
 use App\Data\SystemConfig;
 use App\Enums\GameDataType;
+use App\Enums\ModuleTool;
 use App\Models\GameDatum;
 use App\Models\IndexEntry;
 use App\Models\Membership;
@@ -193,6 +194,9 @@ final class ImportGame extends Command
                 'sop' => GameDataType::Sop,
             ];
 
+            $hasVehicles = false;
+            $hasOrdnance = false;
+
             foreach ($gameDataTypes as $manifestKey => $gameDataType) {
                 $relPath = is_string($manifest[$manifestKey] ?? null) ? $manifest[$manifestKey] : '';
 
@@ -234,6 +238,34 @@ final class ImportGame extends Command
                 $this->info(sprintf('Importing %s...', $manifestKey));
                 $count = $this->importer->importGameData($gameDataItems, $coreModule->id, $gameDataType);
                 $this->info(sprintf('Imported %d %s.', $count, $manifestKey));
+
+                if ($count > 0) {
+                    $hasVehicles = $hasVehicles || $gameDataType === GameDataType::Vehicle;
+                    $hasOrdnance = $hasOrdnance || $gameDataType === GameDataType::Ordnance;
+                }
+            }
+
+            // Declare the tools implied by the imported canonical game data.
+            // The unit browser consumes vehicles and ordnance; the ordnance-
+            // versus-armor calculator consumes ordnance (and vehicle armor).
+            $toolKeys = [];
+
+            if ($hasVehicles || $hasOrdnance) {
+                $toolKeys[] = ModuleTool::UnitBrowser->value;
+            }
+
+            if ($hasOrdnance) {
+                $toolKeys[] = ModuleTool::OrdnanceVersusArmor->value;
+            }
+
+            if ($toolKeys !== []) {
+                /** @var array<int, array{key: string, config: array<string, mixed>}> $tools */
+                $tools = array_map(
+                    static fn (string $key): array => ['key' => $key, 'config' => []],
+                    $toolKeys,
+                );
+
+                $coreModule->update(['config' => ['tools' => $tools]]);
             }
         });
 

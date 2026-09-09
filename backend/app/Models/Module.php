@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Data\ModuleConfig;
 use Database\Factories\ModuleFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -19,7 +20,7 @@ use Illuminate\Support\Carbon;
  * @property string $slug
  * @property string $name
  * @property string $description
- * @property array<string, mixed> $config
+ * @property ModuleConfig $config
  * @property bool $is_core
  * @property int $sort_order
  * @property int $draft_revision
@@ -42,7 +43,7 @@ final class Module extends Model
     protected function casts(): array
     {
         return [
-            'config' => 'array',
+            'config' => ModuleConfig::class,
             'is_core' => 'boolean',
             'sort_order' => 'integer',
             'draft_revision' => 'integer',
