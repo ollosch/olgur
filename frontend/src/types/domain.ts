@@ -146,7 +146,7 @@ export interface GameDatum {
   updated_at: string
 }
 
-export interface ManifestFiles {
+export interface ManifestContent {
   rules: string
   index: string
   'game-data': string
@@ -158,19 +158,14 @@ export interface ManifestEntry {
   version_string: string
   released_at: string
   revision: number
-  files: ManifestFiles
+  content: ManifestContent
 }
 
-export interface ModuleVersionAmendment {
-  id: string
-  module_version_id: string
+export interface AmendVersionRequest {
   entity_type: 'rule' | 'index_entry' | 'game_datum'
   entity_id: string
-  change_type: 'correction' | 'update'
-  description: string
-  content_after: Record<string, unknown>
-  amended_by: string
-  amended_at: string
+  expected_revision: number
+  content: Record<string, unknown>
 }
 
 export interface ModuleDraftChange {

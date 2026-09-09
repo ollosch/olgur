@@ -99,7 +99,7 @@ function makeManifestEntry(moduleId: string): ManifestEntry {
     version_string: '1.0',
     released_at: '2024-01-01T00:00:00Z',
     revision: 0,
-    files: {
+    content: {
       rules: `https://cdn.example.com/${moduleId}/rules.json`,
       index: `https://cdn.example.com/${moduleId}/index.json`,
       'game-data': `https://cdn.example.com/${moduleId}/game-data.json`,
@@ -237,7 +237,7 @@ describe('useContentStore — manifest & content routing', () => {
       expect(mockGet).toHaveBeenCalledWith('/systems/sys1/modules/mod1/rules')
       expect(mockRequest).toHaveBeenCalledWith({
         method: 'GET',
-        url: makeManifestEntry('mod2').files.rules,
+        url: makeManifestEntry('mod2').content.rules,
       })
     })
   })
@@ -269,7 +269,7 @@ describe('useContentStore — manifest & content routing', () => {
 
       await contentStore.fetchRules('sys1', 'mod1')
 
-      expect(mockRequest).toHaveBeenCalledWith({ method: 'GET', url: entry.files.rules })
+      expect(mockRequest).toHaveBeenCalledWith({ method: 'GET', url: entry.content.rules })
       expect(mockGet).not.toHaveBeenCalled()
       expect(contentStore.rulesByModule['mod1']).toHaveLength(1)
     })
@@ -323,7 +323,7 @@ describe('useContentStore — manifest & content routing', () => {
 
       await contentStore.fetchIndexEntries('sys1', 'mod1')
 
-      expect(mockRequest).toHaveBeenCalledWith({ method: 'GET', url: entry.files.index })
+      expect(mockRequest).toHaveBeenCalledWith({ method: 'GET', url: entry.content.index })
       expect(mockGet).not.toHaveBeenCalled()
       expect(contentStore.indexEntriesByModule['mod1']).toHaveLength(1)
     })
@@ -364,7 +364,7 @@ describe('useContentStore — manifest & content routing', () => {
 
       await contentStore.fetchGameData('sys1', 'mod1')
 
-      expect(mockRequest).toHaveBeenCalledWith({ method: 'GET', url: entry.files['game-data'] })
+      expect(mockRequest).toHaveBeenCalledWith({ method: 'GET', url: entry.content['game-data'] })
       expect(mockGet).not.toHaveBeenCalled()
       expect(contentStore.gameDataByModule['mod1']).toHaveLength(1)
     })

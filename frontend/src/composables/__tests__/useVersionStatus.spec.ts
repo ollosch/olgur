@@ -28,7 +28,7 @@ function makeManifestEntry(overrides: Partial<ManifestEntry> = {}): ManifestEntr
     version_string: '1.4',
     released_at: '2024-01-01T00:00:00Z',
     revision: 0,
-    files: {
+    content: {
       rules: 'https://cdn.example.com/rules.json',
       index: 'https://cdn.example.com/index.json',
       'game-data': 'https://cdn.example.com/game-data.json',

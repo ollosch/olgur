@@ -13,7 +13,7 @@ interface Props {
   versionString: string
   /** The live draft rule being amended. */
   rule: Rule
-  /** URL from `contentStore.manifestByModule[moduleId].files.rules` */
+  /** URL from `contentStore.manifestByModule[moduleId].content.rules` */
   manifestRulesUrl: string
 }
 
@@ -32,10 +32,9 @@ const {
 
 // ── Local state ──────────────────────────────────────────────────────────────
 
-const changeType = ref<'correction' | 'update'>('correction')
-const description = ref('')
 const isSaving = ref(false)
 const loadFailed = ref(false)
+const portToDraft = ref(false)
 
 /** Snapshots captured once loading succeeds — used for change-detection. */
 const initialReleasedContent = ref('')
@@ -58,7 +57,6 @@ const singleEditorContent = computed({
 
 const releasedChanged = computed(() => releasedContent.value !== initialReleasedContent.value)
 const draftChanged = computed(() => draftContent.value !== initialDraftContent.value)
-const descriptionValid = computed(() => description.value.trim().length > 0)
 
 // ── Lifecycle ────────────────────────────────────────────────────────────────
 
@@ -75,13 +73,20 @@ onMounted(async () => {
 
 // ── Save handlers ─────────────────────────────────────────────────────────────
 
+/**
+ * Applies the back-edit to the released snapshot. When the released and draft
+ * fields matched before the amendment and the editor opted in, the same
+ * correction is explicitly ported to the live draft.
+ */
 async function handleSaveSingle(): Promise<void> {
-  if (!descriptionValid.value || isSaving.value) return
+  if (!releasedChanged.value || isSaving.value) return
   isSaving.value = true
   try {
-    await applyAmendment(changeType.value, description.value)
+    await applyAmendment()
     if (errors.value) return
-    await applyDraftFix()
+    if (portToDraft.value) {
+      await applyDraftFix()
+    }
     if (!errors.value) {
       initialReleasedContent.value = releasedContent.value
       initialDraftContent.value = draftContent.value
@@ -92,10 +97,10 @@ async function handleSaveSingle(): Promise<void> {
 }
 
 async function handleSaveAmendment(): Promise<void> {
-  if (!releasedChanged.value || !descriptionValid.value || isSaving.value) return
+  if (!releasedChanged.value || isSaving.value) return
   isSaving.value = true
   try {
-    await applyAmendment(changeType.value, description.value)
+    await applyAmendment()
     if (!errors.value) initialReleasedContent.value = releasedContent.value
   } finally {
     isSaving.value = false
@@ -108,23 +113,6 @@ async function handleSaveDraft(): Promise<void> {
   try {
     await applyDraftFix()
     if (!errors.value) initialDraftContent.value = draftContent.value
-  } finally {
-    isSaving.value = false
-  }
-}
-
-async function handleSaveBoth(): Promise<void> {
-  if ((!releasedChanged.value && !draftChanged.value) || !descriptionValid.value || isSaving.value)
-    return
-  isSaving.value = true
-  try {
-    await applyAmendment(changeType.value, description.value)
-    if (errors.value) return
-    await applyDraftFix()
-    if (!errors.value) {
-      initialReleasedContent.value = releasedContent.value
-      initialDraftContent.value = draftContent.value
-    }
   } finally {
     isSaving.value = false
   }
@@ -155,10 +143,15 @@ const textareaClass =
       <div
         class="rounded-md border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-300"
       >
-        Released version and current draft are identical. Saving will update both.
+        Released version and current draft are identical.
       </div>
 
       <textarea v-model="singleEditorContent" rows="8" :class="textareaClass" />
+
+      <label class="flex items-center gap-2 text-sm text-foreground">
+        <input v-model="portToDraft" type="checkbox" class="h-4 w-4" />
+        Also apply this correction to the current draft
+      </label>
     </template>
 
     <!-- ── Dual editor (diverged) ────────────────────────────────────────── -->
@@ -182,36 +175,6 @@ const textareaClass =
       </div>
     </template>
 
-    <!-- ── Shared fields ──────────────────────────────────────────────────── -->
-    <div class="grid grid-cols-2 gap-4">
-      <div class="space-y-1.5">
-        <label class="text-sm font-medium text-foreground" for="retrofix-change-type">
-          Change type
-        </label>
-        <select
-          id="retrofix-change-type"
-          v-model="changeType"
-          class="border-input bg-background text-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
-        >
-          <option value="correction">Correction</option>
-          <option value="update">Update</option>
-        </select>
-      </div>
-
-      <div class="space-y-1.5">
-        <label class="text-sm font-medium text-foreground" for="retrofix-description">
-          Description <span class="text-destructive">*</span>
-        </label>
-        <input
-          id="retrofix-description"
-          v-model="description"
-          type="text"
-          placeholder="Describe the change…"
-          class="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
-        />
-      </div>
-    </div>
-
     <!-- API errors -->
     <div
       v-if="errors !== null && !loadFailed"
@@ -222,14 +185,14 @@ const textareaClass =
 
     <!-- ── Action buttons ─────────────────────────────────────────────────── -->
     <template v-if="!isDiverged">
-      <Button :disabled="!descriptionValid || isSaving" @click="handleSaveSingle">Save</Button>
+      <Button :disabled="!releasedChanged || isSaving" @click="handleSaveSingle">Save</Button>
     </template>
 
     <template v-else>
       <div class="flex flex-wrap gap-2">
         <Button
           variant="outline"
-          :disabled="!releasedChanged || !descriptionValid || isSaving"
+          :disabled="!releasedChanged || isSaving"
           @click="handleSaveAmendment"
         >
           Apply to released version
@@ -237,13 +200,6 @@ const textareaClass =
 
         <Button variant="outline" :disabled="!draftChanged || isSaving" @click="handleSaveDraft">
           Apply to draft
-        </Button>
-
-        <Button
-          :disabled="(!releasedChanged && !draftChanged) || !descriptionValid || isSaving"
-          @click="handleSaveBoth"
-        >
-          Apply to both
         </Button>
       </div>
     </template>

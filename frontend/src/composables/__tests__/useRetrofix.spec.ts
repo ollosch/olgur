@@ -27,7 +27,7 @@ vi.mock('@/composables/useApi', () => ({
 
 import { useContentStore } from '@/stores/content'
 import { useRetrofix } from '@/composables/useRetrofix'
-import type { Rule } from '@/types/domain'
+import type { ManifestEntry, Rule } from '@/types/domain'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -43,6 +43,22 @@ function makeRule(overrides: Partial<Rule> = {}): Rule {
     sort_order: 0,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
+    ...overrides,
+  }
+}
+
+function makeManifestEntry(overrides: Partial<ManifestEntry> = {}): ManifestEntry {
+  return {
+    module_id: 'mod1',
+    version_id: 'v1',
+    version_string: '1.4',
+    released_at: '2024-01-01T00:00:00Z',
+    revision: 0,
+    content: {
+      rules: 'https://cdn.example.com/mod1/rules.json',
+      index: 'https://cdn.example.com/mod1/index.json',
+      'game-data': 'https://cdn.example.com/mod1/game-data.json',
+    },
     ...overrides,
   }
 }
@@ -161,6 +177,27 @@ describe('useRetrofix', () => {
       expect(draftContent.value).toBe('Store draft content')
     })
 
+    it('seeds expectedRevision from the manifest entry', async () => {
+      const contentStore = useContentStore()
+      contentStore.manifestByModule['mod1'] = makeManifestEntry({ revision: 3 })
+
+      mockRequest.mockResolvedValue({ data: [makeRule()] })
+
+      const { expectedRevision, loadReleasedContent } = useRetrofix('sys1', 'mod1', 'v1', 'rule1')
+      await loadReleasedContent('https://cdn.example.com/mod1/rules.json')
+
+      expect(expectedRevision.value).toBe(3)
+    })
+
+    it('defaults expectedRevision to zero when no manifest entry exists', async () => {
+      mockRequest.mockResolvedValue({ data: [makeRule()] })
+
+      const { expectedRevision, loadReleasedContent } = useRetrofix('sys1', 'mod1', 'v1', 'rule1')
+      await loadReleasedContent('https://cdn.example.com/mod1/rules.json')
+
+      expect(expectedRevision.value).toBe(0)
+    })
+
     it('sets isLoading to false after completion', async () => {
       const contentStore = useContentStore()
       contentStore.rulesByModule['mod1'] = [makeRule()]
@@ -185,30 +222,29 @@ describe('useRetrofix', () => {
   // ── applyAmendment ───────────────────────────────────────────────────────────
 
   describe('applyAmendment', () => {
-    it('POSTs to the amendments endpoint with the correct payload', async () => {
-      mockPost.mockResolvedValue({ ok: true, data: {} })
+    it('PATCHes to the amend endpoint with the expected revision payload', async () => {
+      mockPost.mockResolvedValue({ ok: true, data: { data: { revision: 1 } } })
 
       const { releasedContent, applyAmendment } = useRetrofix('sys1', 'mod1', 'v1', 'rule1')
       releasedContent.value = 'Fixed content'
 
-      await applyAmendment('correction', 'Fixed a typo')
+      await applyAmendment()
 
-      expect(mockPost).toHaveBeenCalledWith('/systems/sys1/modules/mod1/versions/v1/amendments', {
+      expect(mockPost).toHaveBeenCalledWith('/systems/sys1/modules/mod1/versions/v1/amend', {
         entity_type: 'rule',
         entity_id: 'rule1',
-        change_type: 'correction',
-        description: 'Fixed a typo',
+        expected_revision: 0,
         content: { content: 'Fixed content' },
       })
     })
 
     it('converts newlines to <br> in the posted content', async () => {
-      mockPost.mockResolvedValue({ ok: true, data: {} })
+      mockPost.mockResolvedValue({ ok: true, data: { data: { revision: 1 } } })
 
       const { releasedContent, applyAmendment } = useRetrofix('sys1', 'mod1', 'v1', 'rule1')
       releasedContent.value = 'line1\nline2'
 
-      await applyAmendment('update', 'desc')
+      await applyAmendment()
 
       expect(mockPost).toHaveBeenCalledWith(
         expect.any(String),
@@ -216,22 +252,50 @@ describe('useRetrofix', () => {
       )
     })
 
-    it('sets errors when the POST returns ok: false', async () => {
-      mockPost.mockResolvedValue({ ok: false, errors: { description: 'Required.' } })
+    it('submits the manifest revision as the expected revision', async () => {
+      const contentStore = useContentStore()
+      contentStore.manifestByModule['mod1'] = makeManifestEntry({ revision: 3 })
+      mockPost.mockResolvedValue({ ok: true, data: { data: { revision: 4 } } })
 
-      const { errors, applyAmendment } = useRetrofix('sys1', 'mod1', 'v1', 'rule1')
-      await applyAmendment('correction', '')
+      const { releasedContent, expectedRevision, loadReleasedContent, applyAmendment } =
+        useRetrofix('sys1', 'mod1', 'v1', 'rule1')
+      mockRequest.mockResolvedValue({ data: [makeRule()] })
+      await loadReleasedContent('https://cdn.example.com/mod1/rules.json')
+      releasedContent.value = 'Fixed'
 
-      expect(errors.value).toEqual({ description: 'Required.' })
+      await applyAmendment()
+
+      expect(mockPost).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ expected_revision: 3 }),
+      )
     })
 
-    it('clears errors before posting', async () => {
-      mockPost.mockResolvedValue({ ok: true, data: {} })
+    it('updates expectedRevision from the amend response', async () => {
+      mockPost.mockResolvedValue({ ok: true, data: { data: { revision: 4 } } })
+
+      const { expectedRevision, applyAmendment } = useRetrofix('sys1', 'mod1', 'v1', 'rule1')
+      await applyAmendment()
+
+      expect(expectedRevision.value).toBe(4)
+    })
+
+    it('sets errors when the PATCH returns ok: false', async () => {
+      mockPost.mockResolvedValue({ ok: false, errors: { expected_revision: 'Conflict.' } })
+
+      const { errors, applyAmendment } = useRetrofix('sys1', 'mod1', 'v1', 'rule1')
+      await applyAmendment()
+
+      expect(errors.value).toEqual({ expected_revision: 'Conflict.' })
+    })
+
+    it('clears errors before patching', async () => {
+      mockPost.mockResolvedValue({ ok: true, data: { data: { revision: 1 } } })
 
       const { errors, applyAmendment } = useRetrofix('sys1', 'mod1', 'v1', 'rule1')
       errors.value = { old: 'stale error' }
 
-      await applyAmendment('correction', 'desc')
+      await applyAmendment()
 
       expect(errors.value).toBeNull()
     })

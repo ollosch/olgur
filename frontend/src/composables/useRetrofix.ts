@@ -4,14 +4,10 @@ import type { ComputedRef, Ref } from 'vue'
 import { useApi } from '@/composables/useApi'
 import { request } from '@/lib/http'
 import { useContentStore } from '@/stores/content'
-import type { ApiCollection, ApiResource, ModuleVersionAmendment, Rule } from '@/types/domain'
+import type { AmendVersionRequest, ApiCollection, ApiResource, Rule } from '@/types/domain'
 
-interface AmendmentRequest {
-  entity_type: 'rule'
-  entity_id: string
-  change_type: 'correction' | 'update'
-  description: string
-  content: Record<string, unknown>
+interface AmendResponse {
+  revision: number
 }
 
 export function useRetrofix(
@@ -25,8 +21,9 @@ export function useRetrofix(
   isDiverged: ComputedRef<boolean>
   isLoading: Ref<boolean>
   errors: Ref<Record<string, string> | null>
+  expectedRevision: Ref<number>
   loadReleasedContent: (manifestRulesUrl: string) => Promise<void>
-  applyAmendment: (changeType: 'correction' | 'update', description: string) => Promise<void>
+  applyAmendment: () => Promise<void>
   applyDraftFix: () => Promise<void>
 } {
   const { post } = useApi()
@@ -36,6 +33,7 @@ export function useRetrofix(
   const draftContent: Ref<string> = ref('')
   const isLoading: Ref<boolean> = ref(false)
   const errors: Ref<Record<string, string> | null> = ref(null)
+  const expectedRevision: Ref<number> = ref(0)
 
   /**
    * True when the released version text differs from the current draft text
@@ -46,9 +44,10 @@ export function useRetrofix(
   )
 
   /**
-   * Fetches the versioned rules file at `manifestRulesUrl`, finds the rule by
+   * Fetches the versioned rules at `manifestRulesUrl`, finds the rule by
    * `ruleId`, and populates `releasedContent`. Also seeds `draftContent` from
-   * the live store so both values are ready for the divergence check.
+   * the live store and `expectedRevision` from the manifest so both values are
+   * ready for the divergence check and the optimistic-concurrency back-edit.
    */
   async function loadReleasedContent(manifestRulesUrl: string): Promise<void> {
     isLoading.value = true
@@ -61,6 +60,9 @@ export function useRetrofix(
       if (draftRule) {
         draftContent.value = draftRule.content
       }
+
+      // Seed the expected snapshot revision from the manifest
+      expectedRevision.value = contentStore.manifestByModule[moduleId]?.revision ?? 0
 
       // Fetch and normalise the released version
       const json = await request<ApiCollection<Rule>>({ method: 'GET', url: manifestRulesUrl })
@@ -76,22 +78,18 @@ export function useRetrofix(
   }
 
   /**
-   * POSTs an amendment record to the backend. Reads the current value of
-   * `releasedContent` so any edits the designer made are preserved.
+   * PATCHes the latest-version back-edit endpoint, submitting the expected
+   * snapshot revision for optimistic concurrency and the edited released text.
    */
-  async function applyAmendment(
-    changeType: 'correction' | 'update',
-    description: string,
-  ): Promise<void> {
+  async function applyAmendment(): Promise<void> {
     errors.value = null
 
-    const result = await post<ApiResource<ModuleVersionAmendment>, AmendmentRequest>(
-      `/systems/${systemId}/modules/${moduleId}/versions/${versionId}/amendments`,
+    const result = await post<ApiResource<AmendResponse>, AmendVersionRequest>(
+      `/systems/${systemId}/modules/${moduleId}/versions/${versionId}/amend`,
       {
         entity_type: 'rule',
         entity_id: ruleId,
-        change_type: changeType,
-        description,
+        expected_revision: expectedRevision.value,
         // Re-normalise newlines to <br> for the backend storage format
         content: { content: releasedContent.value.split('\n').join('<br>') },
       },
@@ -99,6 +97,12 @@ export function useRetrofix(
 
     if (!result.ok) {
       errors.value = result.errors
+      return
+    }
+
+    const revision = result.data?.data?.revision
+    if (revision !== undefined) {
+      expectedRevision.value = revision
     }
   }
 
@@ -133,6 +137,7 @@ export function useRetrofix(
     isDiverged,
     isLoading,
     errors,
+    expectedRevision,
     loadReleasedContent,
     applyAmendment,
     applyDraftFix,

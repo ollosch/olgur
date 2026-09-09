@@ -296,7 +296,7 @@ export const useContentStore = defineStore('content', () => {
     if (canViewReleased(moduleId)) {
       const manifestEntry = manifestByModule.value[moduleId]
       if (!manifestEntry) return
-      const data = await fetchAuthenticatedCollection<Rule>(manifestEntry.files.rules)
+      const data = await fetchAuthenticatedCollection<Rule>(manifestEntry.content.rules)
       if (data !== null) {
         rulesByModule.value[moduleId] = data.map((r) =>
           markRaw({ ...r, content: r.content.split('<br>').join('\n') }),
@@ -363,7 +363,7 @@ export const useContentStore = defineStore('content', () => {
     if (canViewReleased(moduleId)) {
       const manifestEntry = manifestByModule.value[moduleId]
       if (!manifestEntry) return
-      const data = await fetchAuthenticatedCollection<IndexEntry>(manifestEntry.files.index)
+      const data = await fetchAuthenticatedCollection<IndexEntry>(manifestEntry.content.index)
       if (data !== null) {
         indexEntriesByModule.value[moduleId] = data.map((e) => markRaw(e))
       }
@@ -384,7 +384,7 @@ export const useContentStore = defineStore('content', () => {
     if (canViewReleased(moduleId)) {
       const manifestEntry = manifestByModule.value[moduleId]
       if (!manifestEntry) return
-      const data = await fetchAuthenticatedCollection<GameDatum>(manifestEntry.files['game-data'])
+      const data = await fetchAuthenticatedCollection<GameDatum>(manifestEntry.content['game-data'])
       if (data !== null) {
         gameDataByModule.value[moduleId] = data.map((d) => markRaw(d))
       }
