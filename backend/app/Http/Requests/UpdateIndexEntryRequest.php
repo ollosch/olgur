@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ClassifiesDraftChange;
 use App\Models\IndexEntry;
 use App\Models\Module;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -12,6 +13,8 @@ use Illuminate\Validation\Rule;
 
 final class UpdateIndexEntryRequest extends FormRequest
 {
+    use ClassifiesDraftChange;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -42,6 +45,7 @@ final class UpdateIndexEntryRequest extends FormRequest
             'relations.rule_refs.*' => ['string'],
             'relations.see_also' => ['present', 'array'],
             'relations.see_also.*' => ['string'],
+            'classification' => $this->draftClassificationRule(),
         ];
     }
 }

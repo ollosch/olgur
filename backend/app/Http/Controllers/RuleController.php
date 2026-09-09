@@ -4,17 +4,19 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Actions\RecordDraftChange;
+use App\Enums\DraftChangeClassification;
 use App\Http\Requests\StoreRuleRequest;
 use App\Http\Requests\UpdateRuleRequest;
 use App\Http\Resources\RuleResource;
 use App\Models\Module;
-use App\Models\ModuleDraftChange;
 use App\Models\Rule;
 use App\Models\System;
 use App\Models\User;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 final class RuleController
@@ -34,11 +36,35 @@ final class RuleController
     /**
      * Store a newly created rule within the given module.
      */
-    public function store(StoreRuleRequest $request, System $system, Module $module): RuleResource
+    public function store(StoreRuleRequest $request, System $system, Module $module, RecordDraftChange $recordDraftChange): RuleResource
     {
         Gate::authorize('create', [Rule::class, $system, $module]);
 
-        $rule = $module->rules()->create($request->validated());
+        $validated = $request->validated();
+
+        $classification = $request->draftClassification();
+
+        unset($validated['classification']);
+
+        /** @var User $user */
+        $user = Auth::user();
+
+        $rule = DB::transaction(function () use ($module, $validated, $recordDraftChange, $user, $classification): Rule {
+            $rule = $module->rules()->create($validated);
+
+            $recordDraftChange->execute(
+                $module,
+                $user,
+                'rule',
+                $rule->id,
+                'create',
+                $classification,
+                null,
+                $recordDraftChange->snapshotRule($rule),
+            );
+
+            return $rule;
+        });
 
         return new RuleResource($rule);
     }
@@ -58,26 +84,35 @@ final class RuleController
     /**
      * Update the specified rule.
      */
-    public function update(UpdateRuleRequest $request, System $system, Module $module, Rule $rule): RuleResource
+    public function update(UpdateRuleRequest $request, System $system, Module $module, Rule $rule, RecordDraftChange $recordDraftChange): RuleResource
     {
         Gate::authorize('update', [Rule::class, $system, $module]);
 
-        $rule->update($request->validated());
+        $validated = $request->validated();
+
+        $classification = $request->draftClassification();
+
+        unset($validated['classification']);
 
         /** @var User $user */
         $user = Auth::user();
 
-        ModuleDraftChange::query()->create([
-            'module_id' => $module->id,
-            'module_version_id' => null,
-            'entity_type' => 'rule',
-            'entity_id' => $rule->id,
-            'change_type' => 'update',
-            'description' => null,
-            'content_after' => ['content' => $rule->content],
-            'changed_by' => $user->id,
-            'changed_at' => now(),
-        ]);
+        DB::transaction(function () use ($module, $validated, $recordDraftChange, $user, $classification, $rule): void {
+            $before = $recordDraftChange->snapshotRule($rule);
+
+            $rule->update($validated);
+
+            $recordDraftChange->execute(
+                $module,
+                $user,
+                'rule',
+                $rule->id,
+                'update',
+                $classification,
+                $before,
+                $recordDraftChange->snapshotRule($rule),
+            );
+        });
 
         return new RuleResource($rule);
     }
@@ -85,11 +120,29 @@ final class RuleController
     /**
      * Remove the specified rule.
      */
-    public function destroy(System $system, Module $module, Rule $rule): Response
+    public function destroy(System $system, Module $module, Rule $rule, RecordDraftChange $recordDraftChange): Response
     {
         Gate::authorize('delete', [Rule::class, $system, $module]);
 
-        $rule->delete();
+        /** @var User $user */
+        $user = Auth::user();
+
+        DB::transaction(function () use ($module, $user, $rule, $recordDraftChange): void {
+            $before = $recordDraftChange->snapshotRule($rule);
+
+            $rule->delete();
+
+            $recordDraftChange->execute(
+                $module,
+                $user,
+                'rule',
+                $rule->id,
+                'delete',
+                DraftChangeClassification::Semantic,
+                $before,
+                null,
+            );
+        });
 
         return response()->noContent();
     }

@@ -35,6 +35,11 @@ final class StoreModuleVersionRequest extends FormRequest
                 Rule::unique('module_versions', 'version_string')->where('module_id', $moduleId),
             ],
             'notes' => ['present', 'string'],
+            'expected_draft_revision' => ['required', 'integer', 'min:0'],
+            'release_notes' => ['present', 'array'],
+            'release_notes.*.entity_type' => ['required', 'string', Rule::in(['rule', 'index_entry', 'game_datum'])],
+            'release_notes.*.entity_id' => ['required', 'string'],
+            'release_notes.*.note' => ['present', 'string'],
         ];
     }
 }

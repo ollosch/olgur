@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\DraftChangeClassification;
 use Database\Factories\ModuleDraftChangeFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\WithoutTimestamps;
@@ -20,12 +21,13 @@ use Illuminate\Support\Carbon;
  * @property string $entity_type
  * @property string $entity_id
  * @property string $change_type
- * @property string|null $description
- * @property array<mixed> $content_after
+ * @property DraftChangeClassification $classification
+ * @property array<mixed>|null $content_before
+ * @property array<mixed>|null $content_after
  * @property string $changed_by
  * @property Carbon $changed_at
  */
-#[Fillable(['module_id', 'module_version_id', 'entity_type', 'entity_id', 'change_type', 'description', 'content_after', 'changed_by', 'changed_at'])]
+#[Fillable(['module_id', 'module_version_id', 'entity_type', 'entity_id', 'change_type', 'classification', 'content_before', 'content_after', 'changed_by', 'changed_at'])]
 #[WithoutTimestamps]
 final class ModuleDraftChange extends Model
 {
@@ -40,6 +42,8 @@ final class ModuleDraftChange extends Model
     protected function casts(): array
     {
         return [
+            'classification' => DraftChangeClassification::class,
+            'content_before' => 'array',
             'content_after' => 'array',
             'changed_at' => 'datetime',
         ];

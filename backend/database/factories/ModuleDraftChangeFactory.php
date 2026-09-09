@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use App\Enums\DraftChangeClassification;
 use App\Models\Module;
 use App\Models\ModuleDraftChange;
 use App\Models\Rule;
@@ -28,7 +29,8 @@ final class ModuleDraftChangeFactory extends Factory
             'entity_type' => 'rule',
             'entity_id' => Rule::factory(),
             'change_type' => 'update',
-            'description' => null,
+            'classification' => DraftChangeClassification::Semantic,
+            'content_before' => ['content' => fake()->paragraph()],
             'content_after' => ['content' => fake()->paragraph()],
             'changed_by' => User::factory(),
             'changed_at' => now(),

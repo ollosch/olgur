@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use App\Enums\GameDataType;
+use App\Http\Requests\Concerns\ClassifiesDraftChange;
 use App\Models\GameDatum;
 use App\Models\Module;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -13,6 +14,8 @@ use Illuminate\Validation\Rule;
 
 final class UpdateGameDatumRequest extends FormRequest
 {
+    use ClassifiesDraftChange;
+
     public function authorize(): bool
     {
         return true;
@@ -40,6 +43,7 @@ final class UpdateGameDatumRequest extends FormRequest
                     ->ignore($gameDatum->id)],
             'name' => ['sometimes', 'string', 'max:255'],
             'content' => ['sometimes', 'array'],
+            'classification' => $this->draftClassificationRule(),
         ];
     }
 }

@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Actions\RecordDraftChange;
 use App\Actions\RemoveModuleFromMembershipConfigs;
+use App\Enums\DraftChangeClassification;
 use App\Enums\GameDataType;
 use App\Http\Requests\StoreGameDatumRequest;
 use App\Http\Requests\UpdateGameDatumRequest;
 use App\Http\Resources\GameDatumResource;
 use App\Models\GameDatum;
 use App\Models\Module;
-use App\Models\ModuleDraftChange;
 use App\Models\System;
 use App\Models\User;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -37,11 +38,35 @@ final class GameDatumController
     /**
      * Store a newly created game datum within the given module.
      */
-    public function store(StoreGameDatumRequest $request, System $system, Module $module): GameDatumResource
+    public function store(StoreGameDatumRequest $request, System $system, Module $module, RecordDraftChange $recordDraftChange): GameDatumResource
     {
         Gate::authorize('create', [GameDatum::class, $system, $module]);
 
-        $gameDatum = $module->gameData()->create($request->validated());
+        $validated = $request->validated();
+
+        $classification = $request->draftClassification();
+
+        unset($validated['classification']);
+
+        /** @var User $user */
+        $user = Auth::user();
+
+        $gameDatum = DB::transaction(function () use ($module, $validated, $recordDraftChange, $user, $classification): GameDatum {
+            $gameDatum = $module->gameData()->create($validated);
+
+            $recordDraftChange->execute(
+                $module,
+                $user,
+                'game_datum',
+                $gameDatum->id,
+                'create',
+                $classification,
+                null,
+                $recordDraftChange->snapshotGameDatum($gameDatum),
+            );
+
+            return $gameDatum;
+        });
 
         return new GameDatumResource($gameDatum);
     }
@@ -64,34 +89,42 @@ final class GameDatumController
         System $system,
         Module $module,
         GameDatum $gameDatum,
+        RecordDraftChange $recordDraftChange,
         RemoveModuleFromMembershipConfigs $removeModuleFromMembershipConfigs,
     ): GameDatumResource {
         Gate::authorize('update', [GameDatum::class, $system, $module]);
 
-        $wasSop = $gameDatum->type === GameDataType::Sop;
+        $validated = $request->validated();
 
-        DB::transaction(function () use ($gameDatum, $request, $module, $wasSop, $removeModuleFromMembershipConfigs): void {
-            $gameDatum->update($request->validated());
+        $classification = $request->draftClassification();
 
-            if ($wasSop && $gameDatum->type !== GameDataType::Sop && ! $module->gameData()->where('type', GameDataType::Sop)->exists()) {
-                $removeModuleFromMembershipConfigs->clearSopSelections($module);
-            }
-        });
+        unset($validated['classification']);
 
         /** @var User $user */
         $user = Auth::user();
 
-        ModuleDraftChange::query()->create([
-            'module_id' => $module->id,
-            'module_version_id' => null,
-            'entity_type' => 'game_datum',
-            'entity_id' => $gameDatum->id,
-            'change_type' => 'update',
-            'description' => null,
-            'content_after' => ['content' => $gameDatum->content],
-            'changed_by' => $user->id,
-            'changed_at' => now(),
-        ]);
+        $wasSop = $gameDatum->type === GameDataType::Sop;
+
+        DB::transaction(function () use ($gameDatum, $validated, $module, $wasSop, $removeModuleFromMembershipConfigs, $recordDraftChange, $user, $classification): void {
+            $before = $recordDraftChange->snapshotGameDatum($gameDatum);
+
+            $gameDatum->update($validated);
+
+            if ($wasSop && $gameDatum->type !== GameDataType::Sop && ! $module->gameData()->where('type', GameDataType::Sop)->exists()) {
+                $removeModuleFromMembershipConfigs->clearSopSelections($module);
+            }
+
+            $recordDraftChange->execute(
+                $module,
+                $user,
+                'game_datum',
+                $gameDatum->id,
+                'update',
+                $classification,
+                $before,
+                $recordDraftChange->snapshotGameDatum($gameDatum),
+            );
+        });
 
         return new GameDatumResource($gameDatum);
     }
@@ -103,17 +136,34 @@ final class GameDatumController
         System $system,
         Module $module,
         GameDatum $gameDatum,
+        RecordDraftChange $recordDraftChange,
         RemoveModuleFromMembershipConfigs $removeModuleFromMembershipConfigs,
     ): Response {
         Gate::authorize('delete', [GameDatum::class, $system, $module]);
 
-        DB::transaction(function () use ($gameDatum, $module, $removeModuleFromMembershipConfigs): void {
+        /** @var User $user */
+        $user = Auth::user();
+
+        DB::transaction(function () use ($gameDatum, $module, $removeModuleFromMembershipConfigs, $recordDraftChange, $user): void {
             $wasSop = $gameDatum->type === GameDataType::Sop;
+            $before = $recordDraftChange->snapshotGameDatum($gameDatum);
+
             $gameDatum->delete();
 
             if ($wasSop && ! $module->gameData()->where('type', GameDataType::Sop)->exists()) {
                 $removeModuleFromMembershipConfigs->clearSopSelections($module);
             }
+
+            $recordDraftChange->execute(
+                $module,
+                $user,
+                'game_datum',
+                $gameDatum->id,
+                'delete',
+                DraftChangeClassification::Semantic,
+                $before,
+                null,
+            );
         });
 
         return response()->noContent();

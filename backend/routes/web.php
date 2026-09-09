@@ -56,7 +56,10 @@ Route::prefix('api')->group(function (): void {
             Route::patch('/systems/{system}/modules/{module}/versions/{version}/amend', [ModuleVersionController::class, 'amend'])
                 ->name('versions.amend');
 
-            Route::get('/systems/{system}/modules/{module}/draft-changes', [ModuleDraftChangeController::class, 'index']);
+            Route::get('/systems/{system}/modules/{module}/draft-changes', [ModuleDraftChangeController::class, 'index'])
+                ->name('draft-changes.index');
+            Route::patch('/systems/{system}/modules/{module}/draft-changes/{draftChange}', [ModuleDraftChangeController::class, 'reclassify'])
+                ->name('draft-changes.reclassify');
         });
     });
 

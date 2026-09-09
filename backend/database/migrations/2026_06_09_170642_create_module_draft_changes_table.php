@@ -20,20 +20,13 @@ return new class extends Migration
             $table->string('entity_type');
             $table->ulid('entity_id');
             $table->string('change_type');
-            $table->text('description')->nullable();
-            $table->json('content_after');
+            $table->string('classification')->default('semantic');
+            $table->json('content_before')->nullable();
+            $table->json('content_after')->nullable();
             $table->foreignUlid('changed_by')->constrained('users')->cascadeOnDelete();
             $table->timestamp('changed_at');
 
             $table->index(['module_id', 'changed_at']);
         });
-    }
-
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        Schema::dropIfExists('module_draft_changes');
     }
 };

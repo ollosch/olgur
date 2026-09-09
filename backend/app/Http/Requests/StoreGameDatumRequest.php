@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use App\Enums\GameDataType;
+use App\Http\Requests\Concerns\ClassifiesDraftChange;
 use App\Models\Module;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -12,6 +13,8 @@ use Illuminate\Validation\Rule;
 
 final class StoreGameDatumRequest extends FormRequest
 {
+    use ClassifiesDraftChange;
+
     public function authorize(): bool
     {
         return true;
@@ -35,6 +38,7 @@ final class StoreGameDatumRequest extends FormRequest
                     ->where('type', $this->string('type')->toString())],
             'name' => ['required', 'string', 'max:255'],
             'content' => ['required', 'array'],
+            'classification' => $this->draftClassificationRule(),
         ];
     }
 }

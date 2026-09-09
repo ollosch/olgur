@@ -4,17 +4,19 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Actions\RecordDraftChange;
+use App\Enums\DraftChangeClassification;
 use App\Http\Requests\StoreIndexEntryRequest;
 use App\Http\Requests\UpdateIndexEntryRequest;
 use App\Http\Resources\IndexEntryResource;
 use App\Models\IndexEntry;
 use App\Models\Module;
-use App\Models\ModuleDraftChange;
 use App\Models\System;
 use App\Models\User;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 final class IndexEntryController
@@ -32,11 +34,35 @@ final class IndexEntryController
     /**
      * Store a newly created index entry within the given module.
      */
-    public function store(StoreIndexEntryRequest $request, System $system, Module $module): IndexEntryResource
+    public function store(StoreIndexEntryRequest $request, System $system, Module $module, RecordDraftChange $recordDraftChange): IndexEntryResource
     {
         Gate::authorize('create', [IndexEntry::class, $system, $module]);
 
-        $indexEntry = $module->indexEntries()->create($request->validated());
+        $validated = $request->validated();
+
+        $classification = $request->draftClassification();
+
+        unset($validated['classification']);
+
+        /** @var User $user */
+        $user = Auth::user();
+
+        $indexEntry = DB::transaction(function () use ($module, $validated, $recordDraftChange, $user, $classification): IndexEntry {
+            $indexEntry = $module->indexEntries()->create($validated);
+
+            $recordDraftChange->execute(
+                $module,
+                $user,
+                'index_entry',
+                $indexEntry->id,
+                'create',
+                $classification,
+                null,
+                $recordDraftChange->snapshotIndexEntry($indexEntry),
+            );
+
+            return $indexEntry;
+        });
 
         return new IndexEntryResource($indexEntry);
     }
@@ -54,30 +80,35 @@ final class IndexEntryController
     /**
      * Update the specified index entry.
      */
-    public function update(UpdateIndexEntryRequest $request, System $system, Module $module, IndexEntry $indexEntry): IndexEntryResource
+    public function update(UpdateIndexEntryRequest $request, System $system, Module $module, IndexEntry $indexEntry, RecordDraftChange $recordDraftChange): IndexEntryResource
     {
         Gate::authorize('update', [IndexEntry::class, $system, $module]);
 
-        $indexEntry->update($request->validated());
+        $validated = $request->validated();
+
+        $classification = $request->draftClassification();
+
+        unset($validated['classification']);
 
         /** @var User $user */
         $user = Auth::user();
 
-        ModuleDraftChange::query()->create([
-            'module_id' => $module->id,
-            'module_version_id' => null,
-            'entity_type' => 'index_entry',
-            'entity_id' => $indexEntry->id,
-            'change_type' => 'update',
-            'description' => null,
-            'content_after' => [
-                'definition' => $indexEntry->definition,
-                'notes' => $indexEntry->notes,
-                'relations' => $indexEntry->relations,
-            ],
-            'changed_by' => $user->id,
-            'changed_at' => now(),
-        ]);
+        DB::transaction(function () use ($module, $validated, $recordDraftChange, $user, $classification, $indexEntry): void {
+            $before = $recordDraftChange->snapshotIndexEntry($indexEntry);
+
+            $indexEntry->update($validated);
+
+            $recordDraftChange->execute(
+                $module,
+                $user,
+                'index_entry',
+                $indexEntry->id,
+                'update',
+                $classification,
+                $before,
+                $recordDraftChange->snapshotIndexEntry($indexEntry),
+            );
+        });
 
         return new IndexEntryResource($indexEntry);
     }
@@ -85,11 +116,29 @@ final class IndexEntryController
     /**
      * Remove the specified index entry.
      */
-    public function destroy(System $system, Module $module, IndexEntry $indexEntry): Response
+    public function destroy(System $system, Module $module, IndexEntry $indexEntry, RecordDraftChange $recordDraftChange): Response
     {
         Gate::authorize('delete', [IndexEntry::class, $system, $module]);
 
-        $indexEntry->delete();
+        /** @var User $user */
+        $user = Auth::user();
+
+        DB::transaction(function () use ($module, $user, $indexEntry, $recordDraftChange): void {
+            $before = $recordDraftChange->snapshotIndexEntry($indexEntry);
+
+            $indexEntry->delete();
+
+            $recordDraftChange->execute(
+                $module,
+                $user,
+                'index_entry',
+                $indexEntry->id,
+                'delete',
+                DraftChangeClassification::Semantic,
+                $before,
+                null,
+            );
+        });
 
         return response()->noContent();
     }

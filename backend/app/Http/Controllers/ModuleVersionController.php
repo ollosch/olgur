@@ -32,6 +32,7 @@ final class ModuleVersionController
                 ->where('module_id', $module->id)
                 ->whereNotNull('released_at')
                 ->latest('released_at')
+                ->with('releaseNotes')
                 ->get()
         );
     }
@@ -58,12 +59,22 @@ final class ModuleVersionController
         /** @var string $notes */
         $notes = $validated['notes'] ?? '';
 
+        /** @var int $expectedDraftRevision */
+        $expectedDraftRevision = $validated['expected_draft_revision'];
+
+        /** @var array<int, array{entity_type: string, entity_id: string, note: string}> $releaseNotes */
+        $releaseNotes = $validated['release_notes'];
+
         $moduleVersion = $publishModuleVersion->execute(
             $module,
             $user,
             $versionString,
             $notes,
+            $expectedDraftRevision,
+            $releaseNotes,
         );
+
+        $moduleVersion->load('releaseNotes');
 
         return new ModuleVersionResource($moduleVersion);
     }

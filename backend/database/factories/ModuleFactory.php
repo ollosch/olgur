@@ -32,6 +32,7 @@ final class ModuleFactory extends Factory
             'config' => [],
             'is_core' => false,
             'sort_order' => fake()->numberBetween(0, 100),
+            'draft_revision' => 0,
         ];
     }
 

@@ -11,11 +11,23 @@ use App\Models\User;
 final class ModuleDraftChangePolicy
 {
     /**
-     * Module subscribers and system admins can view draft changes.
+     * Only system admins and the module's editors may review draft provenance.
      */
     public function viewAny(User $user, System $system, Module $module): bool
     {
-        if ($module->isSubscriber($user)) {
+        if ($module->isEditor($user)) {
+            return true;
+        }
+
+        return $system->isAdmin($user);
+    }
+
+    /**
+     * Only system admins and the module's editors may reclassify draft changes.
+     */
+    public function update(User $user, System $system, Module $module): bool
+    {
+        if ($module->isEditor($user)) {
             return true;
         }
 

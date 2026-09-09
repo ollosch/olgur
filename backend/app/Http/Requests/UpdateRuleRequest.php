@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ClassifiesDraftChange;
 use App\Models\Module;
 use App\Models\Rule as RuleModel;
 use App\Models\System;
@@ -14,6 +15,8 @@ use Illuminate\Validation\Validator;
 
 final class UpdateRuleRequest extends FormRequest
 {
+    use ClassifiesDraftChange;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -42,6 +45,7 @@ final class UpdateRuleRequest extends FormRequest
             'content' => ['present', 'string'],
             'markdown' => ['present', 'string', 'nullable'],
             'sort_order' => ['required', 'integer'],
+            'classification' => $this->draftClassificationRule(),
         ];
     }
 

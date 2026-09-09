@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Models\ModuleVersion;
+use App\Models\ModuleVersionReleaseNote;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -31,6 +32,13 @@ final class ModuleVersionResource extends JsonResource
             'released_at' => $version->released_at?->toIso8601String(),
             'created_at' => $version->created_at,
             'updated_at' => $version->updated_at,
+            'release_notes' => $version->releaseNotes->map(
+                fn (ModuleVersionReleaseNote $note): array => [
+                    'entity_type' => $note->entity_type,
+                    'entity_id' => $note->entity_id,
+                    'note' => $note->note,
+                ],
+            )->values()->all(),
         ];
     }
 }

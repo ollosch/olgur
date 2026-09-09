@@ -22,6 +22,7 @@ use Illuminate\Support\Carbon;
  * @property array<string, mixed> $config
  * @property bool $is_core
  * @property int $sort_order
+ * @property int $draft_revision
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -44,6 +45,7 @@ final class Module extends Model
             'config' => 'array',
             'is_core' => 'boolean',
             'sort_order' => 'integer',
+            'draft_revision' => 'integer',
         ];
     }
 
