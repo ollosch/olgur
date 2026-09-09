@@ -44,14 +44,10 @@ final class SubscriptionPolicy
 
     /**
      * System admins can unsubscribe users from modules in their system.
-     * Users can unsubscribe themselves from modules.
+     * Users cannot unsubscribe themselves; subscriptions are durable entitlements.
      */
     public function delete(User $user, Subscription $subscription, System $system): bool
     {
-        if ($system->isAdmin($user)) {
-            return true;
-        }
-
-        return $subscription->isSubscriber($user);
+        return $system->isAdmin($user);
     }
 }

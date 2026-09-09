@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Models\Module;
+use App\Models\System;
+use App\Models\User;
+use App\Services\PermissionMap;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -27,8 +30,26 @@ final class ModuleResource extends JsonResource
             'config' => $this->config,
             'is_core' => $this->is_core,
             'sort_order' => $this->sort_order,
+            'permissions' => $this->permissions($request),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];
+    }
+
+    /**
+     * @return array<string, bool>
+     */
+    private function permissions(Request $request): array
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        /** @var System $system */
+        $system = $request->route('system');
+
+        /** @var Module $module */
+        $module = $this->resource;
+
+        return resolve(PermissionMap::class)->module($user, $system, $module);
     }
 }
