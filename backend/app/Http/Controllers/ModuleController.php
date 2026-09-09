@@ -85,6 +85,8 @@ final class ModuleController
     {
         Gate::authorize('delete', $module);
 
+        abort_if($module->is_core, 422, 'Core modules cannot be deleted.');
+
         $module->delete();
 
         return response()->noContent();

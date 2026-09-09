@@ -14,6 +14,7 @@ use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 final class SystemController
@@ -38,33 +39,38 @@ final class SystemController
     {
         Gate::authorize('create', System::class);
 
-        $system = System::query()->create($request->validated());
-
         /** @var User $creator */
         $creator = $request->user();
-        $system->memberships()->create([
-            'user_id' => $creator->id,
-            'admin' => true,
-        ]);
 
-        // Core-based structures require a core module to function; auto-create one
-        // so the system is immediately usable without an extra manual step.
-        $structure = $system->config?->structure;
-        if ($structure === SystemStructure::CorePlusOne || $structure === SystemStructure::CorePlusMany) {
-            $coreModule = $system->modules()->create([
-                'name' => 'Core',
-                'slug' => 'core',
-                'description' => '',
-                'config' => [],
-                'is_core' => true,
-                'sort_order' => 0,
+        $system = DB::transaction(function () use ($request, $creator): System {
+            $system = System::query()->create($request->validated());
+
+            $system->memberships()->create([
+                'user_id' => $creator->id,
+                'admin' => true,
             ]);
 
-            $coreModule->subscriptions()->updateOrCreate(
-                ['user_id' => $creator->id],
-                ['editor' => true],
-            );
-        }
+            // Core-based structures require a core module to function; auto-create one
+            // so the system is immediately usable without an extra manual step.
+            $structure = $system->config?->structure;
+            if ($structure === SystemStructure::CorePlusOne || $structure === SystemStructure::CorePlusMany) {
+                $coreModule = $system->modules()->create([
+                    'name' => 'Core',
+                    'slug' => 'core',
+                    'description' => '',
+                    'config' => [],
+                    'is_core' => true,
+                    'sort_order' => 0,
+                ]);
+
+                $coreModule->subscriptions()->updateOrCreate(
+                    ['user_id' => $creator->id],
+                    ['editor' => true],
+                );
+            }
+
+            return $system;
+        });
 
         return new SystemResource($system);
     }

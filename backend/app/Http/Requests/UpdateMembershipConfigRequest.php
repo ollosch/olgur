@@ -29,6 +29,7 @@ final class UpdateMembershipConfigRequest extends FormRequest
             'config.preferred_rule_format' => ['sometimes', 'string', 'in:content,markdown'],
             'config.active_module_ids' => ['sometimes', 'array'],
             'config.active_module_ids.*' => ['string'],
+            'config.selected_sop_module_id' => ['sometimes', 'nullable', 'string'],
             'config.bookmarks' => ['sometimes', 'array'],
             'config.bookmarks.*.type' => ['required_with:config.bookmarks', 'string', 'in:rule'],
             'config.bookmarks.*.id' => ['required_with:config.bookmarks', 'string', 'max:26'],

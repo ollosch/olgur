@@ -11,8 +11,10 @@ use App\Models\Module;
 use App\Models\User;
 use Illuminate\Validation\ValidationException;
 
-final class ActivateModule
+final readonly class ActivateModule
 {
+    public function __construct(private NormalizeMembershipConfig $normalizeMembershipConfig) {}
+
     /**
      * Activate an expansion module for a user within a system.
      *
@@ -60,13 +62,14 @@ final class ActivateModule
             $activeIds[] = $module->id;
         }
 
-        $membership->config = new MembershipConfig(
+        $membership->config = $this->normalizeMembershipConfig->execute($membership, $user, new MembershipConfig(
             activeModuleIds: $activeIds,
             bookmarks: $config->bookmarks,
             ignoredTags: $config->ignoredTags,
             acronymPopups: $config->acronymPopups,
             preferredRuleFormat: $config->preferredRuleFormat,
-        );
+            selectedSopModuleId: $config->selectedSopModuleId,
+        ));
         $membership->save();
 
         return $membership;

@@ -8,10 +8,12 @@ use App\Http\Requests\StoreMembershipRequest;
 use App\Http\Requests\UpdateMembershipRequest;
 use App\Http\Resources\MembershipResource;
 use App\Models\Membership;
+use App\Models\Subscription;
 use App\Models\System;
 use App\Models\User;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 final class MembershipController
@@ -82,7 +84,14 @@ final class MembershipController
     {
         Gate::authorize('delete', $membership);
 
-        $membership->delete();
+        DB::transaction(function () use ($membership, $system): void {
+            Subscription::query()
+                ->where('user_id', $membership->user_id)
+                ->whereIn('module_id', $system->modules()->select('id'))
+                ->delete();
+
+            $membership->delete();
+        });
 
         return response()->noContent();
     }
