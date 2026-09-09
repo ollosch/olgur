@@ -92,7 +92,14 @@ final class SystemController
     {
         Gate::authorize('update', $system);
 
-        $system->update($request->validated());
+        /** @var array<string, mixed> $validated */
+        $validated = $request->validated();
+        /** @var array<string, mixed> $config */
+        $config = $validated['config'];
+        $config['system_structure'] = $system->config?->structure->value;
+        $validated['config'] = $config;
+
+        $system->update($validated);
 
         return new SystemResource($system);
     }

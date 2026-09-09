@@ -306,7 +306,7 @@ test('user can unsubscribe themselves from a module', function (): void {
     assertDatabaseMissing('subscriptions', ['user_id' => $user->id, 'module_id' => $module->id]);
 });
 
-test('unsubscribing from core does not cascade to expansion subscriptions', function (): void {
+test('unsubscribing from core is rejected while expansion subscriptions exist', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->corePlusMany()->create();
     $core = Module::factory()->for($system)->core()->create();
@@ -317,9 +317,10 @@ test('unsubscribing from core does not cascade to expansion subscriptions', func
     Subscription::factory()->for($user)->for($expansionB)->create();
     actingAs($user);
 
-    deleteJson(subscriptionUrl($system, $core, $coreSubscription))->assertNoContent();
+    deleteJson(subscriptionUrl($system, $core, $coreSubscription))->assertUnprocessable()
+        ->assertJsonValidationErrors(['module_id']);
 
-    assertDatabaseMissing('subscriptions', ['user_id' => $user->id, 'module_id' => $core->id]);
+    assertDatabaseHas('subscriptions', ['user_id' => $user->id, 'module_id' => $core->id]);
     assertDatabaseHas('subscriptions', ['user_id' => $user->id, 'module_id' => $expansionA->id]);
     assertDatabaseHas('subscriptions', ['user_id' => $user->id, 'module_id' => $expansionB->id]);
 });
