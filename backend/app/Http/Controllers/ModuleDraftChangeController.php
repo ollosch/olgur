@@ -38,6 +38,7 @@ final class ModuleDraftChangeController
     ): ModuleDraftChangeResource {
         Gate::authorize('update', [ModuleDraftChange::class, $system, $module]);
 
+        abort_if($draftChange->module_id !== $module->id, 404);
         abort_if($draftChange->module_version_id !== null, 409, 'Published draft changes cannot be reclassified.');
 
         /** @var string $classificationValue */

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Actions\RecordDraftChange;
-use App\Enums\DraftChangeClassification;
+use App\Http\Requests\ClassifyDraftChangeRequest;
 use App\Http\Requests\StoreIndexEntryRequest;
 use App\Http\Requests\UpdateIndexEntryRequest;
 use App\Http\Resources\IndexEntryResource;
@@ -116,14 +116,20 @@ final class IndexEntryController
     /**
      * Remove the specified index entry.
      */
-    public function destroy(System $system, Module $module, IndexEntry $indexEntry, RecordDraftChange $recordDraftChange): Response
-    {
+    public function destroy(
+        ClassifyDraftChangeRequest $request,
+        System $system,
+        Module $module,
+        IndexEntry $indexEntry,
+        RecordDraftChange $recordDraftChange,
+    ): Response {
         Gate::authorize('delete', [IndexEntry::class, $system, $module]);
 
         /** @var User $user */
         $user = Auth::user();
+        $classification = $request->draftClassification();
 
-        DB::transaction(function () use ($module, $user, $indexEntry, $recordDraftChange): void {
+        DB::transaction(function () use ($module, $user, $indexEntry, $recordDraftChange, $classification): void {
             $before = $recordDraftChange->snapshotIndexEntry($indexEntry);
 
             $indexEntry->delete();
@@ -134,7 +140,7 @@ final class IndexEntryController
                 'index_entry',
                 $indexEntry->id,
                 'delete',
-                DraftChangeClassification::Semantic,
+                $classification,
                 $before,
                 null,
             );

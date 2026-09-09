@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Actions\RecordDraftChange;
-use App\Enums\DraftChangeClassification;
+use App\Http\Requests\ClassifyDraftChangeRequest;
 use App\Http\Requests\StoreRuleRequest;
 use App\Http\Requests\UpdateRuleRequest;
 use App\Http\Resources\RuleResource;
@@ -120,14 +120,20 @@ final class RuleController
     /**
      * Remove the specified rule.
      */
-    public function destroy(System $system, Module $module, Rule $rule, RecordDraftChange $recordDraftChange): Response
-    {
+    public function destroy(
+        ClassifyDraftChangeRequest $request,
+        System $system,
+        Module $module,
+        Rule $rule,
+        RecordDraftChange $recordDraftChange,
+    ): Response {
         Gate::authorize('delete', [Rule::class, $system, $module]);
 
         /** @var User $user */
         $user = Auth::user();
+        $classification = $request->draftClassification();
 
-        DB::transaction(function () use ($module, $user, $rule, $recordDraftChange): void {
+        DB::transaction(function () use ($module, $user, $rule, $recordDraftChange, $classification): void {
             $before = $recordDraftChange->snapshotRule($rule);
 
             $rule->delete();
@@ -138,7 +144,7 @@ final class RuleController
                 'rule',
                 $rule->id,
                 'delete',
-                DraftChangeClassification::Semantic,
+                $classification,
                 $before,
                 null,
             );

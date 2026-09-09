@@ -108,6 +108,20 @@ test('deleting a rule records a draft change with null after state', function ()
         ->and($change->content_after)->toBeNull();
 });
 
+test('deleting a rule accepts typo classification', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $rule = Rule::factory()->for($module)->create();
+    actingAs($user);
+
+    deleteJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id, [
+        'classification' => 'typo',
+    ])->assertNoContent();
+
+    expect(ModuleDraftChange::query()->sole()->classification)->toBe(DraftChangeClassification::Typo);
+});
+
 test('a mutation may submit a typo classification', function (): void {
     $user = User::factory()->superAdmin()->create();
     $system = System::factory()->create();

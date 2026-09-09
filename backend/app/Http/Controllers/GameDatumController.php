@@ -6,8 +6,8 @@ namespace App\Http\Controllers;
 
 use App\Actions\RecordDraftChange;
 use App\Actions\RemoveModuleFromMembershipConfigs;
-use App\Enums\DraftChangeClassification;
 use App\Enums\GameDataType;
+use App\Http\Requests\ClassifyDraftChangeRequest;
 use App\Http\Requests\StoreGameDatumRequest;
 use App\Http\Requests\UpdateGameDatumRequest;
 use App\Http\Resources\GameDatumResource;
@@ -133,6 +133,7 @@ final class GameDatumController
      * Remove the specified game datum.
      */
     public function destroy(
+        ClassifyDraftChangeRequest $request,
         System $system,
         Module $module,
         GameDatum $gameDatum,
@@ -143,8 +144,9 @@ final class GameDatumController
 
         /** @var User $user */
         $user = Auth::user();
+        $classification = $request->draftClassification();
 
-        DB::transaction(function () use ($gameDatum, $module, $removeModuleFromMembershipConfigs, $recordDraftChange, $user): void {
+        DB::transaction(function () use ($gameDatum, $module, $removeModuleFromMembershipConfigs, $recordDraftChange, $user, $classification): void {
             $wasSop = $gameDatum->type === GameDataType::Sop;
             $before = $recordDraftChange->snapshotGameDatum($gameDatum);
 
@@ -160,7 +162,7 @@ final class GameDatumController
                 'game_datum',
                 $gameDatum->id,
                 'delete',
-                DraftChangeClassification::Semantic,
+                $classification,
                 $before,
                 null,
             );
