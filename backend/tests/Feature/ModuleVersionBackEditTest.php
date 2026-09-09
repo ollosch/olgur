@@ -99,10 +99,14 @@ test('amend does not change an index entry references field', function (): void 
         'entity_type' => 'index_entry',
         'entity_id' => $entry->id,
         'expected_revision' => 0,
-        'content' => ['relations' => ['rule_refs' => ['9.9']]],
+        'content' => [
+            'definition' => 'Corrected definition.',
+            'relations' => ['rule_refs' => ['9.9']],
+        ],
     ])->assertSuccessful();
 
-    expect($entry->fresh()->relations)->toBe(['rule_refs' => ['1.1']]);
+    expect($entry->fresh()->definition)->toBe('Corrected definition.')
+        ->and($entry->fresh()->relations)->toBe(['rule_refs' => ['1.1']]);
 });
 
 test('amend applies a game datum back-edit', function (): void {
@@ -223,6 +227,25 @@ test('amend returns 422 when required fields are missing', function (): void {
     patchJson(amendUrl($system, $module, $version), [])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['entity_type', 'entity_id', 'expected_revision', 'content']);
+});
+
+test('amend rejects content without an editable field', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $version = ModuleVersion::factory()->for($module)->released()->create();
+    $ruleVersion = RuleVersion::factory()->create(['module_version_id' => $version->id]);
+    actingAs($user);
+
+    patchJson(amendUrl($system, $module, $version), [
+        'entity_type' => 'rule',
+        'entity_id' => $ruleVersion->id,
+        'expected_revision' => 0,
+        'content' => ['title' => 'Not editable'],
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors(['content']);
+
+    expect($version->fresh()->revision)->toBe(0);
 });
 
 test('amend returns 404 for an entity_id not belonging to the version', function (): void {

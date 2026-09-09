@@ -6,6 +6,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 final class AmendModuleVersionRequest extends FormRequest
 {
@@ -30,5 +31,25 @@ final class AmendModuleVersionRequest extends FormRequest
             'expected_revision' => ['required', 'integer', 'min:0'],
             'content' => ['required', 'array'],
         ];
+    }
+
+    /**
+     * Reject content that would not update a permitted reader-facing field.
+     *
+     * @return array<callable(Validator): void>
+     */
+    public function after(): array
+    {
+        return [function (Validator $validator): void {
+            $allowedFields = match ($this->input('entity_type')) {
+                'rule', 'game_datum' => ['content'],
+                'index_entry' => ['definition', 'notes'],
+                default => [],
+            };
+
+            if (array_intersect(array_keys((array) $this->input('content')), $allowedFields) === []) {
+                $validator->errors()->add('content', 'Provide at least one editable content field.');
+            }
+        }];
     }
 }

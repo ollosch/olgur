@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import type { System, Membership } from '@/types/domain'
+import type { System, Membership, Module } from '@/types/domain'
 import { storeToRefs } from 'pinia'
 import { useSystemStore } from '@/stores/system'
 import { useMembershipStore } from '@/stores/membership'

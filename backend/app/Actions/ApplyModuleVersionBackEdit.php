@@ -34,10 +34,16 @@ final class ApplyModuleVersionBackEdit
         array $content,
     ): ModuleVersion {
         return DB::transaction(function () use ($module, $version, $entityType, $entityId, $expectedRevision, $content): ModuleVersion {
+            $version = ModuleVersion::query()
+                ->whereKey($version->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
             $latest = ModuleVersion::query()
                 ->where('module_id', $module->id)
                 ->whereNotNull('released_at')
                 ->latest('released_at')
+                ->lockForUpdate()
                 ->first();
 
             abort_if($latest === null || $latest->id !== $version->id, 409, 'Only the latest released version can receive back-edits.');
