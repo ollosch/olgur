@@ -15,8 +15,9 @@ vi.mock('@/composables/useApi', () => ({
 }))
 
 import { useContentStore } from '@/stores/content'
+import { useSystemStore } from '@/stores/system'
 import { useVersionStatus } from '@/composables/useVersionStatus'
-import type { ManifestEntry } from '@/types/domain'
+import type { ManifestEntry, System, Module } from '@/types/domain'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -32,6 +33,50 @@ function makeManifestEntry(overrides: Partial<ManifestEntry> = {}): ManifestEntr
       index: 'https://cdn.example.com/index.json',
       'game-data': 'https://cdn.example.com/game-data.json',
     },
+    ...overrides,
+  }
+}
+
+function makeSystem(id = 'sys1'): System {
+  return {
+    id,
+    slug: id,
+    name: `System ${id}`,
+    description: null,
+    config: {
+      system_structure: 'core_plus_many',
+      sort_rules_by: 'number',
+      toc_depth: 3,
+      cover_image: null,
+    },
+    permissions: { 'system.manage': false, 'membership.manage': false, 'module.create': false },
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  }
+}
+
+function makeModule(overrides: Partial<Module> & { id: string }): Module {
+  return {
+    system_id: 'sys1',
+    slug: overrides.id,
+    name: `Module ${overrides.id}`,
+    description: null,
+    config: null,
+    is_core: true,
+    sort_order: 0,
+    permissions: {
+      'module.update': false,
+      'module.delete': false,
+      'content.view_live': false,
+      'content.view_released': false,
+      'content.edit': false,
+      'version.publish': false,
+      'version.amend_latest': false,
+      'subscription.manage': false,
+      'module.activate': false,
+    },
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
     ...overrides,
   }
 }
@@ -88,15 +133,23 @@ describe('useVersionStatus', () => {
     })
   })
 
-  // ── isDesigner ─────────────────────────────────────────────────────────────
+  // ── isLiveContent ──────────────────────────────────────────────────────────
 
-  describe('isDesigner', () => {
-    it('delegates correctly to contentStore.isDesigner', () => {
-      const contentStore = useContentStore()
-      const { isDesigner } = useVersionStatus('mod1')
-      // Default state: no authenticated user → isDesigner is false
-      expect(isDesigner.value).toBe(false)
-      expect(isDesigner.value).toBe(contentStore.isDesigner)
+  describe('isLiveContent', () => {
+    it('is false when the module has no permission map', () => {
+      const { isLiveContent } = useVersionStatus('mod1')
+      expect(isLiveContent.value).toBe(false)
+    })
+
+    it('is true when the module grants content.view_live', () => {
+      const systemStore = useSystemStore()
+      systemStore.currentSystem = makeSystem('sys1')
+      const module = makeModule({ id: 'mod1' })
+      module.permissions = { ...module.permissions, 'content.view_live': true }
+      systemStore.modulesBySystem['sys1'] = [module]
+
+      const { isLiveContent } = useVersionStatus('mod1')
+      expect(isLiveContent.value).toBe(true)
     })
   })
 })

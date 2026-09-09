@@ -3,13 +3,13 @@ import { defineStore } from 'pinia'
 import { useApi } from '@/composables/useApi'
 import { request } from '@/lib/http'
 import type { ApiResult } from '@/lib/http'
-import { useAuthStore } from '@/stores/auth'
 import { useSystemStore } from '@/stores/system'
 import { useMembershipStore } from '@/stores/membership'
 import type {
   Rule,
   IndexEntry,
   Module,
+  ModulePermissions,
   GameDatum,
   ManifestEntry,
   ApiCollection,
@@ -20,7 +20,6 @@ import type {
 
 export const useContentStore = defineStore('content', () => {
   const { get, put, loading } = useApi()
-  const authStore = useAuthStore()
   const systemStore = useSystemStore()
   const membershipStore = useMembershipStore()
 
@@ -42,25 +41,27 @@ export const useContentStore = defineStore('content', () => {
   )
 
   /**
-   * True when the user has editorial access to the current system.
-   * Designers see live draft content; everyone else (players) reads from
-   * versioned static files listed in the manifest.
-   *
-   * A user is a designer if they are:
-   *  – a super_admin, OR
-   *  – a system admin (membership.admin), OR
-   *  – an editor of at least one module in the current system
+   * The current user's permission map for the given module, as supplied by the
+   * API. Falls back to null when the module (or its permissions) are unknown.
    */
-  const isDesigner = computed((): boolean => {
-    const user = authStore.user
-    if (!user) return false
-    if (user.super_admin) return true
-    if (membershipStore.membership?.admin) return true
-    const systemModuleIds = new Set(systemStore.modules.map((m) => m.id))
-    return Object.entries(membershipStore.subscriptions).some(
-      ([moduleId, sub]) => systemModuleIds.has(moduleId) && sub?.editor === true,
-    )
-  })
+  function permissionsFor(moduleId: string): ModulePermissions | null {
+    return systemStore.modules.find((m) => m.id === moduleId)?.permissions ?? null
+  }
+
+  /**
+   * Whether the current user reads this module's live draft content.
+   * Editors and system admins read live; everyone else reads released content.
+   */
+  function canViewLive(moduleId: string): boolean {
+    return permissionsFor(moduleId)?.['content.view_live'] ?? false
+  }
+
+  /**
+   * Whether the current user can edit this module's content.
+   */
+  function canEditModule(moduleId: string): boolean {
+    return permissionsFor(moduleId)?.['content.edit'] ?? false
+  }
 
   const allRules = computed((): Rule[] =>
     activeModules.value.flatMap((m) => rulesByModule.value[m.id] ?? []),
@@ -269,7 +270,19 @@ export const useContentStore = defineStore('content', () => {
   }
 
   async function fetchRules(systemId: string, moduleId: string): Promise<void> {
-    if (!isDesigner.value) {
+    if (canViewLive(moduleId)) {
+      const result = await get<ApiCollection<Rule>>(
+        `/systems/${systemId}/modules/${moduleId}/rules`,
+      )
+      if (result.ok) {
+        rulesByModule.value[moduleId] = result.data.data.map((r) =>
+          markRaw({ ...r, content: r.content.split('<br>').join('\n') }),
+        )
+      }
+      return
+    }
+
+    if (permissionsFor(moduleId)?.['content.view_released'] ?? false) {
       const manifestEntry = manifestByModule.value[moduleId]
       if (!manifestEntry) return
       const data = await fetchAuthenticatedCollection<Rule>(manifestEntry.files.rules)
@@ -278,14 +291,6 @@ export const useContentStore = defineStore('content', () => {
           markRaw({ ...r, content: r.content.split('<br>').join('\n') }),
         )
       }
-      return
-    }
-
-    const result = await get<ApiCollection<Rule>>(`/systems/${systemId}/modules/${moduleId}/rules`)
-    if (result.ok) {
-      rulesByModule.value[moduleId] = result.data.data.map((r) =>
-        markRaw({ ...r, content: r.content.split('<br>').join('\n') }),
-      )
     }
   }
 
@@ -334,40 +339,44 @@ export const useContentStore = defineStore('content', () => {
   }
 
   async function fetchIndexEntries(systemId: string, moduleId: string): Promise<void> {
-    if (!isDesigner.value) {
+    if (canViewLive(moduleId)) {
+      const result = await get<ApiCollection<IndexEntry>>(
+        `/systems/${systemId}/modules/${moduleId}/index-entries`,
+      )
+      if (result.ok) {
+        indexEntriesByModule.value[moduleId] = result.data.data.map((e) => markRaw(e))
+      }
+      return
+    }
+
+    if (permissionsFor(moduleId)?.['content.view_released'] ?? false) {
       const manifestEntry = manifestByModule.value[moduleId]
       if (!manifestEntry) return
       const data = await fetchAuthenticatedCollection<IndexEntry>(manifestEntry.files.index)
       if (data !== null) {
         indexEntriesByModule.value[moduleId] = data.map((e) => markRaw(e))
       }
-      return
-    }
-
-    const result = await get<ApiCollection<IndexEntry>>(
-      `/systems/${systemId}/modules/${moduleId}/index-entries`,
-    )
-    if (result.ok) {
-      indexEntriesByModule.value[moduleId] = result.data.data.map((e) => markRaw(e))
     }
   }
 
   async function fetchGameData(systemId: string, moduleId: string): Promise<void> {
-    if (!isDesigner.value) {
+    if (canViewLive(moduleId)) {
+      const result = await get<ApiCollection<GameDatum>>(
+        `/systems/${systemId}/modules/${moduleId}/game-data`,
+      )
+      if (result.ok) {
+        gameDataByModule.value[moduleId] = result.data.data.map((d) => markRaw(d))
+      }
+      return
+    }
+
+    if (permissionsFor(moduleId)?.['content.view_released'] ?? false) {
       const manifestEntry = manifestByModule.value[moduleId]
       if (!manifestEntry) return
       const data = await fetchAuthenticatedCollection<GameDatum>(manifestEntry.files['game-data'])
       if (data !== null) {
         gameDataByModule.value[moduleId] = data.map((d) => markRaw(d))
       }
-      return
-    }
-
-    const result = await get<ApiCollection<GameDatum>>(
-      `/systems/${systemId}/modules/${moduleId}/game-data`,
-    )
-    if (result.ok) {
-      gameDataByModule.value[moduleId] = result.data.data.map((d) => markRaw(d))
     }
   }
 
@@ -403,7 +412,9 @@ export const useContentStore = defineStore('content', () => {
     loading,
     activeIds,
     activeModules,
-    isDesigner,
+    permissionsFor,
+    canViewLive,
+    canEditModule,
     allRules,
     rulesById,
     rulesByNumber,

@@ -5,11 +5,11 @@ const props = defineProps<{
   moduleId: string
 }>()
 
-const { isDesigner, hasReleasedVersion, displayVersion } = useVersionStatus(() => props.moduleId)
+const { isLiveContent, hasReleasedVersion, displayVersion } = useVersionStatus(() => props.moduleId)
 </script>
 
 <template>
-  <template v-if="isDesigner">
+  <template v-if="isLiveContent">
     <span
       v-if="!hasReleasedVersion"
       class="inline-flex items-center rounded-full border border-amber-500/30 bg-amber-500/15 px-2.5 py-0.5 text-xs font-medium text-amber-400"

@@ -34,12 +34,31 @@ export interface SystemConfig {
   cover_image: string | null
 }
 
+export interface SystemPermissions {
+  'system.manage': boolean
+  'membership.manage': boolean
+  'module.create': boolean
+}
+
+export interface ModulePermissions {
+  'module.update': boolean
+  'module.delete': boolean
+  'content.view_live': boolean
+  'content.view_released': boolean
+  'content.edit': boolean
+  'version.publish': boolean
+  'version.amend_latest': boolean
+  'subscription.manage': boolean
+  'module.activate': boolean
+}
+
 export interface System {
   id: string
   slug: string
   name: string
   description: string | null
   config: SystemConfig | null
+  permissions: SystemPermissions
   created_at: string
   updated_at: string
 }
@@ -53,6 +72,7 @@ export interface Module {
   config: Record<string, unknown> | null
   is_core: boolean
   sort_order: number
+  permissions: ModulePermissions
   created_at: string
   updated_at: string
 }

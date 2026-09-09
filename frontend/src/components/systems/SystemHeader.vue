@@ -5,7 +5,6 @@ import { useAppSettingsStore } from '@/stores/appSettings'
 import { useLeftPanelStore } from '@/stores/leftPanel'
 import { useShortcutStore } from '@/stores/shortcut'
 import { useSystemStore } from '@/stores/system'
-import { useMembershipStore } from '@/stores/membership'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import {
@@ -19,7 +18,7 @@ import { Menu, MoreVertical, Search, Table2, ListOrdered } from '@lucide/vue'
 import LeftPanelContent from '@/components/systems/LeftPanelContent.vue'
 import ManageMembersDialog from '@/components/systems/ManageMembersDialog.vue'
 import type { Rule, Module } from '@/types/domain'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 interface Props {
   selectedRule: Rule | null
@@ -42,9 +41,12 @@ const appSettings = useAppSettingsStore()
 const panelStore = useLeftPanelStore()
 const shortcutStore = useShortcutStore()
 const systemStore = useSystemStore()
-const membershipStore = useMembershipStore()
 
 const manageMembersOpen = ref(false)
+
+const canManageMembers = computed(() =>
+  Boolean(systemStore.currentSystem?.permissions?.['membership.manage']),
+)
 
 async function logout(): Promise<void> {
   await authStore.logout()
@@ -130,12 +132,12 @@ async function logout(): Promise<void> {
         <DropdownMenuItem @click="router.push({ name: 'home' })"> Exit System </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          v-if="membershipStore.membership?.admin"
+          v-if="canManageMembers"
           @click="manageMembersOpen = true"
         >
           Manage Members
         </DropdownMenuItem>
-        <DropdownMenuSeparator v-if="membershipStore.membership?.admin" />
+        <DropdownMenuSeparator v-if="canManageMembers" />
         <DropdownMenuItem @click="router.push({ name: 'profile' })">
           User Profile
         </DropdownMenuItem>

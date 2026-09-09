@@ -5,13 +5,13 @@ const props = defineProps<{
   moduleId: string
 }>()
 
-const { isDesigner, hasReleasedVersion, displayVersion, revision, versionString } =
+const { isLiveContent, hasReleasedVersion, displayVersion, revision, versionString } =
   useVersionStatus(() => props.moduleId)
 </script>
 
 <template>
   <div
-    v-if="isDesigner"
+    v-if="isLiveContent"
     class="flex items-center gap-2 border-b border-zinc-700/50 bg-zinc-800/60 px-4 py-1.5 text-xs text-zinc-400"
   >
     <span>You are editing a draft.</span>

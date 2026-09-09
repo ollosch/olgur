@@ -23,7 +23,7 @@ vi.mock('@/composables/useApi', () => ({
 
 import { useMembershipStore } from '@/stores/membership'
 import { useSystemStore } from '@/stores/system'
-import type { Membership, Module, System, SystemStructure } from '@/types/domain'
+import type { Membership, System, SystemStructure } from '@/types/domain'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -39,21 +39,7 @@ function makeSystem(id: string, structure: SystemStructure): System {
       toc_depth: 3,
       cover_image: null,
     },
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z',
-  }
-}
-
-function makeModule(id: string, systemId: string, isCore: boolean): Module {
-  return {
-    id,
-    system_id: systemId,
-    slug: id,
-    name: `Module ${id}`,
-    description: null,
-    config: null,
-    is_core: isCore,
-    sort_order: 0,
+    permissions: { 'system.manage': false, 'membership.manage': false, 'module.create': false },
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
   }
@@ -81,69 +67,6 @@ describe('useMembershipStore', () => {
     mockDel.mockReset()
     mockPatch.mockReset()
     mockPut.mockReset()
-  })
-
-  // ── canSubscribeToModule ────────────────────────────────────────────────────
-
-  describe('canSubscribeToModule', () => {
-    it('returns false for a core_plus_many expansion when no core subscription exists', () => {
-      const systemStore = useSystemStore()
-      const membershipStore = useMembershipStore()
-
-      systemStore.systems = [makeSystem('sys1', 'core_plus_many')]
-      systemStore.modulesBySystem['sys1'] = [
-        makeModule('core-mod', 'sys1', true),
-        makeModule('exp-mod', 'sys1', false),
-      ]
-      // No subscriptions seeded
-
-      expect(membershipStore.canSubscribeToModule('sys1', 'exp-mod')).toBe(false)
-    })
-
-    it('returns true for a core_plus_many expansion when a core subscription exists', () => {
-      const systemStore = useSystemStore()
-      const membershipStore = useMembershipStore()
-
-      systemStore.systems = [makeSystem('sys1', 'core_plus_many')]
-      systemStore.modulesBySystem['sys1'] = [
-        makeModule('core-mod', 'sys1', true),
-        makeModule('exp-mod', 'sys1', false),
-      ]
-      membershipStore.subscriptions['core-mod'] = { id: 'sub1', editor: false }
-
-      expect(membershipStore.canSubscribeToModule('sys1', 'exp-mod')).toBe(true)
-    })
-
-    it('always returns true for a grouping_only system regardless of subscriptions', () => {
-      const systemStore = useSystemStore()
-      const membershipStore = useMembershipStore()
-
-      systemStore.systems = [makeSystem('sys1', 'grouping_only')]
-      systemStore.modulesBySystem['sys1'] = [makeModule('exp-mod', 'sys1', false)]
-      // No subscriptions seeded
-
-      expect(membershipStore.canSubscribeToModule('sys1', 'exp-mod')).toBe(true)
-    })
-
-    it('always returns true for a core module regardless of system structure', () => {
-      const systemStore = useSystemStore()
-      const membershipStore = useMembershipStore()
-
-      systemStore.systems = [makeSystem('sys1', 'core_plus_many')]
-      systemStore.modulesBySystem['sys1'] = [makeModule('core-mod', 'sys1', true)]
-
-      expect(membershipStore.canSubscribeToModule('sys1', 'core-mod')).toBe(true)
-    })
-
-    it('returns false when the module is not found', () => {
-      const systemStore = useSystemStore()
-      const membershipStore = useMembershipStore()
-
-      systemStore.systems = [makeSystem('sys1', 'core_plus_many')]
-      systemStore.modulesBySystem['sys1'] = []
-
-      expect(membershipStore.canSubscribeToModule('sys1', 'ghost-mod')).toBe(false)
-    })
   })
 
   // ── activateModule ──────────────────────────────────────────────────────────
@@ -188,6 +111,22 @@ describe('useMembershipStore', () => {
       const membershipStore = useMembershipStore()
 
       systemStore.systems = [makeSystem('sys1', 'core_plus_many')]
+      membershipStore.membershipsBySystem['sys1'] = makeMembership('sys1', ['existing-mod'])
+
+      await membershipStore.activateModule('sys1', 'new-mod')
+
+      expect(mockDel).not.toHaveBeenCalled()
+      expect(mockPost).toHaveBeenCalledWith('/systems/sys1/modules/new-mod/activate')
+    })
+
+    it('for grouping_only, does NOT deactivate existing modules before activating', async () => {
+      mockPost.mockResolvedValue({ ok: true })
+      mockGet.mockResolvedValue({ ok: true, data: { data: [] } })
+
+      const systemStore = useSystemStore()
+      const membershipStore = useMembershipStore()
+
+      systemStore.systems = [makeSystem('sys1', 'grouping_only')]
       membershipStore.membershipsBySystem['sys1'] = makeMembership('sys1', ['existing-mod'])
 
       await membershipStore.activateModule('sys1', 'new-mod')

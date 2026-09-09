@@ -9,7 +9,7 @@ export function useVersionStatus(moduleId: MaybeRefOrGetter<string>): {
   revision: ComputedRef<number>
   hasReleasedVersion: ComputedRef<boolean>
   displayVersion: ComputedRef<string>
-  isDesigner: ComputedRef<boolean>
+  isLiveContent: ComputedRef<boolean>
 } {
   const contentStore = useContentStore()
 
@@ -29,13 +29,15 @@ export function useVersionStatus(moduleId: MaybeRefOrGetter<string>): {
     return revision.value > 0 ? `${ver} rev${revision.value}` : ver
   })
 
-  const isDesigner: ComputedRef<boolean> = computed(() => contentStore.isDesigner)
+  const isLiveContent: ComputedRef<boolean> = computed(() =>
+    contentStore.canViewLive(toValue(moduleId)),
+  )
 
   return {
     versionString,
     revision,
     hasReleasedVersion,
     displayVersion,
-    isDesigner,
+    isLiveContent,
   }
 }

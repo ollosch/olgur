@@ -18,7 +18,6 @@ vi.mock('@/composables/useApi', () => ({
 }))
 
 // ─── Mock the authenticated request() from http.ts ────────────────────────────
-// vi.hoisted() ensures the variable is available before vi.mock() factories run.
 const { mockRequest } = vi.hoisted(() => ({ mockRequest: vi.fn() }))
 
 vi.mock('@/lib/http', async (importOriginal) => {
@@ -28,13 +27,10 @@ vi.mock('@/lib/http', async (importOriginal) => {
 
 import { useContentStore } from '@/stores/content'
 import { useSystemStore } from '@/stores/system'
-import { useAuthStore } from '@/stores/auth'
-import { useMembershipStore } from '@/stores/membership'
 import type {
-  User,
   System,
   Module,
-  Membership,
+  ModulePermissions,
   ManifestEntry,
   Rule,
   IndexEntry,
@@ -42,18 +38,6 @@ import type {
 } from '@/types/domain'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function makeUser(overrides: Partial<User> = {}): User {
-  return {
-    id: 'user1',
-    name: 'Test User',
-    email: 'test@example.com',
-    super_admin: false,
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z',
-    ...overrides,
-  }
-}
 
 function makeSystem(id: string): System {
   return {
@@ -67,12 +51,32 @@ function makeSystem(id: string): System {
       toc_depth: 3,
       cover_image: null,
     },
+    permissions: { 'system.manage': false, 'membership.manage': false, 'module.create': false },
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
   }
 }
 
-function makeModule(id: string, isCore = true): Module {
+function makePermissions(overrides: Partial<ModulePermissions> = {}): ModulePermissions {
+  return {
+    'module.update': false,
+    'module.delete': false,
+    'content.view_live': false,
+    'content.view_released': false,
+    'content.edit': false,
+    'version.publish': false,
+    'version.amend_latest': false,
+    'subscription.manage': false,
+    'module.activate': false,
+    ...overrides,
+  }
+}
+
+function makeModule(
+  id: string,
+  isCore = true,
+  permissions: ModulePermissions = makePermissions(),
+): Module {
   return {
     id,
     system_id: 'sys1',
@@ -82,18 +86,7 @@ function makeModule(id: string, isCore = true): Module {
     config: null,
     is_core: isCore,
     sort_order: 0,
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z',
-  }
-}
-
-function makeMembership(admin = false): Membership {
-  return {
-    id: 'mem1',
-    system_id: 'sys1',
-    user_id: 'user1',
-    admin,
-    config: { active_module_ids: ['mod1'] },
+    permissions,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
   }
@@ -158,28 +151,16 @@ function makeGameDatum(id: string): GameDatum {
 
 // ─── Context seeders ──────────────────────────────────────────────────────────
 
-function seedPlayerContext(): void {
-  const authStore = useAuthStore()
+/**
+ * Seed the current system with modules whose permission maps drive content
+ * source selection. `modules` is a map of module id → permission overrides.
+ */
+function seedModules(modules: Record<string, Partial<ModulePermissions>>): void {
   const systemStore = useSystemStore()
-  const membershipStore = useMembershipStore()
-
-  authStore.user = makeUser({ super_admin: false })
   systemStore.currentSystem = makeSystem('sys1')
-  systemStore.modulesBySystem['sys1'] = [makeModule('mod1')]
-  membershipStore.membershipsBySystem['sys1'] = makeMembership(false)
-  membershipStore.subscriptions['mod1'] = { id: 'sub1', editor: false }
-}
-
-function seedDesignerContext(): void {
-  const authStore = useAuthStore()
-  const systemStore = useSystemStore()
-  const membershipStore = useMembershipStore()
-
-  authStore.user = makeUser({ super_admin: true })
-  systemStore.currentSystem = makeSystem('sys1')
-  systemStore.modulesBySystem['sys1'] = [makeModule('mod1')]
-  membershipStore.membershipsBySystem['sys1'] = makeMembership(false)
-  membershipStore.subscriptions['mod1'] = { id: 'sub1', editor: false }
+  systemStore.modulesBySystem['sys1'] = Object.entries(modules).map(([id, perms]) =>
+    makeModule(id, true, makePermissions(perms)),
+  )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -199,7 +180,7 @@ describe('useContentStore — manifest & content routing', () => {
 
   describe('fetchManifest', () => {
     it('calls the manifest endpoint and stores entries keyed by module_id', async () => {
-      seedPlayerContext()
+      seedModules({ mod1: {} })
       const contentStore = useContentStore()
 
       const entry = makeManifestEntry('mod1')
@@ -212,7 +193,7 @@ describe('useContentStore — manifest & content routing', () => {
     })
 
     it('stores multiple manifest entries indexed by their module_id', async () => {
-      seedPlayerContext()
+      seedModules({ mod1: {} })
       const contentStore = useContentStore()
 
       const entries = [makeManifestEntry('mod1'), makeManifestEntry('mod2')]
@@ -225,7 +206,7 @@ describe('useContentStore — manifest & content routing', () => {
     })
 
     it('leaves manifestByModule unchanged when the API request fails', async () => {
-      seedPlayerContext()
+      seedModules({ mod1: {} })
       const contentStore = useContentStore()
 
       mockGet.mockResolvedValue({ ok: false, errors: {} })
@@ -236,87 +217,55 @@ describe('useContentStore — manifest & content routing', () => {
     })
   })
 
-  // ── isDesigner ──────────────────────────────────────────────────────────────
+  // ── per-module content source ───────────────────────────────────────────────
 
-  describe('isDesigner', () => {
-    it('is true when user.super_admin is true', () => {
-      seedDesignerContext()
+  describe('per-module content source', () => {
+    it('an editor loads live for their module but released for a subscriber-only module', async () => {
+      seedModules({
+        mod1: { 'content.view_live': true },
+        mod2: { 'content.view_released': true },
+      })
       const contentStore = useContentStore()
-      expect(contentStore.isDesigner).toBe(true)
-    })
+      contentStore.manifestByModule['mod2'] = makeManifestEntry('mod2')
 
-    it('is true when membership.admin is true', () => {
-      const authStore = useAuthStore()
-      const systemStore = useSystemStore()
-      const membershipStore = useMembershipStore()
+      mockGet.mockResolvedValue({ ok: true, data: { data: [makeRule('r1')] } })
+      mockRequest.mockResolvedValue([makeRule('r2')])
 
-      authStore.user = makeUser({ super_admin: false })
-      systemStore.currentSystem = makeSystem('sys1')
-      systemStore.modulesBySystem['sys1'] = [makeModule('mod1')]
-      membershipStore.membershipsBySystem['sys1'] = makeMembership(true)
+      await contentStore.fetchRules('sys1', 'mod1')
+      await contentStore.fetchRules('sys1', 'mod2')
 
-      const contentStore = useContentStore()
-      expect(contentStore.isDesigner).toBe(true)
-    })
-
-    it('is true when any subscription in the current system has editor: true', () => {
-      const authStore = useAuthStore()
-      const systemStore = useSystemStore()
-      const membershipStore = useMembershipStore()
-
-      authStore.user = makeUser({ super_admin: false })
-      systemStore.currentSystem = makeSystem('sys1')
-      systemStore.modulesBySystem['sys1'] = [makeModule('mod1')]
-      membershipStore.membershipsBySystem['sys1'] = makeMembership(false)
-      membershipStore.subscriptions['mod1'] = { id: 'sub1', editor: true }
-
-      const contentStore = useContentStore()
-      expect(contentStore.isDesigner).toBe(true)
-    })
-
-    it('is false when an editor subscription belongs to a different system', () => {
-      const authStore = useAuthStore()
-      const systemStore = useSystemStore()
-      const membershipStore = useMembershipStore()
-
-      authStore.user = makeUser({ super_admin: false })
-      systemStore.currentSystem = makeSystem('sys1')
-      // sys1 only has mod1; mod2 belongs to a different system
-      systemStore.modulesBySystem['sys1'] = [makeModule('mod1')]
-      membershipStore.membershipsBySystem['sys1'] = makeMembership(false)
-      // editor of mod2 which is NOT in sys1
-      membershipStore.subscriptions['mod2'] = { id: 'sub2', editor: true }
-
-      const contentStore = useContentStore()
-      expect(contentStore.isDesigner).toBe(false)
-    })
-
-    it('is false for a regular player', () => {
-      seedPlayerContext()
-      const contentStore = useContentStore()
-      expect(contentStore.isDesigner).toBe(false)
-    })
-
-    it('is false when user is null', () => {
-      const authStore = useAuthStore()
-      authStore.user = null
-      const contentStore = useContentStore()
-      expect(contentStore.isDesigner).toBe(false)
+      expect(mockGet).toHaveBeenCalledWith('/systems/sys1/modules/mod1/rules')
+      expect(mockRequest).toHaveBeenCalledWith({
+        method: 'GET',
+        url: makeManifestEntry('mod2').files.rules,
+      })
     })
   })
 
   // ── fetchRules ──────────────────────────────────────────────────────────────
 
   describe('fetchRules', () => {
-    it('player with manifest entry: fetches from the manifest rules URL, not the live endpoint', async () => {
-      seedPlayerContext()
+    it('view_live module fetches from the live endpoint, ignoring the manifest', async () => {
+      seedModules({ mod1: { 'content.view_live': true } })
       const contentStore = useContentStore()
+      contentStore.manifestByModule['mod1'] = makeManifestEntry('mod1')
 
+      mockGet.mockResolvedValue({ ok: true, data: { data: [makeRule('r1')] } })
+
+      await contentStore.fetchRules('sys1', 'mod1')
+
+      expect(mockGet).toHaveBeenCalledWith('/systems/sys1/modules/mod1/rules')
+      expect(mockRequest).not.toHaveBeenCalled()
+      expect(contentStore.rulesByModule['mod1']).toHaveLength(1)
+    })
+
+    it('view_released module with manifest entry fetches from the manifest URL', async () => {
+      seedModules({ mod1: { 'content.view_released': true } })
+      const contentStore = useContentStore()
       const entry = makeManifestEntry('mod1')
       contentStore.manifestByModule['mod1'] = entry
 
-      const rules = [makeRule('r1')]
-      mockRequest.mockResolvedValue(rules)
+      mockRequest.mockResolvedValue([makeRule('r1')])
 
       await contentStore.fetchRules('sys1', 'mod1')
 
@@ -325,10 +274,9 @@ describe('useContentStore — manifest & content routing', () => {
       expect(contentStore.rulesByModule['mod1']).toHaveLength(1)
     })
 
-    it('player with no manifest entry: skips loading and leaves state undefined', async () => {
-      seedPlayerContext()
+    it('view_released module without a manifest entry skips loading', async () => {
+      seedModules({ mod1: { 'content.view_released': true } })
       const contentStore = useContentStore()
-      // No entry seeded into manifestByModule
 
       await contentStore.fetchRules('sys1', 'mod1')
 
@@ -337,28 +285,21 @@ describe('useContentStore — manifest & content routing', () => {
       expect(contentStore.rulesByModule['mod1']).toBeUndefined()
     })
 
-    it('designer: always fetches from the live endpoint, ignoring the manifest', async () => {
-      seedDesignerContext()
+    it('a module with neither view permission is unavailable and never fetched', async () => {
+      seedModules({ mod1: {} })
       const contentStore = useContentStore()
-
-      // Even with a manifest entry present, the designer path must use live API
-      contentStore.manifestByModule['mod1'] = makeManifestEntry('mod1')
-
-      const rules = [makeRule('r1')]
-      mockGet.mockResolvedValue({ ok: true, data: { data: rules } })
 
       await contentStore.fetchRules('sys1', 'mod1')
 
-      expect(mockGet).toHaveBeenCalledWith('/systems/sys1/modules/mod1/rules')
       expect(mockRequest).not.toHaveBeenCalled()
+      expect(mockGet).not.toHaveBeenCalled()
+      expect(contentStore.rulesByModule['mod1']).toBeUndefined()
     })
 
-    it('player: normalises <br> → newline in rule content from external files', async () => {
-      seedPlayerContext()
+    it('normalises <br> → newline in rule content from released files', async () => {
+      seedModules({ mod1: { 'content.view_released': true } })
       const contentStore = useContentStore()
-
-      const entry = makeManifestEntry('mod1')
-      contentStore.manifestByModule['mod1'] = entry
+      contentStore.manifestByModule['mod1'] = makeManifestEntry('mod1')
 
       const rule: Rule = { ...makeRule('r1'), content: 'line1<br>line2' }
       mockRequest.mockResolvedValue([rule])
@@ -372,10 +313,9 @@ describe('useContentStore — manifest & content routing', () => {
   // ── fetchIndexEntries ────────────────────────────────────────────────────────
 
   describe('fetchIndexEntries', () => {
-    it('player with manifest entry: fetches from the manifest index URL', async () => {
-      seedPlayerContext()
+    it('view_released module with manifest entry fetches from the manifest URL', async () => {
+      seedModules({ mod1: { 'content.view_released': true } })
       const contentStore = useContentStore()
-
       const entry = makeManifestEntry('mod1')
       contentStore.manifestByModule['mod1'] = entry
 
@@ -388,18 +328,8 @@ describe('useContentStore — manifest & content routing', () => {
       expect(contentStore.indexEntriesByModule['mod1']).toHaveLength(1)
     })
 
-    it('player with no manifest entry: skips loading', async () => {
-      seedPlayerContext()
-      const contentStore = useContentStore()
-
-      await contentStore.fetchIndexEntries('sys1', 'mod1')
-
-      expect(mockRequest).not.toHaveBeenCalled()
-      expect(contentStore.indexEntriesByModule['mod1']).toBeUndefined()
-    })
-
-    it('designer: uses the live index-entries endpoint', async () => {
-      seedDesignerContext()
+    it('view_live module uses the live index-entries endpoint', async () => {
+      seedModules({ mod1: { 'content.view_live': true } })
       const contentStore = useContentStore()
 
       mockGet.mockResolvedValue({ ok: true, data: { data: [] } })
@@ -409,15 +339,24 @@ describe('useContentStore — manifest & content routing', () => {
       expect(mockGet).toHaveBeenCalledWith('/systems/sys1/modules/mod1/index-entries')
       expect(mockRequest).not.toHaveBeenCalled()
     })
+
+    it('a module without permissions skips loading', async () => {
+      seedModules({ mod1: {} })
+      const contentStore = useContentStore()
+
+      await contentStore.fetchIndexEntries('sys1', 'mod1')
+
+      expect(mockRequest).not.toHaveBeenCalled()
+      expect(contentStore.indexEntriesByModule['mod1']).toBeUndefined()
+    })
   })
 
   // ── fetchGameData ────────────────────────────────────────────────────────────
 
   describe('fetchGameData', () => {
-    it('player with manifest entry: fetches from the manifest game-data URL', async () => {
-      seedPlayerContext()
+    it('view_released module with manifest entry fetches from the manifest URL', async () => {
+      seedModules({ mod1: { 'content.view_released': true } })
       const contentStore = useContentStore()
-
       const entry = makeManifestEntry('mod1')
       contentStore.manifestByModule['mod1'] = entry
 
@@ -430,18 +369,8 @@ describe('useContentStore — manifest & content routing', () => {
       expect(contentStore.gameDataByModule['mod1']).toHaveLength(1)
     })
 
-    it('player with no manifest entry: skips loading', async () => {
-      seedPlayerContext()
-      const contentStore = useContentStore()
-
-      await contentStore.fetchGameData('sys1', 'mod1')
-
-      expect(mockRequest).not.toHaveBeenCalled()
-      expect(contentStore.gameDataByModule['mod1']).toBeUndefined()
-    })
-
-    it('designer: uses the live game-data endpoint', async () => {
-      seedDesignerContext()
+    it('view_live module uses the live game-data endpoint', async () => {
+      seedModules({ mod1: { 'content.view_live': true } })
       const contentStore = useContentStore()
 
       mockGet.mockResolvedValue({ ok: true, data: { data: [] } })
@@ -451,12 +380,23 @@ describe('useContentStore — manifest & content routing', () => {
       expect(mockGet).toHaveBeenCalledWith('/systems/sys1/modules/mod1/game-data')
       expect(mockRequest).not.toHaveBeenCalled()
     })
+
+    it('a module without permissions skips loading', async () => {
+      seedModules({ mod1: {} })
+      const contentStore = useContentStore()
+
+      await contentStore.fetchGameData('sys1', 'mod1')
+
+      expect(mockRequest).not.toHaveBeenCalled()
+      expect(contentStore.gameDataByModule['mod1']).toBeUndefined()
+    })
   })
 
   // ── clear ────────────────────────────────────────────────────────────────────
 
   describe('clear', () => {
     it('resets manifestByModule together with all other content state', () => {
+      seedModules({ mod1: {} })
       const contentStore = useContentStore()
 
       contentStore.manifestByModule['mod1'] = makeManifestEntry('mod1')

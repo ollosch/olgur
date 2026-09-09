@@ -39,6 +39,7 @@ function makeSystem(id: string): System {
       toc_depth: 3,
       cover_image: null,
     },
+    permissions: { 'system.manage': false, 'membership.manage': false, 'module.create': false },
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
   }
@@ -54,6 +55,17 @@ function makeModule(id: string, isCore = true): Module {
     config: null,
     is_core: isCore,
     sort_order: 0,
+    permissions: {
+      'module.update': false,
+      'module.delete': false,
+      'content.view_live': false,
+      'content.view_released': false,
+      'content.edit': false,
+      'version.publish': false,
+      'version.amend_latest': false,
+      'subscription.manage': false,
+      'module.activate': false,
+    },
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
   }

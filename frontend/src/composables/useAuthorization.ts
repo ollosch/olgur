@@ -1,24 +1,16 @@
 import { computed } from 'vue'
-import { useAuthStore } from '@/stores/auth'
-import { useMembershipStore } from '@/stores/membership'
+import { useContentStore } from '@/stores/content'
 
 /**
  * Returns authorization helpers for the current user within the current system context.
  *
- * canEdit(moduleId) — true if the user is a super_admin, system admin, or an editor
- * of the given module.
+ * canEdit(moduleId) — true when the API-supplied permission map grants
+ * `content.edit` for the given module.
  */
 export function useAuthorization() {
-  const authStore = useAuthStore()
-  const membershipStore = useMembershipStore()
+  const contentStore = useContentStore()
 
-  const canEdit = computed(() => (moduleId: string): boolean => {
-    const user = authStore.user
-    if (!user) return false
-    if (user.super_admin) return true
-    if (membershipStore.membership?.admin) return true
-    return !!membershipStore.subscriptions[moduleId]?.editor
-  })
+  const canEdit = computed(() => (moduleId: string): boolean => contentStore.canEditModule(moduleId))
 
   return { canEdit }
 }

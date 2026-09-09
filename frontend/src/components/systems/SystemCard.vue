@@ -26,8 +26,7 @@ const membershipStore = useMembershipStore()
 const { modulesBySystem, loading } = storeToRefs(systemStore)
 const { subscriptions } = storeToRefs(membershipStore)
 const { fetchModules, deleteSystem, deleteModule, createVersion } = systemStore
-const { activateModule, deactivateModule, subscribe, unsubscribe, canSubscribeToModule } =
-  membershipStore
+const { activateModule, deactivateModule } = membershipStore
 
 const expanded = ref(false)
 const showCreateModule = ref(false)
@@ -35,7 +34,7 @@ const showDeleteSystem = ref(false)
 const deletingModuleId = ref<string | null>(null)
 
 const modules = computed(() => modulesBySystem.value[props.system.id] ?? [])
-const isAdmin = computed(() => props.membership?.admin === true)
+const canManage = computed(() => props.system.permissions?.['system.manage'] ?? false)
 const isMember = computed(() => !!props.membership)
 
 const activeModuleIds = computed(() => props.membership?.config?.active_module_ids ?? [])
@@ -75,14 +74,6 @@ async function handleDeactivate(moduleId: string) {
   await deactivateModule(props.system.id, moduleId)
 }
 
-async function handleSubscribe(moduleId: string) {
-  await subscribe(props.system.id, moduleId)
-}
-
-async function handleUnsubscribe(moduleId: string) {
-  if (subscriptions.value[moduleId]) await unsubscribe(props.system.id, moduleId)
-}
-
 async function handleCreateVersion(moduleId: string) {
   await createVersion(props.system.id, moduleId)
 }
@@ -113,7 +104,7 @@ function openSystem() {
         <div class="text-xs text-muted-foreground mt-0.5">{{ system.slug }}</div>
       </div>
       <Button
-        v-if="isAdmin"
+        v-if="canManage"
         variant="ghost"
         size="sm"
         class="text-destructive hover:text-destructive shrink-0"
@@ -130,7 +121,7 @@ function openSystem() {
         <div class="flex items-center justify-between mb-2">
           <span class="text-xs text-muted-foreground uppercase tracking-widest">Modules</span>
           <Button
-            v-if="isAdmin"
+            v-if="canManage"
             variant="ghost"
             size="sm"
             class="text-xs h-6"
@@ -194,38 +185,13 @@ function openSystem() {
               </template>
             </template>
             <Button
-              v-if="isAdmin"
+              v-if="canManage"
               variant="ghost"
               size="sm"
               class="text-xs h-6 text-destructive hover:text-destructive"
               @click="deletingModuleId = mod.id"
             >
               Delete
-            </Button>
-            <Button
-              v-if="!subscriptions[mod.id]"
-              variant="ghost"
-              size="sm"
-              class="text-xs h-6"
-              :disabled="loading || !canSubscribeToModule(props.system.id, mod.id)"
-              :title="
-                !canSubscribeToModule(props.system.id, mod.id)
-                  ? 'Subscribe to the core module first'
-                  : undefined
-              "
-              @click="handleSubscribe(mod.id)"
-            >
-              Subscribe
-            </Button>
-            <Button
-              v-else
-              variant="ghost"
-              size="sm"
-              class="text-xs h-6 text-muted-foreground"
-              :disabled="loading"
-              @click="handleUnsubscribe(mod.id)"
-            >
-              Unsubscribe
             </Button>
             <Button
               variant="ghost"
