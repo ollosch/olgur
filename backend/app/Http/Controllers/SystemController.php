@@ -95,8 +95,12 @@ final class SystemController
         /** @var array<string, mixed> $validated */
         $validated = $request->validated();
         /** @var array<string, mixed> $config */
-        $config = $validated['config'];
+        $config = $request->input('config', []);
+
+        // Immutable fields are restored from the stored config.
         $config['system_structure'] = $system->config?->structure->value;
+        $config['sort_rules_by'] = $system->config?->sortRulesBy;
+
         $validated['config'] = $config;
 
         $system->update($validated);

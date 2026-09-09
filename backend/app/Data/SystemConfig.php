@@ -14,9 +14,9 @@ use Illuminate\Database\Eloquent\Model;
  *
  * Immutable fields (set at creation only, silently ignored on update):
  *   - $structure
+ *   - $sortRulesBy
  *
  * Mutable fields:
- *   - $sortRulesBy
  *   - $tocDepth
  *   - $coverImage
  *
@@ -33,7 +33,7 @@ final readonly class SystemConfig implements Castable
          * @see SystemStructure
          */
         public SystemStructure $structure,
-        /** Display ordering preference for rules. */
+        /** Display ordering preference for rules. Immutable after creation. */
         public string $sortRulesBy,
         /** Table-of-contents depth hint (display only). */
         public int $tocDepth,
