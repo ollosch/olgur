@@ -23,6 +23,7 @@ return new class extends Migration
             $table->json('config')->default('[]');
             $table->boolean('is_core')->default(false);
             $table->unsignedSmallInteger('sort_order')->default(0);
+            $table->integer('draft_revision')->default(0);
             $table->timestamps();
 
             $table->unique(['system_id', 'slug']);
