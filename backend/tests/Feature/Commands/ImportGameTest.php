@@ -944,7 +944,7 @@ test('--fresh flag deletes and reimports sop', function () use ($simpleGameRules
 // Module tool declarations
 // ---------------------------------------------------------------------------
 
-test('core module declares unit_browser and ordnance_versus_armor when vehicles and ordnance are imported', function () use ($simpleGameRules): void {
+test('ASL core module declares unit_browser and ordnance_versus_armor when vehicles and ordnance are imported', function () use ($simpleGameRules): void {
     $vehicles = [
         ['id' => '2001', 'name' => 'PzKpfw IB', 'nation' => 'german', 'type' => 'Tt'],
     ];
@@ -955,7 +955,7 @@ test('core module declares unit_browser and ordnance_versus_armor when vehicles 
     $dir = makeGameDir(
         [
             'name' => 'Tool Game',
-            'slug' => 'tool-game',
+            'slug' => 'asl',
             'modules' => [
                 ['type' => 'core', 'name' => 'Core', 'slug' => 'core', 'path' => 'rules.json'],
             ],
@@ -984,7 +984,7 @@ test('core module declares unit_browser and ordnance_versus_armor when vehicles 
     removeGameDir($dir);
 });
 
-test('core module declares only unit_browser when only vehicles are imported', function () use ($simpleGameRules): void {
+test('ASL core module declares only unit_browser when only vehicles are imported', function () use ($simpleGameRules): void {
     $vehicles = [
         ['id' => '2001', 'name' => 'PzKpfw IB', 'nation' => 'german', 'type' => 'Tt'],
     ];
@@ -992,7 +992,7 @@ test('core module declares only unit_browser when only vehicles are imported', f
     $dir = makeGameDir(
         [
             'name' => 'Vehicle Only Tool Game',
-            'slug' => 'vehicle-only-tool-game',
+            'slug' => 'asl',
             'modules' => [
                 ['type' => 'core', 'name' => 'Core', 'slug' => 'core', 'path' => 'rules.json'],
             ],
@@ -1019,19 +1019,21 @@ test('core module declares only unit_browser when only vehicles are imported', f
     removeGameDir($dir);
 });
 
-test('core module declares no tools when only rules are imported', function () use ($simpleGameRules): void {
+test('non-ASL core module does not declare ASL tools when vehicles are imported', function () use ($simpleGameRules): void {
     $dir = makeGameDir(
         [
-            'name' => 'Rules Only Tool Game',
-            'slug' => 'rules-only-tool-game',
+            'name' => 'Vehicle Game',
+            'slug' => 'vehicle-game',
             'modules' => [
                 ['type' => 'core', 'name' => 'Core', 'slug' => 'core', 'path' => 'rules.json'],
             ],
             'index' => 'idx.json',
+            'vehicles' => 'vehicles.json',
         ],
         [
             'rules.json' => $simpleGameRules,
             'idx.json' => [],
+            'vehicles.json' => [['id' => '2001', 'name' => 'Vehicle']],
         ]
     );
 

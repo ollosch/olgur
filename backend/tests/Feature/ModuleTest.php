@@ -43,12 +43,20 @@ test('same slug is allowed across different systems', function (): void {
 
 test('module config parses declared tool entries', function (): void {
     $module = Module::factory()->create([
-        'config' => ['tools' => [['key' => 'unit_browser', 'config' => ['foo' => 'bar']]]],
+        'config' => [
+            'tools' => [['key' => 'unit_browser', 'config' => ['foo' => 'bar']]],
+            'display' => ['theme' => 'dark'],
+        ],
     ]);
+    $module->refresh();
 
     expect($module->config->tools)->toHaveCount(1)
         ->and($module->config->tools[0]->key->value)->toBe('unit_browser')
-        ->and($module->config->tools[0]->config)->toBe(['foo' => 'bar']);
+        ->and($module->config->tools[0]->config)->toBe(['foo' => 'bar'])
+        ->and($module->config->toArray())->toBe([
+            'display' => ['theme' => 'dark'],
+            'tools' => [['key' => 'unit_browser', 'config' => ['foo' => 'bar']]],
+        ]);
 });
 
 test('module config drops unknown tool keys', function (): void {

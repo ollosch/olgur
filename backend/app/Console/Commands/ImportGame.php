@@ -245,27 +245,24 @@ final class ImportGame extends Command
                 }
             }
 
-            // Declare the tools implied by the imported canonical game data.
-            // The unit browser consumes vehicles and ordnance; the ordnance-
-            // versus-armor calculator consumes ordnance (and vehicle armor).
-            $toolKeys = [];
+            if ($systemSlug === 'asl') {
+                $toolKeys = [];
 
-            if ($hasVehicles || $hasOrdnance) {
-                $toolKeys[] = ModuleTool::UnitBrowser->value;
-            }
+                if ($hasVehicles || $hasOrdnance) {
+                    $toolKeys[] = ModuleTool::UnitBrowser->value;
+                }
 
-            if ($hasOrdnance) {
-                $toolKeys[] = ModuleTool::OrdnanceVersusArmor->value;
-            }
+                if ($hasOrdnance) {
+                    $toolKeys[] = ModuleTool::OrdnanceVersusArmor->value;
+                }
 
-            if ($toolKeys !== []) {
                 /** @var array<int, array{key: string, config: array<string, mixed>}> $tools */
                 $tools = array_map(
                     static fn (string $key): array => ['key' => $key, 'config' => []],
                     $toolKeys,
                 );
 
-                $coreModule->update(['config' => ['tools' => $tools]]);
+                $coreModule->update(['config' => [...$coreModule->config->toArray(), 'tools' => $tools]]);
             }
         });
 

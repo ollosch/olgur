@@ -12,9 +12,8 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * Value object representing a Module's config JSON column.
  *
- * Only declarative tool entries are currently stored here. Unknown keys and
- * unknown tool keys are dropped on read, so partial or legacy arrays are
- * tolerated without error.
+ * Arbitrary top-level config is retained. Tool entries are normalized to known
+ * declarations, so partial or legacy tool arrays are tolerated without error.
  *
  * @see \App\Models\Module::$config
  * @see \App\Http\Requests\StoreModuleRequest
@@ -23,9 +22,12 @@ use Illuminate\Database\Eloquent\Model;
 final readonly class ModuleConfig implements Castable
 {
     /**
+     * @param  array<string, mixed>  $values
      * @param  array<int, ModuleToolDeclaration>  $tools
      */
     public function __construct(
+        /** Non-tool configuration retained without interpretation. */
+        public array $values,
         /** Declarative tool entries this module exposes to the frontend. */
         public array $tools,
     ) {}
@@ -62,7 +64,9 @@ final readonly class ModuleConfig implements Castable
             }
         }
 
-        return new self(tools: $tools);
+        unset($data['tools']);
+
+        return new self(values: $data, tools: $tools);
     }
 
     /**
@@ -107,6 +111,7 @@ final readonly class ModuleConfig implements Castable
     public function toArray(): array
     {
         return [
+            ...$this->values,
             'tools' => array_map(
                 static fn (ModuleToolDeclaration $tool): array => $tool->toArray(),
                 $this->tools,
