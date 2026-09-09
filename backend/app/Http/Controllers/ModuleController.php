@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Actions\RemoveModuleFromMembershipConfigs;
 use App\Http\Requests\StoreModuleRequest;
 use App\Http\Requests\UpdateModuleRequest;
 use App\Http\Resources\ModuleResource;
@@ -13,6 +14,7 @@ use App\Models\System;
 use App\Models\User;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 final class ModuleController
@@ -81,13 +83,16 @@ final class ModuleController
     /**
      * Remove the specified module.
      */
-    public function destroy(System $system, Module $module): Response
+    public function destroy(System $system, Module $module, RemoveModuleFromMembershipConfigs $removeModuleFromMembershipConfigs): Response
     {
         Gate::authorize('delete', $module);
 
         abort_if($module->is_core, 422, 'Core modules cannot be deleted.');
 
-        $module->delete();
+        DB::transaction(function () use ($module, $removeModuleFromMembershipConfigs): void {
+            $removeModuleFromMembershipConfigs->execute($module);
+            $module->delete();
+        });
 
         return response()->noContent();
     }

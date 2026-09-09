@@ -336,6 +336,25 @@ test('destroy deletes a module', function (): void {
     assertDatabaseMissing('modules', ['id' => $module->id]);
 });
 
+test('destroy clears the deleted module from membership configs', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $member = User::factory()->create();
+    $membership = Membership::factory()->for($member)->for($system)->create([
+        'config' => [
+            'active_module_ids' => [$module->id],
+            'selected_sop_module_id' => $module->id,
+        ],
+    ]);
+    actingAs($user);
+
+    deleteJson('/api/systems/'.$system->id.'/modules/'.$module->id)->assertNoContent();
+
+    expect($membership->fresh()?->config?->activeModuleIds)->toBe([])
+        ->and($membership->fresh()?->config?->selectedSopModuleId)->toBeNull();
+});
+
 test('destroy returns 404 for unknown module', function (): void {
     $user = User::factory()->superAdmin()->create();
     $system = System::factory()->create();
