@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import type { Rule } from '@/types/domain'
 import { cn } from '@/lib/utils'
 import { renderContent } from '@/lib/renderContent'
-import { ChevronRight, ChevronDown, Minus } from 'lucide-vue-next'
+import { ChevronRight, ChevronDown, Minus } from '@lucide/vue'
 import { useLeftPanelStore } from '@/stores/leftPanel'
 
 interface Props {

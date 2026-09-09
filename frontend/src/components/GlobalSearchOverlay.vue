@@ -2,7 +2,7 @@
 import { ref, computed, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
-import { Search } from 'lucide-vue-next'
+import { Search } from '@lucide/vue'
 import { useShortcutStore } from '@/stores/shortcut'
 import { useContentStore } from '@/stores/content'
 import { rankMatchLower, compareIndexEntries, rankRule } from '@/lib/utils'

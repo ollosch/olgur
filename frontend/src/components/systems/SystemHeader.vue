@@ -15,7 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Menu, MoreVertical, Search, Table2, ListOrdered } from 'lucide-vue-next'
+import { Menu, MoreVertical, Search, Table2, ListOrdered } from '@lucide/vue'
 import LeftPanelContent from '@/components/systems/LeftPanelContent.vue'
 import ManageMembersDialog from '@/components/systems/ManageMembersDialog.vue'
 import type { Rule, Module } from '@/types/domain'

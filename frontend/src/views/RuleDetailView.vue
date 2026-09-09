@@ -7,7 +7,7 @@ import { useAuthorization } from '@/composables/useAuthorization'
 import type { Rule } from '@/types/domain'
 
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, ArrowRight } from 'lucide-vue-next'
+import { ArrowLeft, ArrowRight } from '@lucide/vue'
 import RuleDetailChildren from '@/components/systems/RuleDetailChildren.vue'
 import RuleTocView from '@/components/systems/RuleTocView.vue'
 

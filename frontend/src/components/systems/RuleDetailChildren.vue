@@ -5,7 +5,7 @@ import { renderContent } from '@/lib/renderContent'
 import { useAppSettingsStore } from '@/stores/appSettings'
 import { useBookmarkStore } from '@/stores/bookmarks'
 import { useLeftPanelStore } from '@/stores/leftPanel'
-import { Crosshair, Pencil, Star } from 'lucide-vue-next'
+import { Crosshair, Pencil, Star } from '@lucide/vue'
 import EditRuleDialog from '@/components/systems/EditRuleDialog.vue'
 
 interface Props {

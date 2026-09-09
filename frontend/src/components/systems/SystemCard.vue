@@ -8,7 +8,7 @@ import { useMembershipStore } from '@/stores/membership'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ChevronRight, ChevronDown, Circle, CircleDot } from 'lucide-vue-next'
+import { ChevronRight, ChevronDown, Circle, CircleDot } from '@lucide/vue'
 import CreateModuleDialog from '@/components/systems/CreateModuleDialog.vue'
 import DeleteConfirmDialog from '@/components/systems/DeleteConfirmDialog.vue'
 

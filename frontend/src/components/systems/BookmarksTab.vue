@@ -3,7 +3,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useBookmarkStore } from '@/stores/bookmarks'
 import { useLeftPanelStore } from '@/stores/leftPanel'
-import { X } from 'lucide-vue-next'
+import { X } from '@lucide/vue'
 import type { ResolvedBookmark } from '@/stores/bookmarks'
 
 const bookmarkStore = useBookmarkStore()

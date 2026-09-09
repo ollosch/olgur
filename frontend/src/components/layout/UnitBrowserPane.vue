@@ -2,7 +2,7 @@
 import { computed, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { refDebounced } from '@vueuse/core'
-import { ArrowLeft, GitCompare } from 'lucide-vue-next'
+import { ArrowLeft, GitCompare } from '@lucide/vue'
 import { Input } from '@/components/ui/input'
 import { SEARCH_DEBOUNCE_MS, rankMatchLower } from '@/lib/utils'
 import { unitTypeLabel, unitNation } from '@/lib/unitUtils'

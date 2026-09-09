@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { IndexEntry } from '@/types/domain'
-import { ChevronDown, ChevronRight, Pencil } from 'lucide-vue-next'
+import { ChevronDown, ChevronRight, Pencil } from '@lucide/vue'
 import { renderContent } from '@/lib/renderContent'
 import { useAppSettingsStore } from '@/stores/appSettings'
 import { useContentStore } from '@/stores/content'

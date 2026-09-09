@@ -2,7 +2,7 @@
 import { computed, onMounted } from 'vue'
 import { useBottomPanelStore } from '@/stores/bottomPanel'
 import { useResizablePanel } from '@/composables/useResizablePanel'
-import { ChevronUp, Database, Pin, PinOff, X } from 'lucide-vue-next'
+import { ChevronUp, Database, Pin, PinOff, X } from '@lucide/vue'
 import UnitDataTab from '@/components/layout/UnitDataTab.vue'
 
 const store = useBottomPanelStore()

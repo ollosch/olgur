@@ -3,7 +3,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useHistoryStore } from '@/stores/history'
 import { renderContent } from '@/lib/renderContent'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Clock } from 'lucide-vue-next'
+import { Clock } from '@lucide/vue'
 
 const router = useRouter()
 const route = useRoute()

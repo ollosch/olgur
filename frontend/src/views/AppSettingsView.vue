@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { ArrowLeft, Check } from 'lucide-vue-next'
+import { ArrowLeft, Check } from '@lucide/vue'
 
 const settings = useAppSettingsStore()
 const systemStore = useSystemStore()
