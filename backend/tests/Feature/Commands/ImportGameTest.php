@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Data\ModuleToolDeclaration;
 use App\Models\GameDatum;
 use App\Models\IndexEntry;
 use App\Models\Membership;
@@ -935,6 +936,110 @@ test('--fresh flag deletes and reimports sop', function () use ($simpleGameRules
 
     artisan('import:game', ['path' => $dir, '--fresh' => true])->assertSuccessful();
     expect(GameDatum::query()->where('type', 'sop')->count())->toBe(1);
+
+    removeGameDir($dir);
+});
+
+// ---------------------------------------------------------------------------
+// Module tool declarations
+// ---------------------------------------------------------------------------
+
+test('core module declares unit_browser and ordnance_versus_armor when vehicles and ordnance are imported', function () use ($simpleGameRules): void {
+    $vehicles = [
+        ['id' => '2001', 'name' => 'PzKpfw IB', 'nation' => 'german', 'type' => 'Tt'],
+    ];
+    $ordnance = [
+        ['id' => '1001', 'name' => '5cm leGrW 36', 'nation' => 'german', 'type' => 'MTR'],
+    ];
+
+    $dir = makeGameDir(
+        [
+            'name' => 'Tool Game',
+            'slug' => 'tool-game',
+            'modules' => [
+                ['type' => 'core', 'name' => 'Core', 'slug' => 'core', 'path' => 'rules.json'],
+            ],
+            'index' => 'idx.json',
+            'vehicles' => 'vehicles.json',
+            'ordnance' => 'ordnance.json',
+        ],
+        [
+            'rules.json' => $simpleGameRules,
+            'idx.json' => [],
+            'vehicles.json' => $vehicles,
+            'ordnance.json' => $ordnance,
+        ]
+    );
+
+    artisan('import:game', ['path' => $dir])->assertSuccessful();
+
+    $core = Module::query()->where('slug', 'core')->firstOrFail();
+    $keys = array_map(
+        static fn (ModuleToolDeclaration $tool): string => $tool->key->value,
+        $core->config->tools,
+    );
+
+    expect($keys)->toBe(['unit_browser', 'ordnance_versus_armor']);
+
+    removeGameDir($dir);
+});
+
+test('core module declares only unit_browser when only vehicles are imported', function () use ($simpleGameRules): void {
+    $vehicles = [
+        ['id' => '2001', 'name' => 'PzKpfw IB', 'nation' => 'german', 'type' => 'Tt'],
+    ];
+
+    $dir = makeGameDir(
+        [
+            'name' => 'Vehicle Only Tool Game',
+            'slug' => 'vehicle-only-tool-game',
+            'modules' => [
+                ['type' => 'core', 'name' => 'Core', 'slug' => 'core', 'path' => 'rules.json'],
+            ],
+            'index' => 'idx.json',
+            'vehicles' => 'vehicles.json',
+        ],
+        [
+            'rules.json' => $simpleGameRules,
+            'idx.json' => [],
+            'vehicles.json' => $vehicles,
+        ]
+    );
+
+    artisan('import:game', ['path' => $dir])->assertSuccessful();
+
+    $core = Module::query()->where('slug', 'core')->firstOrFail();
+    $keys = array_map(
+        static fn (ModuleToolDeclaration $tool): string => $tool->key->value,
+        $core->config->tools,
+    );
+
+    expect($keys)->toBe(['unit_browser']);
+
+    removeGameDir($dir);
+});
+
+test('core module declares no tools when only rules are imported', function () use ($simpleGameRules): void {
+    $dir = makeGameDir(
+        [
+            'name' => 'Rules Only Tool Game',
+            'slug' => 'rules-only-tool-game',
+            'modules' => [
+                ['type' => 'core', 'name' => 'Core', 'slug' => 'core', 'path' => 'rules.json'],
+            ],
+            'index' => 'idx.json',
+        ],
+        [
+            'rules.json' => $simpleGameRules,
+            'idx.json' => [],
+        ]
+    );
+
+    artisan('import:game', ['path' => $dir])->assertSuccessful();
+
+    $core = Module::query()->where('slug', 'core')->firstOrFail();
+
+    expect($core->config->tools)->toBe([]);
 
     removeGameDir($dir);
 });

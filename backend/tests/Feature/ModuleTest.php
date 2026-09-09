@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Data\ModuleConfig;
 use App\Models\Module;
 use App\Models\Subscription;
 use App\Models\System;
@@ -15,7 +16,8 @@ test('a module can be created with factory defaults', function (): void {
         ->and($module->slug)->toBeString()
         ->and($module->name)->toBeString()
         ->and($module->is_core)->toBeFalse()
-        ->and($module->config)->toBeArray();
+        ->and($module->config)->toBeInstanceOf(ModuleConfig::class)
+        ->and($module->config->tools)->toBe([]);
 });
 
 test('module uses ulid primary key', function (): void {
@@ -39,11 +41,31 @@ test('same slug is allowed across different systems', function (): void {
     expect($other->exists)->toBeTrue();
 });
 
-test('module config is cast to array when set', function (): void {
-    $module = Module::factory()->create(['config' => ['key' => 'value']]);
+test('module config parses declared tool entries', function (): void {
+    $module = Module::factory()->create([
+        'config' => ['tools' => [['key' => 'unit_browser', 'config' => ['foo' => 'bar']]]],
+    ]);
 
-    expect($module->config)->toBeArray()
-        ->and($module->config['key'])->toBe('value');
+    expect($module->config->tools)->toHaveCount(1)
+        ->and($module->config->tools[0]->key->value)->toBe('unit_browser')
+        ->and($module->config->tools[0]->config)->toBe(['foo' => 'bar']);
+});
+
+test('module config drops unknown tool keys', function (): void {
+    $module = Module::factory()->create([
+        'config' => ['tools' => [['key' => 'unknown_tool', 'config' => []]]],
+    ]);
+
+    expect($module->config->tools)->toBe([]);
+});
+
+test('module config ignores non-array tool entries', function (): void {
+    $module = Module::factory()->create([
+        'config' => ['tools' => ['garbage', ['key' => 'unit_browser', 'config' => []]]],
+    ]);
+
+    expect($module->config->tools)->toHaveCount(1)
+        ->and($module->config->tools[0]->key->value)->toBe('unit_browser');
 });
 
 test('module is_core is cast to boolean', function (): void {
