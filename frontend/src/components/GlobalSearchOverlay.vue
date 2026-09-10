@@ -177,15 +177,21 @@ function selectRule(rule: Rule): void {
   shortcutStore.overlayOpen = false
 }
 
-function selectRuleByNumber(number: string): void {
-  const rule = contentStore.rulesByNumber.get(number)
+function selectRuleByNumber(
+  number: string,
+  opts?: { moduleSlug?: string; contextModuleId?: string },
+): void {
+  const rule = contentStore.resolveRuleReference(number, opts)
   if (rule) selectRule(rule)
 }
 
 function handleEntryClick(e: MouseEvent): void {
   const anchor = (e.target as HTMLElement).closest('[data-rule-number]') as HTMLElement | null
   if (anchor?.dataset['ruleNumber']) {
-    selectRuleByNumber(anchor.dataset['ruleNumber'])
+    selectRuleByNumber(anchor.dataset['ruleNumber'], {
+      moduleSlug: anchor.dataset['ruleModule'] ?? undefined,
+      contextModuleId: anchor.dataset['ruleContext'] ?? undefined,
+    })
   }
 }
 
@@ -299,7 +305,10 @@ function onKeyDown(e: KeyboardEvent): void {
                 >{{ rule.number }}</span
               >
               <!-- eslint-disable-next-line vue/no-v-html -->
-              <span class="text-foreground text-xs truncate" v-html="renderContent(rule.title)" />
+              <span
+                class="text-foreground text-xs truncate"
+                v-html="renderContent(rule.title, { moduleId: rule.module_id })"
+              />
             </div>
 
             <button

@@ -16,6 +16,13 @@ interface PopupState {
   above: boolean
 }
 
+export interface RuleLinkModifiers {
+  moduleSlug?: string
+  contextModuleId?: string
+}
+
+type RuleResolver = (number: string, opts?: RuleLinkModifiers) => Rule | null
+
 /**
  * Owns all shared popup state that was previously scattered as module-level
  * globals in useRulePopup.ts. Non-reactive handles (timers, registered
@@ -32,7 +39,7 @@ export const useInteractionStore = defineStore('interaction', () => {
   // Navigation callbacks registered once by SystemView
   let navigateHandler: ((rule: Rule) => void) | null = null
   let navigateRangeHandler: ((fromRule: Rule, toRule: Rule) => void) | null = null
-  let rulesMapRef: (() => Map<string, Rule>) | null = null
+  let resolveRuleRef: RuleResolver | null = null
   let indexEntriesMapRef: (() => Map<string, IndexEntry>) | null = null
 
   function hide(): void {
@@ -59,18 +66,18 @@ export const useInteractionStore = defineStore('interaction', () => {
 
   function registerNavigate(
     fn: (rule: Rule) => void,
-    rulesMapGetter: () => Map<string, Rule>,
+    resolveRule: RuleResolver,
     indexEntriesMapGetter?: () => Map<string, IndexEntry>,
     navigateRange?: (fromRule: Rule, toRule: Rule) => void,
   ): void {
     navigateHandler = fn
-    rulesMapRef = rulesMapGetter
+    resolveRuleRef = resolveRule
     if (indexEntriesMapGetter) indexEntriesMapRef = indexEntriesMapGetter
     if (navigateRange) navigateRangeHandler = navigateRange
   }
 
-  function navigateToNumber(number: string): void {
-    const rule = rulesMapRef?.().get(number)
+  function navigateToNumber(number: string, opts?: RuleLinkModifiers): void {
+    const rule = resolveRuleRef?.(number, opts)
     if (rule) {
       popupState.value.visible = false
       navigateHandler?.(rule)
@@ -81,18 +88,17 @@ export const useInteractionStore = defineStore('interaction', () => {
    * Navigate to a rule range given a range string like "B.28.5-B.28.5.3".
    * The separator is the first "-" in the string.
    */
-  function navigateToRange(rangeString: string): void {
+  function navigateToRange(rangeString: string, opts?: RuleLinkModifiers): void {
     const separatorIndex = rangeString.indexOf('-')
     if (separatorIndex === -1) {
-      navigateToNumber(rangeString)
+      navigateToNumber(rangeString, opts)
       return
     }
 
     const fromNumber = rangeString.slice(0, separatorIndex)
     const toNumber = rangeString.slice(separatorIndex + 1)
-    const rulesMap = rulesMapRef?.() ?? new Map<string, Rule>()
-    const fromRule = rulesMap.get(fromNumber)
-    const toRule = rulesMap.get(toNumber)
+    const fromRule = resolveRuleRef?.(fromNumber, opts) ?? null
+    const toRule = resolveRuleRef?.(toNumber, opts) ?? null
 
     if (fromRule && toRule) {
       popupState.value.visible = false
@@ -101,10 +107,6 @@ export const useInteractionStore = defineStore('interaction', () => {
       popupState.value.visible = false
       navigateHandler?.(fromRule)
     }
-  }
-
-  function getRulesMap(): Map<string, Rule> {
-    return rulesMapRef?.() ?? new Map<string, Rule>()
   }
 
   function getIndexEntriesMap(): Map<string, IndexEntry> {
@@ -118,7 +120,6 @@ export const useInteractionStore = defineStore('interaction', () => {
     registerNavigate,
     navigateToNumber,
     navigateToRange,
-    getRulesMap,
     getIndexEntriesMap,
   }
 })

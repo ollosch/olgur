@@ -2,6 +2,7 @@ import { onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAppSettingsStore } from '@/stores/appSettings'
 import { useInteractionStore } from '@/stores/interaction'
+import type { RuleLinkModifiers } from '@/stores/interaction'
 import { useContentStore } from '@/stores/content'
 import type { Rule, IndexEntry } from '@/types/domain'
 
@@ -14,9 +15,12 @@ import type { Rule, IndexEntry } from '@/types/domain'
  * - Anything else       → hide
  *
  * Zero per-link Vue listeners. No container-boundary issues.
+ *
+ * Rule references resolve in a module context supplied by the link itself:
+ * either an explicit `data-rule-module` slug (`{{L:core:3.4}}`) or the current
+ * module carried as `data-rule-context` for bare `{{L:1.2}}` links.
  */
 export function useRuleDelegation(
-  getRulesMap: () => Map<string, Rule>,
   onSelect: (rule: Rule) => void,
   getIndexEntriesMap?: () => Map<string, IndexEntry>,
 ) {
@@ -26,6 +30,13 @@ export function useRuleDelegation(
   const contentStore = useContentStore()
   let showTimer: ReturnType<typeof setTimeout> | null = null
   let activeEl: HTMLElement | null = null
+
+  function linkModifiers(el: HTMLElement): RuleLinkModifiers {
+    return {
+      moduleSlug: el.dataset['ruleModule'] ?? undefined,
+      contextModuleId: el.dataset['ruleContext'] ?? undefined,
+    }
+  }
 
   function popupX(rect: DOMRect): number {
     const maxW = 320
@@ -85,9 +96,10 @@ export function useRuleDelegation(
 
     if (trigger.dataset['ruleNumber'] !== undefined) {
       const number = trigger.dataset['ruleNumber'] ?? ''
+      const opts = linkModifiers(trigger)
       showTimer = setTimeout(() => {
         showTimer = null
-        const rule = getRulesMap().get(number)
+        const rule = contentStore.resolveRuleReference(number, opts)
         if (rule) {
           const { y, above } = popupY(rect)
           const isActive = contentStore.activeModules.some((m) => m.id === rule.module_id)
@@ -112,15 +124,15 @@ export function useRuleDelegation(
       }, 150)
     } else if (trigger.dataset['ruleRange'] !== undefined) {
       const rangeString = trigger.dataset['ruleRange'] ?? ''
+      const opts = linkModifiers(trigger)
       showTimer = setTimeout(() => {
         showTimer = null
         const sep = rangeString.indexOf('-')
         if (sep === -1) return
         const fromNumber = rangeString.slice(0, sep)
         const toNumber = rangeString.slice(sep + 1)
-        const rulesMap = getRulesMap()
-        const fromRule = rulesMap.get(fromNumber)
-        const toRule = rulesMap.get(toNumber)
+        const fromRule = contentStore.resolveRuleReference(fromNumber, opts)
+        const toRule = contentStore.resolveRuleReference(toNumber, opts)
         if (!fromRule || !toRule) return
         const flattened = contentStore.flattenedRulesByModule.get(fromRule.module_id) ?? []
         const fromIdx = flattened.findIndex((r) => r.id === fromRule.id)
@@ -164,7 +176,7 @@ export function useRuleDelegation(
     const rangeAnchor = e.target.closest<HTMLElement>('[data-rule-range]')
     if (rangeAnchor && !rangeAnchor.closest('[data-popup-overlay]')) {
       e.preventDefault()
-      interactionStore.navigateToRange(rangeAnchor.dataset['ruleRange'] ?? '')
+      interactionStore.navigateToRange(rangeAnchor.dataset['ruleRange'] ?? '', linkModifiers(rangeAnchor))
       return
     }
 
@@ -173,7 +185,10 @@ export function useRuleDelegation(
     // Don't navigate clicks inside the popup — those are handled by the overlay
     if (anchor.closest('[data-popup-overlay]')) return
     e.preventDefault()
-    const rule = getRulesMap().get(anchor.dataset['ruleNumber'] ?? '')
+    const rule = contentStore.resolveRuleReference(
+      anchor.dataset['ruleNumber'] ?? '',
+      linkModifiers(anchor),
+    )
     if (rule) onSelect(rule)
   }
 

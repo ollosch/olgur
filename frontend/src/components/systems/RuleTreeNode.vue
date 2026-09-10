@@ -104,7 +104,10 @@ function onKeyDown(e: KeyboardEvent): void {
       >
         <span class="font-mono text-xs text-muted-foreground shrink-0">{{ rule.number }}</span>
         <!-- eslint-disable-next-line vue/no-v-html -->
-        <span class="truncate" v-html="renderContent(rule.title)" />
+        <span
+          class="truncate"
+          v-html="renderContent(rule.title, { moduleId: rule.module_id })"
+        />
       </button>
     </div>
 

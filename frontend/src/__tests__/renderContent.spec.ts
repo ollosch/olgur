@@ -27,6 +27,39 @@ describe('renderContent', () => {
       expect(html).toContain('data-rule-range="1.2-1.4"')
       expect(html).toContain('>1.2-1.4<')
     })
+
+    it('renders a module-qualified link with data-rule-module and split number', () => {
+      const html = renderContent('{{L:core:3.4}}')
+      expect(html).toContain('data-rule-number="3.4"')
+      expect(html).toContain('data-rule-module="core"')
+      expect(html).toContain('>core:3.4<')
+    })
+
+    it('renders a labeled module-qualified link using the custom label', () => {
+      const html = renderContent('{{L:core:3.4#See rule}}')
+      expect(html).toContain('data-rule-number="3.4"')
+      expect(html).toContain('data-rule-module="core"')
+      expect(html).toContain('>See rule<')
+    })
+
+    it('renders a module-qualified range link', () => {
+      const html = renderContent('{{L:core:1.2-1.4}}')
+      expect(html).toContain('data-rule-range="1.2-1.4"')
+      expect(html).toContain('data-rule-module="core"')
+    })
+
+    it('attaches the current module context to bare links when moduleId is supplied', () => {
+      const html = renderContent('{{L:1.2}}', { moduleId: 'mod1' })
+      expect(html).toContain('data-rule-number="1.2"')
+      expect(html).toContain('data-rule-context="mod1"')
+    })
+
+    it('does not attach module context to bare links when moduleId is omitted', () => {
+      const html = renderContent('{{L:1.2}}')
+      expect(html).toContain('data-rule-number="1.2"')
+      expect(html).not.toContain('data-rule-context')
+      expect(html).not.toContain('data-rule-module')
+    })
   })
 
   // ── Acronym tokens {{A:...}} ────────────────────────────────────────────────

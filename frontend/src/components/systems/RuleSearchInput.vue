@@ -67,7 +67,10 @@ function select(rule: Rule): void {
       >
         <span class="font-mono text-primary shrink-0">{{ result.number }}</span>
         <!-- eslint-disable-next-line vue/no-v-html -->
-        <span class="text-foreground/80 min-w-0 truncate" v-html="renderContent(result.title)" />
+        <span
+          class="text-foreground/80 min-w-0 truncate"
+          v-html="renderContent(result.title, { moduleId: result.module_id })"
+        />
       </button>
     </div>
   </div>

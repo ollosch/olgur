@@ -92,6 +92,73 @@ export const useContentStore = defineStore('content', () => {
     return m
   })
 
+  /** O(1) lookup of active modules by id. */
+  const moduleById = computed((): Map<string, Module> => {
+    const m = new Map<string, Module>()
+    for (const mod of activeModules.value) m.set(mod.id, mod)
+    return m
+  })
+
+  /** O(1) lookup of active modules by slug — used for `{{L:module-slug:number}}` links. */
+  const moduleBySlug = computed((): Map<string, Module> => {
+    const m = new Map<string, Module>()
+    for (const mod of activeModules.value) m.set(mod.slug, mod)
+    return m
+  })
+
+  /** Module-scoped rule lookup: module_id → (rule.number → rule). */
+  const rulesByModuleNumber = computed((): Map<string, Map<string, Rule>> => {
+    const m = new Map<string, Map<string, Rule>>()
+    for (const mod of activeModules.value) {
+      const inner = new Map<string, Rule>()
+      for (const r of rulesByModule.value[mod.id] ?? []) inner.set(r.number, r)
+      m.set(mod.id, inner)
+    }
+    return m
+  })
+
+  const systemStructure = computed(
+    (): string => systemStore.currentSystem?.config?.system_structure ?? 'grouping_only',
+  )
+
+  /**
+   * Resolve a rule reference to a rule.
+   *
+   * An explicit module-slug link (`{{L:core:3.4}}`) resolves in that module in
+   * every structure mode. A bare link (`{{L:1.2}}`) resolves system-wide when
+   * rule numbers are system-wide unique (`core_plus_many`), otherwise it
+   * resolves in the current module context supplied by the rendering surface.
+   */
+  function resolveRuleReference(
+    number: string,
+    opts?: { moduleSlug?: string; contextModuleId?: string },
+  ): Rule | null {
+    if (opts?.moduleSlug) {
+      const mod = moduleBySlug.value.get(opts.moduleSlug)
+      if (!mod) return null
+      return rulesByModuleNumber.value.get(mod.id)?.get(number) ?? null
+    }
+
+    if (systemStructure.value === 'core_plus_many') {
+      return rulesByNumber.value.get(number) ?? null
+    }
+
+    const moduleId = opts?.contextModuleId
+    if (!moduleId) return null
+    return rulesByModuleNumber.value.get(moduleId)?.get(number) ?? null
+  }
+
+  /**
+   * Whether the given rule reference resolves for the given entry's module.
+   * Ranges are always considered resolvable; a bare number must match a rule in
+   * the entry's module (or system-wide for `core_plus_many`).
+   */
+  function hasRuleReference(ref: string, moduleId: string): boolean {
+    if (ref.includes('-')) return true
+    if (systemStructure.value === 'core_plus_many') return rulesByNumber.value.has(ref)
+    return rulesByModuleNumber.value.get(moduleId)?.has(ref) ?? false
+  }
+
   /** Pre-sorted children lookup: parent_id (or null for roots) → Rule[] */
   const childrenMap = computed((): Map<string | null, Rule[]> => {
     const m = new Map<string | null, Rule[]>()
@@ -206,13 +273,12 @@ export const useContentStore = defineStore('content', () => {
    * visible as long as at least one of its descendants is visible.
    */
   const visibleIndexEntryIds = computed((): Set<string> => {
-    const ruleNums = rulesByNumber.value
     const childMap = indexEntriesByParent.value
     const memo = new Map<string, boolean>()
 
     function hasContent(entry: IndexEntry): boolean {
-      const filteredRefs = (entry.relations?.rule_refs ?? []).filter(
-        (r) => ruleNums.has(r) || r.includes('-'),
+      const filteredRefs = (entry.relations?.rule_refs ?? []).filter((r) =>
+        hasRuleReference(r, entry.module_id),
       )
       const seeAlso = entry.relations?.see_also ?? []
       return !!(entry.definition || entry.notes || filteredRefs.length > 0 || seeAlso.length > 0)
@@ -431,6 +497,11 @@ export const useContentStore = defineStore('content', () => {
     allRules,
     rulesById,
     rulesByNumber,
+    moduleById,
+    moduleBySlug,
+    rulesByModuleNumber,
+    resolveRuleReference,
+    hasRuleReference,
     childrenMap,
     ruleDepths,
     flattenedRulesByModule,

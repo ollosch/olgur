@@ -242,14 +242,10 @@ function getModuleRules(mod: Module): Rule[] {
   return contentStore.rulesByModule[mod.id] ?? []
 }
 
-useRuleDelegation(
-  () => contentStore.rulesByNumber,
-  selectRule,
-  () => contentStore.indexEntriesByTerm,
-)
+useRuleDelegation(selectRule, () => contentStore.indexEntriesByTerm)
 useInteractionStore().registerNavigate(
   selectRule,
-  () => contentStore.rulesByNumber,
+  (number, opts) => contentStore.resolveRuleReference(number, opts),
   () => contentStore.indexEntriesByTerm,
   (fromRule, toRule) =>
     router.push({
@@ -357,7 +353,7 @@ function openDrawer(mode: DrawerMode): void {
                         class="text-foreground/90 text-sm group-hover:text-foreground transition-colors"
                       >
                         <!-- eslint-disable-next-line vue/no-v-html -->
-                        <span v-html="renderContent(rule.title)" />
+                        <span v-html="renderContent(rule.title, { moduleId: rule.module_id })" />
                       </span>
                     </button>
                   </div>

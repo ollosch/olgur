@@ -23,7 +23,7 @@ vi.mock('@/composables/useApi', () => ({
 
 import { useContentStore } from '@/stores/content'
 import { useSystemStore } from '@/stores/system'
-import type { Rule, IndexEntry, Module, System } from '@/types/domain'
+import type { Rule, IndexEntry, Module, System, SystemStructure } from '@/types/domain'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -305,6 +305,65 @@ describe('useContentStore', () => {
 
       expect(contentStore.visibleIndexEntryIds.has('parent')).toBe(false)
       expect(contentStore.visibleIndexEntryIds.has('child')).toBe(false)
+    })
+  })
+
+  // ── resolveRuleReference ─────────────────────────────────────────────────────
+
+  describe('resolveRuleReference', () => {
+    function seedModules(
+      systemStore: ReturnType<typeof useSystemStore>,
+      structure: SystemStructure,
+      modules: Module[],
+    ): void {
+      const system = makeSystem('sys1')
+      system.config!.system_structure = structure
+      systemStore.currentSystem = system
+      systemStore.modulesBySystem['sys1'] = modules
+    }
+
+    it('resolves bare numbers system-wide for core_plus_many', () => {
+      const systemStore = useSystemStore()
+      const contentStore = useContentStore()
+
+      seedModules(systemStore, 'core_plus_many', [
+        makeModule('core', true),
+        makeModule('exp', true),
+      ])
+      contentStore.rulesByModule['core'] = [makeRule({ id: 'r1', module_id: 'core', number: '1.2' })]
+      contentStore.rulesByModule['exp'] = [makeRule({ id: 'r2', module_id: 'exp', number: '2.1' })]
+
+      expect(contentStore.resolveRuleReference('1.2')?.id).toBe('r1')
+      expect(contentStore.resolveRuleReference('2.1')?.id).toBe('r2')
+      expect(contentStore.resolveRuleReference('1.2', { moduleSlug: 'core' })?.id).toBe('r1')
+      expect(contentStore.resolveRuleReference('1.2', { moduleSlug: 'exp' })).toBeNull()
+    })
+
+    it('resolves bare numbers in the current module for grouping_only', () => {
+      const systemStore = useSystemStore()
+      const contentStore = useContentStore()
+
+      seedModules(systemStore, 'grouping_only', [
+        makeModule('a', true),
+        makeModule('b', true),
+      ])
+      contentStore.rulesByModule['a'] = [makeRule({ id: 'rA', module_id: 'a', number: '1.2' })]
+      contentStore.rulesByModule['b'] = [makeRule({ id: 'rB', module_id: 'b', number: '1.2' })]
+
+      expect(contentStore.resolveRuleReference('1.2', { contextModuleId: 'a' })?.id).toBe('rA')
+      expect(contentStore.resolveRuleReference('1.2', { contextModuleId: 'b' })?.id).toBe('rB')
+      expect(contentStore.resolveRuleReference('1.2', { moduleSlug: 'b' })?.id).toBe('rB')
+      expect(contentStore.resolveRuleReference('1.2')).toBeNull()
+    })
+
+    it('returns null for an unknown module slug', () => {
+      const systemStore = useSystemStore()
+      const contentStore = useContentStore()
+
+      seedModules(systemStore, 'core_plus_many', [makeModule('core', true)])
+      contentStore.rulesByModule['core'] = [makeRule({ id: 'r1', module_id: 'core', number: '1.2' })]
+
+      expect(contentStore.resolveRuleReference('1.2', { moduleSlug: 'missing' })).toBeNull()
     })
   })
 })

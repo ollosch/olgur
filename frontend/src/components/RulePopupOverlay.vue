@@ -20,17 +20,24 @@ const style = computed(() => {
   return { ...base, top: `${state.value.y}px` }
 })
 
+function linkModifiers(el: HTMLElement) {
+  return {
+    moduleSlug: el.dataset['ruleModule'] ?? undefined,
+    contextModuleId: el.dataset['ruleContext'] ?? undefined,
+  }
+}
+
 function onClick(e: MouseEvent) {
   const rangeAnchor = (e.target as HTMLElement).closest<HTMLElement>('[data-rule-range]')
   if (rangeAnchor) {
     e.preventDefault()
-    interaction.navigateToRange(rangeAnchor.dataset['ruleRange'] ?? '')
+    interaction.navigateToRange(rangeAnchor.dataset['ruleRange'] ?? '', linkModifiers(rangeAnchor))
     return
   }
   const anchor = (e.target as HTMLElement).closest<HTMLElement>('[data-rule-number]')
   if (!anchor) return
   e.preventDefault()
-  interaction.navigateToNumber(anchor.dataset['ruleNumber'] ?? '')
+  interaction.navigateToNumber(anchor.dataset['ruleNumber'] ?? '', linkModifiers(anchor))
 }
 </script>
 
@@ -51,7 +58,11 @@ function onClick(e: MouseEvent) {
             <button
               type="button"
               class="text-[10px] text-primary underline decoration-dotted hover:text-primary/80 transition-colors shrink-0"
-              @click.stop="interaction.navigateToNumber(state.content.rule.number)"
+              @click.stop="
+                interaction.navigateToNumber(state.content.rule.number, {
+                  contextModuleId: state.content.rule.module_id,
+                })
+              "
             >
               Open
             </button>
@@ -59,7 +70,7 @@ function onClick(e: MouseEvent) {
           <!-- eslint-disable-next-line vue/no-v-html -->
           <p
             class="font-semibold text-foreground mb-1"
-            v-html="renderContent(state.content.rule.title)"
+            v-html="renderContent(state.content.rule.title, { moduleId: state.content.rule.module_id })"
           />
           <!-- eslint-disable-next-line vue/no-v-html -->
           <p
@@ -68,6 +79,7 @@ function onClick(e: MouseEvent) {
             v-html="
               renderContent(state.content.rule.content, {
                 acronymPopups: appSettings.acronymPopups,
+                moduleId: state.content.rule.module_id,
               })
             "
           />
@@ -86,6 +98,7 @@ function onClick(e: MouseEvent) {
               @click.stop="
                 interaction.navigateToRange(
                   `${state.content.rules[0]?.number}-${state.content.rules[state.content.rules.length - 1]?.number}`,
+                  { contextModuleId: state.content.rules[0]?.module_id },
                 )
               "
             >
@@ -100,13 +113,18 @@ function onClick(e: MouseEvent) {
             <p class="font-semibold text-foreground mb-1">
               <span class="font-mono text-primary mr-1.5">{{ rule.number }}</span>
               <!-- eslint-disable-next-line vue/no-v-html -->
-              <span v-html="renderContent(rule.title)" />
+              <span v-html="renderContent(rule.title, { moduleId: rule.module_id })" />
             </p>
             <!-- eslint-disable-next-line vue/no-v-html -->
             <p
               v-if="rule.content"
               class="text-foreground/70 leading-relaxed whitespace-pre-wrap"
-              v-html="renderContent(rule.content, { acronymPopups: appSettings.acronymPopups })"
+              v-html="
+                renderContent(rule.content, {
+                  acronymPopups: appSettings.acronymPopups,
+                  moduleId: rule.module_id,
+                })
+              "
             />
           </div>
         </template>

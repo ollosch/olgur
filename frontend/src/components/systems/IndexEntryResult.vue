@@ -31,8 +31,8 @@ const children = computed((): IndexEntry[] =>
 const hasChildren = computed(() => children.value.length > 0)
 
 function activeRuleRefs(entry: IndexEntry): string[] {
-  return (entry.relations?.rule_refs ?? []).filter(
-    (r) => r.includes('-') || contentStore.rulesByNumber.has(r),
+  return (entry.relations?.rule_refs ?? []).filter((r) =>
+    contentStore.hasRuleReference(r, entry.module_id),
   )
 }
 </script>
@@ -47,11 +47,15 @@ function activeRuleRefs(entry: IndexEntry): string[] {
       <p class="text-xs font-semibold text-foreground">
         <span v-if="depth === 0 && entry.parent_id" class="text-xs text-muted-foreground">
           <span
-            v-html="renderContent(contentStore.indexEntriesById.get(entry.parent_id)?.term ?? '')"
+            v-html="
+              renderContent(contentStore.indexEntriesById.get(entry.parent_id)?.term ?? '', {
+                moduleId: entry.module_id,
+              })
+            "
           ></span>
           ›
         </span>
-        <span v-html="renderContent(entry.term)"></span>
+        <span v-html="renderContent(entry.term, { moduleId: entry.module_id })"></span>
         <button
           v-if="canEdit(entry.module_id)"
           type="button"
@@ -77,25 +81,37 @@ function activeRuleRefs(entry: IndexEntry): string[] {
     <!-- eslint-disable-next-line vue/no-v-html -->
     <p
       class="text-xs text-foreground/70 leading-relaxed mt-0.5"
-      v-html="renderContent(entry.definition, { acronymPopups: appSettings.acronymPopups })"
+      v-html="
+        renderContent(entry.definition, {
+          acronymPopups: appSettings.acronymPopups,
+          moduleId: entry.module_id,
+        })
+      "
     />
     <!-- eslint-disable-next-line vue/no-v-html -->
     <p
       v-if="entry.notes"
       class="text-xs text-muted-foreground italic mt-0.5"
-      v-html="renderContent(entry.notes, { acronymPopups: appSettings.acronymPopups })"
+      v-html="
+        renderContent(entry.notes, {
+          acronymPopups: appSettings.acronymPopups,
+          moduleId: entry.module_id,
+        })
+      "
     />
     <div v-if="activeRuleRefs(entry).length" class="mt-1 flex flex-wrap gap-1.5 items-center">
       <template v-for="ref in activeRuleRefs(entry)" :key="ref">
         <a
           v-if="ref.includes('-')"
           :data-rule-range="ref"
+          :data-rule-context="entry.module_id"
           class="ml-2 font-mono text-xs text-primary underline decoration-dotted hover:text-primary/80 transition-colors cursor-pointer"
           >{{ ref }}</a
         >
         <a
           v-else
           :data-rule-number="ref"
+          :data-rule-context="entry.module_id"
           class="ml-2 font-mono text-xs text-primary underline decoration-dotted hover:text-primary/80 transition-colors cursor-pointer"
           >{{ ref }}</a
         >
