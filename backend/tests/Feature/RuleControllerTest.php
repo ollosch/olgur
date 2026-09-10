@@ -271,7 +271,7 @@ test('update modifies a rule', function (): void {
     assertDatabaseHas('rules', ['id' => $rule->id, 'title' => 'Updated Title']);
 });
 
-test('update rejects cross-module duplicate for core module', function (): void {
+test('update allows cross-module duplicate for core module outside core_plus_many', function (): void {
     $user = User::factory()->superAdmin()->create();
     $system = System::factory()->create();
     $coreModule = Module::factory()->for($system)->create(['is_core' => true]);
@@ -281,9 +281,14 @@ test('update rejects cross-module duplicate for core module', function (): void 
 
     actingAs($user);
 
-    patchJson('/api/systems/'.$system->id.'/modules/'.$coreModule->id.'/rules/'.$coreRule->id, ['number' => 'A1.1'])
-        ->assertUnprocessable()
-        ->assertJsonValidationErrors(['number']);
+    patchJson('/api/systems/'.$system->id.'/modules/'.$coreModule->id.'/rules/'.$coreRule->id, [
+        'parent_id' => $coreRule->parent_id,
+        'number' => 'A1.1',
+        'title' => $coreRule->title,
+        'content' => $coreRule->content,
+        'markdown' => $coreRule->markdown,
+        'sort_order' => $coreRule->sort_order,
+    ])->assertSuccessful();
 });
 
 test('update rejects cross-module duplicate when allow_concurrent_expansions is true', function (): void {
