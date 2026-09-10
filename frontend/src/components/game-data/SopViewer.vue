@@ -58,7 +58,7 @@ export interface SopContent {
 
 // ── Props ────────────────────────────────────────────────────────────────────
 
-const props = defineProps<{ sopId: string; content: SopContent }>()
+const props = defineProps<{ sopId: string; moduleId: string; content: SopContent }>()
 
 // ── Store ────────────────────────────────────────────────────────────────────
 
@@ -423,7 +423,7 @@ const visiblePreGameSegments = computed(() =>
             >{{ segment.player }}</span
           >
           <!-- eslint-disable-next-line vue/no-v-html -->
-          <span class="text-foreground/90" v-html="renderContent(visibleText(segment))" />
+          <span class="text-foreground/90" v-html="renderContent(visibleText(segment), { moduleId: props.moduleId })" />
         </div>
       </div>
     </div>
@@ -495,7 +495,7 @@ const visiblePreGameSegments = computed(() =>
                   >{{ segment.player }}</span
                 >
                 <!-- eslint-disable-next-line vue/no-v-html -->
-                <span class="text-foreground/90" v-html="renderContent(visibleText(segment))" />
+                <span class="text-foreground/90" v-html="renderContent(visibleText(segment), { moduleId: props.moduleId })" />
               </div>
             </div>
           </div>

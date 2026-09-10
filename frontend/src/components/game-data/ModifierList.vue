@@ -27,6 +27,7 @@ export interface ModifierListContent {
 
 const props = defineProps<{
   content: ModifierListContent
+  moduleId: string
 }>()
 
 // ── Visibility ────────────────────────────────────────────────────────────────
@@ -106,7 +107,7 @@ function footnoteClass(fn: ModifierFootnote): string {
       <div v-for="(fn, key) in props.content.footnotes" :key="key" class="flex gap-1.5 text-xs">
         <dt class="font-semibold text-primary shrink-0">[{{ key }}]</dt>
         <!-- eslint-disable-next-line vue/no-v-html -->
-        <dd :class="footnoteClass(fn)" v-html="renderContent(fn.text)" />
+        <dd :class="footnoteClass(fn)" v-html="renderContent(fn.text, { moduleId: props.moduleId })" />
       </div>
     </dl>
   </div>

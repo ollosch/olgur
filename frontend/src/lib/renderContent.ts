@@ -14,6 +14,11 @@ export interface RenderContentOptions {
   moduleId?: string
 }
 
+export interface RuleLinkModifiers {
+  moduleSlug?: string
+  contextModuleId?: string
+}
+
 const apiBase: string =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost/api'
 
@@ -67,11 +72,6 @@ function renderRuleLink(key: string, moduleId?: string): string {
   }
 
   return ruleLinkElement(ref, display, moduleId ? { contextModuleId: moduleId } : {})
-}
-
-interface RuleLinkModifiers {
-  moduleSlug?: string
-  contextModuleId?: string
 }
 
 function ruleLinkElement(

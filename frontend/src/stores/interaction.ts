@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { Rule, IndexEntry } from '@/types/domain'
+import type { RuleLinkModifiers } from '@/lib/renderContent'
 
 export type PopupContent =
   | { type: 'rule'; rule: Rule }
@@ -14,11 +15,6 @@ interface PopupState {
   x: number
   y: number
   above: boolean
-}
-
-export interface RuleLinkModifiers {
-  moduleSlug?: string
-  contextModuleId?: string
 }
 
 type RuleResolver = (number: string, opts?: RuleLinkModifiers) => Rule | null

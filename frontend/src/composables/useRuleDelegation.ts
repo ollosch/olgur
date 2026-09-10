@@ -2,7 +2,7 @@ import { onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAppSettingsStore } from '@/stores/appSettings'
 import { useInteractionStore } from '@/stores/interaction'
-import type { RuleLinkModifiers } from '@/stores/interaction'
+import type { RuleLinkModifiers } from '@/lib/renderContent'
 import { useContentStore } from '@/stores/content'
 import type { Rule, IndexEntry } from '@/types/domain'
 

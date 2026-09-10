@@ -75,7 +75,8 @@ test('index endpoint reads the index snapshot table', function (): void {
 
     getJson(versionContentUrl($system, $module, $version, 'index'))
         ->assertSuccessful()
-        ->assertJsonFragment(['term' => 'Firepower']);
+        ->assertJsonFragment(['term' => 'Firepower'])
+        ->assertJsonFragment(['module_id' => $module->id]);
 });
 
 test('game-data endpoint reads the game data snapshot table', function (): void {
@@ -93,7 +94,8 @@ test('game-data endpoint reads the game data snapshot table', function (): void 
 
     getJson(versionContentUrl($system, $module, $version, 'game-data'))
         ->assertSuccessful()
-        ->assertJsonFragment(['name' => 'PzKpfw IB']);
+        ->assertJsonFragment(['name' => 'PzKpfw IB'])
+        ->assertJsonFragment(['module_id' => $module->id]);
 });
 
 // ── version belongs to module ────────────────────────────────────────────────

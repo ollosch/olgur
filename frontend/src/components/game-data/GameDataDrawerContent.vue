@@ -202,14 +202,17 @@ function sopContent(item: GameDatum): SopContent | null {
           <MatrixTable
             v-if="tableContent(table)!.kind === 'matrix'"
             :content="tableContent(table) as MatrixContent"
+            :module-id="table.module_id"
           />
           <AttributeTable
             v-else-if="tableContent(table)!.kind === 'attribute_table'"
             :content="tableContent(table) as AttributeTableContent"
+            :module-id="table.module_id"
           />
           <ModifierList
             v-else-if="tableContent(table)!.kind === 'modifier_list'"
             :content="tableContent(table) as ModifierListContent"
+            :module-id="table.module_id"
           />
         </template>
       </TabsContent>
@@ -284,6 +287,7 @@ function sopContent(item: GameDatum): SopContent | null {
           v-if="sopContent(sop)"
           :sop-id="sop.id"
           :content="sopContent(sop) as SopContent"
+          :module-id="sop.module_id"
         />
       </TabsContent>
     </Tabs>
