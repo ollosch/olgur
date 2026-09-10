@@ -184,6 +184,7 @@ test('released payload contains only snapshot content fields', function (): void
         ->assertSuccessful();
 
     $response->assertJsonStructure([
-        '*' => ['id', 'rule_id', 'module_version_id', 'parent_id', 'number', 'title', 'content', 'sort_order'],
-    ]);
+        '*' => ['id', 'rule_id', 'module_id', 'module_version_id', 'parent_id', 'number', 'title', 'content', 'sort_order'],
+    ])
+        ->assertJsonFragment(['module_id' => $module->id]);
 });

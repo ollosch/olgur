@@ -28,6 +28,7 @@ final class ModuleVersionContent
             ->map(fn (RuleVersion $rule): array => [
                 'id' => $rule->id,
                 'rule_id' => $rule->rule_id,
+                'module_id' => $version->module_id,
                 'module_version_id' => $rule->module_version_id,
                 'parent_id' => $rule->parent_id,
                 'number' => $rule->number,
@@ -50,6 +51,7 @@ final class ModuleVersionContent
             ->map(fn (IndexEntryVersion $entry): array => [
                 'id' => $entry->id,
                 'index_entry_id' => $entry->index_entry_id,
+                'module_id' => $version->module_id,
                 'module_version_id' => $entry->module_version_id,
                 'parent_id' => $entry->parent_id,
                 'term' => $entry->term,
@@ -71,6 +73,7 @@ final class ModuleVersionContent
             ->map(fn (GameDatumVersion $gameDatum): array => [
                 'id' => $gameDatum->id,
                 'game_datum_id' => $gameDatum->game_datum_id,
+                'module_id' => $version->module_id,
                 'module_version_id' => $gameDatum->module_version_id,
                 'type' => $gameDatum->type->value,
                 'name' => $gameDatum->name,
