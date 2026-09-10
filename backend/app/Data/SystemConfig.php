@@ -119,13 +119,12 @@ final readonly class SystemConfig implements Castable
     /**
      * Whether rule numbers must be unique across all modules in the system.
      *
-     * True when the module is core (core rules are always globally visible)
-     * or when the structure is CorePlusMany (their rule trees can merge).
+     * True only when the structure is CorePlusMany, whose rule trees merge.
      *
      * No separate config flag is needed — the behaviour is fully derived.
      */
-    public function enforceSystemWideRuleNumbers(bool $moduleIsCore): bool
+    public function enforceSystemWideRuleNumbers(): bool
     {
-        return $moduleIsCore || $this->structure === SystemStructure::CorePlusMany;
+        return $this->structure === SystemStructure::CorePlusMany;
     }
 }

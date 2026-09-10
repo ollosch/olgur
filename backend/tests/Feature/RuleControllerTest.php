@@ -143,7 +143,7 @@ test('store allows same number in a different module', function (): void {
         ->assertCreated();
 });
 
-test('store rejects cross-module duplicate for core module', function (): void {
+test('store accepts a cross-module duplicate for a core module outside core_plus_many', function (): void {
     $user = User::factory()->superAdmin()->create();
     $system = System::factory()->create();
     $coreModule = Module::factory()->for($system)->create(['is_core' => true]);
@@ -152,8 +152,7 @@ test('store rejects cross-module duplicate for core module', function (): void {
 
     actingAs($user)
         ->postJson('/api/systems/'.$system->id.'/modules/'.$coreModule->id.'/rules', $this->payload)
-        ->assertUnprocessable()
-        ->assertJsonValidationErrors(['number']);
+        ->assertCreated();
 });
 
 test('store rejects cross-module duplicate when allow_concurrent_expansions is true', function (): void {

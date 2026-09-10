@@ -118,17 +118,16 @@ test('SystemConfig::toArray serialises to the expected shape', function (): void
     ]);
 });
 
-test('SystemConfig::enforceSystemWideRuleNumbers returns true for core module', function (): void {
+test('SystemConfig::enforceSystemWideRuleNumbers returns false outside core_plus_many', function (): void {
     $config = SystemConfig::fromArray(['system_structure' => 'grouping_only']);
 
-    expect($config->enforceSystemWideRuleNumbers(true))->toBeTrue()
-        ->and($config->enforceSystemWideRuleNumbers(false))->toBeFalse();
+    expect($config->enforceSystemWideRuleNumbers())->toBeFalse();
 });
 
 test('SystemConfig::enforceSystemWideRuleNumbers returns true when core_plus_many', function (): void {
     $config = SystemConfig::fromArray(['system_structure' => 'core_plus_many']);
 
-    expect($config->enforceSystemWideRuleNumbers(false))->toBeTrue();
+    expect($config->enforceSystemWideRuleNumbers())->toBeTrue();
 });
 
 test('system config is persisted and retrieved correctly', function (): void {

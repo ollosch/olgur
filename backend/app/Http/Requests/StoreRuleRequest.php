@@ -59,7 +59,7 @@ final class StoreRuleRequest extends FormRequest
                 /** @var System $system */
                 $system = $this->route('system');
 
-                $enforceSystemWide = $system->config?->enforceSystemWideRuleNumbers($module->is_core) ?? $module->is_core;
+                $enforceSystemWide = $system->config?->enforceSystemWideRuleNumbers() ?? false;
 
                 if (! $enforceSystemWide) {
                     return;
