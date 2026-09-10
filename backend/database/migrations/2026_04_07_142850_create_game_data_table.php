@@ -21,9 +21,4 @@ return new class extends Migration
             $table->unique(['module_id', 'type', 'slug']);
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists('game_data');
-    }
 };

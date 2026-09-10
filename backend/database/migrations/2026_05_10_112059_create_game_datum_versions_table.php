@@ -20,9 +20,4 @@ return new class extends Migration
             $table->json('content');
         });
     }
-
-    public function down(): void
-    {
-        Schema::dropIfExists('game_datum_versions');
-    }
 };
