@@ -257,8 +257,12 @@ describe('useRetrofix', () => {
       contentStore.manifestByModule['mod1'] = makeManifestEntry({ revision: 3 })
       mockPost.mockResolvedValue({ ok: true, data: { data: { revision: 4 } } })
 
-      const { releasedContent, expectedRevision, loadReleasedContent, applyAmendment } =
-        useRetrofix('sys1', 'mod1', 'v1', 'rule1')
+      const { releasedContent, loadReleasedContent, applyAmendment } = useRetrofix(
+        'sys1',
+        'mod1',
+        'v1',
+        'rule1',
+      )
       mockRequest.mockResolvedValue({ data: [makeRule()] })
       await loadReleasedContent('https://cdn.example.com/mod1/rules.json')
       releasedContent.value = 'Fixed'
