@@ -6,7 +6,6 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 final class StoreSystemRequest extends FormRequest
 {
@@ -33,7 +32,7 @@ final class StoreSystemRequest extends FormRequest
             'config.toc_depth' => ['required', 'integer', 'min:1'],
             'config.cover_image' => ['nullable', 'string', 'url'],
             'config.sort_rules_by' => ['required', 'string', 'in:number,sort_order'],
-            'config.system_structure' => ['required', 'string', Rule::in(['core_plus_one', 'core_plus_many', 'grouping_only'])],
+            'config.global_rule_numbers' => ['boolean'],
         ];
     }
 }

@@ -411,7 +411,7 @@ test('store allows a second core module in a different system', function (): voi
     ])->assertCreated();
 });
 
-test('store rejects a core module in a grouping_only system', function (): void {
+test('store allows a core module in a system without global rule numbers', function (): void {
     $user = User::factory()->superAdmin()->create();
     $system = System::factory()->groupingOnly()->create();
     actingAs($user);
@@ -423,8 +423,7 @@ test('store rejects a core module in a grouping_only system', function (): void 
         'config' => [],
         'is_core' => true,
         'sort_order' => 0,
-    ])->assertUnprocessable()
-        ->assertJsonValidationErrors(['is_core']);
+    ])->assertCreated();
 });
 
 // ── creator auto-subscription ─────────────────────────────────────────────────

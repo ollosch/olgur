@@ -42,34 +42,32 @@ final class SystemFactory extends Factory
     }
 
     /**
-     * CorePlusMany structure: core + multiple expansions simultaneously.
-     * Rule numbers are system-wide unique; subscribing to expansion requires core subscription.
+     * System-wide rule numbers: rule numbers must be unique across all modules.
      */
     public function corePlusMany(): static
     {
         return $this->state(fn (array $attributes): array => [
-            'config' => ['system_structure' => 'core_plus_many'],
+            'config' => ['global_rule_numbers' => true],
         ]);
     }
 
     /**
-     * CorePlusOne structure: core + one expansion at a time.
-     * Subscribing to expansion auto-subscribes to core.
+     * Module-local rule numbers: rule numbers are unique per module.
      */
     public function corePlusOne(): static
     {
         return $this->state(fn (array $attributes): array => [
-            'config' => ['system_structure' => 'core_plus_one'],
+            'config' => ['global_rule_numbers' => false],
         ]);
     }
 
     /**
-     * GroupingOnly structure: standalone expansions, no subscription mechanics.
+     * Module-local rule numbers: rule numbers are unique per module.
      */
     public function groupingOnly(): static
     {
         return $this->state(fn (array $attributes): array => [
-            'config' => ['system_structure' => 'grouping_only'],
+            'config' => ['global_rule_numbers' => false],
         ]);
     }
 }

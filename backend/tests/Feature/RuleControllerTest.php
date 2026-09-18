@@ -143,7 +143,7 @@ test('store allows same number in a different module', function (): void {
         ->assertCreated();
 });
 
-test('store accepts a cross-module duplicate for a core module outside core_plus_many', function (): void {
+test('store accepts a cross-module duplicate for a core module without global rule numbers', function (): void {
     $user = User::factory()->superAdmin()->create();
     $system = System::factory()->create();
     $coreModule = Module::factory()->for($system)->create(['is_core' => true]);
@@ -155,9 +155,9 @@ test('store accepts a cross-module duplicate for a core module outside core_plus
         ->assertCreated();
 });
 
-test('store rejects cross-module duplicate when allow_concurrent_expansions is true', function (): void {
+test('store rejects cross-module duplicate when global_rule_numbers is true', function (): void {
     $user = User::factory()->superAdmin()->create();
-    $system = System::factory()->create(['config' => ['system_structure' => 'core_plus_many']]);
+    $system = System::factory()->create(['config' => ['global_rule_numbers' => true]]);
     $moduleA = Module::factory()->for($system)->create(['is_core' => false]);
     $moduleB = Module::factory()->for($system)->create(['is_core' => false]);
     Rule::factory()->for($moduleA)->create($this->payload);
@@ -168,9 +168,9 @@ test('store rejects cross-module duplicate when allow_concurrent_expansions is t
         ->assertJsonValidationErrors(['number']);
 });
 
-test('store accepts cross-module duplicate for non-core module when allow_concurrent_expansions is false', function (): void {
+test('store accepts cross-module duplicate for non-core module when global_rule_numbers is false', function (): void {
     $user = User::factory()->superAdmin()->create();
-    $system = System::factory()->create(['config' => ['system_structure' => 'grouping_only']]);
+    $system = System::factory()->create(['config' => ['global_rule_numbers' => false]]);
     $moduleA = Module::factory()->for($system)->create(['is_core' => false]);
     $moduleB = Module::factory()->for($system)->create(['is_core' => false]);
     Rule::factory()->for($moduleA)->create($this->payload);
@@ -271,7 +271,7 @@ test('update modifies a rule', function (): void {
     assertDatabaseHas('rules', ['id' => $rule->id, 'title' => 'Updated Title']);
 });
 
-test('update allows cross-module duplicate for core module outside core_plus_many', function (): void {
+test('update allows cross-module duplicate for core module without global rule numbers', function (): void {
     $user = User::factory()->superAdmin()->create();
     $system = System::factory()->create();
     $coreModule = Module::factory()->for($system)->create(['is_core' => true]);
@@ -291,9 +291,9 @@ test('update allows cross-module duplicate for core module outside core_plus_man
     ])->assertSuccessful();
 });
 
-test('update rejects cross-module duplicate when allow_concurrent_expansions is true', function (): void {
+test('update rejects cross-module duplicate when global_rule_numbers is true', function (): void {
     $user = User::factory()->superAdmin()->create();
-    $system = System::factory()->create(['config' => ['system_structure' => 'core_plus_many']]);
+    $system = System::factory()->create(['config' => ['global_rule_numbers' => true]]);
     $moduleA = Module::factory()->for($system)->create(['is_core' => false]);
     $moduleB = Module::factory()->for($system)->create(['is_core' => false]);
     Rule::factory()->for($moduleA)->create(['number' => 'A1.1']);
@@ -306,9 +306,9 @@ test('update rejects cross-module duplicate when allow_concurrent_expansions is 
         ->assertJsonValidationErrors(['number']);
 });
 
-test('update allows cross-module duplicate for non-core module when allow_concurrent_expansions is false', function (): void {
+test('update allows cross-module duplicate for non-core module when global_rule_numbers is false', function (): void {
     $user = User::factory()->superAdmin()->create();
-    $system = System::factory()->create(['config' => ['system_structure' => 'grouping_only']]);
+    $system = System::factory()->create(['config' => ['global_rule_numbers' => false]]);
     $moduleA = Module::factory()->for($system)->create(['is_core' => false]);
     $moduleB = Module::factory()->for($system)->create(['is_core' => false]);
     Rule::factory()->for($moduleA)->create(['number' => 'A1.1']);

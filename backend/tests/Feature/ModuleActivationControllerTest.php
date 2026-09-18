@@ -180,11 +180,11 @@ test('activating always appends to active_module_ids without clearing others', f
         ->toContain($moduleB->id);
 });
 
-// ── core_plus_one enforcement ─────────────────────────────────────────────────
+// ── multiple active expansions ───────────────────────────────────────────────
 
-test('activating in core_plus_one system deactivates other active expansions', function (): void {
+test('activating in a non-global system preserves all active expansions', function (): void {
     $user = User::factory()->create();
-    $system = System::factory()->create(['config' => ['system_structure' => 'core_plus_one']]);
+    $system = System::factory()->create(['config' => ['global_rule_numbers' => false]]);
     $moduleA = Module::factory()->for($system)->create(['is_core' => false]);
     $moduleB = Module::factory()->for($system)->create(['is_core' => false]);
     Membership::factory()->for($user)->for($system)->create([
@@ -199,13 +199,13 @@ test('activating in core_plus_one system deactivates other active expansions', f
 
     $activeIds = $response->json('data.active_module_ids');
     expect($activeIds)
-        ->toContain($moduleB->id)
-        ->not->toContain($moduleA->id);
+        ->toContain($moduleA->id)
+        ->toContain($moduleB->id);
 });
 
-test('activating in core_plus_many preserves all active expansions', function (): void {
+test('activating in a global system preserves all active expansions', function (): void {
     $user = User::factory()->create();
-    $system = System::factory()->create(['config' => ['system_structure' => 'core_plus_many']]);
+    $system = System::factory()->create(['config' => ['global_rule_numbers' => true]]);
     $moduleA = Module::factory()->for($system)->create(['is_core' => false]);
     $moduleB = Module::factory()->for($system)->create(['is_core' => false]);
     Membership::factory()->for($user)->for($system)->create([

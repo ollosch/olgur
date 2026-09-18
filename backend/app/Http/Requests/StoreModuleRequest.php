@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use App\Enums\SystemStructure;
 use App\Http\Requests\Concerns\ValidatesModuleToolDeclarations;
 use App\Models\System;
 use Closure;
@@ -44,12 +43,6 @@ final class StoreModuleRequest extends FormRequest
                 'boolean',
                 function (string $attribute, mixed $value, Closure $fail) use ($system): void {
                     if (! $value) {
-                        return;
-                    }
-
-                    if ($system->config?->structure === SystemStructure::GroupingOnly) {
-                        $fail('Grouping-only systems cannot have a core module.');
-
                         return;
                     }
 

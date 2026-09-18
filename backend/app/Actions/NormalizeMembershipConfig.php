@@ -6,7 +6,6 @@ namespace App\Actions;
 
 use App\Data\MembershipConfig;
 use App\Enums\GameDataType;
-use App\Enums\SystemStructure;
 use App\Models\GameDatum;
 use App\Models\Membership;
 use App\Models\Module;
@@ -33,7 +32,7 @@ final class NormalizeMembershipConfig
 
         $activeModuleIds = array_values($config->activeModuleIds);
 
-        $this->validateActiveModules($membership, $user, $system, $activeModuleIds);
+        $this->validateActiveModules($membership, $user, $activeModuleIds);
 
         return new MembershipConfig(
             activeModuleIds: $activeModuleIds,
@@ -48,7 +47,7 @@ final class NormalizeMembershipConfig
     /**
      * @param  array<int, string>  $activeModuleIds
      */
-    private function validateActiveModules(Membership $membership, User $user, System $system, array $activeModuleIds): void
+    private function validateActiveModules(Membership $membership, User $user, array $activeModuleIds): void
     {
         if (count($activeModuleIds) !== count(array_unique($activeModuleIds))) {
             throw ValidationException::withMessages([
@@ -86,12 +85,6 @@ final class NormalizeMembershipConfig
         if ($subscribedCount !== count($activeModuleIds)) {
             throw ValidationException::withMessages([
                 'config.active_module_ids' => ['You must be subscribed to each active module.'],
-            ]);
-        }
-
-        if ($system->config?->structure === SystemStructure::CorePlusOne && count($activeModuleIds) > 1) {
-            throw ValidationException::withMessages([
-                'config.active_module_ids' => ['Only one expansion can be active at a time in this system.'],
             ]);
         }
     }

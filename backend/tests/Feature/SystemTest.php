@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Data\SystemConfig;
-use App\Enums\SystemStructure;
 use App\Models\Membership;
 use App\Models\System;
 use App\Models\User;
@@ -82,7 +81,7 @@ test('isAdmin returns false when user is not an admin', function (): void {
 test('SystemConfig::fromArray uses defaults for missing keys', function (): void {
     $config = SystemConfig::fromArray([]);
 
-    expect($config->structure)->toBe(SystemStructure::GroupingOnly)
+    expect($config->globalRuleNumbers)->toBeFalse()
         ->and($config->sortRulesBy)->toBe('sort_order')
         ->and($config->tocDepth)->toBe(1)
         ->and($config->coverImage)->toBeNull();
@@ -90,13 +89,13 @@ test('SystemConfig::fromArray uses defaults for missing keys', function (): void
 
 test('SystemConfig::fromArray uses provided values', function (): void {
     $config = SystemConfig::fromArray([
-        'system_structure' => 'core_plus_many',
+        'global_rule_numbers' => true,
         'sort_rules_by' => 'number',
         'toc_depth' => 3,
         'cover_image' => 'https://example.com/cover.jpg',
     ]);
 
-    expect($config->structure)->toBe(SystemStructure::CorePlusMany)
+    expect($config->globalRuleNumbers)->toBeTrue()
         ->and($config->sortRulesBy)->toBe('number')
         ->and($config->tocDepth)->toBe(3)
         ->and($config->coverImage)->toBe('https://example.com/cover.jpg');
@@ -104,36 +103,36 @@ test('SystemConfig::fromArray uses provided values', function (): void {
 
 test('SystemConfig::toArray serialises to the expected shape', function (): void {
     $config = SystemConfig::fromArray([
-        'system_structure' => 'core_plus_many',
+        'global_rule_numbers' => true,
         'sort_rules_by' => 'number',
         'toc_depth' => 2,
         'cover_image' => null,
     ]);
 
     expect($config->toArray())->toBe([
-        'system_structure' => 'core_plus_many',
+        'global_rule_numbers' => true,
         'sort_rules_by' => 'number',
         'toc_depth' => 2,
         'cover_image' => null,
     ]);
 });
 
-test('SystemConfig::enforceSystemWideRuleNumbers returns false outside core_plus_many', function (): void {
-    $config = SystemConfig::fromArray(['system_structure' => 'grouping_only']);
+test('SystemConfig::hasGlobalRuleNumbers returns false when not set', function (): void {
+    $config = SystemConfig::fromArray([]);
 
-    expect($config->enforceSystemWideRuleNumbers())->toBeFalse();
+    expect($config->hasGlobalRuleNumbers())->toBeFalse();
 });
 
-test('SystemConfig::enforceSystemWideRuleNumbers returns true when core_plus_many', function (): void {
-    $config = SystemConfig::fromArray(['system_structure' => 'core_plus_many']);
+test('SystemConfig::hasGlobalRuleNumbers returns true when set', function (): void {
+    $config = SystemConfig::fromArray(['global_rule_numbers' => true]);
 
-    expect($config->enforceSystemWideRuleNumbers())->toBeTrue();
+    expect($config->hasGlobalRuleNumbers())->toBeTrue();
 });
 
 test('system config is persisted and retrieved correctly', function (): void {
     $system = System::factory()->create([
         'config' => [
-            'system_structure' => 'core_plus_many',
+            'global_rule_numbers' => true,
             'sort_rules_by' => 'number',
             'toc_depth' => 4,
             'cover_image' => 'https://example.com/img.png',
@@ -143,7 +142,7 @@ test('system config is persisted and retrieved correctly', function (): void {
     $fresh = $system->fresh();
 
     expect($fresh->config)->toBeInstanceOf(SystemConfig::class)
-        ->and($fresh->config->structure)->toBe(SystemStructure::CorePlusMany)
+        ->and($fresh->config->globalRuleNumbers)->toBeTrue()
         ->and($fresh->config->sortRulesBy)->toBe('number')
         ->and($fresh->config->tocDepth)->toBe(4)
         ->and($fresh->config->coverImage)->toBe('https://example.com/img.png');

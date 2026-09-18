@@ -81,7 +81,7 @@ test('normalize rejects active modules the user is not subscribed to', function 
     ])))->toThrow(ValidationException::class);
 });
 
-test('normalize rejects multiple active expansions in a core_plus_one system', function (): void {
+test('normalize allows multiple active expansions in a non-global system', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->corePlusOne()->create();
     $moduleA = Module::factory()->for($system)->create();
@@ -90,12 +90,14 @@ test('normalize rejects multiple active expansions in a core_plus_one system', f
     Subscription::factory()->for($user)->for($moduleB)->create();
     $membership = Membership::factory()->for($user)->for($system)->create();
 
-    expect(fn (): MembershipConfig => normalize($membership, $user, MembershipConfig::fromArray([
+    $config = normalize($membership, $user, MembershipConfig::fromArray([
         'active_module_ids' => [$moduleA->id, $moduleB->id],
-    ])))->toThrow(ValidationException::class);
+    ]));
+
+    expect($config->activeModuleIds)->toBe([$moduleA->id, $moduleB->id]);
 });
 
-test('normalize allows multiple active expansions in a core_plus_many system', function (): void {
+test('normalize allows multiple active expansions in a global system', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->corePlusMany()->create();
     $moduleA = Module::factory()->for($system)->create();
@@ -111,7 +113,7 @@ test('normalize allows multiple active expansions in a core_plus_many system', f
     expect($config->activeModuleIds)->toBe([$moduleA->id, $moduleB->id]);
 });
 
-test('normalize allows multiple active expansions in a grouping_only system', function (): void {
+test('normalize allows multiple active expansions in a system without global rule numbers', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->groupingOnly()->create();
     $moduleA = Module::factory()->for($system)->create();

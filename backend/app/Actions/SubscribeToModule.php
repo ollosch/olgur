@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Actions;
 
-use App\Enums\SystemStructure;
 use App\Models\Module;
 use App\Models\Subscription;
 use App\Models\User;
@@ -15,18 +14,17 @@ final class SubscribeToModule
     /**
      * Subscribe a user to a module, enforcing structure-based rules.
      *
-     * - CorePlusMany: user must have a core subscription before subscribing to an expansion (if a core module exists).
-     * - CorePlusOne: auto-subscribes user to the core module if one exists.
-     * - GroupingOnly: no extra mechanics.
+     * - Global rule numbers: user must have a core subscription before subscribing to an expansion (if a core module exists).
+     * - Module-local rule numbers: auto-subscribes user to the core module if one exists.
      *
      * @throws ValidationException when the core prerequisite is not satisfied
      */
     public function execute(User $user, Module $module): Subscription
     {
         if (! $module->is_core) {
-            $structure = $module->system?->config?->structure ?? SystemStructure::GroupingOnly;  // @phpstan-ignore nullsafe.neverNull
+            $hasGlobalRuleNumbers = $module->system?->config?->hasGlobalRuleNumbers() ?? false;
 
-            if ($structure === SystemStructure::CorePlusMany) {
+            if ($hasGlobalRuleNumbers) {
                 $coreModule = Module::query()
                     ->where('system_id', $module->system_id)
                     ->where('is_core', true)
@@ -44,7 +42,7 @@ final class SubscribeToModule
                         ]);
                     }
                 }
-            } elseif ($structure === SystemStructure::CorePlusOne) {
+            } else {
                 $coreModule = Module::query()
                     ->where('system_id', $module->system_id)
                     ->where('is_core', true)

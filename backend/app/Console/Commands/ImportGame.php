@@ -64,6 +64,8 @@ final class ImportGame extends Command
             ? $manifest['structure']
             : 'core_plus_many';
 
+        $globalRuleNumbers = $structureValue === 'core_plus_many';
+
         $fresh = (bool) $this->option('fresh');
 
         // Determine system slug: index.json slug → fallback to directory basename
@@ -81,7 +83,7 @@ final class ImportGame extends Command
         DB::transaction(function () use (
             $systemSlug,
             $systemName,
-            $structureValue,
+            $globalRuleNumbers,
             $modules,
             $manifest,
             $gameDir,
@@ -91,7 +93,7 @@ final class ImportGame extends Command
                 ['slug' => $systemSlug],
                 [
                     'name' => $systemName,
-                    'config' => SystemConfig::fromArray(['system_structure' => $structureValue]),
+                    'config' => SystemConfig::fromArray(['global_rule_numbers' => $globalRuleNumbers]),
                 ]
             );
 

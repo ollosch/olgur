@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Data;
 
-use App\Enums\SystemStructure;
 use Illuminate\Contracts\Database\Eloquent\Castable;
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
 use Illuminate\Database\Eloquent\Model;
@@ -13,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
  * Value object representing a System's config JSON column.
  *
  * Immutable fields (set at creation only, silently ignored on update):
- *   - $structure
+ *   - $globalRuleNumbers
  *   - $sortRulesBy
  *
  * Mutable fields:
@@ -27,12 +26,8 @@ use Illuminate\Database\Eloquent\Model;
 final readonly class SystemConfig implements Castable
 {
     public function __construct(
-        /**
-         * Immutable — determines how subscriptions and rule-number uniqueness work.
-         *
-         * @see SystemStructure
-         */
-        public SystemStructure $structure,
+        /** Whether rule numbers are unique across all modules in the system. Immutable after creation. */
+        public bool $globalRuleNumbers,
         /** Display ordering preference for rules. Immutable after creation. */
         public string $sortRulesBy,
         /** Table-of-contents depth hint (display only). */
@@ -49,10 +44,8 @@ final readonly class SystemConfig implements Castable
      */
     public static function fromArray(array $data): self
     {
-        $structureValue = is_string($data['system_structure'] ?? null) ? $data['system_structure'] : null;
-
         return new self(
-            structure: $structureValue !== null ? (SystemStructure::tryFrom($structureValue) ?? SystemStructure::GroupingOnly) : SystemStructure::GroupingOnly,
+            globalRuleNumbers: (bool) ($data['global_rule_numbers'] ?? false),
             sortRulesBy: is_string($data['sort_rules_by'] ?? null) ? $data['sort_rules_by'] : 'sort_order',
             tocDepth: is_int($data['toc_depth'] ?? null) ? $data['toc_depth'] : 1,
             coverImage: is_string($data['cover_image'] ?? null) ? $data['cover_image'] : null,
@@ -109,7 +102,7 @@ final readonly class SystemConfig implements Castable
     public function toArray(): array
     {
         return [
-            'system_structure' => $this->structure->value,
+            'global_rule_numbers' => $this->globalRuleNumbers,
             'sort_rules_by' => $this->sortRulesBy,
             'toc_depth' => $this->tocDepth,
             'cover_image' => $this->coverImage,
@@ -118,13 +111,9 @@ final readonly class SystemConfig implements Castable
 
     /**
      * Whether rule numbers must be unique across all modules in the system.
-     *
-     * True only when the structure is CorePlusMany, whose rule trees merge.
-     *
-     * No separate config flag is needed — the behaviour is fully derived.
      */
-    public function enforceSystemWideRuleNumbers(): bool
+    public function hasGlobalRuleNumbers(): bool
     {
-        return $this->structure === SystemStructure::CorePlusMany;
+        return $this->globalRuleNumbers;
     }
 }

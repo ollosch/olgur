@@ -146,7 +146,7 @@ test('system admin can subscribe a member to an expansion when they have the cor
     assertDatabaseHas('subscriptions', ['user_id' => $user->id, 'module_id' => $expansion->id]);
 });
 
-test('system admin can subscribe a member to an expansion without core subscription in grouping only systems', function (): void {
+test('system admin can subscribe a member to an expansion without core subscription in a system without global rule numbers', function (): void {
     $user = User::factory()->create();
     $admin = User::factory()->create();
     $system = System::factory()->create(); // no require_core_subscription config
@@ -158,7 +158,7 @@ test('system admin can subscribe a member to an expansion without core subscript
     postJson(subscriptionUrl($system, $expansion), ['user_id' => $user->id])->assertSuccessful();
 });
 
-test('system admin cannot subscribe a member to an expansion without core subscription in core plus many systems', function (): void {
+test('system admin cannot subscribe a member to an expansion without core subscription in a global rule numbers system', function (): void {
     $user = User::factory()->create();
     $admin = User::factory()->create();
     $system = System::factory()->corePlusMany()->create();
@@ -173,7 +173,7 @@ test('system admin cannot subscribe a member to an expansion without core subscr
         ->assertJsonValidationErrors(['module_id']);
 });
 
-test('system admin can subscribe a member to an expansion when core plus many has no core module', function (): void {
+test('system admin can subscribe a member to an expansion when a global rule numbers system has no core module', function (): void {
     $user = User::factory()->create();
     $admin = User::factory()->create();
     $system = System::factory()->corePlusMany()->create();
@@ -382,7 +382,7 @@ test('destroy returns 404 for unknown subscription', function (): void {
 test('admin cannot unsubscribe a member from core in a grouping system while expansion subscriptions exist', function (): void {
     $member = User::factory()->create();
     $admin = User::factory()->create();
-    $system = System::factory()->create(); // grouping_only (no structure config)
+    $system = System::factory()->create(); // no global rule numbers config
     $core = Module::factory()->for($system)->core()->create();
     $expansion = Module::factory()->for($system)->create();
     $coreSubscription = Subscription::factory()->for($member)->for($core)->create();
@@ -463,7 +463,7 @@ test('admin can unsubscribe a member from core when no expansion subscriptions e
     assertDatabaseMissing('subscriptions', ['user_id' => $member->id, 'module_id' => $core->id]);
 });
 
-test('subscribing to expansion in core_plus_one system auto-subscribes to core', function (): void {
+test('subscribing to expansion in a non-global system auto-subscribes to core', function (): void {
     $user = User::factory()->create();
     $admin = User::factory()->create();
     $system = System::factory()->corePlusOne()->create();

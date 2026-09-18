@@ -264,7 +264,7 @@ test('system config is not overwritten on second import', function () use ($simp
     artisan('import:game', ['path' => $dir, '--fresh' => true])->assertSuccessful();
 
     $system = System::query()->where('slug', 'config-test')->first();
-    expect($system->config?->structure->value)->toBe('core_plus_many');
+    expect($system->config?->globalRuleNumbers)->toBeTrue();
 
     removeGameDir($dir);
 });
@@ -577,7 +577,7 @@ test('structure key in manifest is used for system config', function () use ($si
     artisan('import:game', ['path' => $dir])->assertSuccessful();
 
     $system = System::query()->where('slug', 'structure-override')->first();
-    expect($system->config?->structure->value)->toBe('grouping_only');
+    expect($system->config?->globalRuleNumbers)->toBeFalse();
 
     removeGameDir($dir);
 });

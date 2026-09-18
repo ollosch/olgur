@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Enums\SystemStructure;
 use App\Http\Requests\StoreSystemRequest;
 use App\Http\Requests\UpdateSystemRequest;
 use App\Http\Resources\SystemResource;
@@ -50,24 +49,21 @@ final class SystemController
                 'admin' => true,
             ]);
 
-            // Core-based structures require a core module to function; auto-create one
-            // so the system is immediately usable without an extra manual step.
-            $structure = $system->config?->structure;
-            if ($structure === SystemStructure::CorePlusOne || $structure === SystemStructure::CorePlusMany) {
-                $coreModule = $system->modules()->create([
-                    'name' => 'Core',
-                    'slug' => 'core',
-                    'description' => '',
-                    'config' => [],
-                    'is_core' => true,
-                    'sort_order' => 0,
-                ]);
+            // Every system has exactly one core module; auto-create it so the system
+            // is immediately usable without an extra manual step.
+            $coreModule = $system->modules()->create([
+                'name' => 'Core',
+                'slug' => 'core',
+                'description' => '',
+                'config' => [],
+                'is_core' => true,
+                'sort_order' => 0,
+            ]);
 
-                $coreModule->subscriptions()->updateOrCreate(
-                    ['user_id' => $creator->id],
-                    ['editor' => true],
-                );
-            }
+            $coreModule->subscriptions()->updateOrCreate(
+                ['user_id' => $creator->id],
+                ['editor' => true],
+            );
 
             return $system;
         });
@@ -98,7 +94,7 @@ final class SystemController
         $config = $request->input('config', []);
 
         // Immutable fields are restored from the stored config.
-        $config['system_structure'] = $system->config?->structure->value;
+        $config['global_rule_numbers'] = $system->config?->globalRuleNumbers;
         $config['sort_rules_by'] = $system->config?->sortRulesBy;
 
         $validated['config'] = $config;

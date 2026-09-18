@@ -75,7 +75,7 @@ test('store creates a system', function (): void {
         'config' => [
             'toc_depth' => 3,
             'sort_rules_by' => 'number',
-            'system_structure' => 'grouping_only',
+            'global_rule_numbers' => false,
         ],
     ];
 
@@ -119,7 +119,7 @@ test('store allows any authenticated user to create a system', function (): void
         'config' => [
             'toc_depth' => 1,
             'sort_rules_by' => 'number',
-            'system_structure' => 'grouping_only',
+            'global_rule_numbers' => false,
         ],
     ])->assertCreated();
 });
@@ -283,7 +283,7 @@ test('store accepts sort_rules_by in config', function (): void {
         'config' => [
             'toc_depth' => 1,
             'sort_rules_by' => 'number',
-            'system_structure' => 'grouping_only',
+            'global_rule_numbers' => false,
         ],
     ])->assertCreated();
 
@@ -300,7 +300,7 @@ test('store rejects invalid sort_rules_by value', function (): void {
         'config' => [
             'toc_depth' => 1,
             'sort_rules_by' => 'invalid',
-            'system_structure' => 'grouping_only',
+            'global_rule_numbers' => false,
         ],
     ])->assertUnprocessable()
         ->assertJsonValidationErrors(['config.sort_rules_by']);
@@ -334,7 +334,7 @@ test('update ignores invalid sort_rules_by — it is not validated', function ()
         ->assertJsonPath('data.config.sort_rules_by', 'number');
 });
 
-test('store accepts system_structure in config', function (): void {
+test('store accepts global_rule_numbers in config', function (): void {
     $user = User::factory()->superAdmin()->create();
     actingAs($user);
 
@@ -345,14 +345,14 @@ test('store accepts system_structure in config', function (): void {
         'config' => [
             'toc_depth' => 1,
             'sort_rules_by' => 'number',
-            'system_structure' => 'core_plus_many',
+            'global_rule_numbers' => true,
         ],
     ])->assertCreated();
 
-    expect($response->json('data.config.system_structure'))->toBe('core_plus_many');
+    expect($response->json('data.config.global_rule_numbers'))->toBeTrue();
 });
 
-test('store accepts core_plus_many structure', function (): void {
+test('store accepts global_rule_numbers when false', function (): void {
     $user = User::factory()->superAdmin()->create();
     actingAs($user);
 
@@ -363,14 +363,14 @@ test('store accepts core_plus_many structure', function (): void {
         'config' => [
             'toc_depth' => 1,
             'sort_rules_by' => 'number',
-            'system_structure' => 'core_plus_many',
+            'global_rule_numbers' => false,
         ],
     ])->assertCreated();
 
-    expect($response->json('data.config.system_structure'))->toBe('core_plus_many');
+    expect($response->json('data.config.global_rule_numbers'))->toBeFalse();
 });
 
-test('store rejects invalid system_structure', function (): void {
+test('store rejects invalid global_rule_numbers', function (): void {
     $user = User::factory()->superAdmin()->create();
     actingAs($user);
 
@@ -381,24 +381,24 @@ test('store rejects invalid system_structure', function (): void {
         'config' => [
             'toc_depth' => 1,
             'sort_rules_by' => 'number',
-            'system_structure' => 'invalid',
+            'global_rule_numbers' => 'invalid',
         ],
     ])->assertUnprocessable()
-        ->assertJsonValidationErrors(['config.system_structure']);
+        ->assertJsonValidationErrors(['config.global_rule_numbers']);
 });
 
-test('update ignores system_structure — it is immutable', function (): void {
+test('update ignores global_rule_numbers — it is immutable', function (): void {
     $user = User::factory()->superAdmin()->create();
-    $system = System::factory()->create(['config' => ['system_structure' => 'grouping_only']]);
+    $system = System::factory()->create(['config' => ['global_rule_numbers' => false]]);
     actingAs($user);
 
     patchJson('/api/systems/'.$system->id, [
         'slug' => $system->slug,
         'name' => $system->name,
         'description' => $system->description,
-        'config' => ['system_structure' => 'core_plus_many'],
+        'config' => ['global_rule_numbers' => true],
     ])->assertSuccessful()
-        ->assertJsonPath('data.config.system_structure', 'grouping_only');
+        ->assertJsonPath('data.config.global_rule_numbers', false);
 });
 
 // ── creator auto-membership ───────────────────────────────────────────────────
@@ -412,7 +412,7 @@ test('store creates an admin membership for the creator', function (): void {
         'name' => 'My System',
         'description' => '',
         'config' => [
-            'system_structure' => 'grouping_only',
+            'global_rule_numbers' => false,
             'toc_depth' => 1,
             'sort_rules_by' => 'sort_order',
         ],
@@ -429,7 +429,7 @@ test('store creates an admin membership for the creator', function (): void {
 
 // ── auto core module ──────────────────────────────────────────────────────────
 
-test('store auto-creates a core module for core_plus_one systems', function (): void {
+test('store auto-creates a core module when global_rule_numbers is false', function (): void {
     $user = User::factory()->create();
     actingAs($user);
 
@@ -438,7 +438,7 @@ test('store auto-creates a core module for core_plus_one systems', function (): 
         'name' => 'My System',
         'description' => '',
         'config' => [
-            'system_structure' => 'core_plus_one',
+            'global_rule_numbers' => false,
             'toc_depth' => 1,
             'sort_rules_by' => 'sort_order',
         ],
@@ -463,7 +463,7 @@ test('store auto-creates a core module for core_plus_one systems', function (): 
     ]);
 });
 
-test('store auto-creates a core module for core_plus_many systems', function (): void {
+test('store auto-creates a core module when global_rule_numbers is true', function (): void {
     $user = User::factory()->create();
     actingAs($user);
 
@@ -472,7 +472,7 @@ test('store auto-creates a core module for core_plus_many systems', function ():
         'name' => 'My System',
         'description' => '',
         'config' => [
-            'system_structure' => 'core_plus_many',
+            'global_rule_numbers' => true,
             'toc_depth' => 1,
             'sort_rules_by' => 'sort_order',
         ],
@@ -495,7 +495,7 @@ test('store auto-creates a core module for core_plus_many systems', function ():
     ]);
 });
 
-test('store does not auto-create a core module for grouping_only systems', function (): void {
+test('store auto-creates a core module when config is omitted', function (): void {
     $user = User::factory()->create();
     actingAs($user);
 
@@ -504,7 +504,6 @@ test('store does not auto-create a core module for grouping_only systems', funct
         'name' => 'My System',
         'description' => '',
         'config' => [
-            'system_structure' => 'grouping_only',
             'toc_depth' => 1,
             'sort_rules_by' => 'sort_order',
         ],
@@ -516,5 +515,5 @@ test('store does not auto-create a core module for grouping_only systems', funct
     expect($system)->not->toBeNull();
 
     /** @var System $system */
-    expect($system->modules()->where('is_core', true)->exists())->toBeFalse();
+    expect($system->modules()->where('is_core', true)->exists())->toBeTrue();
 });
