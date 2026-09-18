@@ -37,6 +37,8 @@ Route::prefix('api')->group(function (): void {
             Route::apiResource('systems.modules.subscriptions', SubscriptionController::class)
                 ->except(['show']);
             Route::apiResource('systems.modules.rules', RuleController::class);
+            Route::post('/systems/{system}/modules/{module}/rules/{rule}/renumber', [RuleController::class, 'renumber'])
+                ->name('rules.renumber');
             Route::apiResource('systems.modules.index-entries', IndexEntryController::class);
             Route::apiResource('systems.modules.game-data', GameDatumController::class);
             Route::apiResource('systems.modules.versions', ModuleVersionController::class)

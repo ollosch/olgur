@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Actions\RecordDraftChange;
+use App\Actions\RenumberRule;
 use App\Http\Requests\ClassifyDraftChangeRequest;
+use App\Http\Requests\RenumberRuleRequest;
 use App\Http\Requests\StoreRuleRequest;
 use App\Http\Requests\UpdateRuleRequest;
 use App\Http\Resources\RuleResource;
@@ -13,6 +15,7 @@ use App\Models\Module;
 use App\Models\Rule;
 use App\Models\System;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
@@ -112,6 +115,40 @@ final class RuleController
                 $before,
                 $recordDraftChange->snapshotRule($rule),
             );
+        });
+
+        return new RuleResource($rule);
+    }
+
+    /**
+     * Preview or apply a renumber of the specified rule.
+     *
+     * A `confirm` payload applies the change; without it the response lists the
+     * affected references without mutating anything.
+     */
+    public function renumber(
+        RenumberRuleRequest $request,
+        System $system,
+        Module $module,
+        Rule $rule,
+        RenumberRule $renumberRule,
+        RecordDraftChange $recordDraftChange,
+    ): JsonResponse|RuleResource {
+        Gate::authorize('update', [Rule::class, $system, $module]);
+
+        $newNumber = $request->newNumber();
+
+        if (! $request->confirm()) {
+            return response()->json([
+                'data' => $renumberRule->preview($system, $module, $rule, $newNumber),
+            ]);
+        }
+
+        /** @var User $user */
+        $user = Auth::user();
+
+        DB::transaction(function () use ($system, $module, $rule, $newNumber, $user, $recordDraftChange, $renumberRule): void {
+            $renumberRule->apply($system, $module, $rule, $newNumber, $user, $recordDraftChange);
         });
 
         return new RuleResource($rule);
