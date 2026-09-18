@@ -177,7 +177,8 @@ const onSubmit = handleSubmit(async (values) => {
               <!-- eslint-disable-next-line vue/no-v-html -->
               <span
                 class="text-foreground/80 min-w-0 truncate"
-                v-html="renderContent(selectedParent.title, { moduleId: selectedParent.module_id })"
+                :data-rule-context="selectedParent.module_id"
+                v-html="renderContent(selectedParent.title)"
               />
               <button
                 type="button"

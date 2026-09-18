@@ -48,13 +48,7 @@ describe('renderContent', () => {
       expect(html).toContain('data-rule-module="core"')
     })
 
-    it('attaches the current module context to bare links when moduleId is supplied', () => {
-      const html = renderContent('{{L:1.2}}', { moduleId: 'mod1' })
-      expect(html).toContain('data-rule-number="1.2"')
-      expect(html).toContain('data-rule-context="mod1"')
-    })
-
-    it('does not attach module context to bare links when moduleId is omitted', () => {
+    it('renders bare links without a per-link module context', () => {
       const html = renderContent('{{L:1.2}}')
       expect(html).toContain('data-rule-number="1.2"')
       expect(html).not.toContain('data-rule-context')

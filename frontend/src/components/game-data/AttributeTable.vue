@@ -39,7 +39,6 @@ export interface AttributeTableContent {
 
 const props = defineProps<{
   content: AttributeTableContent
-  moduleId: string
 }>()
 
 // ── Visibility ────────────────────────────────────────────────────────────────
@@ -101,7 +100,7 @@ function footnoteClass(fn: AttributeFootnote): string {
             class="border border-border px-2 py-1 text-center font-mono text-foreground"
           >
             <!-- eslint-disable-next-line vue/no-v-html -->
-            <span v-html="renderContent(row.cells[col.id]?.value ?? '', { moduleId: props.moduleId })" />
+            <span v-html="renderContent(row.cells[col.id]?.value ?? '')" />
             <sup
               v-if="(row.cells[col.id]?.markers ?? []).length > 0"
               class="text-[9px] ml-0.5 text-primary"
@@ -121,7 +120,7 @@ function footnoteClass(fn: AttributeFootnote): string {
       <div v-for="(fn, key) in props.content.footnotes" :key="key" class="flex gap-1.5 text-xs">
         <dt class="font-semibold text-primary shrink-0">[{{ key }}]</dt>
         <!-- eslint-disable-next-line vue/no-v-html -->
-        <dd :class="footnoteClass(fn)" v-html="renderContent(fn.text, { moduleId: props.moduleId })" />
+        <dd :class="footnoteClass(fn)" v-html="renderContent(fn.text)" />
       </div>
     </dl>
   </div>

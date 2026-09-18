@@ -29,7 +29,8 @@ const children = computed(() => props.childrenMap.get(props.rule.id) ?? [])
         <!-- eslint-disable-next-line vue/no-v-html -->
         <span
           class="text-foreground/90 text-sm group-hover:text-foreground transition-colors"
-          v-html="renderContent(child.title, { moduleId: child.module_id })"
+          :data-rule-context="child.module_id"
+          v-html="renderContent(child.title)"
         />
       </button>
     </div>

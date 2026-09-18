@@ -36,7 +36,7 @@ export interface MatrixContent {
   footnotes?: Record<string, MatrixFootnote>
 }
 
-const props = defineProps<{ content: MatrixContent; moduleId: string }>()
+const props = defineProps<{ content: MatrixContent }>()
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -176,7 +176,7 @@ function maxAnnotationRows(columns: MatrixColumn[]): number {
       <div v-for="(fn, key) in props.content.footnotes" :key="key" class="flex gap-1.5 text-xs">
         <dt class="font-semibold text-primary shrink-0">[{{ key }}]</dt>
         <!-- eslint-disable-next-line vue/no-v-html -->
-        <dd :class="footnoteClass(fn)" v-html="renderContent(fn.text, { moduleId: props.moduleId })" />
+        <dd :class="footnoteClass(fn)" v-html="renderContent(fn.text)" />
       </div>
     </dl>
   </div>

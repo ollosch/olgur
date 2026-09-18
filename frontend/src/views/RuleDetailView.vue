@@ -111,7 +111,7 @@ const breadcrumbSegments = computed((): BreadcrumbSegment[] => {
     const isCurrent = i === parts.length - 1
     const resolved = isCurrent
       ? rule
-      : (contentStore.resolveRuleReference(label, { contextModuleId: rule.module_id }) ?? null)
+      : (contentStore.resolveRuleReference(label, { moduleId: rule.module_id }) ?? null)
     segments.push({ label, rule: resolved, isCurrent })
   }
 

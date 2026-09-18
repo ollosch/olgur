@@ -41,31 +41,27 @@ const content = computed((): TableContent | null => {
         {{ gameDatum.type }}
       </p>
 
-      <div v-if="content">
+      <div v-if="content" :data-rule-context="gameDatum.module_id">
         <MatrixTable
           v-if="gameDatum.type === 'table' && (content as MatrixContent).cells !== undefined"
           :content="content as MatrixContent"
-          :module-id="gameDatum.module_id"
         />
         <AttributeTable
           v-else-if="
             gameDatum.type === 'table' && (content as AttributeTableContent).rows !== undefined
           "
           :content="content as AttributeTableContent"
-          :module-id="gameDatum.module_id"
         />
         <ModifierList
           v-else-if="
             gameDatum.type === 'table' && (content as ModifierListContent).entries !== undefined
           "
           :content="content as ModifierListContent"
-          :module-id="gameDatum.module_id"
         />
         <SopViewer
           v-else-if="gameDatum.type === 'sop'"
           :sop-id="gameDatum.id"
           :content="content as SopContent"
-          :module-id="gameDatum.module_id"
         />
         <div v-else class="text-sm text-muted-foreground italic">Unknown table kind.</div>
       </div>

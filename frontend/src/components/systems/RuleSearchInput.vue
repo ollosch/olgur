@@ -69,7 +69,8 @@ function select(rule: Rule): void {
         <!-- eslint-disable-next-line vue/no-v-html -->
         <span
           class="text-foreground/80 min-w-0 truncate"
-          v-html="renderContent(result.title, { moduleId: result.module_id })"
+          :data-rule-context="result.module_id"
+          v-html="renderContent(result.title)"
         />
       </button>
     </div>

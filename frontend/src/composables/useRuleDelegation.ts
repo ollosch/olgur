@@ -16,9 +16,10 @@ import type { Rule, IndexEntry } from '@/types/domain'
  *
  * Zero per-link Vue listeners. No container-boundary issues.
  *
- * Rule references resolve in a module context supplied by the link itself:
- * either an explicit `data-rule-module` slug (`{{L:core:3.4}}`) or the current
- * module carried as `data-rule-context` for bare `{{L:1.2}}` links.
+ * Rule references resolve in a module context supplied by the rendered
+ * container: either an explicit `data-rule-module` slug (`{{L:core:3.4}}`) or
+ * the owning module carried as a container-level `data-rule-context` attribute
+ * for bare `{{L:1.2}}` links.
  */
 export function useRuleDelegation(
   onSelect: (rule: Rule) => void,
@@ -34,7 +35,7 @@ export function useRuleDelegation(
   function linkModifiers(el: HTMLElement): RuleLinkModifiers {
     return {
       moduleSlug: el.dataset['ruleModule'] ?? undefined,
-      contextModuleId: el.dataset['ruleContext'] ?? undefined,
+      moduleId: el.closest<HTMLElement>('[data-rule-context]')?.dataset['ruleContext'] ?? undefined,
     }
   }
 
@@ -165,7 +166,10 @@ export function useRuleDelegation(
     const rangeAnchor = e.target.closest<HTMLElement>('[data-rule-range]')
     if (rangeAnchor && !rangeAnchor.closest('[data-popup-overlay]')) {
       e.preventDefault()
-      interactionStore.navigateToRange(rangeAnchor.dataset['ruleRange'] ?? '', linkModifiers(rangeAnchor))
+      interactionStore.navigateToRange(
+        rangeAnchor.dataset['ruleRange'] ?? '',
+        linkModifiers(rangeAnchor),
+      )
       return
     }
 

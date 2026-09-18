@@ -335,7 +335,10 @@ function openDrawer(mode: DrawerMode): void {
                         class="text-foreground/90 text-sm group-hover:text-foreground transition-colors"
                       >
                         <!-- eslint-disable-next-line vue/no-v-html -->
-                        <span v-html="renderContent(rule.title, { moduleId: rule.module_id })" />
+                        <span
+                          :data-rule-context="rule.module_id"
+                          v-html="renderContent(rule.title)"
+                        />
                       </span>
                     </button>
                   </div>

@@ -325,11 +325,10 @@ describe('useContentStore', () => {
       const systemStore = useSystemStore()
       const contentStore = useContentStore()
 
-      seedModules(systemStore, true, [
-        makeModule('core', true),
-        makeModule('exp', true),
-      ])
-      contentStore.rulesByModule['core'] = [makeRule({ id: 'r1', module_id: 'core', number: '1.2' })]
+      seedModules(systemStore, true, [makeModule('core', true), makeModule('exp', true)])
+      contentStore.rulesByModule['core'] = [
+        makeRule({ id: 'r1', module_id: 'core', number: '1.2' }),
+      ]
       contentStore.rulesByModule['exp'] = [makeRule({ id: 'r2', module_id: 'exp', number: '2.1' })]
 
       expect(contentStore.resolveRuleReference('1.2')?.id).toBe('r1')
@@ -338,19 +337,16 @@ describe('useContentStore', () => {
       expect(contentStore.resolveRuleReference('1.2', { moduleSlug: 'exp' })).toBeNull()
     })
 
-    it('resolves bare numbers in the current module when global rule numbers are disabled', () => {
+    it('resolves bare numbers in the owning module when global rule numbers are disabled', () => {
       const systemStore = useSystemStore()
       const contentStore = useContentStore()
 
-      seedModules(systemStore, false, [
-        makeModule('a', true),
-        makeModule('b', true),
-      ])
+      seedModules(systemStore, false, [makeModule('a', true), makeModule('b', true)])
       contentStore.rulesByModule['a'] = [makeRule({ id: 'rA', module_id: 'a', number: '1.2' })]
       contentStore.rulesByModule['b'] = [makeRule({ id: 'rB', module_id: 'b', number: '1.2' })]
 
-      expect(contentStore.resolveRuleReference('1.2', { contextModuleId: 'a' })?.id).toBe('rA')
-      expect(contentStore.resolveRuleReference('1.2', { contextModuleId: 'b' })?.id).toBe('rB')
+      expect(contentStore.resolveRuleReference('1.2', { moduleId: 'a' })?.id).toBe('rA')
+      expect(contentStore.resolveRuleReference('1.2', { moduleId: 'b' })?.id).toBe('rB')
       expect(contentStore.resolveRuleReference('1.2', { moduleSlug: 'b' })?.id).toBe('rB')
       expect(contentStore.resolveRuleReference('1.2')).toBeNull()
     })
@@ -360,7 +356,9 @@ describe('useContentStore', () => {
       const contentStore = useContentStore()
 
       seedModules(systemStore, true, [makeModule('core', true)])
-      contentStore.rulesByModule['core'] = [makeRule({ id: 'r1', module_id: 'core', number: '1.2' })]
+      contentStore.rulesByModule['core'] = [
+        makeRule({ id: 'r1', module_id: 'core', number: '1.2' }),
+      ]
 
       expect(contentStore.resolveRuleReference('1.2', { moduleSlug: 'missing' })).toBeNull()
     })

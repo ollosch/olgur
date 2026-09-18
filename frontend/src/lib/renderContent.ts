@@ -3,20 +3,20 @@
  * Uses data-rule-number on links so the parent container's event delegation handles
  * hover popups and click navigation without any per-link Vue listeners.
  *
- * Rule links resolve either in the current module context (bare `{{L:1.2}}`) or in
- * an explicitly named module (`{{L:core:3.4}}`). The module context is carried on
- * each link as a data attribute so the document-level delegation can resolve it.
+ * Rule links resolve either in the owning module (bare `{{L:1.2}}`) or in an
+ * explicitly named module (`{{L:core:3.4}}`). The owning module context is carried
+ * on the rendered container as a `data-rule-context` attribute, so the document-level
+ * delegation resolves bare links against the content's own module.
  */
 
 export interface RenderContentOptions {
   acronymPopups?: boolean
-  /** Current module id — provides context for bare `{{L:number}}` links. */
-  moduleId?: string
 }
 
 export interface RuleLinkModifiers {
   moduleSlug?: string
-  contextModuleId?: string
+  /** Owning module id — provides context for bare `{{L:number}}` links. */
+  moduleId?: string
 }
 
 const apiBase: string =
@@ -25,10 +25,7 @@ const apiBase: string =
 const RULE_LINK_CLASS =
   'underline decoration-dotted cursor-pointer text-primary font-medium hover:text-primary/80 transition-colors'
 
-export function renderContent(
-  content: string,
-  options?: RenderContentOptions,
-): string {
+export function renderContent(content: string, options?: RenderContentOptions): string {
   return content
     .replace(/<ex>([\s\S]*?)<\/ex>/g, (_match, inner: string) => {
       return `<span class="example-block">EX: ${inner.trim()}</span>`
@@ -45,7 +42,7 @@ export function renderContent(
         return `<span data-acronym-term="${escapeHtml(key)}" class="underline decoration-dotted cursor-help text-primary/80">${escapeHtml(key)}</span>`
       }
       if (prefix === 'L') {
-        return renderRuleLink(key, options?.moduleId)
+        return renderRuleLink(key)
       }
       return escapeHtml(_match)
     })
@@ -58,7 +55,7 @@ export function renderContent(
  * (`1.2#Label`), a module-qualified number (`core:3.4`), a range
  * (`1.2-1.4`), or a module-qualified range (`core:1.2-1.4`).
  */
-function renderRuleLink(key: string, moduleId?: string): string {
+function renderRuleLink(key: string): string {
   const hashIdx = key.indexOf('#')
   const ref = hashIdx === -1 ? key : key.slice(0, hashIdx)
   const label = hashIdx === -1 ? null : key.slice(hashIdx + 1)
@@ -71,7 +68,7 @@ function renderRuleLink(key: string, moduleId?: string): string {
     return ruleLinkElement(numOrRange, display, { moduleSlug: slug })
   }
 
-  return ruleLinkElement(ref, display, moduleId ? { contextModuleId: moduleId } : {})
+  return ruleLinkElement(ref, display, {})
 }
 
 function ruleLinkElement(
@@ -79,12 +76,9 @@ function ruleLinkElement(
   display: string,
   modifiers: RuleLinkModifiers,
 ): string {
-  let modAttr = ''
-  if (modifiers.moduleSlug) {
-    modAttr = ` data-rule-module="${escapeHtml(modifiers.moduleSlug)}"`
-  } else if (modifiers.contextModuleId) {
-    modAttr = ` data-rule-context="${escapeHtml(modifiers.contextModuleId)}"`
-  }
+  const modAttr = modifiers.moduleSlug
+    ? ` data-rule-module="${escapeHtml(modifiers.moduleSlug)}"`
+    : ''
 
   if (numOrRange.includes('-')) {
     return `<a data-rule-range="${escapeHtml(numOrRange)}"${modAttr} class="${RULE_LINK_CLASS}">${escapeHtml(display)}</a>`

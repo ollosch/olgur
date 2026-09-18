@@ -67,7 +67,7 @@ const childRules = computed((): Rule[] => props.childrenMap.get(props.rule.id) ?
         >{{ rule.number }}</span
       >
       <!-- eslint-disable-next-line vue/no-v-html -->
-      <span v-html="renderContent(rule.title, { moduleId: rule.module_id })" />
+      <span :data-rule-context="rule.module_id" v-html="renderContent(rule.title)" />
     </component>
     <div
       class="flex items-center gap-1 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
@@ -112,10 +112,10 @@ const childRules = computed((): Rule[] => props.childrenMap.get(props.rule.id) ?
   <!-- eslint-disable-next-line vue/no-v-html -->
   <p
     class="text-foreground/80 text-sm leading-relaxed mb-4 whitespace-pre-wrap"
+    :data-rule-context="rule.module_id"
     v-html="
       renderContent(rule.content, {
         acronymPopups: appSettings.acronymPopups,
-        moduleId: rule.module_id,
       })
     "
   />

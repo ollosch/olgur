@@ -106,7 +106,8 @@ function onKeyDown(e: KeyboardEvent): void {
         <!-- eslint-disable-next-line vue/no-v-html -->
         <span
           class="truncate"
-          v-html="renderContent(rule.title, { moduleId: rule.module_id })"
+          :data-rule-context="rule.module_id"
+          v-html="renderContent(rule.title)"
         />
       </button>
     </div>

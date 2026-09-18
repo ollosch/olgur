@@ -121,11 +121,11 @@ export const useContentStore = defineStore('content', () => {
    * An explicit module-slug link (`{{L:core:3.4}}`) resolves in that module in
    * every mode. A bare link (`{{L:1.2}}`) resolves system-wide when rule
    * numbers are system-wide unique (`global_rule_numbers`), otherwise it
-   * resolves in the current module context supplied by the rendering surface.
+   * resolves in the module that owns the content being rendered.
    */
   function resolveRuleReference(
     number: string,
-    opts?: { moduleSlug?: string; contextModuleId?: string },
+    opts?: { moduleSlug?: string; moduleId?: string },
   ): Rule | null {
     if (opts?.moduleSlug) {
       const mod = moduleBySlug.value.get(opts.moduleSlug)
@@ -137,7 +137,7 @@ export const useContentStore = defineStore('content', () => {
       return rulesByNumber.value.get(number) ?? null
     }
 
-    const moduleId = opts?.contextModuleId
+    const moduleId = opts?.moduleId
     if (!moduleId) return null
     return rulesByModuleNumber.value.get(moduleId)?.get(number) ?? null
   }
@@ -456,9 +456,7 @@ export const useContentStore = defineStore('content', () => {
    * Returns the modules that were fetched so callers can react (e.g. expand panel).
    */
   async function fetchMissingModules(systemId: string, modules: Module[]): Promise<Module[]> {
-    const toLoad = modules.filter(
-      (m) => !isUnavailable(m.id) && !rulesByModule.value[m.id],
-    )
+    const toLoad = modules.filter((m) => !isUnavailable(m.id) && !rulesByModule.value[m.id])
     if (toLoad.length === 0) return []
     await Promise.all([
       ...toLoad.map((m) => fetchRules(systemId, m.id)),

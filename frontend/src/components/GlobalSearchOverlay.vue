@@ -179,7 +179,7 @@ function selectRule(rule: Rule): void {
 
 function selectRuleByNumber(
   number: string,
-  opts?: { moduleSlug?: string; contextModuleId?: string },
+  opts?: { moduleSlug?: string; moduleId?: string },
 ): void {
   const rule = contentStore.resolveRuleReference(number, opts)
   if (rule) selectRule(rule)
@@ -190,7 +190,8 @@ function handleEntryClick(e: MouseEvent): void {
   if (anchor?.dataset['ruleNumber']) {
     selectRuleByNumber(anchor.dataset['ruleNumber'], {
       moduleSlug: anchor.dataset['ruleModule'] ?? undefined,
-      contextModuleId: anchor.dataset['ruleContext'] ?? undefined,
+      moduleId:
+        anchor.closest<HTMLElement>('[data-rule-context]')?.dataset['ruleContext'] ?? undefined,
     })
   }
 }
@@ -307,7 +308,8 @@ function onKeyDown(e: KeyboardEvent): void {
               <!-- eslint-disable-next-line vue/no-v-html -->
               <span
                 class="text-foreground text-xs truncate"
-                v-html="renderContent(rule.title, { moduleId: rule.module_id })"
+                :data-rule-context="rule.module_id"
+                v-html="renderContent(rule.title)"
               />
             </div>
 

@@ -23,7 +23,7 @@ const style = computed(() => {
 function linkModifiers(el: HTMLElement) {
   return {
     moduleSlug: el.dataset['ruleModule'] ?? undefined,
-    contextModuleId: el.dataset['ruleContext'] ?? undefined,
+    moduleId: el.closest<HTMLElement>('[data-rule-context]')?.dataset['ruleContext'] ?? undefined,
   }
 }
 
@@ -60,7 +60,7 @@ function onClick(e: MouseEvent) {
               class="text-[10px] text-primary underline decoration-dotted hover:text-primary/80 transition-colors shrink-0"
               @click.stop="
                 interaction.navigateToNumber(state.content.rule.number, {
-                  contextModuleId: state.content.rule.module_id,
+                  moduleId: state.content.rule.module_id,
                 })
               "
             >
@@ -70,16 +70,17 @@ function onClick(e: MouseEvent) {
           <!-- eslint-disable-next-line vue/no-v-html -->
           <p
             class="font-semibold text-foreground mb-1"
-            v-html="renderContent(state.content.rule.title, { moduleId: state.content.rule.module_id })"
+            :data-rule-context="state.content.rule.module_id"
+            v-html="renderContent(state.content.rule.title)"
           />
           <!-- eslint-disable-next-line vue/no-v-html -->
           <p
             v-if="state.content.rule.content"
             class="text-foreground/70 leading-relaxed whitespace-pre-wrap"
+            :data-rule-context="state.content.rule.module_id"
             v-html="
               renderContent(state.content.rule.content, {
                 acronymPopups: appSettings.acronymPopups,
-                moduleId: state.content.rule.module_id,
               })
             "
           />
@@ -98,7 +99,7 @@ function onClick(e: MouseEvent) {
               @click.stop="
                 interaction.navigateToRange(
                   `${state.content.rules[0]?.number}-${state.content.rules[state.content.rules.length - 1]?.number}`,
-                  { contextModuleId: state.content.rules[0]?.module_id },
+                  { moduleId: state.content.rules[0]?.module_id },
                 )
               "
             >
@@ -113,16 +114,16 @@ function onClick(e: MouseEvent) {
             <p class="font-semibold text-foreground mb-1">
               <span class="font-mono text-primary mr-1.5">{{ rule.number }}</span>
               <!-- eslint-disable-next-line vue/no-v-html -->
-              <span v-html="renderContent(rule.title, { moduleId: rule.module_id })" />
+              <span :data-rule-context="rule.module_id" v-html="renderContent(rule.title)" />
             </p>
             <!-- eslint-disable-next-line vue/no-v-html -->
             <p
               v-if="rule.content"
               class="text-foreground/70 leading-relaxed whitespace-pre-wrap"
+              :data-rule-context="rule.module_id"
               v-html="
                 renderContent(rule.content, {
                   acronymPopups: appSettings.acronymPopups,
-                  moduleId: rule.module_id,
                 })
               "
             />
@@ -138,20 +139,19 @@ function onClick(e: MouseEvent) {
           <p
             v-if="state.content.entry.relations?.rule_refs?.length"
             class="text-foreground/60 mb-1"
+            :data-rule-context="state.content.entry.module_id"
           >
             <span class="font-medium text-foreground/80">See rules: </span>
             <template v-for="(ref, i) in state.content.entry.relations.rule_refs" :key="ref">
               <a
                 v-if="ref.includes('-')"
                 :data-rule-range="ref"
-                :data-rule-context="state.content.entry.module_id"
                 class="underline decoration-dotted cursor-pointer text-primary font-medium hover:text-primary/80 transition-colors"
                 >{{ ref }}</a
               >
               <a
                 v-else
                 :data-rule-number="ref"
-                :data-rule-context="state.content.entry.module_id"
                 class="underline decoration-dotted cursor-pointer text-primary font-medium hover:text-primary/80 transition-colors"
                 >{{ ref }}</a
               ><span v-if="i < (state.content.entry.relations.rule_refs?.length ?? 0) - 1">, </span>

@@ -36,9 +36,7 @@ const contentStore = useContentStore()
 
 const tables = computed(() => contentStore.allGameData.filter((d) => d.type === 'table'))
 
-const sops = computed((): GameDatum[] =>
-  contentStore.allGameData.filter((d) => d.type === 'sop'),
-)
+const sops = computed((): GameDatum[] => contentStore.allGameData.filter((d) => d.type === 'sop'))
 
 // Backed by a store (rather than local refs) so the active tab and each
 // SOP's expand/collapse + search state survive the drawer's Sheet being
@@ -160,21 +158,20 @@ function sopContent(item: GameDatum): SopContent | null {
         class="flex-1 overflow-auto p-6 mt-0"
       >
         <template v-if="tableContent(table)">
-          <MatrixTable
-            v-if="tableContent(table)!.kind === 'matrix'"
-            :content="tableContent(table) as MatrixContent"
-            :module-id="table.module_id"
-          />
-          <AttributeTable
-            v-else-if="tableContent(table)!.kind === 'attribute_table'"
-            :content="tableContent(table) as AttributeTableContent"
-            :module-id="table.module_id"
-          />
-          <ModifierList
-            v-else-if="tableContent(table)!.kind === 'modifier_list'"
-            :content="tableContent(table) as ModifierListContent"
-            :module-id="table.module_id"
-          />
+          <div :data-rule-context="table.module_id">
+            <MatrixTable
+              v-if="tableContent(table)!.kind === 'matrix'"
+              :content="tableContent(table) as MatrixContent"
+            />
+            <AttributeTable
+              v-else-if="tableContent(table)!.kind === 'attribute_table'"
+              :content="tableContent(table) as AttributeTableContent"
+            />
+            <ModifierList
+              v-else-if="tableContent(table)!.kind === 'modifier_list'"
+              :content="tableContent(table) as ModifierListContent"
+            />
+          </div>
         </template>
       </TabsContent>
     </Tabs>
@@ -216,12 +213,9 @@ function sopContent(item: GameDatum): SopContent | null {
         :value="sop.id"
         class="flex-1 overflow-auto p-6 mt-0"
       >
-        <SopViewer
-          v-if="sopContent(sop)"
-          :sop-id="sop.id"
-          :content="sopContent(sop) as SopContent"
-          :module-id="sop.module_id"
-        />
+        <div v-if="sopContent(sop)" :data-rule-context="sop.module_id">
+          <SopViewer :sop-id="sop.id" :content="sopContent(sop) as SopContent" />
+        </div>
       </TabsContent>
     </Tabs>
   </div>
