@@ -44,7 +44,7 @@ final class SystemFactory extends Factory
     /**
      * System-wide rule numbers: rule numbers must be unique across all modules.
      */
-    public function corePlusMany(): static
+    public function withGlobalRuleNumbers(): static
     {
         return $this->state(fn (array $attributes): array => [
             'config' => ['global_rule_numbers' => true],
@@ -54,17 +54,7 @@ final class SystemFactory extends Factory
     /**
      * Module-local rule numbers: rule numbers are unique per module.
      */
-    public function corePlusOne(): static
-    {
-        return $this->state(fn (array $attributes): array => [
-            'config' => ['global_rule_numbers' => false],
-        ]);
-    }
-
-    /**
-     * Module-local rule numbers: rule numbers are unique per module.
-     */
-    public function groupingOnly(): static
+    public function withoutGlobalRuleNumbers(): static
     {
         return $this->state(fn (array $attributes): array => [
             'config' => ['global_rule_numbers' => false],

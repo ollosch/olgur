@@ -62,6 +62,13 @@ final class MembershipController
             'admin' => $validated['admin'] ?? false,
         ]);
 
+        // Every member is always subscribed to the system's core module.
+        $coreModule = $system->modules()->where('is_core', true)->first();
+
+        if ($coreModule !== null) {
+            $coreModule->subscriptions()->firstOrCreate(['user_id' => $member->id]);
+        }
+
         return new MembershipResource($membership);
     }
 

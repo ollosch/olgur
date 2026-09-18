@@ -83,7 +83,7 @@ test('normalize rejects active modules the user is not subscribed to', function 
 
 test('normalize allows multiple active expansions in a non-global system', function (): void {
     $user = User::factory()->create();
-    $system = System::factory()->corePlusOne()->create();
+    $system = System::factory()->withoutGlobalRuleNumbers()->create();
     $moduleA = Module::factory()->for($system)->create();
     $moduleB = Module::factory()->for($system)->create();
     Subscription::factory()->for($user)->for($moduleA)->create();
@@ -99,7 +99,7 @@ test('normalize allows multiple active expansions in a non-global system', funct
 
 test('normalize allows multiple active expansions in a global system', function (): void {
     $user = User::factory()->create();
-    $system = System::factory()->corePlusMany()->create();
+    $system = System::factory()->withGlobalRuleNumbers()->create();
     $moduleA = Module::factory()->for($system)->create();
     $moduleB = Module::factory()->for($system)->create();
     Subscription::factory()->for($user)->for($moduleA)->create();
@@ -115,7 +115,7 @@ test('normalize allows multiple active expansions in a global system', function 
 
 test('normalize allows multiple active expansions in a system without global rule numbers', function (): void {
     $user = User::factory()->create();
-    $system = System::factory()->groupingOnly()->create();
+    $system = System::factory()->withoutGlobalRuleNumbers()->create();
     $moduleA = Module::factory()->for($system)->create();
     $moduleB = Module::factory()->for($system)->create();
     Subscription::factory()->for($user)->for($moduleA)->create();
@@ -176,7 +176,7 @@ test('normalize keeps a selected SOP module that is active and provides an SOP',
 
 test('normalize keeps a selected SOP core module that provides an SOP', function (): void {
     $user = User::factory()->create();
-    $system = System::factory()->corePlusOne()->create();
+    $system = System::factory()->withoutGlobalRuleNumbers()->create();
     $core = Module::factory()->for($system)->core()->create();
     GameDatum::factory()->for($core)->create(['type' => GameDataType::Sop]);
     Subscription::factory()->for($user)->for($core)->create();

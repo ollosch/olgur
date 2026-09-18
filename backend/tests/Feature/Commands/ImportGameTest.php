@@ -249,6 +249,7 @@ test('system config is not overwritten on second import', function () use ($simp
         [
             'name' => 'Config Test',
             'slug' => 'config-test',
+            'global_rule_numbers' => true,
             'modules' => [
                 ['type' => 'core', 'name' => 'Core', 'slug' => 'core', 'path' => 'rules.json'],
             ],
@@ -557,12 +558,12 @@ test('no core module in manifest skips index import with warning', function () u
     removeGameDir($dir);
 });
 
-test('structure key in manifest is used for system config', function () use ($simpleGameRules): void {
+test('global_rule_numbers key in manifest is used for system config', function () use ($simpleGameRules): void {
     $dir = makeGameDir(
         [
             'name' => 'Structure Override Game',
             'slug' => 'structure-override',
-            'structure' => 'grouping_only',
+            'global_rule_numbers' => false,
             'modules' => [
                 ['type' => 'core', 'name' => 'Core', 'slug' => 'core', 'path' => 'rules.json'],
             ],

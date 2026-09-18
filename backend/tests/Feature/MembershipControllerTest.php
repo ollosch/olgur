@@ -126,6 +126,22 @@ test('system admin can add another user as admin', function (): void {
     $response->assertJsonPath('data.admin', true);
 });
 
+test('store auto-subscribes the new member to the core module', function (): void {
+    $system = System::factory()->create();
+    $core = Module::factory()->for($system)->core()->create();
+    $admin = User::factory()->create();
+    Membership::factory()->for($admin)->for($system)->admin()->create();
+    $user = User::factory()->create();
+    actingAs($admin);
+
+    postJson('/api/systems/'.$system->id.'/memberships', [
+        'user_id' => $user->id,
+        'config' => [],
+    ])->assertCreated();
+
+    assertDatabaseHas('subscriptions', ['user_id' => $user->id, 'module_id' => $core->id]);
+});
+
 test('regular user cannot add another user to the system', function (): void {
     $system = System::factory()->create();
     $user = User::factory()->create();

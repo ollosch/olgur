@@ -20,9 +20,9 @@ final class NormalizeMembershipConfig
      * Validate and normalize a membership config before it is persisted.
      *
      * Active module IDs must be distinct, non-core modules in the membership's
-     * system to which the user is subscribed, and satisfy the system's structure
-     * constraints. The selected SOP module is normalized rather than rejected: it
-     * is cleared whenever it no longer names an active SOP-providing module.
+     * system to which the user is subscribed. The selected SOP module is normalized
+     * rather than rejected: it is cleared whenever it no longer names an active
+     * SOP-providing module.
      *
      * @throws ValidationException when the active module IDs are invalid
      */

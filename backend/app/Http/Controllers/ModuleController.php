@@ -48,8 +48,8 @@ final class ModuleController
         );
 
         // Auto-subscribe the creator as an editor of the new module.
-        // We bypass SubscribeToModule to avoid structure-based prerequisite checks —
-        // the person creating a module is always entitled to edit it.
+        // We bypass SubscribeToModule because the person creating a module is
+        // always entitled to edit it.
         $module->subscriptions()->updateOrCreate(
             ['user_id' => $creator->id],
             ['editor' => true],

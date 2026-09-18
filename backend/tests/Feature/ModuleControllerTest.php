@@ -413,7 +413,7 @@ test('store allows a second core module in a different system', function (): voi
 
 test('store allows a core module in a system without global rule numbers', function (): void {
     $user = User::factory()->superAdmin()->create();
-    $system = System::factory()->groupingOnly()->create();
+    $system = System::factory()->withoutGlobalRuleNumbers()->create();
     actingAs($user);
 
     postJson('/api/systems/'.$system->id.'/modules', [

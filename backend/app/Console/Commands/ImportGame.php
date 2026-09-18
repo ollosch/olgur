@@ -60,11 +60,7 @@ final class ImportGame extends Command
         /** @var array<string, mixed> $manifest */
         $manifest = $this->readJson($indexJsonPath) ?? [];
 
-        $structureValue = is_string($manifest['structure'] ?? null) && $manifest['structure'] !== ''
-            ? $manifest['structure']
-            : 'core_plus_many';
-
-        $globalRuleNumbers = $structureValue === 'core_plus_many';
+        $globalRuleNumbers = (bool) ($manifest['global_rule_numbers'] ?? false);
 
         $fresh = (bool) $this->option('fresh');
 
