@@ -44,7 +44,7 @@ function makeSystem(id = 'sys1'): System {
     name: `System ${id}`,
     description: null,
     config: {
-      system_structure: 'core_plus_many',
+      global_rule_numbers: true,
       sort_rules_by: 'number',
       toc_depth: 3,
       cover_image: null,

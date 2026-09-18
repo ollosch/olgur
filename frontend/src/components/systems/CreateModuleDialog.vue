@@ -20,7 +20,6 @@ import { useModalShortcutGuard } from '@/composables/useModalShortcutGuard'
 interface Props {
   systemId: string
   open: boolean
-  systemStructure?: string
   hasCoreModule?: boolean
 }
 
@@ -35,9 +34,7 @@ const emit = defineEmits<{
   'update:open': [value: boolean]
 }>()
 
-const showCoreCheckbox = computed(
-  () => props.systemStructure !== 'grouping_only' && !props.hasCoreModule,
-)
+const showCoreCheckbox = computed(() => !props.hasCoreModule)
 
 const systemStore = useSystemStore()
 const { modulesBySystem, loading } = storeToRefs(systemStore)

@@ -117,16 +117,16 @@ export const useContentStore = defineStore('content', () => {
     return m
   })
 
-  const systemStructure = computed(
-    (): string => systemStore.currentSystem?.config?.system_structure ?? 'grouping_only',
+  const globalRuleNumbers = computed(
+    (): boolean => systemStore.currentSystem?.config?.global_rule_numbers ?? false,
   )
 
   /**
    * Resolve a rule reference to a rule.
    *
    * An explicit module-slug link (`{{L:core:3.4}}`) resolves in that module in
-   * every structure mode. A bare link (`{{L:1.2}}`) resolves system-wide when
-   * rule numbers are system-wide unique (`core_plus_many`), otherwise it
+   * every mode. A bare link (`{{L:1.2}}`) resolves system-wide when rule
+   * numbers are system-wide unique (`global_rule_numbers`), otherwise it
    * resolves in the current module context supplied by the rendering surface.
    */
   function resolveRuleReference(
@@ -139,7 +139,7 @@ export const useContentStore = defineStore('content', () => {
       return rulesByModuleNumber.value.get(mod.id)?.get(number) ?? null
     }
 
-    if (systemStructure.value === 'core_plus_many') {
+    if (globalRuleNumbers.value) {
       return rulesByNumber.value.get(number) ?? null
     }
 
@@ -151,11 +151,11 @@ export const useContentStore = defineStore('content', () => {
   /**
    * Whether the given rule reference resolves for the given entry's module.
    * Ranges are always considered resolvable; a bare number must match a rule in
-   * the entry's module (or system-wide for `core_plus_many`).
+   * the entry's module (or system-wide when `global_rule_numbers`).
    */
   function hasRuleReference(ref: string, moduleId: string): boolean {
     if (ref.includes('-')) return true
-    if (systemStructure.value === 'core_plus_many') return rulesByNumber.value.has(ref)
+    if (globalRuleNumbers.value) return rulesByNumber.value.has(ref)
     return rulesByModuleNumber.value.get(moduleId)?.has(ref) ?? false
   }
 

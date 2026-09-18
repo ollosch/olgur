@@ -44,14 +44,6 @@ function isUnavailable(mod: Module): boolean {
 }
 
 const hasCoreModule = computed(() => modules.value.some((m) => m.is_core))
-const systemStructure = computed(() => props.system.config?.system_structure ?? '')
-
-function structureLabel(s: string | undefined) {
-  if (s === 'core_plus_many') return 'Core + Many'
-  if (s === 'core_plus_one') return 'Core + One'
-  if (s === 'grouping_only') return 'Grouping Only'
-  return s ?? ''
-}
 
 async function toggle() {
   expanded.value = !expanded.value
@@ -101,9 +93,6 @@ function openSystem() {
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2 flex-wrap">
           <span class="text-foreground font-medium">{{ system.name }}</span>
-          <Badge v-if="system.config?.system_structure" variant="outline" class="text-xs">
-            {{ structureLabel(system.config.system_structure) }}
-          </Badge>
         </div>
         <div class="text-xs text-muted-foreground mt-0.5">{{ system.slug }}</div>
       </div>
@@ -224,7 +213,6 @@ function openSystem() {
   <CreateModuleDialog
     v-if="showCreateModule"
     :system-id="system.id"
-    :system-structure="systemStructure"
     :has-core-module="hasCoreModule"
     :open="showCreateModule"
     @update:open="showCreateModule = $event"

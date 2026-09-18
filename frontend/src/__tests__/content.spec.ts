@@ -23,7 +23,7 @@ vi.mock('@/composables/useApi', () => ({
 
 import { useContentStore } from '@/stores/content'
 import { useSystemStore } from '@/stores/system'
-import type { Rule, IndexEntry, Module, System, SystemStructure } from '@/types/domain'
+import type { Rule, IndexEntry, Module, System } from '@/types/domain'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -34,7 +34,7 @@ function makeSystem(id: string): System {
     name: `System ${id}`,
     description: null,
     config: {
-      system_structure: 'core_plus_many',
+      global_rule_numbers: true,
       sort_rules_by: 'number',
       toc_depth: 3,
       cover_image: null,
@@ -313,20 +313,20 @@ describe('useContentStore', () => {
   describe('resolveRuleReference', () => {
     function seedModules(
       systemStore: ReturnType<typeof useSystemStore>,
-      structure: SystemStructure,
+      globalRuleNumbers: boolean,
       modules: Module[],
     ): void {
       const system = makeSystem('sys1')
-      system.config!.system_structure = structure
+      system.config!.global_rule_numbers = globalRuleNumbers
       systemStore.currentSystem = system
       systemStore.modulesBySystem['sys1'] = modules
     }
 
-    it('resolves bare numbers system-wide for core_plus_many', () => {
+    it('resolves bare numbers system-wide when global rule numbers are enabled', () => {
       const systemStore = useSystemStore()
       const contentStore = useContentStore()
 
-      seedModules(systemStore, 'core_plus_many', [
+      seedModules(systemStore, true, [
         makeModule('core', true),
         makeModule('exp', true),
       ])
@@ -339,11 +339,11 @@ describe('useContentStore', () => {
       expect(contentStore.resolveRuleReference('1.2', { moduleSlug: 'exp' })).toBeNull()
     })
 
-    it('resolves bare numbers in the current module for grouping_only', () => {
+    it('resolves bare numbers in the current module when global rule numbers are disabled', () => {
       const systemStore = useSystemStore()
       const contentStore = useContentStore()
 
-      seedModules(systemStore, 'grouping_only', [
+      seedModules(systemStore, false, [
         makeModule('a', true),
         makeModule('b', true),
       ])
@@ -360,7 +360,7 @@ describe('useContentStore', () => {
       const systemStore = useSystemStore()
       const contentStore = useContentStore()
 
-      seedModules(systemStore, 'core_plus_many', [makeModule('core', true)])
+      seedModules(systemStore, true, [makeModule('core', true)])
       contentStore.rulesByModule['core'] = [makeRule({ id: 'r1', module_id: 'core', number: '1.2' })]
 
       expect(contentStore.resolveRuleReference('1.2', { moduleSlug: 'missing' })).toBeNull()

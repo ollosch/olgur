@@ -80,20 +80,6 @@ export const useMembershipStore = defineStore('membership', () => {
 
   // ── Module activation ─────────────────────────────────────────────────────────
   async function activateModule(systemId: string, moduleId: string): Promise<void> {
-    const system = systemStore.systems.find((s) => s.id === systemId) ?? systemStore.currentSystem
-    const structure = system?.config?.system_structure
-    const currentMembership = membershipsBySystem.value[systemId]
-
-    if (
-      structure === 'core_plus_one' &&
-      currentMembership?.config?.active_module_ids
-    ) {
-      const activeIds = [...currentMembership.config.active_module_ids]
-      for (const id of activeIds) {
-        await del(`/systems/${systemId}/modules/${id}/activate`)
-      }
-    }
-
     await post(`/systems/${systemId}/modules/${moduleId}/activate`)
     await refreshMembership(systemId)
   }

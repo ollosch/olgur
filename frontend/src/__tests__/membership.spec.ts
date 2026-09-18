@@ -23,18 +23,18 @@ vi.mock('@/composables/useApi', () => ({
 
 import { useMembershipStore } from '@/stores/membership'
 import { useSystemStore } from '@/stores/system'
-import type { Membership, System, SystemStructure } from '@/types/domain'
+import type { Membership, System } from '@/types/domain'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function makeSystem(id: string, structure: SystemStructure): System {
+function makeSystem(id: string, globalRuleNumbers = true): System {
   return {
     id,
     slug: id,
     name: `System ${id}`,
     description: null,
     config: {
-      system_structure: structure,
+      global_rule_numbers: globalRuleNumbers,
       sort_rules_by: 'number',
       toc_depth: 3,
       cover_image: null,
@@ -79,54 +79,21 @@ describe('useMembershipStore', () => {
       const systemStore = useSystemStore()
       const membershipStore = useMembershipStore()
 
-      systemStore.systems = [makeSystem('sys1', 'core_plus_many')]
+      systemStore.systems = [makeSystem('sys1')]
 
       await membershipStore.activateModule('sys1', 'mod1')
 
       expect(mockPost).toHaveBeenCalledWith('/systems/sys1/modules/mod1/activate')
     })
 
-    it('for core_plus_one, DELetes all currently active modules before POSTing the new one', async () => {
-      mockDel.mockResolvedValue({ ok: true })
+    it('does NOT deactivate existing modules before activating', async () => {
       mockPost.mockResolvedValue({ ok: true })
       mockGet.mockResolvedValue({ ok: true, data: { data: [] } })
 
       const systemStore = useSystemStore()
       const membershipStore = useMembershipStore()
 
-      systemStore.systems = [makeSystem('sys1', 'core_plus_one')]
-      membershipStore.membershipsBySystem['sys1'] = makeMembership('sys1', ['old-mod'])
-
-      await membershipStore.activateModule('sys1', 'new-mod')
-
-      expect(mockDel).toHaveBeenCalledWith('/systems/sys1/modules/old-mod/activate')
-      expect(mockPost).toHaveBeenCalledWith('/systems/sys1/modules/new-mod/activate')
-    })
-
-    it('for core_plus_many, does NOT deactivate existing modules before activating', async () => {
-      mockPost.mockResolvedValue({ ok: true })
-      mockGet.mockResolvedValue({ ok: true, data: { data: [] } })
-
-      const systemStore = useSystemStore()
-      const membershipStore = useMembershipStore()
-
-      systemStore.systems = [makeSystem('sys1', 'core_plus_many')]
-      membershipStore.membershipsBySystem['sys1'] = makeMembership('sys1', ['existing-mod'])
-
-      await membershipStore.activateModule('sys1', 'new-mod')
-
-      expect(mockDel).not.toHaveBeenCalled()
-      expect(mockPost).toHaveBeenCalledWith('/systems/sys1/modules/new-mod/activate')
-    })
-
-    it('for grouping_only, does NOT deactivate existing modules before activating', async () => {
-      mockPost.mockResolvedValue({ ok: true })
-      mockGet.mockResolvedValue({ ok: true, data: { data: [] } })
-
-      const systemStore = useSystemStore()
-      const membershipStore = useMembershipStore()
-
-      systemStore.systems = [makeSystem('sys1', 'grouping_only')]
+      systemStore.systems = [makeSystem('sys1')]
       membershipStore.membershipsBySystem['sys1'] = makeMembership('sys1', ['existing-mod'])
 
       await membershipStore.activateModule('sys1', 'new-mod')
@@ -143,7 +110,7 @@ describe('useMembershipStore', () => {
       const systemStore = useSystemStore()
       const membershipStore = useMembershipStore()
 
-      systemStore.systems = [makeSystem('sys1', 'core_plus_many')]
+      systemStore.systems = [makeSystem('sys1')]
 
       await membershipStore.activateModule('sys1', 'new-mod')
 

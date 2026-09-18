@@ -25,10 +25,8 @@ export interface SubscriptionWithUser extends Subscription {
   user_email: string
 }
 
-export type SystemStructure = 'core_plus_many' | 'core_plus_one' | 'grouping_only'
-
 export interface SystemConfig {
-  system_structure: SystemStructure
+  global_rule_numbers: boolean
   sort_rules_by: 'number' | 'sort_order'
   toc_depth: number
   cover_image: string | null
@@ -230,7 +228,7 @@ export interface CreateSystemRequest {
   slug: string
   description: string
   config: {
-    system_structure: SystemStructure
+    global_rule_numbers: boolean
     toc_depth: number
     sort_rules_by: 'number' | 'sort_order'
   }

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { watch } from 'vue'
-import type { SystemStructure } from '@/types/domain'
 import { storeToRefs } from 'pinia'
 import { useForm } from 'vee-validate'
 import { useSystemStore } from '@/stores/system'
@@ -26,7 +25,7 @@ interface FormValues {
   name: string
   slug: string
   description: string
-  structure: SystemStructure
+  global_rule_numbers: boolean
   toc_depth: number
   sort_rules_by: 'number' | 'sort_order'
 }
@@ -47,7 +46,7 @@ const { defineField, handleSubmit, errors, setErrors, resetForm } = useForm<Form
 const [name] = defineField('name')
 const [slug] = defineField('slug')
 const [description] = defineField('description')
-const [structure] = defineField('structure')
+const [globalRuleNumbers] = defineField('global_rule_numbers')
 const [tocDepth] = defineField('toc_depth')
 const [sortRulesBy] = defineField('sort_rules_by')
 
@@ -64,7 +63,7 @@ watch(
           name: '',
           slug: '',
           description: '',
-          structure: 'core_plus_many',
+          global_rule_numbers: false,
           toc_depth: 1,
           sort_rules_by: 'sort_order',
         },
@@ -79,7 +78,7 @@ const onSubmit = handleSubmit(async (values) => {
     slug: values.slug,
     description: values.description,
     config: {
-      system_structure: values.structure,
+      global_rule_numbers: values.global_rule_numbers,
       toc_depth: values.toc_depth,
       sort_rules_by: values.sort_rules_by,
     },
@@ -134,18 +133,17 @@ function formError(key: string): string | undefined {
         </div>
 
         <div class="space-y-1.5">
-          <Label for="sys-structure">Structure</Label>
-          <select
-            id="sys-structure"
-            v-model="structure"
-            class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-          >
-            <option value="core_plus_many">Core + Many (ASL-style)</option>
-            <option value="core_plus_one">Core + One (BCS-style)</option>
-            <option value="grouping_only">Grouping Only (ZOC-style)</option>
-          </select>
-          <p v-if="formError('config.system_structure')" class="text-destructive text-xs">
-            {{ formError('config.system_structure') }}
+          <div class="flex items-center gap-2">
+            <input
+              id="sys-global-rule-numbers"
+              v-model="globalRuleNumbers"
+              type="checkbox"
+              class="rounded border-border bg-background text-primary focus:ring-ring"
+            />
+            <Label for="sys-global-rule-numbers">Global rule numbers</Label>
+          </div>
+          <p v-if="formError('config.global_rule_numbers')" class="text-destructive text-xs">
+            {{ formError('config.global_rule_numbers') }}
           </p>
         </div>
 
