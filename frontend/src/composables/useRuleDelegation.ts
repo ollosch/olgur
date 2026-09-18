@@ -102,23 +102,12 @@ export function useRuleDelegation(
         const rule = contentStore.resolveRuleReference(number, opts)
         if (rule) {
           const { y, above } = popupY(rect)
-          const isActive = contentStore.activeModules.some((m) => m.id === rule.module_id)
-          if (!isActive) {
-            state.value = {
-              visible: true,
-              content: { type: 'inactive_module' },
-              x: popupX(rect),
-              y,
-              above,
-            }
-          } else {
-            state.value = {
-              visible: true,
-              content: { type: 'rule', rule },
-              x: popupX(rect),
-              y,
-              above,
-            }
+          state.value = {
+            visible: true,
+            content: { type: 'rule', rule },
+            x: popupX(rect),
+            y,
+            above,
           }
         }
       }, 150)

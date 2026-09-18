@@ -8,7 +8,7 @@ import { useMembershipStore } from '@/stores/membership'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ChevronRight, ChevronDown, Circle, CircleDot } from '@lucide/vue'
+import { ChevronRight, ChevronDown } from '@lucide/vue'
 import CreateModuleDialog from '@/components/systems/CreateModuleDialog.vue'
 import DeleteConfirmDialog from '@/components/systems/DeleteConfirmDialog.vue'
 
@@ -26,7 +26,6 @@ const membershipStore = useMembershipStore()
 const { modulesBySystem, loading } = storeToRefs(systemStore)
 const { subscriptions } = storeToRefs(membershipStore)
 const { fetchModules, deleteSystem, deleteModule, createVersion } = systemStore
-const { activateModule, deactivateModule } = membershipStore
 
 const expanded = ref(false)
 const showCreateModule = ref(false)
@@ -36,8 +35,6 @@ const deletingModuleId = ref<string | null>(null)
 const modules = computed(() => modulesBySystem.value[props.system.id] ?? [])
 const canManage = computed(() => props.system.permissions?.['system.manage'] ?? false)
 const isMember = computed(() => !!props.membership)
-
-const activeModuleIds = computed(() => props.membership?.config?.active_module_ids ?? [])
 
 function isUnavailable(mod: Module): boolean {
   return !mod.permissions['content.view_live'] && !mod.permissions['content.view_released']
@@ -60,14 +57,6 @@ async function handleDeleteSystem() {
 async function handleDeleteModule(moduleId: string) {
   await deleteModule(props.system.id, moduleId)
   deletingModuleId.value = null
-}
-
-async function handleActivate(moduleId: string) {
-  await activateModule(props.system.id, moduleId)
-}
-
-async function handleDeactivate(moduleId: string) {
-  await deactivateModule(props.system.id, moduleId)
 }
 
 async function handleCreateVersion(moduleId: string) {
@@ -136,47 +125,6 @@ function openSystem() {
               class="text-xs text-amber-600 border-amber-400/50"
               >editor</Badge
             >
-            <template v-if="isMember">
-              <template v-if="mod.is_core">
-                <Badge variant="outline" class="text-xs text-primary border-primary/40">
-                  <CircleDot class="w-3 h-3 mr-1" />active
-                </Badge>
-              </template>
-              <template v-else>
-                <template v-if="subscriptions[mod.id]">
-                  <Badge
-                    v-if="activeModuleIds.includes(mod.id)"
-                    variant="outline"
-                    class="text-xs text-primary border-primary/40"
-                  >
-                    <CircleDot class="w-3 h-3 mr-1" />active
-                  </Badge>
-                  <Badge v-else variant="outline" class="text-xs text-muted-foreground">
-                    <Circle class="w-3 h-3 mr-1" />inactive
-                  </Badge>
-                  <Button
-                    v-if="activeModuleIds.includes(mod.id)"
-                    variant="ghost"
-                    size="sm"
-                    class="text-xs h-6"
-                    :disabled="loading"
-                    @click="handleDeactivate(mod.id)"
-                  >
-                    Deactivate
-                  </Button>
-                  <Button
-                    v-else
-                    variant="ghost"
-                    size="sm"
-                    class="text-xs h-6"
-                    :disabled="loading"
-                    @click="handleActivate(mod.id)"
-                  >
-                    Activate
-                  </Button>
-                </template>
-              </template>
-            </template>
             <Button
               v-if="canManage"
               variant="ghost"

@@ -4,7 +4,6 @@ import { useApi } from '@/composables/useApi'
 import { request } from '@/lib/http'
 import type { ApiResult } from '@/lib/http'
 import { useSystemStore } from '@/stores/system'
-import { useMembershipStore } from '@/stores/membership'
 import type {
   Rule,
   IndexEntry,
@@ -21,7 +20,6 @@ import type {
 export const useContentStore = defineStore('content', () => {
   const { get, put, loading } = useApi()
   const systemStore = useSystemStore()
-  const membershipStore = useMembershipStore()
 
   const rulesByModule = ref<Record<string, Rule[]>>({})
   const indexEntriesByModule = ref<Record<string, IndexEntry[]>>({})
@@ -32,12 +30,8 @@ export const useContentStore = defineStore('content', () => {
   // Derived state
   // ---------------------------------------------------------------------------
 
-  const activeIds = computed(
-    (): string[] => membershipStore.membership?.config?.active_module_ids ?? [],
-  )
-
   const activeModules = computed((): Module[] =>
-    systemStore.modules.filter((m) => m.is_core || activeIds.value.includes(m.id)),
+    systemStore.modules.filter((m) => !isUnavailable(m.id)),
   )
 
   /**
@@ -463,7 +457,7 @@ export const useContentStore = defineStore('content', () => {
    */
   async function fetchMissingModules(systemId: string, modules: Module[]): Promise<Module[]> {
     const toLoad = modules.filter(
-      (m) => !m.is_core && activeIds.value.includes(m.id) && !rulesByModule.value[m.id],
+      (m) => !isUnavailable(m.id) && !rulesByModule.value[m.id],
     )
     if (toLoad.length === 0) return []
     await Promise.all([
@@ -487,7 +481,6 @@ export const useContentStore = defineStore('content', () => {
     gameDataByModule,
     manifestByModule,
     loading,
-    activeIds,
     activeModules,
     permissionsFor,
     canViewLive,

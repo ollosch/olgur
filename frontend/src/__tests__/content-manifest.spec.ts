@@ -67,7 +67,6 @@ function makePermissions(overrides: Partial<ModulePermissions> = {}): ModulePerm
     'version.publish': false,
     'version.amend_latest': false,
     'subscription.manage': false,
-    'module.activate': false,
     ...overrides,
   }
 }

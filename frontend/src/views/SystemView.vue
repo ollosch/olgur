@@ -67,7 +67,7 @@ async function loadSystem(id: string): Promise<void> {
     // The system context is already loaded — this happens when the user
     // navigated to HomeView and back to the same system. Its store data is
     // intentionally kept around (see history clearing below), but any module
-    // activated in the meantime still needs its rules/index/game-data fetched.
+    // subscribed to in the meantime still needs its rules/index/game-data fetched.
     const loaded = await contentStore.fetchMissingModules(id, systemStore.modules)
     for (const m of loaded) {
       panelStore.expandedModuleIds.add(m.id)
@@ -137,24 +137,6 @@ const selectedRule = computed((): Rule | null => {
   if (!ruleId) return null
   return contentStore.rulesById.get(ruleId) ?? null
 })
-
-// ---------------------------------------------------------------------------
-// Merge-load newly activated modules
-//
-// When the user activates an expansion from the home screen and then returns
-// to an already-loaded system, the new module's content is missing.
-// Watch activeIds and fetch any module whose content hasn't been loaded yet.
-// ---------------------------------------------------------------------------
-
-watch(
-  () => contentStore.activeIds,
-  async () => {
-    const loaded = await contentStore.fetchMissingModules(systemId.value, systemStore.modules)
-    for (const m of loaded) {
-      panelStore.expandedModuleIds.add(m.id)
-    }
-  },
-)
 
 // ---------------------------------------------------------------------------
 // History recording

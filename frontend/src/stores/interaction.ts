@@ -7,7 +7,6 @@ export type PopupContent =
   | { type: 'rule'; rule: Rule }
   | { type: 'range'; rules: Rule[] }
   | { type: 'acronym'; entry: IndexEntry }
-  | { type: 'inactive_module' }
 
 interface PopupState {
   visible: boolean

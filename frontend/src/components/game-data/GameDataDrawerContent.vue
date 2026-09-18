@@ -2,8 +2,6 @@
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useContentStore } from '@/stores/content'
-import { useSystemStore } from '@/stores/system'
-import { useMembershipStore } from '@/stores/membership'
 import { useGameDataPanelStore } from '@/stores/gameDataPanel'
 import { SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -16,7 +14,7 @@ import type { MatrixContent } from '@/components/game-data/MatrixTable.vue'
 import type { AttributeTableContent } from '@/components/game-data/AttributeTable.vue'
 import type { ModifierListContent } from '@/components/game-data/ModifierList.vue'
 import type { SopContent } from '@/components/game-data/SopViewer.vue'
-import type { GameDatum, Module } from '@/types/domain'
+import type { GameDatum } from '@/types/domain'
 
 export type DrawerMode = 'tables' | 'sop'
 
@@ -35,49 +33,12 @@ const emit = defineEmits<{
 }>()
 
 const contentStore = useContentStore()
-const systemStore = useSystemStore()
-const membershipStore = useMembershipStore()
 
 const tables = computed(() => contentStore.allGameData.filter((d) => d.type === 'table'))
 
-// ── SOP provider selection ───────────────────────────────────────────────────
-//
-// SOPs are never merged. When several active modules provide an SOP the player
-// chooses one provider; the choice persists in membership config as
-// `selected_sop_module_id`. A single provider is used directly.
-
-const sopModules = computed<Module[]>(() =>
-  contentStore.activeModules.filter((m) =>
-    (contentStore.gameDataByModule[m.id] ?? []).some((d) => d.type === 'sop'),
-  ),
+const sops = computed((): GameDatum[] =>
+  contentStore.allGameData.filter((d) => d.type === 'sop'),
 )
-
-const selectedSopModuleId = computed(
-  () => membershipStore.membership?.config?.selected_sop_module_id ?? null,
-)
-
-const resolvedSopModuleId = computed((): string | null => {
-  if (sopModules.value.length === 1) {
-    return sopModules.value[0]?.id ?? null
-  }
-  const selected = selectedSopModuleId.value
-  if (selected && sopModules.value.some((m) => m.id === selected)) {
-    return selected
-  }
-  return null
-})
-
-const sops = computed((): GameDatum[] => {
-  const moduleId = resolvedSopModuleId.value
-  if (!moduleId) return []
-  return (contentStore.gameDataByModule[moduleId] ?? []).filter((d) => d.type === 'sop')
-})
-
-function selectSopModule(module: Module): void {
-  const systemId = systemStore.currentSystem?.id
-  if (!systemId) return
-  void membershipStore.updateMembership(systemId, { selected_sop_module_id: module.id })
-}
 
 // Backed by a store (rather than local refs) so the active tab and each
 // SOP's expand/collapse + search state survive the drawer's Sheet being
@@ -221,39 +182,11 @@ function sopContent(item: GameDatum): SopContent | null {
 
   <!-- SOP pane -->
   <div v-else-if="props.mode === 'sop'" class="flex flex-col flex-1 overflow-hidden">
-    <!-- Provider selector (only when several active modules provide an SOP) -->
-    <div v-if="sopModules.length > 1" class="shrink-0 border-b border-border px-3 py-2">
-      <p class="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">
-        Choose SOP
-      </p>
-      <div class="flex flex-wrap gap-1">
-        <button
-          v-for="module in sopModules"
-          :key="module.id"
-          :class="[
-            'px-2 py-1 rounded text-xs border transition-colors',
-            module.id === resolvedSopModuleId
-              ? 'bg-primary/15 text-primary border-primary/30'
-              : 'border-border text-muted-foreground hover:text-foreground',
-          ]"
-          @click="selectSopModule(module)"
-        >
-          {{ module.name }}
-        </button>
-      </div>
-    </div>
-
     <div
-      v-if="sopModules.length === 0"
+      v-if="sops.length === 0"
       class="flex-1 flex items-center justify-center text-sm text-muted-foreground"
     >
       No sequence of play data available.
-    </div>
-    <div
-      v-else-if="sops.length === 0"
-      class="flex-1 flex items-center justify-center text-sm text-muted-foreground"
-    >
-      Select an SOP to view.
     </div>
     <Tabs
       v-else

@@ -22,38 +22,28 @@ vi.mock('@/composables/useApi', () => ({
 }))
 
 import { useMembershipStore } from '@/stores/membership'
-import { useSystemStore } from '@/stores/system'
-import type { Membership, System } from '@/types/domain'
+import type { Membership, Subscription } from '@/types/domain'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function makeSystem(id: string, globalRuleNumbers = true): System {
-  return {
-    id,
-    slug: id,
-    name: `System ${id}`,
-    description: null,
-    config: {
-      global_rule_numbers: globalRuleNumbers,
-      sort_rules_by: 'number',
-      toc_depth: 3,
-      cover_image: null,
-    },
-    permissions: { 'system.manage': false, 'membership.manage': false, 'module.create': false },
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z',
-  }
-}
-
-function makeMembership(systemId: string, activeModuleIds: string[]): Membership {
+function makeMembership(systemId: string): Membership {
   return {
     id: 'mem1',
     system_id: systemId,
     user_id: 'user1',
     admin: false,
-    config: { active_module_ids: activeModuleIds },
+    config: { bookmarks: [] },
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
+  }
+}
+
+function makeSubscription(moduleId: string, editor = false): Subscription {
+  return {
+    id: `sub-${moduleId}`,
+    module_id: moduleId,
+    user_id: 'user1',
+    editor,
   }
 }
 
@@ -69,53 +59,47 @@ describe('useMembershipStore', () => {
     mockPut.mockReset()
   })
 
-  // ── activateModule ──────────────────────────────────────────────────────────
+  describe('fetchMemberships', () => {
+    it('indexes memberships by system id', async () => {
+      mockGet.mockResolvedValue({ ok: true, data: { data: [makeMembership('sys1')] } })
 
-  describe('activateModule', () => {
-    it('calls the correct POST endpoint to activate the module', async () => {
-      mockPost.mockResolvedValue({ ok: true })
-      mockGet.mockResolvedValue({ ok: true, data: { data: [] } })
-
-      const systemStore = useSystemStore()
       const membershipStore = useMembershipStore()
-
-      systemStore.systems = [makeSystem('sys1')]
-
-      await membershipStore.activateModule('sys1', 'mod1')
-
-      expect(mockPost).toHaveBeenCalledWith('/systems/sys1/modules/mod1/activate')
-    })
-
-    it('does NOT deactivate existing modules before activating', async () => {
-      mockPost.mockResolvedValue({ ok: true })
-      mockGet.mockResolvedValue({ ok: true, data: { data: [] } })
-
-      const systemStore = useSystemStore()
-      const membershipStore = useMembershipStore()
-
-      systemStore.systems = [makeSystem('sys1')]
-      membershipStore.membershipsBySystem['sys1'] = makeMembership('sys1', ['existing-mod'])
-
-      await membershipStore.activateModule('sys1', 'new-mod')
-
-      expect(mockDel).not.toHaveBeenCalled()
-      expect(mockPost).toHaveBeenCalledWith('/systems/sys1/modules/new-mod/activate')
-    })
-
-    it('calls refreshMembership after activating, updating local membership state', async () => {
-      const refreshedMembership = makeMembership('sys1', ['new-mod'])
-      mockPost.mockResolvedValue({ ok: true })
-      mockGet.mockResolvedValue({ ok: true, data: { data: [refreshedMembership] } })
-
-      const systemStore = useSystemStore()
-      const membershipStore = useMembershipStore()
-
-      systemStore.systems = [makeSystem('sys1')]
-
-      await membershipStore.activateModule('sys1', 'new-mod')
+      await membershipStore.fetchMemberships()
 
       expect(mockGet).toHaveBeenCalledWith('/me/memberships')
-      expect(membershipStore.membershipsBySystem['sys1']).toEqual(refreshedMembership)
+      expect(membershipStore.membershipsBySystem['sys1']).toEqual(makeMembership('sys1'))
+    })
+  })
+
+  describe('fetchSubscriptions', () => {
+    it('indexes subscriptions by module id', async () => {
+      mockGet.mockResolvedValue({ ok: true, data: { data: [makeSubscription('mod1')] } })
+
+      const membershipStore = useMembershipStore()
+      await membershipStore.fetchSubscriptions()
+
+      expect(mockGet).toHaveBeenCalledWith('/me/subscriptions')
+      expect(membershipStore.subscriptions['mod1']).toEqual({ id: 'sub-mod1', editor: false })
+    })
+  })
+
+  describe('updateMembership', () => {
+    it('patches the membership config and updates local state', async () => {
+      const updated = {
+        ...makeMembership('sys1'),
+        config: { bookmarks: [{ type: 'rule', id: 'r1' }] },
+      }
+      mockPatch.mockResolvedValue({ ok: true, data: { data: updated } })
+
+      const membershipStore = useMembershipStore()
+      await membershipStore.updateMembership('sys1', {
+        bookmarks: [{ type: 'rule', id: 'r1' }],
+      })
+
+      expect(mockPatch).toHaveBeenCalledWith('/me/memberships/sys1', {
+        config: { bookmarks: [{ type: 'rule', id: 'r1' }] },
+      })
+      expect(membershipStore.membershipsBySystem['sys1']).toEqual(updated)
     })
   })
 })

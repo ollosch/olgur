@@ -12,7 +12,7 @@ import type {
 } from '@/types/domain'
 
 export const useMembershipStore = defineStore('membership', () => {
-  const { get, post, del, patch, loading } = useApi()
+  const { get, patch, loading } = useApi()
   const systemStore = useSystemStore()
 
   // ── Per-system maps ──────────────────────────────────────────────────────────
@@ -78,22 +78,10 @@ export const useMembershipStore = defineStore('membership', () => {
     }
   }
 
-  // ── Module activation ─────────────────────────────────────────────────────────
-  async function activateModule(systemId: string, moduleId: string): Promise<void> {
-    await post(`/systems/${systemId}/modules/${moduleId}/activate`)
-    await refreshMembership(systemId)
-  }
-
-  async function deactivateModule(systemId: string, moduleId: string): Promise<void> {
-    await del(`/systems/${systemId}/modules/${moduleId}/activate`)
-    await refreshMembership(systemId)
-  }
-
   // ── Subscription actions ───────────────────────────────────────────────────────
   /**
    * Subscriptions are durable entitlements granted by system administrators.
-   * Users cannot self-subscribe or self-revoke; they only activate/deactivate
-   * entitled modules (see activateModule/deactivateModule above).
+   * Users cannot self-subscribe or self-revoke.
    */
 
   async function updateMembership(
@@ -130,8 +118,6 @@ export const useMembershipStore = defineStore('membership', () => {
     fetchMemberships,
     fetchSubscriptions,
     refreshMembership,
-    activateModule,
-    deactivateModule,
     updateMembership,
     setMembership,
   }

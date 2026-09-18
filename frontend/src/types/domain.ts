@@ -47,7 +47,6 @@ export interface ModulePermissions {
   'version.publish': boolean
   'version.amend_latest': boolean
   'subscription.manage': boolean
-  'module.activate': boolean
 }
 
 export interface System {
@@ -94,11 +93,9 @@ export interface UserSubscription {
 }
 
 export interface MembershipConfig {
-  active_module_ids: string[]
   bookmarks?: BookmarkEntry[]
   ignored_tags?: string[]
   preferred_rule_format?: 'content' | 'markdown'
-  selected_sop_module_id?: string | null
 }
 
 export interface Membership {

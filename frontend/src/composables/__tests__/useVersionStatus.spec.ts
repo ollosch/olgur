@@ -73,7 +73,6 @@ function makeModule(overrides: Partial<Module> & { id: string }): Module {
       'version.publish': false,
       'version.amend_latest': false,
       'subscription.manage': false,
-      'module.activate': false,
     },
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',

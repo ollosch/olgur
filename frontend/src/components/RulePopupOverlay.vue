@@ -162,11 +162,6 @@ function onClick(e: MouseEvent) {
             {{ state.content.entry.relations.see_also.join(', ') }}
           </p>
         </template>
-
-        <!-- Inactive module popup -->
-        <template v-else-if="state.content.type === 'inactive_module'">
-          <p class="text-muted-foreground italic text-xs">Module not active</p>
-        </template>
       </div>
     </Transition>
   </Teleport>
