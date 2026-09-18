@@ -18,6 +18,18 @@ final class RuleReferenceRewriter
     private const string TOKEN_PATTERN = '/\{\{L:([^}]+)\}\}/';
 
     /**
+     * Extract every rule-link token in content as a parsed reference.
+     *
+     * @return list<array{slug: string|null, number: string, label: string|null}>
+     */
+    public static function extractReferences(string $content): array
+    {
+        preg_match_all(self::TOKEN_PATTERN, $content, $matches);
+
+        return array_map(self::parseToken(...), $matches[1]);
+    }
+
+    /**
      * Whether the content references the old number in the target module's scope.
      */
     public static function referencesRule(
