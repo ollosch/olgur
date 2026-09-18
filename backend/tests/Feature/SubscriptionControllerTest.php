@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Enums\GameDataType;
-use App\Models\GameDatum;
 use App\Models\Membership;
 use App\Models\Module;
 use App\Models\Subscription;
@@ -386,57 +384,7 @@ test('admin cannot unsubscribe a member from core in a system without global rul
     assertDatabaseHas('subscriptions', ['user_id' => $member->id, 'module_id' => $expansion->id]);
 });
 
-// ── Feature 10: active_module_ids cleanup on unsubscribe ─────────────────────
-
-test('unsubscribing a member from an active expansion removes it from active_module_ids', function (): void {
-    $member = User::factory()->create();
-    $admin = User::factory()->create();
-    $system = System::factory()->create();
-    $core = Module::factory()->for($system)->core()->create();
-    $expansion = Module::factory()->for($system)->create();
-    Subscription::factory()->for($member)->for($core)->create();
-    $expansionSubscription = Subscription::factory()->for($member)->for($expansion)->create();
-    Membership::factory()->for($member)->for($system)->create([
-        'config' => ['active_module_ids' => [$expansion->id]],
-    ]);
-    Membership::factory()->for($admin)->for($system)->admin()->create();
-    actingAs($admin);
-
-    deleteJson(subscriptionUrl($system, $expansion, $expansionSubscription))->assertNoContent();
-
-    $membership = Membership::query()
-        ->where('user_id', $member->id)
-        ->where('system_id', $system->id)
-        ->first();
-
-    expect($membership)->not->toBeNull();
-    expect($membership?->config?->activeModuleIds ?? [])->not->toContain($expansion->id);
-});
-
-test('unsubscribing a member from an inactive expansion does not crash', function (): void {
-    $member = User::factory()->create();
-    $admin = User::factory()->create();
-    $system = System::factory()->create();
-    $core = Module::factory()->for($system)->core()->create();
-    $expansion = Module::factory()->for($system)->create();
-    Subscription::factory()->for($member)->for($core)->create();
-    $expansionSubscription = Subscription::factory()->for($member)->for($expansion)->create();
-    Membership::factory()->for($member)->for($system)->create([
-        'config' => ['active_module_ids' => []],
-    ]);
-    Membership::factory()->for($admin)->for($system)->admin()->create();
-    actingAs($admin);
-
-    deleteJson(subscriptionUrl($system, $expansion, $expansionSubscription))->assertNoContent();
-
-    $membership = Membership::query()
-        ->where('user_id', $member->id)
-        ->where('system_id', $system->id)
-        ->first();
-
-    expect($membership)->not->toBeNull();
-    expect($membership?->config?->activeModuleIds ?? [])->toBeEmpty();
-});
+// ── Feature 10: unsubscribe leaves membership config untouched ───────────────
 
 test('admin cannot unsubscribe a member from core even when no expansion subscriptions exist', function (): void {
     $member = User::factory()->create();
@@ -489,7 +437,7 @@ test('unsubscribing preserves other config keys like bookmarks', function (): vo
     $subscription = Subscription::factory()->for($member)->for($expansion)->create();
     $bookmark = ['type' => 'rule', 'id' => 'abcdefghijklmnopqrstuvwxyz'];
     Membership::factory()->for($member)->for($system)->create([
-        'config' => ['active_module_ids' => [$expansion->id], 'bookmarks' => [$bookmark]],
+        'config' => ['bookmarks' => [$bookmark]],
     ]);
     Membership::factory()->for($admin)->for($system)->admin()->create();
     actingAs($admin);
@@ -502,30 +450,4 @@ test('unsubscribing preserves other config keys like bookmarks', function (): vo
         ->first();
 
     expect($membership?->config?->bookmarks ?? [])->toBe([$bookmark]);
-});
-
-test('unsubscribing clears the selected SOP module when it is the unsubscribed module', function (): void {
-    $member = User::factory()->create();
-    $admin = User::factory()->create();
-    $system = System::factory()->create();
-    $expansion = Module::factory()->for($system)->create();
-    GameDatum::factory()->for($expansion)->create(['type' => GameDataType::Sop]);
-    $subscription = Subscription::factory()->for($member)->for($expansion)->create();
-    Membership::factory()->for($member)->for($system)->create([
-        'config' => [
-            'active_module_ids' => [$expansion->id],
-            'selected_sop_module_id' => $expansion->id,
-        ],
-    ]);
-    Membership::factory()->for($admin)->for($system)->admin()->create();
-    actingAs($admin);
-
-    deleteJson(subscriptionUrl($system, $expansion, $subscription))->assertNoContent();
-
-    $membership = Membership::query()
-        ->where('user_id', $member->id)
-        ->where('system_id', $system->id)
-        ->first();
-
-    expect($membership?->config?->selectedSopModuleId)->toBeNull();
 });

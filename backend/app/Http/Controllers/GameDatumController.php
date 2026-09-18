@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Actions\RecordDraftChange;
-use App\Actions\RemoveModuleFromMembershipConfigs;
-use App\Enums\GameDataType;
 use App\Http\Requests\ClassifyDraftChangeRequest;
 use App\Http\Requests\StoreGameDatumRequest;
 use App\Http\Requests\UpdateGameDatumRequest;
@@ -90,7 +88,6 @@ final class GameDatumController
         Module $module,
         GameDatum $gameDatum,
         RecordDraftChange $recordDraftChange,
-        RemoveModuleFromMembershipConfigs $removeModuleFromMembershipConfigs,
     ): GameDatumResource {
         Gate::authorize('update', [GameDatum::class, $system, $module]);
 
@@ -103,16 +100,10 @@ final class GameDatumController
         /** @var User $user */
         $user = Auth::user();
 
-        $wasSop = $gameDatum->type === GameDataType::Sop;
-
-        DB::transaction(function () use ($gameDatum, $validated, $module, $wasSop, $removeModuleFromMembershipConfigs, $recordDraftChange, $user, $classification): void {
+        DB::transaction(function () use ($gameDatum, $validated, $module, $recordDraftChange, $user, $classification): void {
             $before = $recordDraftChange->snapshotGameDatum($gameDatum);
 
             $gameDatum->update($validated);
-
-            if ($wasSop && $gameDatum->type !== GameDataType::Sop && ! $module->gameData()->where('type', GameDataType::Sop)->exists()) {
-                $removeModuleFromMembershipConfigs->clearSopSelections($module);
-            }
 
             $recordDraftChange->execute(
                 $module,
@@ -138,7 +129,6 @@ final class GameDatumController
         Module $module,
         GameDatum $gameDatum,
         RecordDraftChange $recordDraftChange,
-        RemoveModuleFromMembershipConfigs $removeModuleFromMembershipConfigs,
     ): Response {
         Gate::authorize('delete', [GameDatum::class, $system, $module]);
 
@@ -146,15 +136,10 @@ final class GameDatumController
         $user = Auth::user();
         $classification = $request->draftClassification();
 
-        DB::transaction(function () use ($gameDatum, $module, $removeModuleFromMembershipConfigs, $recordDraftChange, $user, $classification): void {
-            $wasSop = $gameDatum->type === GameDataType::Sop;
+        DB::transaction(function () use ($gameDatum, $module, $recordDraftChange, $user, $classification): void {
             $before = $recordDraftChange->snapshotGameDatum($gameDatum);
 
             $gameDatum->delete();
-
-            if ($wasSop && ! $module->gameData()->where('type', GameDataType::Sop)->exists()) {
-                $removeModuleFromMembershipConfigs->clearSopSelections($module);
-            }
 
             $recordDraftChange->execute(
                 $module,

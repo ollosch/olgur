@@ -40,11 +40,10 @@ test('a super admin receives every module permission', function (): void {
         'version.publish' => true,
         'version.amend_latest' => true,
         'subscription.manage' => true,
-        'module.activate' => true,
     ]);
 });
 
-test('a system admin sees management permissions but cannot activate an unsubscribed module', function (): void {
+test('a system admin sees management permissions for a module', function (): void {
     $system = System::factory()->create();
     $admin = User::factory()->create();
     Membership::factory()->for($admin)->for($system)->admin()->create();
@@ -61,8 +60,7 @@ test('a system admin sees management permissions but cannot activate an unsubscr
         ->and($permissions['content.edit'])->toBeTrue()
         ->and($permissions['version.publish'])->toBeTrue()
         ->and($permissions['version.amend_latest'])->toBeTrue()
-        ->and($permissions['subscription.manage'])->toBeTrue()
-        ->and($permissions['module.activate'])->toBeFalse();
+        ->and($permissions['subscription.manage'])->toBeTrue();
 });
 
 test('a module editor loads live content and can publish but cannot manage subscriptions', function (): void {
@@ -81,7 +79,6 @@ test('a module editor loads live content and can publish but cannot manage subsc
         ->and($permissions['module.update'])->toBeTrue()
         ->and($permissions['version.publish'])->toBeTrue()
         ->and($permissions['version.amend_latest'])->toBeTrue()
-        ->and($permissions['module.activate'])->toBeTrue()
         ->and($permissions['module.delete'])->toBeFalse()
         ->and($permissions['subscription.manage'])->toBeFalse()
         ->and($permissions['content.view_released'])->toBeTrue();
@@ -104,8 +101,7 @@ test('a plain subscriber reads released content but cannot view or edit live con
         ->and($permissions['module.update'])->toBeFalse()
         ->and($permissions['version.publish'])->toBeFalse()
         ->and($permissions['module.delete'])->toBeFalse()
-        ->and($permissions['subscription.manage'])->toBeFalse()
-        ->and($permissions['module.activate'])->toBeTrue();
+        ->and($permissions['subscription.manage'])->toBeFalse();
 });
 
 test('a subscriber cannot read released content from a module without a snapshot', function (): void {
@@ -134,8 +130,7 @@ test('a member without a subscription receives no content permissions', function
 
     expect($permissions['content.view_live'])->toBeFalse()
         ->and($permissions['content.view_released'])->toBeFalse()
-        ->and($permissions['content.edit'])->toBeFalse()
-        ->and($permissions['module.activate'])->toBeFalse();
+        ->and($permissions['content.edit'])->toBeFalse();
 });
 
 // ── System-level permission maps ──────────────────────────────────────────────

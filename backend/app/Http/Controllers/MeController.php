@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Actions\NormalizeMembershipConfig;
 use App\Data\MembershipConfig;
 use App\Http\Requests\UpdateMembershipConfigRequest;
 use App\Http\Requests\UpdateProfileRequest;
@@ -70,7 +69,6 @@ final class MeController
     public function updateMembership(
         UpdateMembershipConfigRequest $request,
         System $system,
-        NormalizeMembershipConfig $normalizeMembershipConfig,
     ): MembershipResource {
         /** @var User $user */
         $user = $request->user();
@@ -86,7 +84,7 @@ final class MeController
         $merged = MembershipConfig::fromArray(array_merge($membership->config->toArray(), $incoming));
 
         $membership->update([
-            'config' => $normalizeMembershipConfig->execute($membership, $user, $merged)->toArray(),
+            'config' => $merged,
         ]);
 
         return new MembershipResource($membership);

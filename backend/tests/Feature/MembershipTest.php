@@ -109,12 +109,11 @@ test('isMember returns true when user has a membership', function (): void {
 
 test('membership config is cast to MembershipConfig instance', function (): void {
     $membership = Membership::factory()->create([
-        'config' => ['active_module_ids' => ['mod-1'], 'bookmarks' => [], 'ignored_tags' => ['tag-a']],
+        'config' => ['bookmarks' => [], 'ignored_tags' => ['tag-a']],
     ]);
 
     $fresh = $membership->fresh();
     expect($fresh?->config)->toBeInstanceOf(MembershipConfig::class)
-        ->and($fresh?->config?->activeModuleIds)->toBe(['mod-1'])
         ->and($fresh?->config?->bookmarks)->toBe([])
         ->and($fresh?->config?->ignoredTags)->toBe(['tag-a']);
 });
@@ -122,10 +121,8 @@ test('membership config is cast to MembershipConfig instance', function (): void
 test('MembershipConfig::fromArray uses defaults for missing keys', function (): void {
     $config = MembershipConfig::fromArray([]);
 
-    expect($config->activeModuleIds)->toBe([])
-        ->and($config->bookmarks)->toBe([])
-        ->and($config->ignoredTags)->toBe([])
-        ->and($config->selectedSopModuleId)->toBeNull();
+    expect($config->bookmarks)->toBe([])
+        ->and($config->ignoredTags)->toBe([]);
 });
 
 test('MembershipConfig::fromArray filters malformed bookmarks', function (): void {
@@ -142,24 +139,14 @@ test('MembershipConfig::fromArray filters malformed bookmarks', function (): voi
 
 test('MembershipConfig::toArray serialises to the expected shape', function (): void {
     $config = MembershipConfig::fromArray([
-        'active_module_ids' => ['mod-1'],
         'bookmarks' => [['type' => 'rule', 'id' => 'abc123']],
         'ignored_tags' => ['tag-a'],
     ]);
 
     expect($config->toArray())->toBe([
-        'active_module_ids' => ['mod-1'],
         'bookmarks' => [['type' => 'rule', 'id' => 'abc123']],
         'ignored_tags' => ['tag-a'],
         'acronym_popups' => false,
         'preferred_rule_format' => 'content',
-        'selected_sop_module_id' => null,
     ]);
-});
-
-test('MembershipConfig::fromArray parses selected_sop_module_id', function (): void {
-    $config = MembershipConfig::fromArray(['selected_sop_module_id' => 'mod-sop']);
-
-    expect($config->selectedSopModuleId)->toBe('mod-sop')
-        ->and($config->toArray()['selected_sop_module_id'])->toBe('mod-sop');
 });

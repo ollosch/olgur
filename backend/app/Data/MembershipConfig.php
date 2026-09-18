@@ -17,13 +17,10 @@ use Illuminate\Database\Eloquent\Model;
 final readonly class MembershipConfig implements Castable
 {
     /**
-     * @param  array<int, string>  $activeModuleIds
      * @param  array<int, array{type: string, id: string}>  $bookmarks
      * @param  array<int, string>  $ignoredTags
      */
     public function __construct(
-        /** IDs of expansion modules currently active for this user in this system. */
-        public array $activeModuleIds,
         /** Per-system rule bookmarks stored by the frontend. */
         public array $bookmarks,
         /** Tag slugs ignored in the ASOP view for this user. */
@@ -32,8 +29,6 @@ final readonly class MembershipConfig implements Castable
         public bool $acronymPopups,
         /** The preferred rule format for this user. */
         public string $preferredRuleFormat,
-        /** Active module whose SOP the player selected, when any. */
-        public ?string $selectedSopModuleId,
     ) {}
 
     /**
@@ -44,10 +39,6 @@ final readonly class MembershipConfig implements Castable
      */
     public static function fromArray(array $data): self
     {
-        $activeModuleIds = is_array($data['active_module_ids'] ?? null)
-            ? array_values(array_filter($data['active_module_ids'], is_string(...)))
-            : [];
-
         $bookmarks = [];
         if (is_array($data['bookmarks'] ?? null)) {
             foreach ($data['bookmarks'] as $bookmark) {
@@ -65,17 +56,11 @@ final readonly class MembershipConfig implements Castable
             ? $data['preferred_rule_format']
             : 'content';
 
-        $selectedSopModuleId = is_string($data['selected_sop_module_id'] ?? null)
-            ? $data['selected_sop_module_id']
-            : null;
-
         return new self(
-            activeModuleIds: $activeModuleIds,
             bookmarks: $bookmarks,
             ignoredTags: $ignoredTags,
             acronymPopups: (bool) ($data['acronym_popups'] ?? false),
             preferredRuleFormat: $preferredRuleFormat,
-            selectedSopModuleId: $selectedSopModuleId,
         );
     }
 
@@ -121,12 +106,10 @@ final readonly class MembershipConfig implements Castable
     public function toArray(): array
     {
         return [
-            'active_module_ids' => $this->activeModuleIds,
             'bookmarks' => $this->bookmarks,
             'ignored_tags' => $this->ignoredTags,
             'acronym_popups' => $this->acronymPopups,
             'preferred_rule_format' => $this->preferredRuleFormat,
-            'selected_sop_module_id' => $this->selectedSopModuleId,
         ];
     }
 }

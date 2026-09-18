@@ -6,7 +6,6 @@ use App\Http\Controllers\GameDatumController;
 use App\Http\Controllers\IndexEntryController;
 use App\Http\Controllers\MeController;
 use App\Http\Controllers\MembershipController;
-use App\Http\Controllers\ModuleActivationController;
 use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\ModuleDraftChangeController;
 use App\Http\Controllers\ModuleVersionContentController;
@@ -44,8 +43,6 @@ Route::prefix('api')->group(function (): void {
                 ->only(['index', 'store', 'show']);
 
             Route::get('/systems/{system}/manifest', SystemManifestController::class);
-            Route::post('/systems/{system}/modules/{module}/activate', [ModuleActivationController::class, 'store']);
-            Route::delete('/systems/{system}/modules/{module}/activate', [ModuleActivationController::class, 'destroy']);
 
             Route::get('/systems/{system}/modules/{module}/versions/{version}/rules', [ModuleVersionContentController::class, 'rules'])
                 ->name('versions.rules');

@@ -209,24 +209,6 @@ test('update returns 404 for game datum belonging to a different module', functi
         ->assertNotFound();
 });
 
-test('changing the final SOP datum type clears selected SOP modules', function (): void {
-    $user = User::factory()->superAdmin()->create();
-    $system = System::factory()->create();
-    $module = Module::factory()->for($system)->create();
-    $gameDatum = GameDatum::factory()->for($module)->create(['type' => GameDataType::Sop]);
-    $member = User::factory()->create();
-    $membership = Membership::factory()->for($member)->for($system)->create([
-        'config' => ['selected_sop_module_id' => $module->id],
-    ]);
-    actingAs($user);
-
-    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/game-data/'.$gameDatum->id, [
-        'type' => 'table',
-    ])->assertSuccessful();
-
-    expect($membership->fresh()?->config?->selectedSopModuleId)->toBeNull();
-});
-
 // ── destroy ──────────────────────────────────────────────────────────────────
 
 test('destroy deletes a game datum', function (): void {
@@ -241,41 +223,6 @@ test('destroy deletes a game datum', function (): void {
         ->assertNoContent();
 
     assertDatabaseMissing('game_data', ['id' => $gameDatum->id]);
-});
-
-test('deleting the final SOP datum clears selected SOP modules', function (): void {
-    $user = User::factory()->superAdmin()->create();
-    $system = System::factory()->create();
-    $module = Module::factory()->for($system)->create();
-    $gameDatum = GameDatum::factory()->for($module)->create(['type' => GameDataType::Sop]);
-    $member = User::factory()->create();
-    $membership = Membership::factory()->for($member)->for($system)->create([
-        'config' => ['selected_sop_module_id' => $module->id],
-    ]);
-    actingAs($user);
-
-    deleteJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/game-data/'.$gameDatum->id)
-        ->assertNoContent();
-
-    expect($membership->fresh()?->config?->selectedSopModuleId)->toBeNull();
-});
-
-test('deleting an SOP datum preserves a membership that selected a different module', function (): void {
-    $user = User::factory()->superAdmin()->create();
-    $system = System::factory()->create();
-    $moduleA = Module::factory()->for($system)->create();
-    $moduleB = Module::factory()->for($system)->create();
-    $gameDatum = GameDatum::factory()->for($moduleA)->create(['type' => GameDataType::Sop]);
-    $member = User::factory()->create();
-    $membership = Membership::factory()->for($member)->for($system)->create([
-        'config' => ['selected_sop_module_id' => $moduleB->id],
-    ]);
-    actingAs($user);
-
-    deleteJson('/api/systems/'.$system->id.'/modules/'.$moduleA->id.'/game-data/'.$gameDatum->id)
-        ->assertNoContent();
-
-    expect($membership->fresh()?->config?->selectedSopModuleId)->toBe($moduleB->id);
 });
 
 test('destroy returns 404 for game datum belonging to a different module', function (): void {

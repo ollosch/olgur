@@ -60,7 +60,6 @@ final class PermissionMap
             'version.publish' => $canViewLive,
             'version.amend_latest' => $canViewLive,
             'subscription.manage' => $isAdmin,
-            'module.activate' => $isSubscriber && $system->isMember($user),
         ];
     }
 
@@ -78,7 +77,6 @@ final class PermissionMap
             'version.publish' => $value,
             'version.amend_latest' => $value,
             'subscription.manage' => $value,
-            'module.activate' => $value,
         ];
     }
 }

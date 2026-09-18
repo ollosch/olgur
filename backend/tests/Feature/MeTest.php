@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Models\Membership;
-use App\Models\Module;
 use App\Models\Subscription;
 use App\Models\System;
 use App\Models\User;
@@ -188,15 +187,10 @@ it('returns 401 for unauthenticated users on update membership config endpoint',
 it('member can update their own membership config', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->create();
-    $moduleA = Module::factory()->for($system)->create();
-    $moduleB = Module::factory()->for($system)->create();
-    Subscription::factory()->for($user)->for($moduleA)->create();
-    Subscription::factory()->for($user)->for($moduleB)->create();
     $membership = Membership::factory()->for($user)->for($system)->create();
     actingAs($user);
 
     $config = [
-        'active_module_ids' => [$moduleA->id, $moduleB->id],
         'bookmarks' => [
             ['type' => 'rule', 'id' => 'abcdefghijklmnopqrstuvwxyz'],
         ],
@@ -208,7 +202,6 @@ it('member can update their own membership config', function (): void {
     $response->assertJsonPath('data.id', $membership->id);
 
     $fresh = $membership->fresh();
-    expect($fresh?->config?->activeModuleIds)->toBe([$moduleA->id, $moduleB->id]);
     expect($fresh?->config?->bookmarks)->toBe([['type' => 'rule', 'id' => 'abcdefghijklmnopqrstuvwxyz']]);
 });
 
@@ -217,7 +210,7 @@ it('returns 404 when user has no membership for the system', function (): void {
     $system = System::factory()->create();
     actingAs($user);
 
-    patchJson('/api/me/memberships/'.$system->id, ['config' => ['active_module_ids' => []]])
+    patchJson('/api/me/memberships/'.$system->id, ['config' => ['bookmarks' => []]])
         ->assertNotFound();
 });
 
@@ -257,7 +250,6 @@ it('member can update ignored_tags in membership config', function (): void {
 
     $response = patchJson('/api/me/memberships/'.$system->id, [
         'config' => [
-            'active_module_ids' => [],
             'ignored_tags' => ['topic-alpha', 'topic-beta'],
         ],
     ])->assertSuccessful();
@@ -275,7 +267,7 @@ it('ignored_tags defaults to empty array when not set', function (): void {
     actingAs($user);
 
     $response = patchJson('/api/me/memberships/'.$system->id, [
-        'config' => ['active_module_ids' => []],
+        'config' => ['bookmarks' => []],
     ])->assertSuccessful();
 
     $response->assertJsonPath('data.config.ignored_tags', []);
@@ -284,12 +276,8 @@ it('ignored_tags defaults to empty array when not set', function (): void {
 it('updating a partial config merges with existing config fields', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->create();
-    $moduleA = Module::factory()->for($system)->create();
-    $moduleB = Module::factory()->for($system)->create();
-    Subscription::factory()->for($user)->for($moduleA)->create();
-    Subscription::factory()->for($user)->for($moduleB)->create();
     $membership = Membership::factory()->for($user)->for($system)->create([
-        'config' => ['active_module_ids' => [$moduleA->id, $moduleB->id], 'ignored_tags' => []],
+        'config' => ['bookmarks' => [['type' => 'rule', 'id' => 'abcdefghijklmnopqrstuvwxyz']], 'ignored_tags' => []],
     ]);
     actingAs($user);
 
@@ -298,7 +286,7 @@ it('updating a partial config merges with existing config fields', function (): 
     ])->assertSuccessful();
 
     $fresh = $membership->fresh();
-    expect($fresh?->config?->activeModuleIds)->toBe([$moduleA->id, $moduleB->id])
+    expect($fresh?->config?->bookmarks)->toBe([['type' => 'rule', 'id' => 'abcdefghijklmnopqrstuvwxyz']])
         ->and($fresh?->config?->ignoredTags)->toBe(['topic-alpha']);
 });
 
@@ -315,55 +303,4 @@ it('rejects non-string values in ignored_tags', function (): void {
     ])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['config.ignored_tags.0']);
-});
-
-// ── membership config normalization ──────────────────────────────────────────
-
-it('rejects duplicate active modules on update membership config', function (): void {
-    $user = User::factory()->create();
-    $system = System::factory()->create();
-    $module = Module::factory()->for($system)->create();
-    Subscription::factory()->for($user)->for($module)->create();
-    Membership::factory()->for($user)->for($system)->create();
-    actingAs($user);
-
-    patchJson('/api/me/memberships/'.$system->id, [
-        'config' => ['active_module_ids' => [$module->id, $module->id]],
-    ])
-        ->assertUnprocessable()
-        ->assertJsonValidationErrors(['config.active_module_ids']);
-});
-
-it('rejects active modules the user is not subscribed to', function (): void {
-    $user = User::factory()->create();
-    $system = System::factory()->create();
-    $module = Module::factory()->for($system)->create();
-    Membership::factory()->for($user)->for($system)->create();
-    actingAs($user);
-
-    patchJson('/api/me/memberships/'.$system->id, [
-        'config' => ['active_module_ids' => [$module->id]],
-    ])
-        ->assertUnprocessable()
-        ->assertJsonValidationErrors(['config.active_module_ids']);
-});
-
-it('clears an invalid selected_sop_module_id on update membership config', function (): void {
-    $user = User::factory()->create();
-    $system = System::factory()->create();
-    $module = Module::factory()->for($system)->create();
-    Subscription::factory()->for($user)->for($module)->create();
-    $membership = Membership::factory()->for($user)->for($system)->create();
-    actingAs($user);
-
-    $response = patchJson('/api/me/memberships/'.$system->id, [
-        'config' => [
-            'active_module_ids' => [$module->id],
-            'selected_sop_module_id' => 'some-other-module',
-        ],
-    ])->assertSuccessful();
-
-    $response->assertJsonPath('data.config.selected_sop_module_id', null);
-
-    expect($membership->fresh()?->config?->selectedSopModuleId)->toBeNull();
 });
