@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Actions\DeleteRule;
 use App\Actions\RecordDraftChange;
 use App\Actions\RenumberRule;
-use App\Http\Requests\ClassifyDraftChangeRequest;
+use App\Http\Requests\DeleteRuleRequest;
 use App\Http\Requests\RenumberRuleRequest;
 use App\Http\Requests\StoreRuleRequest;
 use App\Http\Requests\UpdateRuleRequest;
@@ -156,12 +157,17 @@ final class RuleController
 
     /**
      * Remove the specified rule.
+     *
+     * A `mode` payload of `recursive` removes the rule's entire subtree; the
+     * default `re_parent` mode moves direct children up to the deleted rule's
+     * parent instead.
      */
     public function destroy(
-        ClassifyDraftChangeRequest $request,
+        DeleteRuleRequest $request,
         System $system,
         Module $module,
         Rule $rule,
+        DeleteRule $deleteRule,
         RecordDraftChange $recordDraftChange,
     ): Response {
         Gate::authorize('delete', [Rule::class, $system, $module]);
@@ -169,22 +175,10 @@ final class RuleController
         /** @var User $user */
         $user = Auth::user();
         $classification = $request->draftClassification();
+        $mode = $request->mode();
 
-        DB::transaction(function () use ($module, $user, $rule, $recordDraftChange, $classification): void {
-            $before = $recordDraftChange->snapshotRule($rule);
-
-            $rule->delete();
-
-            $recordDraftChange->execute(
-                $module,
-                $user,
-                'rule',
-                $rule->id,
-                'delete',
-                $classification,
-                $before,
-                null,
-            );
+        DB::transaction(function () use ($module, $user, $rule, $deleteRule, $recordDraftChange, $classification, $mode): void {
+            $deleteRule->execute($module, $rule, $mode, $user, $classification, $recordDraftChange);
         });
 
         return response()->noContent();
