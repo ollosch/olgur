@@ -8,6 +8,7 @@ use App\Enums\GameDataType;
 use App\Http\Requests\Concerns\ClassifiesDraftChange;
 use App\Models\GameDatum;
 use App\Models\Module;
+use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -33,7 +34,21 @@ final class UpdateGameDatumRequest extends FormRequest
         $gameDatum = $this->route('game_datum');
 
         return [
-            'type' => ['sometimes', Rule::enum(GameDataType::class)],
+            'type' => [
+                'sometimes',
+                Rule::enum(GameDataType::class),
+                function (string $attribute, mixed $value, Closure $fail) use ($module, $gameDatum): void {
+                    if ($value !== GameDataType::Sop->value) {
+                        return;
+                    }
+
+                    $existing = $module->sop();
+
+                    if ($existing !== null && ! $existing->is($gameDatum)) {
+                        $fail('This module already has a sequence of play.');
+                    }
+                },
+            ],
             'slug' => [
                 'sometimes',
                 'string',

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Data\ModuleConfig;
+use App\Enums\GameDataType;
 use Database\Factories\ModuleFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 /**
  * @property string $id
@@ -88,6 +90,59 @@ final class Module extends Model
     public function gameData(): HasMany
     {
         return $this->hasMany(GameDatum::class);
+    }
+
+    /**
+     * The module's sequence-of-play row, if it defines one.
+     *
+     * A module has at most one SOP (enforced by game-data validation).
+     */
+    public function sop(): ?GameDatum
+    {
+        return $this->gameData()
+            ->where('type', GameDataType::Sop->value)
+            ->first();
+    }
+
+    /**
+     * The module's tables, keyed by slug.
+     *
+     * @return Collection<int|string, GameDatum>
+     */
+    public function tables(): Collection
+    {
+        return $this->gameData()
+            ->where('type', GameDataType::Table->value)
+            ->get()
+            ->keyBy('slug');
+    }
+
+    /**
+     * Resolve a game datum by slug and type, preferring the current module and
+     * falling back to the system's core module. The current module wins on a
+     * slug collision.
+     */
+    public function resolveGameDatum(GameDataType $type, string $slug): ?GameDatum
+    {
+        $datum = $this->gameData()
+            ->where('type', $type->value)
+            ->where('slug', $slug)
+            ->first();
+
+        if ($datum !== null || $this->is_core) {
+            return $datum;
+        }
+
+        $core = $this->system?->coreModule();
+
+        if ($core === null) {
+            return null;
+        }
+
+        return $core->gameData()
+            ->where('type', $type->value)
+            ->where('slug', $slug)
+            ->first();
     }
 
     /**

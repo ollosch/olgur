@@ -7,6 +7,7 @@ namespace App\Http\Requests;
 use App\Enums\GameDataType;
 use App\Http\Requests\Concerns\ClassifiesDraftChange;
 use App\Models\Module;
+use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -29,7 +30,15 @@ final class StoreGameDatumRequest extends FormRequest
         $module = $this->route('module');
 
         return [
-            'type' => ['required', Rule::enum(GameDataType::class)],
+            'type' => [
+                'required',
+                Rule::enum(GameDataType::class),
+                function (string $attribute, mixed $value, Closure $fail) use ($module): void {
+                    if ($value === GameDataType::Sop->value && $module->sop() !== null) {
+                        $fail('This module already has a sequence of play.');
+                    }
+                },
+            ],
             'slug' => [
                 'required',
                 'string',

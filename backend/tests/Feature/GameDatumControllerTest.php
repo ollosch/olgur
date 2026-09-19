@@ -149,6 +149,22 @@ test('store allows same slug for different types within module', function (): vo
     ])->assertCreated();
 });
 
+test('store rejects a second sop for a module', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    GameDatum::factory()->for($module)->create(['type' => GameDataType::Sop, 'slug' => 'asop']);
+
+    actingAs($user);
+
+    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/game-data', [
+        'type' => 'sop',
+        'slug' => 'another-sop',
+        'name' => 'Another SOP',
+        'content' => [],
+    ])->assertUnprocessable()->assertJsonValidationErrors(['type']);
+});
+
 // ── show ─────────────────────────────────────────────────────────────────────
 
 test('show returns a single game datum', function (): void {
@@ -207,6 +223,49 @@ test('update returns 404 for game datum belonging to a different module', functi
 
     patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/game-data/'.$gameDatum->id, ['content' => []])
         ->assertNotFound();
+});
+
+test('update allows keeping the module sop type', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $gameDatum = GameDatum::factory()->for($module)->create(['type' => GameDataType::Sop, 'slug' => 'asop']);
+
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/game-data/'.$gameDatum->id, [
+        'type' => 'sop',
+        'name' => 'Renamed SOP',
+    ])->assertSuccessful();
+});
+
+test('update rejects changing a non-sop datum into a second sop', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    GameDatum::factory()->for($module)->create(['type' => GameDataType::Sop, 'slug' => 'asop']);
+    $table = GameDatum::factory()->for($module)->create(['type' => GameDataType::Table, 'slug' => 'ift']);
+
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/game-data/'.$table->id, [
+        'type' => 'sop',
+        'slug' => 'another-sop',
+    ])->assertUnprocessable()->assertJsonValidationErrors(['type']);
+});
+
+test('update allows changing a datum to a non-sop type', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $gameDatum = GameDatum::factory()->for($module)->create(['type' => GameDataType::Table, 'slug' => 'ift']);
+
+    actingAs($user);
+
+    patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/game-data/'.$gameDatum->id, [
+        'type' => 'vehicle',
+        'slug' => 'pzib',
+    ])->assertSuccessful();
 });
 
 // ── destroy ──────────────────────────────────────────────────────────────────

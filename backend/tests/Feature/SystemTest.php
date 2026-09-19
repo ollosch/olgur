@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Data\SystemConfig;
 use App\Models\Membership;
+use App\Models\Module;
 use App\Models\System;
 use App\Models\User;
 
@@ -74,6 +75,22 @@ test('isAdmin returns false when user is not an admin', function (): void {
     $system = System::factory()->create();
 
     expect($system->isAdmin($user))->toBeFalse();
+});
+
+// ── System::coreModule ─────────────────────────────────────────────────────
+
+test('coreModule returns the core module', function (): void {
+    $system = System::factory()->create();
+    $core = Module::factory()->for($system)->core()->create();
+    Module::factory()->for($system)->create();
+
+    expect($system->coreModule()?->id)->toBe($core->id);
+});
+
+test('coreModule returns null when there is no core module', function (): void {
+    $system = System::factory()->create();
+
+    expect($system->coreModule())->toBeNull();
 });
 
 // ── SystemConfig ──────────────────────────────────────────────────────────

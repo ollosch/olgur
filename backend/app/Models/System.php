@@ -58,6 +58,16 @@ final class System extends Model
         return $this->hasMany(Membership::class);
     }
 
+    /**
+     * The system's core module, if one exists.
+     */
+    public function coreModule(): ?Module
+    {
+        return $this->modules()
+            ->where('is_core', true)
+            ->first();
+    }
+
     public function isMember(User $user): bool
     {
         return $this->memberships()->where('user_id', $user->id)->exists();
