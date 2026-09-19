@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Models\Module;
 use App\Models\System;
 use App\Models\User;
 
@@ -15,6 +16,19 @@ final class SystemPolicy
     public function viewAny(User $user): bool
     {
         return true;
+    }
+
+    /**
+     * System admins and module editors can lint a system's rule references.
+     */
+    public function lint(User $user, System $system): bool
+    {
+        if ($system->isAdmin($user)) {
+            return true;
+        }
+
+        return $system->modules()->get()
+            ->contains(fn (Module $module): bool => $module->isEditor($user));
     }
 
     /**

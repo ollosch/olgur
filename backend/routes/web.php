@@ -14,6 +14,7 @@ use App\Http\Controllers\RuleController;
 use App\Http\Controllers\RuleImageController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SystemController;
+use App\Http\Controllers\SystemLintController;
 use App\Http\Controllers\SystemManifestController;
 use Illuminate\Support\Facades\Route;
 
@@ -45,6 +46,9 @@ Route::prefix('api')->group(function (): void {
                 ->only(['index', 'store', 'show']);
 
             Route::get('/systems/{system}/manifest', SystemManifestController::class);
+
+            Route::get('/systems/{system}/lint', SystemLintController::class)
+                ->name('systems.lint');
 
             Route::get('/systems/{system}/modules/{module}/versions/{version}/rules', [ModuleVersionContentController::class, 'rules'])
                 ->name('versions.rules');
