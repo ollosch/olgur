@@ -67,19 +67,11 @@ export interface Module {
   name: string
   description: string | null
   config: Record<string, unknown> | null
-  tools?: ModuleToolDeclaration[]
   is_core: boolean
   sort_order: number
   permissions: ModulePermissions
   created_at: string
   updated_at: string
-}
-
-export type ModuleToolKey = 'unit_browser' | 'ordnance_versus_armor'
-
-export interface ModuleToolDeclaration {
-  key: string
-  config: Record<string, unknown>
 }
 
 export interface BookmarkEntry {

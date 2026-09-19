@@ -51,7 +51,6 @@ function makeModule(id: string, isCore: boolean): Module {
     name: `Module ${id}`,
     description: null,
     config: null,
-    tools: [],
     is_core: isCore,
     sort_order: 0,
     permissions: {

@@ -2,33 +2,36 @@
 import { computed, watch } from 'vue'
 import { useBottomPanelStore } from '@/stores/bottomPanel'
 import { useContentStore } from '@/stores/content'
+import { useSystemStore } from '@/stores/system'
 import { useResizablePanel } from '@/composables/useResizablePanel'
-import { activeTools, TOOL_COMPONENTS } from '@/lib/tools'
-import type { ModuleToolKey } from '@/types/domain'
+import { gameDataTools } from '@/lib/gameDataTools'
 import { ChevronUp, Database, Pin, PinOff, X } from '@lucide/vue'
 
 const store = useBottomPanelStore()
 const contentStore = useContentStore()
+const systemStore = useSystemStore()
 
 // ---------------------------------------------------------------------------
-// Tabs are derived from the tools declared by the active modules. Unknown tool
-// keys are already dropped by the registry, so each tab maps to a deployed
-// implementation below.
+// Tabs are derived from the game-data types present across the active modules.
+// Each type with a deployed tool component contributes one tab, so the bottom
+// panel only offers tools the user's content actually uses.
 // ---------------------------------------------------------------------------
 
-const tools = computed(() => activeTools(contentStore.activeModules))
+const tools = computed(() =>
+  gameDataTools(contentStore.allGameData, systemStore.currentSystem?.slug),
+)
 
 watch(
   tools,
   (list) => {
-    store.setTabs(list.map((t) => ({ id: t.key, label: t.label, icon: 'database' })))
+    store.setTabs(list.map((t) => ({ id: t.id, label: t.label, icon: 'database' })))
   },
   { immediate: true },
 )
 
-const activeTabKey = computed((): ModuleToolKey | null => {
-  const key = store.activeTabId
-  return key in TOOL_COMPONENTS ? (key as ModuleToolKey) : null
+const activeTool = computed(() => {
+  const id = store.activeTabId
+  return tools.value.find((t) => t.id === id) ?? null
 })
 
 const toggleLabel = computed(() => {
@@ -153,7 +156,7 @@ const clampedHeight = computed(() => {
 
     <!-- Tab content -->
     <div class="flex-1 overflow-hidden">
-      <component :is="TOOL_COMPONENTS[activeTabKey]" v-if="activeTabKey" />
+      <component :is="activeTool?.component" v-if="activeTool" />
     </div>
   </div>
 </template>
