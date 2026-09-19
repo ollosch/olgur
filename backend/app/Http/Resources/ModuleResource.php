@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
-use App\Data\ModuleToolDeclaration;
 use App\Models\Module;
 use App\Models\User;
 use App\Services\PermissionMap;
@@ -28,10 +27,6 @@ final class ModuleResource extends JsonResource
             'name' => $this->name,
             'description' => $this->description,
             'config' => $this->config->toArray(),
-            'tools' => array_map(
-                static fn (ModuleToolDeclaration $tool): array => $tool->toArray(),
-                $this->config->tools,
-            ),
             'is_core' => $this->is_core,
             'sort_order' => $this->sort_order,
             'permissions' => $this->permissions($request),

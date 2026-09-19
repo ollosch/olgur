@@ -19,7 +19,7 @@ test('a module can be created with factory defaults', function (): void {
         ->and($module->name)->toBeString()
         ->and($module->is_core)->toBeFalse()
         ->and($module->config)->toBeInstanceOf(ModuleConfig::class)
-        ->and($module->config->tools)->toBe([]);
+        ->and($module->config->toArray())->toBe([]);
 });
 
 test('module uses ulid primary key', function (): void {
@@ -43,39 +43,17 @@ test('same slug is allowed across different systems', function (): void {
     expect($other->exists)->toBeTrue();
 });
 
-test('module config parses declared tool entries', function (): void {
+test('module config retains arbitrary values', function (): void {
     $module = Module::factory()->create([
         'config' => [
-            'tools' => [['key' => 'unit_browser', 'config' => ['foo' => 'bar']]],
             'display' => ['theme' => 'dark'],
         ],
     ]);
     $module->refresh();
 
-    expect($module->config->tools)->toHaveCount(1)
-        ->and($module->config->tools[0]->key->value)->toBe('unit_browser')
-        ->and($module->config->tools[0]->config)->toBe(['foo' => 'bar'])
-        ->and($module->config->toArray())->toBe([
-            'display' => ['theme' => 'dark'],
-            'tools' => [['key' => 'unit_browser', 'config' => ['foo' => 'bar']]],
-        ]);
-});
-
-test('module config drops unknown tool keys', function (): void {
-    $module = Module::factory()->create([
-        'config' => ['tools' => [['key' => 'unknown_tool', 'config' => []]]],
+    expect($module->config->toArray())->toBe([
+        'display' => ['theme' => 'dark'],
     ]);
-
-    expect($module->config->tools)->toBe([]);
-});
-
-test('module config ignores non-array tool entries', function (): void {
-    $module = Module::factory()->create([
-        'config' => ['tools' => ['garbage', ['key' => 'unit_browser', 'config' => []]]],
-    ]);
-
-    expect($module->config->tools)->toHaveCount(1)
-        ->and($module->config->tools[0]->key->value)->toBe('unit_browser');
 });
 
 test('module is_core is cast to boolean', function (): void {

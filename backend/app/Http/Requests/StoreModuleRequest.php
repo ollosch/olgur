@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use App\Http\Requests\Concerns\ValidatesModuleToolDeclarations;
 use App\Models\System;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -13,8 +12,6 @@ use Illuminate\Validation\Rule;
 
 final class StoreModuleRequest extends FormRequest
 {
-    use ValidatesModuleToolDeclarations;
-
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -52,7 +49,6 @@ final class StoreModuleRequest extends FormRequest
                 },
             ],
             'sort_order' => ['required', 'integer', 'min:0', 'max:65535'],
-            ...$this->moduleToolDeclarationRules(),
         ];
     }
 }
