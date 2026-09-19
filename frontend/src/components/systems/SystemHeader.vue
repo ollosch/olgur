@@ -14,9 +14,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Menu, MoreVertical, Search, Table2, ListOrdered } from '@lucide/vue'
+import { Menu, MoreVertical, Search, Table2, ListOrdered, TriangleAlert } from '@lucide/vue'
 import LeftPanelContent from '@/components/systems/LeftPanelContent.vue'
 import ManageMembersDialog from '@/components/systems/ManageMembersDialog.vue'
+import BrokenLinksDialog from '@/components/systems/BrokenLinksDialog.vue'
+import { useBrokenLinks } from '@/composables/useBrokenLinks'
 import type { Rule, Module } from '@/types/domain'
 import { ref, computed } from 'vue'
 
@@ -43,6 +45,9 @@ const shortcutStore = useShortcutStore()
 const systemStore = useSystemStore()
 
 const manageMembersOpen = ref(false)
+const brokenLinksOpen = ref(false)
+
+const { canLint } = useBrokenLinks()
 
 const canManageMembers = computed(() =>
   Boolean(systemStore.currentSystem?.permissions?.['membership.manage']),
@@ -137,7 +142,11 @@ async function logout(): Promise<void> {
         >
           Manage Members
         </DropdownMenuItem>
-        <DropdownMenuSeparator v-if="canManageMembers" />
+        <DropdownMenuItem v-if="canLint" @click="brokenLinksOpen = true">
+          <TriangleAlert class="w-4 h-4" />
+          Broken Links
+        </DropdownMenuItem>
+        <DropdownMenuSeparator v-if="canManageMembers || canLint" />
         <DropdownMenuItem @click="router.push({ name: 'profile' })">
           User Profile
         </DropdownMenuItem>
@@ -156,4 +165,7 @@ async function logout(): Promise<void> {
     v-model:open="manageMembersOpen"
     :system-id="systemStore.currentSystem.id"
   />
+
+  <!-- Broken Links Dialog -->
+  <BrokenLinksDialog v-if="systemStore.currentSystem" v-model:open="brokenLinksOpen" />
 </template>

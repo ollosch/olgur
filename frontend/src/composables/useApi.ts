@@ -53,8 +53,8 @@ export function useApi() {
     return request(() => api.request<T>({ url, method: 'PATCH', data, ...config }))
   }
 
-  function del<T>(url: string, config?: AxiosRequestConfig): Promise<ApiResult<T>> {
-    return request(() => api.request<T>({ url, method: 'DELETE', ...config }))
+  function del<T, D = unknown>(url: string, data?: D, config?: AxiosRequestConfig): Promise<ApiResult<T>> {
+    return request(() => api.request<T>({ url, method: 'DELETE', data, ...config }))
   }
 
   return { get, post, put, patch, del, loading }

@@ -132,6 +132,19 @@ function selectRule(rule: Rule): void {
 }
 
 // ---------------------------------------------------------------------------
+// Rule deletion
+//
+// After a rule is deleted the content store no longer contains it. If the
+// currently selected rule was removed, navigate back to the system TOC.
+// ---------------------------------------------------------------------------
+
+function handleRuleDeleted(): void {
+  if (!contentStore.rulesById.has(ruleId.value)) {
+    router.push({ name: 'system', params: { systemId: systemId.value } })
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Scroll to top when navigating to a different rule
 // ---------------------------------------------------------------------------
 
@@ -195,6 +208,7 @@ watch(ruleId, () => {
             :can-edit="canEdit(rule.module_id)"
             :standalone="true"
             @select-rule="selectRule"
+            @rule-deleted="handleRuleDeleted"
           />
         </div>
       </div>
@@ -259,6 +273,7 @@ watch(ruleId, () => {
         :toc-depth="tocDepth"
         :can-edit="canEditRules"
         @select-rule="selectRule"
+        @rule-deleted="handleRuleDeleted"
       />
     </div>
 

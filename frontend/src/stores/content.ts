@@ -15,10 +15,13 @@ import type {
   ApiResource,
   UpdateRuleRequest,
   UpdateIndexEntryRequest,
+  RenumberPreview,
+  BrokenReference,
+  RuleDeletionMode,
 } from '@/types/domain'
 
 export const useContentStore = defineStore('content', () => {
-  const { get, put, loading } = useApi()
+  const { get, put, post, del, loading } = useApi()
   const systemStore = useSystemStore()
 
   const rulesByModule = ref<Record<string, Rule[]>>({})
@@ -466,6 +469,122 @@ export const useContentStore = defineStore('content', () => {
     return toLoad
   }
 
+  // ---------------------------------------------------------------------------
+  // Renumber / delete / lint
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Preview the references affected by renumbering the rule to `number`.
+   */
+  async function previewRenumber(
+    systemId: string,
+    rule: Rule,
+    number: string,
+  ): Promise<ApiResult<RenumberPreview>> {
+    const result = await post<ApiResource<RenumberPreview>, { number: string }>(
+      `/systems/${systemId}/modules/${rule.module_id}/rules/${rule.id}/renumber`,
+      { number },
+    )
+
+    if (result.ok) {
+      return { ok: true, data: result.data.data }
+    }
+
+    return result
+  }
+
+  /**
+   * Apply the renumber and refresh the content of every active module so that
+   * rewritten references are reflected in the UI.
+   */
+  async function confirmRenumber(
+    systemId: string,
+    rule: Rule,
+    number: string,
+  ): Promise<ApiResult<Rule>> {
+    const result = await post<ApiResource<Rule>, { number: string; confirm: true }>(
+      `/systems/${systemId}/modules/${rule.module_id}/rules/${rule.id}/renumber`,
+      { number, confirm: true },
+    )
+
+    if (result.ok) {
+      await refreshContent(systemId)
+      return { ok: true, data: result.data.data }
+    }
+
+    return result
+  }
+
+  /**
+   * Delete the rule, reparenting direct children (default) or removing the
+   * whole subtree when `mode` is `recursive`.
+   */
+  async function deleteRule(
+    systemId: string,
+    rule: Rule,
+    mode: RuleDeletionMode,
+  ): Promise<ApiResult<void>> {
+    const result = await del<void, { mode: RuleDeletionMode }>(
+      `/systems/${systemId}/modules/${rule.module_id}/rules/${rule.id}`,
+      { mode },
+    )
+
+    if (result.ok) {
+      const list = rulesByModule.value[rule.module_id] ?? []
+      const removedIds = mode === 'recursive' ? descendantIds(rule.id) : new Set([rule.id])
+
+      if (mode === 're_parent') {
+        for (const child of childrenMap.value.get(rule.id) ?? []) {
+          child.parent_id = rule.parent_id
+        }
+      }
+
+      rulesByModule.value[rule.module_id] = list.filter((r) => !removedIds.has(r.id))
+    }
+
+    return result
+  }
+
+  /**
+   * Fetch the system's broken-link lint results.
+   */
+  async function fetchLint(systemId: string): Promise<ApiResult<BrokenReference[]>> {
+    const result = await get<ApiCollection<BrokenReference>>(`/systems/${systemId}/lint`)
+
+    if (result.ok) {
+      return { ok: true, data: result.data.data }
+    }
+
+    return result
+  }
+
+  /**
+   * Re-fetch rules and index entries for every active module.
+   */
+  async function refreshContent(systemId: string): Promise<void> {
+    const modules = activeModules.value
+    await Promise.all([
+      ...modules.map((m) => fetchRules(systemId, m.id)),
+      ...modules.map((m) => fetchIndexEntries(systemId, m.id)),
+    ])
+  }
+
+  /**
+   * Collect the given rule and all of its descendants by id.
+   */
+  function descendantIds(ruleId: string): Set<string> {
+    const ids = new Set<string>([ruleId])
+    const queue = [ruleId]
+    while (queue.length > 0) {
+      const current = queue.shift()!
+      for (const child of childrenMap.value.get(current) ?? []) {
+        ids.add(child.id)
+        queue.push(child.id)
+      }
+    }
+    return ids
+  }
+
   function clear(): void {
     rulesByModule.value = {}
     indexEntriesByModule.value = {}
@@ -509,6 +628,11 @@ export const useContentStore = defineStore('content', () => {
     fetchIndexEntries,
     fetchGameData,
     fetchMissingModules,
+    previewRenumber,
+    confirmRenumber,
+    deleteRule,
+    fetchLint,
+    refreshContent,
     clear,
   }
 })
