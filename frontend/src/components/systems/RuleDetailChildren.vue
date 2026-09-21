@@ -5,9 +5,8 @@ import { renderContent } from '@/lib/renderContent'
 import { useAppSettingsStore } from '@/stores/appSettings'
 import { useBookmarkStore } from '@/stores/bookmarks'
 import { useLeftPanelStore } from '@/stores/leftPanel'
-import { Crosshair, Hash, Pencil, Star, Trash2 } from '@lucide/vue'
+import { Crosshair, Pencil, Star, Trash2 } from '@lucide/vue'
 import EditRuleDialog from '@/components/systems/EditRuleDialog.vue'
-import RenumberRuleDialog from '@/components/systems/RenumberRuleDialog.vue'
 import DeleteRuleDialog from '@/components/systems/DeleteRuleDialog.vue'
 
 interface Props {
@@ -30,9 +29,6 @@ const panelStore = useLeftPanelStore()
 const editDialogOpen = ref(false)
 const editingRule = ref<Rule | null>(null)
 
-const renumberDialogOpen = ref(false)
-const renumberingRule = ref<Rule | null>(null)
-
 const deleteDialogOpen = ref(false)
 const deletingRule = ref<Rule | null>(null)
 
@@ -41,17 +37,13 @@ function openEditDialog(rule: Rule): void {
   editDialogOpen.value = true
 }
 
-function openRenumberDialog(rule: Rule): void {
-  renumberingRule.value = rule
-  renumberDialogOpen.value = true
-}
-
 function openDeleteDialog(rule: Rule): void {
   deletingRule.value = rule
   deleteDialogOpen.value = true
 }
 
-function showInTree(): void {
+function showInTree(rule: Rule): void {
+  panelStore.revealRuleId = rule.id
   panelStore.openToTab('tree')
   panelStore.treeActivatedTick++
 }
@@ -101,14 +93,6 @@ const childRules = computed((): Rule[] => props.childrenMap.get(props.rule.id) ?
       <button
         v-if="canEdit"
         class="p-1 rounded hover:bg-muted/40 transition-colors"
-        title="Renumber rule"
-        @click="openRenumberDialog(rule)"
-      >
-        <Hash class="w-3.5 h-3.5 text-muted-foreground" />
-      </button>
-      <button
-        v-if="canEdit"
-        class="p-1 rounded hover:bg-muted/40 transition-colors"
         title="Delete rule"
         @click="openDeleteDialog(rule)"
       >
@@ -117,7 +101,7 @@ const childRules = computed((): Rule[] => props.childrenMap.get(props.rule.id) ?
       <button
         class="p-1 rounded hover:bg-muted/40 transition-colors"
         title="Show in tree"
-        @click="showInTree()"
+        @click="showInTree(rule)"
       >
         <Crosshair class="w-3.5 h-3.5 text-muted-foreground" />
       </button>
@@ -174,13 +158,6 @@ const childRules = computed((): Rule[] => props.childrenMap.get(props.rule.id) ?
     :open="editDialogOpen"
     :rule="editingRule"
     @update:open="editDialogOpen = $event"
-  />
-
-  <RenumberRuleDialog
-    v-if="renumberingRule"
-    :open="renumberDialogOpen"
-    :rule="renumberingRule"
-    @update:open="renumberDialogOpen = $event"
   />
 
   <DeleteRuleDialog

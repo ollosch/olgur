@@ -28,6 +28,13 @@ export const useLeftPanelStore = defineStore('leftPanel', () => {
    */
   const treeActivatedTick = ref(0)
 
+  /**
+   * When set, the next tree activation should reveal this specific rule (rather
+   * than the currently selected rule). Set by the "Show in tree" button and
+   * cleared by SystemView once consumed.
+   */
+  const revealRuleId = ref<string | null>(null)
+
   function openToTab(tab: PanelTab): void {
     activeTab.value = tab
     if (!appSettings.sidebarPinned && window.innerWidth < BREAKPOINT_MD) {
@@ -42,6 +49,7 @@ export const useLeftPanelStore = defineStore('leftPanel', () => {
     expandedRuleIds,
     pendingFocusRuleId,
     treeActivatedTick,
+    revealRuleId,
     openToTab,
   }
 })

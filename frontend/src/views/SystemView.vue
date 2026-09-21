@@ -166,7 +166,13 @@ watch(
 watch(
   () => panelStore.treeActivatedTick,
   async () => {
-    const rule = selectedRule.value
+    const revealId = panelStore.revealRuleId
+    panelStore.revealRuleId = null
+
+    const rule = revealId
+      ? (contentStore.rulesById.get(revealId) ?? null)
+      : selectedRule.value
+
     if (!rule) {
       panelStore.pendingFocusRuleId = '__first__'
       return
