@@ -254,16 +254,6 @@ export interface UpdateRuleRequest {
 
 export type RuleDeletionMode = 're_parent' | 'recursive'
 
-export interface RenumberPreview {
-  rule: {
-    id: string
-    number: string
-    new_number: string
-  }
-  affected_rules: Array<{ id: string; number: string; title: string }>
-  affected_index_entries: Array<{ id: string; term: string }>
-}
-
 export interface BrokenReference {
   module: string
   location: string

@@ -15,13 +15,12 @@ import type {
   ApiResource,
   UpdateRuleRequest,
   UpdateIndexEntryRequest,
-  RenumberPreview,
   BrokenReference,
   RuleDeletionMode,
 } from '@/types/domain'
 
 export const useContentStore = defineStore('content', () => {
-  const { get, put, post, del, loading } = useApi()
+  const { get, put, del, loading } = useApi()
   const systemStore = useSystemStore()
 
   const rulesByModule = ref<Record<string, Rule[]>>({})
@@ -470,50 +469,8 @@ export const useContentStore = defineStore('content', () => {
   }
 
   // ---------------------------------------------------------------------------
-  // Renumber / delete / lint
+  // Delete / lint
   // ---------------------------------------------------------------------------
-
-  /**
-   * Preview the references affected by renumbering the rule to `number`.
-   */
-  async function previewRenumber(
-    systemId: string,
-    rule: Rule,
-    number: string,
-  ): Promise<ApiResult<RenumberPreview>> {
-    const result = await post<ApiResource<RenumberPreview>, { number: string }>(
-      `/systems/${systemId}/modules/${rule.module_id}/rules/${rule.id}/renumber`,
-      { number },
-    )
-
-    if (result.ok) {
-      return { ok: true, data: result.data.data }
-    }
-
-    return result
-  }
-
-  /**
-   * Apply the renumber and refresh the content of every active module so that
-   * rewritten references are reflected in the UI.
-   */
-  async function confirmRenumber(
-    systemId: string,
-    rule: Rule,
-    number: string,
-  ): Promise<ApiResult<Rule>> {
-    const result = await post<ApiResource<Rule>, { number: string; confirm: true }>(
-      `/systems/${systemId}/modules/${rule.module_id}/rules/${rule.id}/renumber`,
-      { number, confirm: true },
-    )
-
-    if (result.ok) {
-      await refreshContent(systemId)
-      return { ok: true, data: result.data.data }
-    }
-
-    return result
-  }
 
   /**
    * Delete the rule, reparenting direct children (default) or removing the
@@ -628,8 +585,6 @@ export const useContentStore = defineStore('content', () => {
     fetchIndexEntries,
     fetchGameData,
     fetchMissingModules,
-    previewRenumber,
-    confirmRenumber,
     deleteRule,
     fetchLint,
     refreshContent,

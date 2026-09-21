@@ -4,7 +4,6 @@ import { setActivePinia, createPinia } from 'pinia'
 
 // ─── Mock useApi for all stores that import it ────────────────────────────────
 const mockGet = vi.fn()
-const mockPost = vi.fn()
 const mockPut = vi.fn()
 const mockDel = vi.fn()
 const mockPatch = vi.fn()
@@ -13,7 +12,6 @@ const mockLoading = ref(false)
 vi.mock('@/composables/useApi', () => ({
   useApi: vi.fn(() => ({
     get: mockGet,
-    post: mockPost,
     put: mockPut,
     del: mockDel,
     patch: mockPatch,
@@ -102,69 +100,9 @@ describe('content store rule actions', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     mockGet.mockReset()
-    mockPost.mockReset()
     mockPut.mockReset()
     mockDel.mockReset()
     mockPatch.mockReset()
-  })
-
-  describe('previewRenumber', () => {
-    it('posts the new number and returns the preview payload', async () => {
-      const systemStore = useSystemStore()
-      const contentStore = useContentStore()
-      seedCoreModule(systemStore)
-
-      const rule = makeRule({ id: 'r1', module_id: 'mod1', number: '1.2' })
-      const preview = {
-        rule: { id: 'r1', number: '1.2', new_number: '9.9' },
-        affected_rules: [],
-        affected_index_entries: [],
-      }
-      mockPost.mockResolvedValue({ ok: true, data: { data: preview } })
-
-      const result = await contentStore.previewRenumber('sys1', rule, '9.9')
-
-      expect(mockPost).toHaveBeenCalledWith(
-        '/systems/sys1/modules/mod1/rules/r1/renumber',
-        { number: '9.9' },
-      )
-      expect(result).toEqual({ ok: true, data: preview })
-    })
-
-    it('returns validation errors when the new number is rejected', async () => {
-      const systemStore = useSystemStore()
-      const contentStore = useContentStore()
-      seedCoreModule(systemStore)
-
-      const rule = makeRule({ id: 'r1', module_id: 'mod1', number: '1.2' })
-      mockPost.mockResolvedValue({ ok: false, errors: { number: 'Number is taken.' } })
-
-      const result = await contentStore.previewRenumber('sys1', rule, '9.9')
-
-      expect(result).toEqual({ ok: false, errors: { number: 'Number is taken.' } })
-    })
-  })
-
-  describe('confirmRenumber', () => {
-    it('confirms with the number and refreshes module content', async () => {
-      const systemStore = useSystemStore()
-      const contentStore = useContentStore()
-      seedCoreModule(systemStore)
-
-      const rule = makeRule({ id: 'r1', module_id: 'mod1', number: '1.2' })
-      const updated = { ...rule, number: '9.9' }
-      mockPost.mockResolvedValue({ ok: true, data: { data: updated } })
-      mockGet.mockResolvedValue({ ok: true, data: { data: [] } })
-
-      const result = await contentStore.confirmRenumber('sys1', rule, '9.9')
-
-      expect(mockPost).toHaveBeenCalledWith(
-        '/systems/sys1/modules/mod1/rules/r1/renumber',
-        { number: '9.9', confirm: true },
-      )
-      expect(result).toEqual({ ok: true, data: updated })
-      expect(mockGet).toHaveBeenCalled()
-    })
   })
 
   describe('deleteRule', () => {

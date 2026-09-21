@@ -57,7 +57,7 @@ final class BrokenLinkLinter
 
         foreach ($modules as $module) {
             foreach ($module['rules'] as $rule) {
-                foreach (RuleReferenceRewriter::extractReferences($rule['content']) as $reference) {
+                foreach (RuleReferenceParser::extractReferences($rule['content']) as $reference) {
                     if (self::isIgnoredChapter($reference['number'])) {
                         continue;
                     }
