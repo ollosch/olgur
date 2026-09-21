@@ -19,6 +19,17 @@ use App\Enums\BrokenReferenceReason;
 final class BrokenLinkLinter
 {
     /**
+     * Rule-number chapters whose references are temporarily ignored by the lint.
+     *
+     * These ASL chapters are gradually being (re)admitted; until their content
+     * is complete, references into them are suppressed so the report focuses on
+     * the chapters that are currently expected to be clean.
+     *
+     * @var list<string>
+     */
+    private const array IGNORED_CHAPTERS = ['F', 'O', 'P', 'Q', 'R', 'S', 'T'];
+
+    /**
      * @param  list<array{
      *     slug: string,
      *     numbers: list<string>,
@@ -47,7 +58,11 @@ final class BrokenLinkLinter
         foreach ($modules as $module) {
             foreach ($module['rules'] as $rule) {
                 foreach (RuleReferenceRewriter::extractReferences($rule['content']) as $reference) {
-                    $reason = self::resolve($reference, $module['slug'], $globalRuleNumbers, $numbersBySlug, $allNumbers, $slugs);
+                    if (self::isIgnoredChapter($reference['number'])) {
+                        continue;
+                    }
+
+                    $reason = self::resolve($reference['slug'], $reference['number'], $module['slug'], $globalRuleNumbers, $numbersBySlug, $allNumbers, $slugs);
 
                     if (! $reason instanceof BrokenReferenceReason) {
                         continue;
@@ -65,7 +80,11 @@ final class BrokenLinkLinter
 
             foreach ($module['entries'] as $entry) {
                 foreach ($entry['refs'] as $ref) {
-                    $reason = self::resolveNumber(null, $ref, $module['slug'], $globalRuleNumbers, $numbersBySlug, $allNumbers, $slugs);
+                    if (self::isIgnoredChapter($ref)) {
+                        continue;
+                    }
+
+                    $reason = self::resolve(null, $ref, $module['slug'], $globalRuleNumbers, $numbersBySlug, $allNumbers, $slugs);
 
                     if (! $reason instanceof BrokenReferenceReason) {
                         continue;
@@ -86,29 +105,40 @@ final class BrokenLinkLinter
     }
 
     /**
-     * @param  array{slug: string|null, number: string, label: string|null}  $reference
+     * Whether a rule reference's number belongs to a temporarily ignored chapter.
+     *
+     * A range reference is ignored when its leading chapter letter matches; its
+     * endpoints always share the same chapter in practice.
+     */
+    private static function isIgnoredChapter(string $number): bool
+    {
+        $chapter = mb_strtoupper(mb_substr($number, 0, 1));
+
+        return in_array($chapter, self::IGNORED_CHAPTERS, true);
+    }
+
+    /**
      * @param  array<string, array<string, true>>  $numbersBySlug
      * @param  array<string, true>  $allNumbers
      * @param  list<string>  $slugs
      */
     private static function resolve(
-        array $reference,
+        ?string $slug,
+        string $number,
         string $owningSlug,
         bool $globalRuleNumbers,
         array $numbersBySlug,
         array $allNumbers,
         array $slugs,
     ): ?BrokenReferenceReason {
-        $number = $reference['number'];
-
         if (! str_contains($number, '-')) {
-            return self::resolveNumber($reference['slug'], $number, $owningSlug, $globalRuleNumbers, $numbersBySlug, $allNumbers, $slugs);
+            return self::resolveNumber($slug, $number, $owningSlug, $globalRuleNumbers, $numbersBySlug, $allNumbers, $slugs);
         }
 
         [$from, $to] = explode('-', $number, 2);
 
-        return self::resolveNumber($reference['slug'], $from, $owningSlug, $globalRuleNumbers, $numbersBySlug, $allNumbers, $slugs)
-            ?? self::resolveNumber($reference['slug'], $to, $owningSlug, $globalRuleNumbers, $numbersBySlug, $allNumbers, $slugs);
+        return self::resolveNumber($slug, $from, $owningSlug, $globalRuleNumbers, $numbersBySlug, $allNumbers, $slugs)
+            ?? self::resolveNumber($slug, $to, $owningSlug, $globalRuleNumbers, $numbersBySlug, $allNumbers, $slugs);
     }
 
     /**

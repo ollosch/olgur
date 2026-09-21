@@ -229,3 +229,59 @@ it('reports every broken reference across rules and entries', function (): void 
 
     expect($broken)->toHaveCount(3);
 });
+
+it('resolves an index entry range ref when both endpoints exist', function (): void {
+    $modules = [
+        module('core', ['C.3.3.2', 'C.3.3.3'], [], [['term' => 'TH vs Multi-Levels', 'refs' => ['C.3.3.2-C.3.3.3']]]),
+    ];
+
+    expect(BrokenLinkLinter::lint(false, $modules))->toBe([]);
+});
+
+it('flags an index entry range ref when an endpoint is missing', function (): void {
+    $modules = [
+        module('core', ['C.3.3.2'], [], [['term' => 'TH vs Multi-Levels', 'refs' => ['C.3.3.2-C.3.3.3']]]),
+    ];
+
+    $broken = BrokenLinkLinter::lint(false, $modules);
+
+    expect($broken)->toHaveCount(1)
+        ->and($broken[0]->kind)->toBe(BrokenReferenceKind::Index)
+        ->and($broken[0]->reference)->toBe('C.3.3.2-C.3.3.3')
+        ->and($broken[0]->reason)->toBe(BrokenReferenceReason::UnknownNumber);
+});
+
+it('ignores a broken rule reference into an ignored chapter', function (): void {
+    $modules = [
+        module('core', ['1.1'], [['number' => '1.1', 'content' => 'See {{L:O.1.2}}.']]),
+    ];
+
+    expect(BrokenLinkLinter::lint(false, $modules))->toBe([]);
+});
+
+it('ignores a broken index reference into an ignored chapter', function (): void {
+    $modules = [
+        module('core', ['1.1'], [], [['term' => 'Alpha', 'refs' => ['S.9.9']]]),
+    ];
+
+    expect(BrokenLinkLinter::lint(false, $modules))->toBe([]);
+});
+
+it('ignores a broken range reference into an ignored chapter', function (): void {
+    $modules = [
+        module('core', ['1.1'], [['number' => '1.1', 'content' => 'See {{L:T.1-T.2}}.']]),
+    ];
+
+    expect(BrokenLinkLinter::lint(false, $modules))->toBe([]);
+});
+
+it('still flags a broken reference into a non-ignored chapter', function (): void {
+    $modules = [
+        module('core', ['1.1'], [['number' => '1.1', 'content' => 'See {{L:C.9.9}}.']]),
+    ];
+
+    $broken = BrokenLinkLinter::lint(false, $modules);
+
+    expect($broken)->toHaveCount(1)
+        ->and($broken[0]->reference)->toBe('{{L:C.9.9}}');
+});
