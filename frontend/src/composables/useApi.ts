@@ -5,9 +5,13 @@ import api, { type ApiError, type ApiResult } from '@/lib/http'
 
 export function useApi() {
   const loading = ref(false)
+  let requestCount = 0
 
   async function request<T>(callback: () => Promise<AxiosResponse<T>>): Promise<ApiResult<T>> {
-    loading.value = true
+    if (requestCount === 0) {
+      loading.value = true
+    }
+    requestCount++
 
     try {
       const res = await callback()
@@ -21,7 +25,10 @@ export function useApi() {
 
       throw e
     } finally {
-      loading.value = false
+      requestCount--
+      if (requestCount === 0) {
+        loading.value = false
+      }
     }
   }
 

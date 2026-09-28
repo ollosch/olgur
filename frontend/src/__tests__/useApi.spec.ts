@@ -36,6 +36,25 @@ describe('useApi', () => {
     expect(loading.value).toBe(false)
   })
 
+  it('keeps loading true until all concurrent requests resolve', async () => {
+    const resolvers: Array<(v: unknown) => void> = []
+    mockRequest.mockImplementation(() => new Promise((resolve) => resolvers.push(resolve)))
+
+    const { get, loading } = useApi()
+    const first = get('/first')
+    const second = get('/second')
+
+    expect(loading.value).toBe(true)
+
+    resolvers[0]!({ data: 'a' })
+    await first
+    expect(loading.value).toBe(true)
+
+    resolvers[1]!({ data: 'b' })
+    await second
+    expect(loading.value).toBe(false)
+  })
+
   it('returns response data on success', async () => {
     mockRequest.mockResolvedValue({ data: { id: 1 } })
     const { get } = useApi()
