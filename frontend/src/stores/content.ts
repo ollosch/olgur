@@ -404,6 +404,14 @@ export const useContentStore = defineStore('content', () => {
     if (canViewReleased(moduleId)) {
       const manifestEntry = manifestByModule.value[moduleId]
       if (!manifestEntry?.content) return
+      const cached = await cacheStore.getCachedContent<Rule>(systemId, moduleId, 'rules')
+      if (seq !== refreshSeq) return
+      if (cached && cached.version_id === manifestEntry.version_id) {
+        rulesByModule.value[moduleId] = cached.items.map((r) =>
+          markRaw({ ...r, content: r.content.split('<br>').join('\n') }),
+        )
+        return
+      }
       const data = await fetchAuthenticatedCollection<Rule>(manifestEntry.content.rules)
       if (seq !== refreshSeq) return
       if (data !== null) {
@@ -484,6 +492,12 @@ export const useContentStore = defineStore('content', () => {
     if (canViewReleased(moduleId)) {
       const manifestEntry = manifestByModule.value[moduleId]
       if (!manifestEntry?.content) return
+      const cached = await cacheStore.getCachedContent<IndexEntry>(systemId, moduleId, 'index')
+      if (seq !== refreshSeq) return
+      if (cached && cached.version_id === manifestEntry.version_id) {
+        indexEntriesByModule.value[moduleId] = cached.items.map((e) => markRaw(e))
+        return
+      }
       const data = await fetchAuthenticatedCollection<IndexEntry>(manifestEntry.content.index)
       if (seq !== refreshSeq) return
       if (data !== null) {
@@ -518,6 +532,12 @@ export const useContentStore = defineStore('content', () => {
     if (canViewReleased(moduleId)) {
       const manifestEntry = manifestByModule.value[moduleId]
       if (!manifestEntry?.content) return
+      const cached = await cacheStore.getCachedContent<GameDatum>(systemId, moduleId, 'game-data')
+      if (seq !== refreshSeq) return
+      if (cached && cached.version_id === manifestEntry.version_id) {
+        gameDataByModule.value[moduleId] = cached.items.map((d) => markRaw(d))
+        return
+      }
       const data = await fetchAuthenticatedCollection<GameDatum>(manifestEntry.content['game-data'])
       if (seq !== refreshSeq) return
       if (data !== null) {

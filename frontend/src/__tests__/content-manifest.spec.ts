@@ -25,6 +25,17 @@ vi.mock('@/lib/http', async (importOriginal) => {
   return { ...actual, request: mockRequest }
 })
 
+// ─── Mock the cache store read helper ─────────────────────────────────────────
+const { mockGetCachedContent } = vi.hoisted(() => ({
+  mockGetCachedContent: vi.fn(),
+}))
+
+vi.mock('@/stores/cacheStore', () => ({
+  useCacheStore: vi.fn(() => ({
+    getCachedContent: mockGetCachedContent,
+  })),
+}))
+
 import { useContentStore } from '@/stores/content'
 import { useSystemStore } from '@/stores/system'
 import type {
@@ -171,6 +182,8 @@ describe('useContentStore — manifest & content routing', () => {
     setActivePinia(createPinia())
     mockGet.mockReset()
     mockRequest.mockReset()
+    mockGetCachedContent.mockReset()
+    mockGetCachedContent.mockResolvedValue(undefined)
   })
 
   afterEach(() => {
