@@ -17,6 +17,14 @@ export type ApiError =
 
 export type LaravelErrors = Record<string, string[] | string>
 
+const API_ERROR_TYPES = ['validation', 'auth', 'forbidden', 'conflict', 'network', 'unknown'] as const
+
+export function isApiError(value: unknown): value is ApiError {
+  if (typeof value !== 'object' || value === null) return false
+  const type = (value as { type?: unknown }).type
+  return typeof type === 'string' && (API_ERROR_TYPES as readonly string[]).includes(type)
+}
+
 const axiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost/api',
   headers: {

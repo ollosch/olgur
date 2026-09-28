@@ -31,7 +31,7 @@ vi.mock('@/stores/auth', () => ({
   })),
 }))
 
-import { globalErrorHandler } from '@/lib/globalErrorHandler'
+import { globalErrorHandler, setupUnhandledRejectionHandler } from '@/lib/globalErrorHandler'
 import { useOnline } from '@/composables/useOnline'
 
 describe('globalErrorHandler', () => {
@@ -114,6 +114,50 @@ describe('globalErrorHandler', () => {
     it('falls back to a generic message when no message is provided', async () => {
       await globalErrorHandler({ type: 'conflict' }, null)
       expect(mockToastError).toHaveBeenCalledWith('Conflict error. Please try again.')
+    })
+  })
+
+  // ── unhandled rejection routing ─────────────────────────────────────────────
+
+  describe('unhandledrejection routing', () => {
+    it('routes ApiError rejections through the global handler', () => {
+      setupUnhandledRejectionHandler()
+
+      window.dispatchEvent(
+        new PromiseRejectionEvent('unhandledrejection', {
+          promise: Promise.resolve(),
+          reason: { type: 'conflict', message: 'This item already exists.' },
+        }),
+      )
+
+      expect(mockToastError).toHaveBeenCalledWith('This item already exists.')
+    })
+
+    it('routes auth rejections to a session-expiry redirect', () => {
+      setupUnhandledRejectionHandler()
+
+      window.dispatchEvent(
+        new PromiseRejectionEvent('unhandledrejection', {
+          promise: Promise.resolve(),
+          reason: { type: 'auth', message: 'Unauthenticated.' },
+        }),
+      )
+
+      expect(mockPush).toHaveBeenCalledWith({ name: 'login' })
+    })
+
+    it('ignores non-ApiError rejection reasons', () => {
+      setupUnhandledRejectionHandler()
+
+      window.dispatchEvent(
+        new PromiseRejectionEvent('unhandledrejection', {
+          promise: Promise.resolve(),
+          reason: new Error('boom'),
+        }),
+      )
+
+      expect(mockToastError).not.toHaveBeenCalled()
+      expect(mockPush).not.toHaveBeenCalled()
     })
   })
 })

@@ -4,7 +4,7 @@ import { registerSW } from 'virtual:pwa-register'
 
 import App from './App.vue'
 import router from './router'
-import { globalErrorHandler } from './lib/globalErrorHandler'
+import { globalErrorHandler, setupUnhandledRejectionHandler } from './lib/globalErrorHandler'
 
 import '@/styles.css'
 import { useAuthStore } from './stores/auth'
@@ -15,6 +15,7 @@ const app = createApp(App)
 app.use(createPinia())
 app.use(router)
 app.config.errorHandler = globalErrorHandler
+setupUnhandledRejectionHandler()
 
 useAppSettingsStore().init()
 

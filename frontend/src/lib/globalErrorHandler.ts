@@ -1,10 +1,18 @@
-import type { ApiError } from './http'
+import { isApiError, type ApiError } from './http'
 import type { ComponentPublicInstance } from 'vue'
 import router from '@/router'
 import { useAuthStore } from '@/stores/auth'
 import { useOnline } from '@/composables/useOnline'
 import { toast } from 'vue-sonner'
 import { redirectAlreadyAuthenticated, redirectOnSessionExpiry } from '@/lib/sessionNavigation'
+
+export function setupUnhandledRejectionHandler(): void {
+  window.addEventListener('unhandledrejection', (event: PromiseRejectionEvent) => {
+    if (isApiError(event.reason)) {
+      void globalErrorHandler(event.reason, null)
+    }
+  })
+}
 
 export async function globalErrorHandler(
   err: unknown,
