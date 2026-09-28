@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 use App\Models\GameDatum;
 use App\Models\IndexEntry;
+use App\Models\IndexEntryVersion;
 use App\Models\Membership;
 use App\Models\Module;
+use App\Models\ModuleVersion;
 use App\Models\Rule;
+use App\Models\RuleVersion;
 use App\Models\Subscription;
 use App\Models\System;
 use App\Models\User;
@@ -936,6 +939,101 @@ test('--fresh flag deletes and reimports sop', function () use ($simpleGameRules
 
     artisan('import:game', ['path' => $dir, '--fresh' => true])->assertSuccessful();
     expect(GameDatum::query()->where('type', 'sop')->count())->toBe(1);
+
+    removeGameDir($dir);
+});
+
+test('--create-version=1.0 releases every module with snapshots', function () use ($simpleGameRules, $simpleGameIndex): void {
+    $user = User::factory()->create(['email' => 'releaser@example.com']);
+
+    $dir = makeGameDir(
+        [
+            'name' => 'Release Game',
+            'slug' => 'release-game',
+            'modules' => [
+                ['type' => 'core', 'name' => 'Core', 'slug' => 'core', 'path' => 'rules.json'],
+            ],
+            'index' => 'idx.json',
+        ],
+        [
+            'rules.json' => $simpleGameRules,
+            'idx.json' => $simpleGameIndex,
+        ]
+    );
+
+    artisan('import:game', [
+        'path' => $dir,
+        '--user' => 'releaser@example.com',
+        '--create-version' => '1.0',
+    ])->assertSuccessful();
+
+    $system = System::query()->where('slug', 'release-game')->firstOrFail();
+    $module = Module::query()->where('system_id', $system->id)->firstOrFail();
+
+    expect(ModuleVersion::query()->count())->toBe(1);
+    $version = ModuleVersion::query()->where('module_id', $module->id)->first();
+    expect($version)->not->toBeNull();
+    expect($version->version_string)->toBe('1.0');
+    expect($version->released_at)->not->toBeNull();
+    expect($version->released_by)->toBe($user->id);
+
+    expect(RuleVersion::query()->where('module_version_id', $version->id)->count())->toBe(3);
+    expect(IndexEntryVersion::query()->where('module_version_id', $version->id)->count())->toBe(2);
+
+    removeGameDir($dir);
+});
+
+test('--create-version without a value defaults to "0.1"', function () use ($simpleGameRules, $simpleGameIndex): void {
+    $user = User::factory()->create(['email' => 'default-version@example.com']);
+
+    $dir = makeGameDir(
+        [
+            'name' => 'Default Version Game',
+            'slug' => 'default-version-game',
+            'modules' => [
+                ['type' => 'core', 'name' => 'Core', 'slug' => 'core', 'path' => 'rules.json'],
+            ],
+            'index' => 'idx.json',
+        ],
+        [
+            'rules.json' => $simpleGameRules,
+            'idx.json' => $simpleGameIndex,
+        ]
+    );
+
+    artisan('import:game', [
+        'path' => $dir,
+        '--user' => 'default-version@example.com',
+        '--create-version' => true,
+    ])->assertSuccessful();
+
+    expect(ModuleVersion::query()->count())->toBe(1);
+    expect(ModuleVersion::query()->first()->version_string)->toBe('0.1');
+
+    removeGameDir($dir);
+});
+
+test('--create-version without a valid user warns and skips the release', function () use ($simpleGameRules): void {
+    $dir = makeGameDir(
+        [
+            'name' => 'No User Release Game',
+            'slug' => 'no-user-release-game',
+            'modules' => [
+                ['type' => 'core', 'name' => 'Core', 'slug' => 'core', 'path' => 'rules.json'],
+            ],
+            'index' => 'idx.json',
+        ],
+        [
+            'rules.json' => $simpleGameRules,
+            'idx.json' => [],
+        ]
+    );
+
+    artisan('import:game', ['path' => $dir, '--create-version' => '1.0'])
+        ->assertSuccessful()
+        ->expectsOutputToContain('skipping version creation');
+
+    expect(ModuleVersion::query()->count())->toBe(0);
 
     removeGameDir($dir);
 });

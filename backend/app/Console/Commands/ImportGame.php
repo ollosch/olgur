@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Actions\ReleaseModuleVersion;
 use App\Data\SystemConfig;
 use App\Enums\GameDataType;
 use App\Models\GameDatum;
@@ -25,11 +26,14 @@ use Illuminate\Support\Facades\DB;
 #[Signature('import:game
         {path : Path to a game data directory (must contain index.json)}
         {--user=ollo@olgur.de : Email address of a user to make admin of the imported system}
-        {--fresh : Delete existing rules and index entries before importing}')]
+        {--fresh : Delete existing rules and index entries before importing}
+        {--create-version= : Release every module in the system as a version. Pass a value (e.g. --create-version=1.0) or omit for "0.1"}')]
 final class ImportGame extends Command
 {
-    public function __construct(private readonly ModuleDataImporter $importer)
-    {
+    public function __construct(
+        private readonly ModuleDataImporter $importer,
+        private readonly ReleaseModuleVersion $releaseModuleVersion,
+    ) {
         parent::__construct();
     }
 
@@ -238,43 +242,60 @@ final class ImportGame extends Command
         $this->info('Import complete.');
 
         $userEmail = $this->option('user');
+        $user = null;
 
         if (is_string($userEmail) && $userEmail !== '') {
             $user = User::query()->where('email', $userEmail)->first();
 
             if ($user === null) {
                 $this->warn(sprintf('No user found with email "%s", skipping admin assignment.', $userEmail));
+            } else {
+                $system = System::query()->where('slug', $systemSlug)->firstOrFail();
 
-                return self::SUCCESS;
-            }
-
-            $system = System::query()->where('slug', $systemSlug)->firstOrFail();
-
-            /** @var Membership $membership */
-            $membership = Membership::query()->firstOrCreate(
-                ['user_id' => $user->id, 'system_id' => $system->id],
-                ['admin' => true, 'config' => []],
-            );
-
-            if (! $membership->wasRecentlyCreated) {
-                $membership->admin = true;
-                $membership->save();
-            }
-
-            $this->info(sprintf('User "%s" is now admin of system "%s".', $userEmail, $systemSlug));
-
-            // Subscribe the user to every module in the system (editor access)
-            // so the frontend shows them as subscribed, matching the behaviour
-            // of SystemController::store() which subscribes the creator to the
-            // auto-created core module.
-            $system->modules()->each(function (Module $module) use ($user): void {
-                Subscription::query()->firstOrCreate(
-                    ['user_id' => $user->id, 'module_id' => $module->id],
-                    ['editor' => true],
+                /** @var Membership $membership */
+                $membership = Membership::query()->firstOrCreate(
+                    ['user_id' => $user->id, 'system_id' => $system->id],
+                    ['admin' => true, 'config' => []],
                 );
-            });
 
-            $this->info(sprintf('User "%s" subscribed to all modules of system "%s".', $userEmail, $systemSlug));
+                if (! $membership->wasRecentlyCreated) {
+                    $membership->admin = true;
+                    $membership->save();
+                }
+
+                $this->info(sprintf('User "%s" is now admin of system "%s".', $userEmail, $systemSlug));
+
+                // Subscribe the user to every module in the system (editor access)
+                // so the frontend shows them as subscribed, matching the behaviour
+                // of SystemController::store() which subscribes the creator to the
+                // auto-created core module.
+                $system->modules()->each(function (Module $module) use ($user): void {
+                    Subscription::query()->firstOrCreate(
+                        ['user_id' => $user->id, 'module_id' => $module->id],
+                        ['editor' => true],
+                    );
+                });
+
+                $this->info(sprintf('User "%s" subscribed to all modules of system "%s".', $userEmail, $systemSlug));
+            }
+        }
+
+        if ($this->input->hasParameterOption('--create-version')) {
+            if ($user === null) {
+                $this->warn('--create-version requires a valid --user to be the release author; skipping version creation.');
+            } else {
+                $versionString = $this->option('create-version');
+                $versionString = is_string($versionString) && $versionString !== ''
+                    ? $versionString
+                    : '0.1';
+
+                $system = System::query()->where('slug', $systemSlug)->firstOrFail();
+
+                foreach ($system->modules()->get() as $module) {
+                    $this->releaseModuleVersion->execute($module, $user, $versionString, '');
+                    $this->info(sprintf('Released version "%s" for module "%s".', $versionString, $module->slug));
+                }
+            }
         }
 
         return self::SUCCESS;
