@@ -65,3 +65,13 @@ export function compareIndexEntries(a: IndexEntry, b: IndexEntry, q: string): nu
   if (rankDiff !== 0) return rankDiff
   return a.term.localeCompare(b.term)
 }
+
+/** Human-readable byte size, e.g. `formatBytes(1536)` → `1.5 KB`. */
+export function formatBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB']
+  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  const value = bytes / 1024 ** i
+  const rounded = i === 0 || value >= 10 ? Math.round(value) : Math.round(value * 10) / 10
+  return `${rounded} ${units[i]}`
+}

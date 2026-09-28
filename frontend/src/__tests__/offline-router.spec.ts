@@ -25,6 +25,7 @@ vi.mock('@/views/SystemView.vue', () => ({
 import router from '@/router/index.ts'
 import { useAuthStore } from '@/stores/auth'
 import { useCacheStore } from '@/stores/cacheStore'
+import { useOnline } from '@/composables/useOnline'
 
 function meta(systemId: string) {
   return { systemId, name: `System ${systemId}`, versionString: '1.0', cachedAt: 0, size: 0 }
@@ -35,6 +36,7 @@ describe('router guard — cached systems offline/logged-out', () => {
     setActivePinia(createPinia())
     useAuthStore().initialized = true
     useCacheStore().cachedSystems = []
+    useOnline().online.value = true
     await router.push('/reset-password-request')
   })
 
@@ -67,5 +69,15 @@ describe('router guard — cached systems offline/logged-out', () => {
     await router.push('/')
 
     expect(router.currentRoute.value.path).toBe('/login')
+  })
+
+  it('admits the home route for a logged-out user when offline', async () => {
+    const authStore = useAuthStore()
+    authStore.user = null
+    useOnline().online.value = false
+
+    await router.push('/')
+
+    expect(router.currentRoute.value.name).toBe('home')
   })
 })

@@ -5,6 +5,7 @@ import type { System, Membership, Module } from '@/types/domain'
 import { storeToRefs } from 'pinia'
 import { useSystemStore } from '@/stores/system'
 import { useMembershipStore } from '@/stores/membership'
+import { useCacheStore } from '@/stores/cacheStore'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -23,6 +24,7 @@ const props = defineProps<Props>()
 const router = useRouter()
 const systemStore = useSystemStore()
 const membershipStore = useMembershipStore()
+const cacheStore = useCacheStore()
 const { modulesBySystem, loading } = storeToRefs(systemStore)
 const { subscriptions } = storeToRefs(membershipStore)
 const { fetchModules, deleteSystem, deleteModule, createVersion } = systemStore
@@ -35,6 +37,9 @@ const deletingModuleId = ref<string | null>(null)
 const modules = computed(() => modulesBySystem.value[props.system.id] ?? [])
 const canManage = computed(() => props.system.permissions?.['system.manage'] ?? false)
 const isMember = computed(() => !!props.membership)
+const isCached = computed(() =>
+  cacheStore.cachedSystems.some((e) => e.systemId === props.system.id),
+)
 
 function isUnavailable(mod: Module): boolean {
   return !mod.permissions['content.view_live'] && !mod.permissions['content.view_released']
@@ -82,6 +87,7 @@ function openSystem() {
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2 flex-wrap">
           <span class="text-foreground font-medium">{{ system.name }}</span>
+          <Badge v-if="isCached" variant="secondary" class="text-xs">cached</Badge>
         </div>
         <div class="text-xs text-muted-foreground mt-0.5">{{ system.slug }}</div>
       </div>

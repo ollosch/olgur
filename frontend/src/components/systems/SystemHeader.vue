@@ -18,6 +18,7 @@ import { Menu, MoreVertical, Search, Table2, ListOrdered, TriangleAlert } from '
 import LeftPanelContent from '@/components/systems/LeftPanelContent.vue'
 import ManageMembersDialog from '@/components/systems/ManageMembersDialog.vue'
 import BrokenLinksDialog from '@/components/systems/BrokenLinksDialog.vue'
+import PinSystemControl from '@/components/systems/PinSystemControl.vue'
 import { useBrokenLinks } from '@/composables/useBrokenLinks'
 import type { Rule, Module } from '@/types/domain'
 import { ref, computed } from 'vue'
@@ -126,7 +127,9 @@ async function logout(): Promise<void> {
       </Button>
     </div>
 
-    <!-- Right: dropdown menu -->
+    <!-- Right: offline pin + dropdown menu -->
+    <PinSystemControl v-if="systemStore.currentSystem" :system-id="systemStore.currentSystem.id" />
+
     <DropdownMenu>
       <DropdownMenuTrigger as-child>
         <Button variant="ghost" size="icon" class="w-8 h-8">

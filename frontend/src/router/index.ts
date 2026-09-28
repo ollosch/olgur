@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import authRoutes from '@/router/auth.ts'
 import { useAuthStore } from '@/stores/auth.ts'
 import { useCacheStore } from '@/stores/cacheStore'
+import { useOnline } from '@/composables/useOnline'
 import HomeView from '@/views/HomeView.vue'
 
 const router = createRouter({
@@ -81,6 +82,9 @@ router.beforeEach(async (to) => {
     const requiresSystemAccess = to.meta.requiresSystemAccess === true
     const systemId = to.params['systemId'] as string | undefined
     if (requiresSystemAccess && systemId && useCacheStore().isCached(systemId)) {
+      return true
+    }
+    if (useOnline().offline.value && to.name === 'home') {
       return true
     }
     return {
