@@ -236,23 +236,42 @@ describe('useProofreadStore', () => {
   })
 
   describe('remove', () => {
-    it('DELETEs the row and decrements the local count', async () => {
+    it('DELETEs the row and re-fetches the authoritative status', async () => {
       seedSystem()
       const proofreadStore = useProofreadStore()
       proofreadStore.statusMap = { r1: { count: 2, me: true } }
       mockDel.mockResolvedValue({ ok: true, data: undefined })
+      mockGet.mockResolvedValue({
+        ok: true,
+        data: {
+          data: {
+            threshold: 3,
+            proofreads: { r1: { count: 1, me: false } },
+          },
+        },
+      })
 
       await proofreadStore.remove('rule', 'r1')
 
       expect(mockDel).toHaveBeenCalledWith('/systems/sys1/proofreads/rule/r1')
+      expect(mockGet).toHaveBeenCalledWith('/systems/sys1/proofreads')
       expect(proofreadStore.statusMap['r1']).toEqual({ count: 1, me: false })
     })
 
-    it('drops the entry entirely when the count reaches zero', async () => {
+    it('applies the server status that drops the entry once it reaches zero', async () => {
       seedSystem()
       const proofreadStore = useProofreadStore()
       proofreadStore.statusMap = { r1: { count: 1, me: true } }
       mockDel.mockResolvedValue({ ok: true, data: undefined })
+      mockGet.mockResolvedValue({
+        ok: true,
+        data: {
+          data: {
+            threshold: 3,
+            proofreads: {},
+          },
+        },
+      })
 
       await proofreadStore.remove('rule', 'r1')
 

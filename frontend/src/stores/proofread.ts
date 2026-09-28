@@ -68,16 +68,7 @@ export const useProofreadStore = defineStore('proofread', () => {
     if (!systemId) return
     const result = await del<void>(`/systems/${systemId}/proofreads/${entityType}/${entityId}`)
     if (result.ok) {
-      const current = statusMap.value[entityId]
-      if (!current) return
-      const nextCount = current.count - 1
-      if (nextCount <= 0) {
-        const next = { ...statusMap.value }
-        delete next[entityId]
-        statusMap.value = next
-      } else {
-        statusMap.value[entityId] = { count: nextCount, me: false }
-      }
+      await fetchStatus(systemId)
     }
   }
 
