@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import { registerSW } from 'virtual:pwa-register'
+import { toast } from 'vue-sonner'
 
 import App from './App.vue'
 import router from './router'
@@ -25,4 +26,14 @@ const authStore = useAuthStore()
 
 authStore.bootstrap().catch((err: unknown) => globalErrorHandler(err, null))
 
-registerSW({ immediate: true })
+registerSW({
+  immediate: true,
+  onNeedRefresh() {
+    toast('New version available — reload to update.', {
+      action: { label: 'Reload', onClick: () => window.location.reload() },
+    })
+  },
+  onOfflineReady() {
+    toast('Ready to work offline.')
+  },
+})
