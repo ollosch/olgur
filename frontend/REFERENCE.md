@@ -1,0 +1,435 @@
+# Olgur Frontend Reference
+
+This file is the read-first map for `frontend/`. It is designed for LLMs that need the current SPA structure, state flow, and non-obvious UI behavior without scanning every Vue component first.
+
+## Snapshot
+
+- Vue 3.5.40 SPA with TypeScript 5.9.3 and Vite 8.
+- Cookie/session auth against the Laravel API. No bearer tokens.
+- Main logged-in experience is a persistent reading workspace for one system at a time.
+- Primary shell: left navigation panel, center content, right game-data drawer, bottom unit-data panel.
+- Pinia 4.0.2 setup stores hold almost all domain and UI state.
+
+## Stack
+
+- Framework: `vue@beta`
+- Router: `vue-router@^5`
+- State: `pinia@^4`
+- HTTP: `axios@^1`
+- Forms: `vee-validate@^4`
+- Styling: Tailwind CSS 4
+- Headless UI: `reka-ui`
+- Toasts: `vue-sonner`
+- Tests: Vitest 4
+
+Important environment variables:
+
+| Variable | Meaning |
+|---|---|
+| `VITE_API_BASE_URL` | Axios base URL, defaults to `http://localhost/api` in `src/lib/http.ts` |
+| `VITE_COOKIE_URL` | CSRF cookie endpoint used before auth mutations |
+| `VITE_APP_DEBUG` | Enables extra `console.error` output in the global error handler |
+
+## Boot And Auth Flow
+
+Main entrypoint: `frontend/src/main.ts`
+
+Current boot order:
+
+- Create app.
+- Install Pinia.
+- Install router.
+- Register `globalErrorHandler`.
+- Initialize app settings.
+- Mount app.
+- `authStore.bootstrap()` (async, fire-and-forget; escaped failures forward to `globalErrorHandler`).
+- `registerSW({ immediate: true })` registers the PWA service worker.
+
+`authStore.bootstrap()` (in `frontend/src/stores/auth.ts`) runs:
+
+- `fetchCsrfCookie()` — a `network` failure flips the app into offline mode.
+- `fetchUser()` — a `network` failure also flips into offline mode; a non-network auth failure just leaves the user logged out.
+- On offline, `useOnline().online.value = false`.
+- `cacheStore.loadRegistry()` — loads the cached-system registry so the router guard can admit pinned systems while offline.
+- If authenticated and online, `useSystemStore().init()`.
+- `authStore.initialized = true` (always, even if an earlier step threw).
+
+Important implications:
+
+- Auth state lives only in memory in `authStore.user`.
+- Router guards depend on `authStore.user`.
+- The `beforeEach` guard waits for `authStore.initialized` before applying any `requiresAuth` / `requiresGuest` logic, so the initial navigation always sees the real auth state.
+- A network failure during bootstrap leaves `user` null but does NOT redirect to login; the app boots offline and may serve cached content.
+
+## Route Map
+
+Router files: `frontend/src/router/index.ts`, `frontend/src/router/auth.ts`
+
+### Guest Routes
+
+- `/login`
+- `/register`
+- `/reset-password-request`
+- `/reset-password`
+
+### Auth Routes
+
+- `/` -> `HomeView`
+- `/profile` -> `UserProfileView`
+- `/settings` -> `AppSettingsView`
+- `/systems/:systemId` -> `SystemView`
+- `/systems/:systemId/rule/:ruleId` -> `RuleDetailView`
+- `/systems/:systemId/game-data/:gameDatumId` -> `GameDataView`
+
+### Guard Behavior
+
+- `requiresAuth` without `authStore.user` redirects to `login?redirect=<fullPath>`.
+- `requiresGuest` with `authStore.user` redirects to `home`.
+- `requiresSystemAccess` (meta on the `system` route): when unauthenticated, the guard still admits the route if the target `systemId` is pinned (`cacheStore.isCached(systemId)`), enabling read-only guest access to a cached system.
+- When offline, `home` is admitted without auth (`useOnline().offline`), landing on the cached-systems screen.
+- Both guards wait for `authStore.initialized` before executing, so deep links opened while the app is still bootstrapping are handled correctly.
+- `LoginView` reads the `redirect` query after a successful login and navigates there; falls back to `home`.
+
+## Root UI Shell
+
+App root: `frontend/src/App.vue`
+
+Mounted once for the whole SPA:
+
+- `<router-view />`
+- global toaster
+- `RulePopupOverlay`
+- `GlobalSearchOverlay`
+
+There is no separate public landing shell. The authenticated app is the default shell.
+
+## Domain Types Exposed To The Frontend
+
+Source of truth: `frontend/src/types/domain.ts`
+
+Main API-facing types:
+
+- `User` includes `super_admin`.
+- `SystemConfig` includes `global_rule_numbers`, `sort_rules_by`, `toc_depth`, `proofread_threshold`, and `cover_image`. When `global_rule_numbers` is true, bare `{{L:n}}` links resolve system-wide; otherwise they resolve in the module that owns the content. `proofread_threshold` is the number of distinct proofreaders required before an entity counts as proofread.
+- `ProofreadEntityType` (`rule` | `index_entry` | `game_datum`) and `ProofreadStatus` (`{ threshold, proofreads: Record<entity_id, { count, me }> }`) describe the proofread counter state.
+- `MembershipConfig` includes optional `bookmarks`, `ignored_tags`, and `preferred_rule_format`.
+- `Rule` has a client-calculated `depth` field.
+- `GameDatum.type` is one of `sop`, `table`, `ordnance`, `vehicle`. The type selects the tool component (`sop` → SOP viewer, `table` → table renderer, `vehicle` → unit browser, `ordnance` → ordnance tool).
+- `RuleDeletionMode` (`re_parent` | `recursive`) and `BrokenReference` describe the rule deletion operation and lint results.
+
+## Main Stores
+
+### `authStore`
+
+File: `frontend/src/stores/auth.ts`
+
+- Holds the authenticated `user` in memory.
+- Calls `/login`, `/register`, `/logout`, `/me`, `/forgot-password`, `/reset-password`, and full verify-email URLs.
+- Exposes `loading` and `errors` from its `useApi()` instance.
+
+### `systemStore`
+
+File: `frontend/src/stores/system.ts`
+
+Owns:
+
+- `systems`
+- `modulesBySystem`
+- `membershipsBySystem`
+- `subscriptions`
+- `currentSystem`
+
+Key behaviors:
+
+- `init()` loads systems, memberships, and subscriptions after login.
+- `enterSystem(systemId)` loads the system record and its modules.
+- `subscribe()` stores the subscription and refreshes memberships.
+- There is no client-side activation or single-active logic; which module is on screen is navigation state.
+
+### `contentStore`
+
+File: `frontend/src/stores/content.ts`
+
+Owns:
+
+- `rulesByModule`
+- `indexEntriesByModule`
+- `gameDataByModule`
+- `manifestByModule` — version manifest keyed by module ID, loaded on system entry; contains `version_id`, `version_string`, `released_at`, and versioned content API URLs
+
+Derived state:
+
+- `activeModules` = every module the user can view (`content.view_live` or `content.view_released`); there is no activation toggle.
+- `allRules`, `allIndexEntries`, `allGameData` are derived from viewable modules.
+- `rulesById`, `rulesByNumber`, `rulesByModuleNumber`, `moduleBySlug`, `indexEntriesById`, `indexEntriesByTerm` power navigation, popup lookup, and search.
+- `resolveRuleReference(number, { moduleSlug?, moduleId? })` resolves bare links in the owning module (or system-wide when `globalRuleNumbers`) and qualified `{{L:slug:n}}` links in the named module.
+- `childrenMap` calculates and mutates `rule.depth` client-side.
+- `visibleIndexEntryIds` hides empty index branches unless they or their descendants still have visible content after filtering rule refs to resolvable rules.
+- `isDesigner` — true when the current user is a super_admin, a system admin, or a module editor for at least one viewable module; used to determine whether to serve draft content or released versions.
+
+Rule editor operations:
+
+- `deleteRule()` — delete a rule with `re_parent` (default) or `recursive` mode.
+- `fetchLint()` — load the system's broken-link lint results; `refreshContent()` re-fetches rules/index after a mutation.
+
+### `cacheStore`
+
+File: `frontend/src/stores/cacheStore.ts`
+
+Backed by IndexedDB via `frontend/src/lib/idb.ts` (see "Content Tiers And Offline Caching").
+
+- `cachedSystems` — registry of pinned systems (`CachedSystemMeta[]`), loaded on boot.
+- `pinInProgress`, `bytesUsed`, `quota` — pin state and storage accounting.
+- `isCached(systemId)`, `loadRegistry()`, `estimateStorage()`, `pinSystem(systemId)`, `unpinSystem(systemId)`.
+- `getCachedSystem()`, `getCachedManifest()`, `getCachedContent()` — offline reads.
+- `pinSystem()` fetches the system, its modules, its manifest, and versioned content for every viewable module, then writes them to IndexedDB and records a `meta` entry.
+
+### `proofreadStore`
+
+File: `frontend/src/stores/proofread.ts`
+
+- `statusMap` — per-entity `{ count, me }` proofread counts; `threshold` — the system's proofread threshold.
+- `canProofread` — true when online and at least one module grants `content.proofread`.
+- `fetchStatus(systemId)`, `record(entityType, entityId)`, `remove(entityType, entityId)`.
+- `countFor()`, `isDone()`, `hasMarked()`, `needsProofreading` — derive the per-entity proofread state and the "needs proofreading" list.
+- UI: `frontend/src/components/systems/ProofreadToggle.vue` (per-entity mark/remove button) and `frontend/src/components/systems/ProofreadTab.vue` (needs-proofreading list in the left panel).
+
+### Smaller Supporting Stores
+
+- `bookmarks.ts`: persists rule bookmarks into membership config via `PATCH /me/memberships/{system}`.
+- `history.ts`: in-memory per-system recent rule history, capped at 20 and cleared on system exit.
+- `appSettings.ts`: localStorage-backed acronym popup toggle, theme hue, and sidebar pin state.
+- `leftPanel.ts`, `bottomPanel.ts`, `shortcut.ts`: UI shell state.
+- `unitSelection.ts`: temporary handoff when global search opens a vehicle or ordnance entry in the bottom panel.
+
+## HTTP And Error Handling
+
+### Axios Client
+
+File: `frontend/src/lib/http.ts`
+
+- `withCredentials: true`
+- `withXSRFToken: true`
+- JSON API requests only
+- Normalizes failures into `ApiError` variants such as `auth`, `forbidden`, `conflict`, `validation`, and `network`
+
+### `useApi()`
+
+File: `frontend/src/composables/useApi.ts`
+
+- Sets `loading` and clears previous field errors before each request.
+- Returns `null` on validation errors and stores flattened field errors.
+- Re-throws non-validation errors for global handling.
+
+### Global Error Handler
+
+File: `frontend/src/lib/globalErrorHandler.ts`
+
+- `auth`: clears user and redirects to `login`, except `Already authenticated.` which redirects to `home`
+- `forbidden`: toast only
+- `conflict`: toast only
+- `network`: toast only
+- `validation`: first-message toast if it ever bubbles up
+
+## System Session Flow
+
+Main shell: `frontend/src/views/SystemView.vue`
+
+When a system is opened:
+
+- `systemStore.enterSystem(systemId)` loads the system and its modules.
+- `contentStore` loads rules, index entries, and game data for every viewable module.
+- Viewable modules are expanded in the left panel.
+- The shell stays mounted while child routes change between rule detail and game-data detail.
+
+While inside a system:
+
+- Opening a rule records it in `historyStore`.
+- The selected rule drives left-panel highlighting and focus behavior.
+
+## Navigation And Reading UX
+
+### Left Panel
+
+Primary component: `frontend/src/components/systems/LeftPanelContent.vue`
+
+- Tabs: rules tree, index, history, bookmarks.
+- Module expansion state lives in store state and local interaction.
+- Width is resizable and persisted in localStorage.
+
+### Center Content
+
+- No child route: top-level TOC grouped by active module.
+- `/rule/:ruleId`: `RuleDetailView`.
+- `/game-data/:gameDatumId`: `GameDataView` for tables and SOP content.
+
+### Right Drawer
+
+Component: `frontend/src/components/game-data/GameDataDrawer.vue`
+
+- Modes: `tables` and `sop`.
+- Can be pinned inline or shown as a sheet overlay.
+- Width and pin state persist in localStorage.
+- Uses real `contentStore.allGameData` when available.
+- Falls back to fake table and SOP data from `src/lib/fakeGameData.ts` when no real data exists.
+
+### Bottom Panel
+
+- Hosts unit detail workflows.
+- Vehicles and ordnance selected from search open here, not in `GameDataView`.
+
+## Search, Popups, And Content Rendering
+
+### Content Tokens
+
+Renderer: `frontend/src/lib/renderContent.ts`
+
+Supported inline content tokens:
+
+- `{{L:1.2}}` -> rule link by number
+- `{{L:1.2#Custom label}}` -> labeled rule link
+- `{{L:1.2-1.4}}` -> rule range link
+- `{{L:core:3.4}}` -> rule link to a rule number in the module with slug `core`
+- `{{A:TERM}}` -> acronym popup term
+- `{{I:image-key}}` -> rule image from `/api/rules/images/{filename}`
+- `<ex>...</ex>` -> example block markup
+
+### Rule Popup System
+
+Files:
+
+- `frontend/src/composables/useRuleDelegation.ts`
+- `frontend/src/composables/useRulePopup.ts`
+- `frontend/src/components/RulePopupOverlay.vue`
+
+Current behavior:
+
+- Uses document-level event delegation rather than per-link listeners.
+- Hovering rule-number links shows rule popup content.
+- Hovering acronym terms shows acronym popup content when enabled.
+- Popup state is shared singleton state.
+
+### Global Search
+
+Component: `frontend/src/components/GlobalSearchOverlay.vue`
+
+Searches active content only:
+
+- rules
+- visible index entries
+- `table` and `sop` game data
+- `vehicle` and `ordnance` game data as unit results
+
+Selection behavior:
+
+- Rule result -> navigate to `system-rule`
+- Table or SOP result -> navigate to `system-game-datum`
+- Vehicle or ordnance result -> open bottom panel unit view
+
+## Authorization And UI Responsibilities
+
+### Frontend Authorization Helper
+
+File: `frontend/src/composables/useAuthorization.ts`
+
+The API supplies a computed current-user permission map for each module. The frontend uses these named permissions only to gate actions and choose each module's content source; it must not derive permissions from `super_admin`, membership `admin`, or subscription `editor` flags.
+
+- Backend policies resolve permissions from the existing role facts and remain authoritative for every request.
+- No role or permission database tables are needed.
+- Permission vocabulary: `system.manage`, `membership.manage`, `module.create`, `module.update`, `module.delete`, `content.view_live`, `content.view_released`, `content.edit`, `content.proofread`, `version.publish`, `version.amend_latest`, `subscription.manage`.
+
+The backend remains the source of truth for actual authorization. The frontend only mirrors or smooths some flows.
+
+## Forms And Validation
+
+- Forms use `vee-validate` without client-side schemas.
+- Validation is server-driven.
+- Pattern used throughout:
+  - submit through a store action
+  - if `store.errors` exists, feed it back into the form with `setErrors(...)`
+  - let non-validation failures bubble to the global error handler
+
+## Theme And Persistent UI Settings
+
+- The app is dark-only.
+- Theme color is a single-hue OKLCH palette generated from `appSettings.themeHue`.
+- `AppSettingsView` currently exposes only two user settings:
+  - acronym popups on or off
+  - theme hue or preset
+
+## Current Non-Obvious Truths
+
+- `authStore.user` is not persisted anywhere; reloads always re-bootstrap from `/me`.
+- Only viewable modules contribute to `allRules`, `allIndexEntries`, `allGameData`, search results, and popup lookups.
+- `GameDataDrawer` may show fake tables or fake SOP data when no real entries are loaded.
+- Vehicles and ordnance are searchable game data, but they do not render in `GameDataView`; they open in the bottom unit-data panel.
+- Tools are derived from `game_data` type (see `frontend/src/lib/gameDataTools.ts`); there is no module tool registry.
+
+## Content Tiers And Offline Caching
+
+Content splits into two tiers:
+
+- **Released content** — immutable per module-version, served from versioned manifest URLs (`manifestByModule[moduleId].content.{rules,index,game-data}`), keyed by `version_id` and `revision`. This is what players read and what the offline cache pins.
+- **Live / personalized / social data** — drafts, bookmarks, memberships, permissions, proofreads, and comments. Always online-only; never cached.
+
+### Cache Layer
+
+- Store: `frontend/src/stores/cacheStore.ts`
+- IndexedDB helpers: `frontend/src/lib/idb.ts` — a single database `olgur-offline` with object stores `systems`, `manifests`, `content`, and `meta`.
+
+`pinSystem(systemId)` fetches the system, its modules, its manifest, and the versioned content for every viewable module, then writes them to IndexedDB and records a `meta` registry entry. `unpinSystem(systemId)` removes everything under the `systemId:` key prefix.
+
+### Offline Boot And Data-Source Fallback
+
+- `authStore.bootstrap()` detects a `network` failure during CSRF/session fetch and sets `useOnline().online = false` instead of redirecting to login.
+- `systemStore.enterSystem()` and `contentStore.fetchManifest()` / `fetchRules()` / `fetchIndexEntries()` / `fetchGameData()` check `offline` first and read from the cache, falling back to the network only when online.
+- Online, `contentStore` serves live draft content to editors/admins (`content.view_live`) and versioned released content to players (`content.view_released`); offline, it serves whatever is pinned.
+
+### Connectivity Signal
+
+Composable: `frontend/src/composables/useOnline.ts`
+
+- Module-level reactive `online` ref (seeded from `navigator.onLine`, updated by `online`/`offline` window events) and a derived `offline` computed.
+- `probe()` performs a HEAD request to re-check connectivity.
+- `OfflineBanner.vue` shows a read-only cached-content banner when `offline`.
+
+### PWA Shell
+
+Configured via `vite-plugin-pwa` in `frontend/vite.config.ts` and registered in `main.ts` via `registerSW({ immediate: true })` (`virtual:pwa-register`).
+
+- `registerType: 'autoUpdate'`, standalone display mode, app manifest name "Olgur", and workbox glob precaching of static assets.
+
+## Versioning Workflow
+
+### Content Loading Strategy
+
+`contentStore` checks `isDesigner` on system entry:
+
+- **Designers** (editors, system admins, super_admins) load live draft content from the standard REST endpoints so edits are visible immediately without republishing.
+- **Players** load content from cached versioned API endpoints whose URLs come from the module manifest (`manifestByModule`). This keeps players on stable released content.
+
+### RetrofixEditor
+
+Component: `frontend/src/components/RetrofixEditor.vue`
+Composable: `frontend/src/composables/useRetrofix.ts`
+
+Used when a designer applies a post-release editorial amendment to the latest released version without publishing a new version.
+
+- Fetches both the released text (from the versioned API endpoint or `RuleVersion` row) and the current draft text.
+- If the relevant reader-facing fields in the released record and draft record are equal before the amendment, the editor is explicitly asked whether to port the correction to the draft. This prevents the correction being overwritten by the next publish.
+- If they have diverged, both are shown side by side so the designer can decide whether to apply the same fix to the draft.
+- The designer's choice is always explicit; no automatic back-propagation occurs.
+
+## Read These Files First
+
+- Boot and auth: `frontend/src/main.ts`, `frontend/src/stores/auth.ts`, `frontend/src/lib/http.ts`, `frontend/src/lib/globalErrorHandler.ts`
+- Routing: `frontend/src/router/index.ts`, `frontend/src/router/auth.ts`
+- System session flow: `frontend/src/views/SystemView.vue`, `frontend/src/stores/system.ts`, `frontend/src/stores/content.ts`
+- Domain types: `frontend/src/types/domain.ts`
+- Search and popup behavior: `frontend/src/components/GlobalSearchOverlay.vue`, `frontend/src/composables/useRuleDelegation.ts`, `frontend/src/composables/useRulePopup.ts`, `frontend/src/lib/renderContent.ts`
+- Bookmarks and history: `frontend/src/stores/bookmarks.ts`, `frontend/src/stores/history.ts`
+- Settings and theming: `frontend/src/stores/appSettings.ts`, `frontend/src/views/AppSettingsView.vue`
+- Offline cache and connectivity: `frontend/src/stores/cacheStore.ts`, `frontend/src/lib/idb.ts`, `frontend/src/composables/useOnline.ts`, `frontend/src/stores/proofread.ts`
+- Game data views: `frontend/src/views/GameDataView.vue`, `frontend/src/components/game-data/GameDataDrawer.vue`, `frontend/src/components/layout/BottomPanel.vue`
+- Tools: `frontend/src/lib/gameDataTools.ts`
+- Rule editing and lint: `frontend/src/components/systems/DeleteRuleDialog.vue`, `frontend/src/components/systems/BrokenLinksDialog.vue`, `frontend/src/composables/useBrokenLinks.ts`
