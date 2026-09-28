@@ -3,13 +3,15 @@ import { nextTick, ref, watch } from 'vue'
 import type { Rule, Module } from '@/types/domain'
 import { useLeftPanelStore, type PanelTab } from '@/stores/leftPanel'
 import { useContentStore } from '@/stores/content'
+import { useProofreadStore } from '@/stores/proofread'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { ChevronRight, ChevronDown, Bookmark, History, Pin, PinOff } from '@lucide/vue'
+import { ChevronRight, ChevronDown, Bookmark, History, Pin, PinOff, CheckCheck } from '@lucide/vue'
 import RuleTreeNode from '@/components/systems/RuleTreeNode.vue'
 import IndexTab from '@/components/systems/IndexTab.vue'
 import HistoryTab from '@/components/systems/HistoryTab.vue'
 import BookmarksTab from '@/components/systems/BookmarksTab.vue'
+import ProofreadTab from '@/components/systems/ProofreadTab.vue'
 
 interface Props {
   expandedModules: Set<string>
@@ -28,6 +30,7 @@ const emit = defineEmits<{
 
 const panelStore = useLeftPanelStore()
 const contentStore = useContentStore()
+const proofreadStore = useProofreadStore()
 
 // ---------------------------------------------------------------------------
 // Tree container ref for focus/scroll queries
@@ -108,6 +111,9 @@ watch(
       <TabsTrigger value="history" class="text-xs px-2 h-7">
         <History class="w-3 h-3" />
       </TabsTrigger>
+      <TabsTrigger v-if="proofreadStore.canProofread" value="proofread" class="text-xs px-2 h-7">
+        <CheckCheck class="w-3 h-3" />
+      </TabsTrigger>
       <!-- Pin button -->
       <button
         class="ml-auto w-6 h-6 flex items-center justify-center rounded transition-colors hover:bg-muted/50"
@@ -174,6 +180,15 @@ watch(
     <!-- History tab -->
     <TabsContent value="history" class="flex-1 overflow-hidden mt-0">
       <HistoryTab />
+    </TabsContent>
+
+    <!-- Proofread tab -->
+    <TabsContent
+      v-if="proofreadStore.canProofread"
+      value="proofread"
+      class="flex-1 overflow-hidden mt-0"
+    >
+      <ProofreadTab />
     </TabsContent>
   </Tabs>
 </template>

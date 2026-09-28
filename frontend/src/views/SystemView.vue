@@ -5,6 +5,7 @@ import { useAppSettingsStore } from '@/stores/appSettings'
 import { useContentStore } from '@/stores/content'
 import { useHistoryStore } from '@/stores/history'
 import { useLeftPanelStore } from '@/stores/leftPanel'
+import { useProofreadStore } from '@/stores/proofread'
 import { useSystemStore } from '@/stores/system'
 import { useRuleDelegation } from '@/composables/useRuleDelegation'
 import { useResizablePanel } from '@/composables/useResizablePanel'
@@ -26,6 +27,7 @@ const contentStore = useContentStore()
 const appSettings = useAppSettingsStore()
 const panelStore = useLeftPanelStore()
 const historyStore = useHistoryStore()
+const proofreadStore = useProofreadStore()
 
 const systemId = computed(() => route.params['systemId'] as string)
 const loading = ref(true)
@@ -72,6 +74,7 @@ async function loadSystem(id: string): Promise<void> {
     for (const m of loaded) {
       panelStore.expandedModuleIds.add(m.id)
     }
+    await fetchProofreadStatus(id)
     return
   }
 
@@ -82,6 +85,7 @@ async function loadSystem(id: string): Promise<void> {
   // passing through HomeView and back to the *same* system must not clear it.
   if (previousId) {
     historyStore.clearSystem(previousId)
+    proofreadStore.clear()
   }
 
   await systemStore.enterSystem(id)
@@ -102,7 +106,14 @@ async function loadSystem(id: string): Promise<void> {
     panelStore.expandedModuleIds.add(m.id)
   }
 
+  await fetchProofreadStatus(id)
+
   loading.value = false
+}
+
+async function fetchProofreadStatus(id: string): Promise<void> {
+  if (!proofreadStore.canProofread) return
+  await proofreadStore.fetchStatus(id)
 }
 
 onMounted(() => loadSystem(systemId.value))

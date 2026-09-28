@@ -29,6 +29,7 @@ export interface SystemConfig {
   global_rule_numbers: boolean
   sort_rules_by: 'number' | 'sort_order'
   toc_depth: number
+  proofread_threshold: number
   cover_image: string | null
 }
 
@@ -44,6 +45,7 @@ export interface ModulePermissions {
   'content.view_live': boolean
   'content.view_released': boolean
   'content.edit': boolean
+  'content.proofread': boolean
   'version.publish': boolean
   'version.amend_latest': boolean
   'subscription.manage': boolean
@@ -139,6 +141,18 @@ export interface GameDatum {
   content: Record<string, unknown>
   created_at: string
   updated_at: string
+}
+
+export type ProofreadEntityType = 'rule' | 'index_entry' | 'game_datum'
+
+export interface ProofreadEntityStatus {
+  count: number
+  me: boolean
+}
+
+export interface ProofreadStatus {
+  threshold: number
+  proofreads: Record<string, ProofreadEntityStatus>
 }
 
 export interface ManifestContent {

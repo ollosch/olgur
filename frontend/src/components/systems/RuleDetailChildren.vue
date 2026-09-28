@@ -4,10 +4,12 @@ import type { Rule } from '@/types/domain'
 import { renderContent } from '@/lib/renderContent'
 import { useAppSettingsStore } from '@/stores/appSettings'
 import { useBookmarkStore } from '@/stores/bookmarks'
+import { useContentStore } from '@/stores/content'
 import { useLeftPanelStore } from '@/stores/leftPanel'
 import { Crosshair, Pencil, Star, Trash2 } from '@lucide/vue'
 import EditRuleDialog from '@/components/systems/EditRuleDialog.vue'
 import DeleteRuleDialog from '@/components/systems/DeleteRuleDialog.vue'
+import ProofreadToggle from '@/components/systems/ProofreadToggle.vue'
 
 interface Props {
   rule: Rule
@@ -25,6 +27,11 @@ const emit = defineEmits<{ selectRule: [rule: Rule]; ruleDeleted: [] }>()
 const appSettings = useAppSettingsStore()
 const bookmarkStore = useBookmarkStore()
 const panelStore = useLeftPanelStore()
+const contentStore = useContentStore()
+
+const canProofread = computed(
+  (): boolean => contentStore.permissionsFor(props.rule.module_id)?.['content.proofread'] ?? false,
+)
 
 const editDialogOpen = ref(false)
 const editingRule = ref<Rule | null>(null)
@@ -105,6 +112,7 @@ const childRules = computed((): Rule[] => props.childrenMap.get(props.rule.id) ?
       >
         <Crosshair class="w-3.5 h-3.5 text-muted-foreground" />
       </button>
+      <ProofreadToggle v-if="canProofread" entity-type="rule" :entity-id="rule.id" />
       <button
         class="p-1 rounded hover:bg-muted/40 transition-colors"
         :title="bookmarkStore.isBookmarked('rule', rule.id) ? 'Remove bookmark' : 'Bookmark rule'"

@@ -6,6 +6,7 @@ import MatrixTable from '@/components/game-data/MatrixTable.vue'
 import AttributeTable from '@/components/game-data/AttributeTable.vue'
 import ModifierList from '@/components/game-data/ModifierList.vue'
 import SopViewer from '@/components/game-data/SopViewer.vue'
+import ProofreadToggle from '@/components/systems/ProofreadToggle.vue'
 import type { MatrixContent } from '@/components/game-data/MatrixTable.vue'
 import type { AttributeTableContent } from '@/components/game-data/AttributeTable.vue'
 import type { ModifierListContent } from '@/components/game-data/ModifierList.vue'
@@ -22,6 +23,12 @@ const gameDatum = computed(
   () => contentStore.allGameData.find((d) => d.id === gameDatumId.value) ?? null,
 )
 
+const canProofread = computed(
+  (): boolean =>
+    gameDatum.value !== null &&
+    (contentStore.permissionsFor(gameDatum.value.module_id)?.['content.proofread'] ?? false),
+)
+
 const content = computed((): TableContent | null => {
   if (!gameDatum.value) return null
   return gameDatum.value.content as unknown as TableContent
@@ -34,9 +41,12 @@ const content = computed((): TableContent | null => {
     <div v-if="!gameDatum" class="text-sm text-muted-foreground">Table not found.</div>
 
     <template v-else>
-      <h1 class="text-lg font-semibold text-foreground mb-1">
-        {{ gameDatum.name }}
-      </h1>
+      <div class="flex items-center gap-2 mb-1">
+        <h1 class="text-lg font-semibold text-foreground">
+          {{ gameDatum.name }}
+        </h1>
+        <ProofreadToggle v-if="canProofread" entity-type="game_datum" :entity-id="gameDatum.id" />
+      </div>
       <p class="text-xs text-muted-foreground mb-6 capitalize">
         {{ gameDatum.type }}
       </p>

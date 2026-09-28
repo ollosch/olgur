@@ -7,6 +7,7 @@ import { useAppSettingsStore } from '@/stores/appSettings'
 import { useContentStore } from '@/stores/content'
 import { useAuthorization } from '@/composables/useAuthorization'
 import EditIndexEntryDialog from '@/components/systems/EditIndexEntryDialog.vue'
+import ProofreadToggle from '@/components/systems/ProofreadToggle.vue'
 
 interface Props {
   entry: IndexEntry
@@ -19,6 +20,10 @@ const emit = defineEmits<{ seeAlsoClick: [term: string] }>()
 const appSettings = useAppSettingsStore()
 const contentStore = useContentStore()
 const { canEdit } = useAuthorization()
+
+const canProofread = computed(
+  (): boolean => contentStore.permissionsFor(props.entry.module_id)?.['content.proofread'] ?? false,
+)
 
 const expanded = ref(false)
 const editDialogOpen = ref(false)
@@ -62,6 +67,7 @@ function activeRuleRefs(entry: IndexEntry): string[] {
         >
           <Pencil class="w-3 h-3 text-muted-foreground" />
         </button>
+        <ProofreadToggle v-if="canProofread" entity-type="index_entry" :entity-id="entry.id" />
       </p>
       <div class="flex items-center gap-1 shrink-0">
         <button

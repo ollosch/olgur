@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { useAppSettingsStore } from '@/stores/appSettings'
 import { BREAKPOINT_MD } from '@/lib/utils'
 
-export type PanelTab = 'tree' | 'index' | 'bookmarks' | 'history'
+export type PanelTab = 'tree' | 'index' | 'bookmarks' | 'history' | 'proofread'
 
 export const useLeftPanelStore = defineStore('leftPanel', () => {
   const appSettings = useAppSettingsStore()

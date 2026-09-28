@@ -68,6 +68,7 @@ function seedModule(): ReturnType<typeof useSystemStore> {
       'content.view_live': true,
       'content.view_released': false,
       'content.edit': true,
+      'content.proofread': false,
       'version.publish': false,
       'version.amend_latest': false,
       'subscription.manage': false,
