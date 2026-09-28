@@ -1,4 +1,4 @@
-import { watch, toRef, type MaybeRefOrGetter } from 'vue'
+import { watch, toRef, onUnmounted, type MaybeRefOrGetter } from 'vue'
 import { useShortcutStore } from '@/stores/shortcut'
 
 /**
@@ -8,11 +8,21 @@ import { useShortcutStore } from '@/stores/shortcut'
  */
 export function useModalShortcutGuard(open: MaybeRefOrGetter<boolean>): void {
   const shortcutStore = useShortcutStore()
+  const isOpen = toRef(open)
+  let isModalOpen = false
 
-  watch(toRef(open), (isOpen) => {
-    if (isOpen) {
+  watch(isOpen, (openNow) => {
+    if (openNow === isModalOpen) return
+    isModalOpen = openNow
+    if (openNow) {
       shortcutStore.openModal()
     } else {
+      shortcutStore.closeModal()
+    }
+  })
+
+  onUnmounted(() => {
+    if (isModalOpen) {
       shortcutStore.closeModal()
     }
   })
