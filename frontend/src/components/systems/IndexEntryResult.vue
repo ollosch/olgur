@@ -26,6 +26,7 @@ const { offline } = useOnline()
 const canProofread = computed(
   (): boolean =>
     !offline.value &&
+    contentStore.viewMode === 'draft' &&
     (contentStore.permissionsFor(props.entry.module_id)?.['content.proofread'] ?? false),
 )
 

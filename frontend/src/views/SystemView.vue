@@ -88,6 +88,8 @@ async function loadSystem(id: string): Promise<void> {
     proofreadStore.clear()
   }
 
+  contentStore.setViewMode('draft')
+
   await systemStore.enterSystem(id)
 
   // Fetch the versioned manifest before loading content so that fetchRules /
@@ -120,6 +122,15 @@ onMounted(() => loadSystem(systemId.value))
 
 // Handle direct URL navigation between different systems
 watch(systemId, (newId) => loadSystem(newId))
+
+// Re-fetch content when the draft/release view mode changes
+watch(
+  () => contentStore.viewMode,
+  async () => {
+    if (systemStore.currentSystem?.id !== systemId.value) return
+    await contentStore.refreshContent(systemId.value)
+  },
+)
 
 // ---------------------------------------------------------------------------
 // Confirm before leaving to HomeView

@@ -28,6 +28,7 @@ const gameDatum = computed(
 const canProofread = computed(
   (): boolean =>
     !offline.value &&
+    contentStore.viewMode === 'draft' &&
     gameDatum.value !== null &&
     (contentStore.permissionsFor(gameDatum.value.module_id)?.['content.proofread'] ?? false),
 )

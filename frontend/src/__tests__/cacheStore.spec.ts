@@ -295,6 +295,32 @@ describe('useCacheStore — offline pinning', () => {
     expect(await store.getCachedContent('sys1', 'mod2', 'rules')).toBeUndefined()
   })
 
+  it('does not mark a system cached when no module has released content', async () => {
+    const system = makeSystem('sys1')
+    const liveOnly = makeModule('mod1', makePermissions({ 'content.view_live': true }))
+    seedApi(system, [liveOnly], [makeManifestEntry('mod1')])
+
+    const store = useCacheStore()
+    await store.pinSystem('sys1')
+
+    expect(store.isCached('sys1')).toBe(false)
+    expect(store.cachedSystems).toEqual([])
+    expect(await store.getCachedSystem('sys1')).toBeUndefined()
+  })
+
+  it('skips a module whose manifest entry has null content without throwing', async () => {
+    const system = makeSystem('sys1')
+    const module = makeModule('mod1')
+    const nullEntry = { ...makeManifestEntry('mod1'), content: null } as unknown as ManifestEntry
+    seedApi(system, [module], [nullEntry])
+
+    const store = useCacheStore()
+    await expect(store.pinSystem('sys1')).resolves.toBeUndefined()
+
+    expect(store.isCached('sys1')).toBe(false)
+    expect(await store.getCachedManifest('sys1', 'mod1')).toBeUndefined()
+  })
+
   it('marks pinInProgress while pinning and clears it when done', async () => {
     const system = makeSystem('sys1')
     const module = makeModule('mod1')

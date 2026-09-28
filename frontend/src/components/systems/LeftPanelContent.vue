@@ -111,7 +111,11 @@ watch(
       <TabsTrigger value="history" class="text-xs px-2 h-7">
         <History class="w-3 h-3" />
       </TabsTrigger>
-      <TabsTrigger v-if="proofreadStore.canProofread" value="proofread" class="text-xs px-2 h-7">
+      <TabsTrigger
+        v-if="proofreadStore.canProofread && contentStore.viewMode === 'draft'"
+        value="proofread"
+        class="text-xs px-2 h-7"
+      >
         <CheckCheck class="w-3 h-3" />
       </TabsTrigger>
       <!-- Pin button -->
@@ -184,7 +188,7 @@ watch(
 
     <!-- Proofread tab -->
     <TabsContent
-      v-if="proofreadStore.canProofread"
+      v-if="proofreadStore.canProofread && contentStore.viewMode === 'draft'"
       value="proofread"
       class="flex-1 overflow-hidden mt-0"
     >

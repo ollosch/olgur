@@ -132,8 +132,12 @@ export const useCacheStore = defineStore('cache', () => {
       }
 
       const viewable = modules.filter(
-        (module) => module.permissions['content.view_released'] && manifestByModule.has(module.id),
+        (module) =>
+          module.permissions['content.view_released'] &&
+          manifestByModule.get(module.id)?.content != null,
       )
+
+      if (viewable.length === 0) return
 
       let size = jsonSize(system) + jsonSize(modules)
       const writes: Promise<void>[] = [idbPut('systems', systemId, { system, modules })]

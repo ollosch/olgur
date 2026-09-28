@@ -31,6 +31,7 @@ export const useContentStore = defineStore('content', () => {
   const indexEntriesByModule = ref<Record<string, IndexEntry[]>>({})
   const gameDataByModule = ref<Record<string, GameDatum[]>>({})
   const manifestByModule = ref<Record<string, ManifestEntry>>({})
+  const viewMode = ref<'draft' | 'release'>('draft')
 
   // ---------------------------------------------------------------------------
   // Derived state
@@ -67,12 +68,22 @@ export const useContentStore = defineStore('content', () => {
     return !canViewLive(moduleId) && !canViewReleased(moduleId)
   }
 
+  function setViewMode(mode: 'draft' | 'release'): void {
+    viewMode.value = mode
+  }
+
   /**
    * Whether the current user can edit this module's content.
    */
   function canEditModule(moduleId: string): boolean {
     return permissionsFor(moduleId)?.['content.edit'] ?? false
   }
+
+  /**
+   * Whether the current user can switch between draft and released views for
+   * this system — true when at least one active module is readable live.
+   */
+  const canSwitchView = computed(() => activeModules.value.some((m) => canViewLive(m.id)))
 
   const allRules = computed((): Rule[] =>
     activeModules.value.flatMap((m) => rulesByModule.value[m.id] ?? []),
@@ -370,7 +381,7 @@ export const useContentStore = defineStore('content', () => {
       return
     }
 
-    if (canViewLive(moduleId)) {
+    if (viewMode.value === 'draft' && canViewLive(moduleId)) {
       const result = await get<ApiCollection<Rule>>(
         `/systems/${systemId}/modules/${moduleId}/rules`,
       )
@@ -447,7 +458,7 @@ export const useContentStore = defineStore('content', () => {
       return
     }
 
-    if (canViewLive(moduleId)) {
+    if (viewMode.value === 'draft' && canViewLive(moduleId)) {
       const result = await get<ApiCollection<IndexEntry>>(
         `/systems/${systemId}/modules/${moduleId}/index-entries`,
       )
@@ -476,7 +487,7 @@ export const useContentStore = defineStore('content', () => {
       return
     }
 
-    if (canViewLive(moduleId)) {
+    if (viewMode.value === 'draft' && canViewLive(moduleId)) {
       const result = await get<ApiCollection<GameDatum>>(
         `/systems/${systemId}/modules/${moduleId}/game-data`,
       )
@@ -559,13 +570,14 @@ export const useContentStore = defineStore('content', () => {
   }
 
   /**
-   * Re-fetch rules and index entries for every active module.
+   * Re-fetch rules, index entries and game data for every active module.
    */
   async function refreshContent(systemId: string): Promise<void> {
     const modules = activeModules.value
     await Promise.all([
       ...modules.map((m) => fetchRules(systemId, m.id)),
       ...modules.map((m) => fetchIndexEntries(systemId, m.id)),
+      ...modules.map((m) => fetchGameData(systemId, m.id)),
     ])
   }
 
@@ -597,12 +609,15 @@ export const useContentStore = defineStore('content', () => {
     indexEntriesByModule,
     gameDataByModule,
     manifestByModule,
+    viewMode,
     loading,
     activeModules,
     permissionsFor,
     canViewLive,
     canViewReleased,
     isUnavailable,
+    setViewMode,
+    canSwitchView,
     canEditModule,
     allRules,
     rulesById,

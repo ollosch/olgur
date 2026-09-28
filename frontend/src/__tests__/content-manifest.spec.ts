@@ -393,6 +393,57 @@ describe('useContentStore — manifest & content routing', () => {
     })
   })
 
+  // ── view mode ────────────────────────────────────────────────────────────────
+
+  describe('view mode', () => {
+    it('release view routes a live-capable module to the manifest URL', async () => {
+      seedModules({ mod1: { 'content.view_live': true, 'content.view_released': true } })
+      const contentStore = useContentStore()
+      const entry = makeManifestEntry('mod1')
+      contentStore.manifestByModule['mod1'] = entry
+
+      mockGet.mockResolvedValue({ ok: true, data: { data: [makeRule('r1')] } })
+      mockRequest.mockResolvedValue([makeRule('r2')])
+
+      contentStore.setViewMode('release')
+      await contentStore.fetchRules('sys1', 'mod1')
+
+      expect(mockRequest).toHaveBeenCalledWith({ method: 'GET', url: entry.content.rules })
+      expect(mockGet).not.toHaveBeenCalled()
+      expect(contentStore.rulesByModule['mod1']).toHaveLength(1)
+    })
+
+    it('draft view keeps a live-capable module on the live endpoint', async () => {
+      seedModules({ mod1: { 'content.view_live': true, 'content.view_released': true } })
+      const contentStore = useContentStore()
+      contentStore.manifestByModule['mod1'] = makeManifestEntry('mod1')
+
+      mockGet.mockResolvedValue({ ok: true, data: { data: [makeRule('r1')] } })
+
+      await contentStore.fetchRules('sys1', 'mod1')
+
+      expect(mockGet).toHaveBeenCalledWith('/systems/sys1/modules/mod1/rules')
+      expect(mockRequest).not.toHaveBeenCalled()
+    })
+
+    it('a player without live access reads released content in every view mode', async () => {
+      seedModules({ mod1: { 'content.view_released': true } })
+      const contentStore = useContentStore()
+      const entry = makeManifestEntry('mod1')
+      contentStore.manifestByModule['mod1'] = entry
+
+      mockRequest.mockResolvedValue([makeRule('r1')])
+
+      await contentStore.fetchRules('sys1', 'mod1')
+      contentStore.setViewMode('release')
+      await contentStore.fetchRules('sys1', 'mod1')
+
+      expect(mockRequest).toHaveBeenCalledTimes(2)
+      expect(mockRequest).toHaveBeenCalledWith({ method: 'GET', url: entry.content.rules })
+      expect(mockGet).not.toHaveBeenCalled()
+    })
+  })
+
   // ── clear ────────────────────────────────────────────────────────────────────
 
   describe('clear', () => {

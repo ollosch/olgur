@@ -5,7 +5,10 @@ import { useAppSettingsStore } from '@/stores/appSettings'
 import { useLeftPanelStore } from '@/stores/leftPanel'
 import { useShortcutStore } from '@/stores/shortcut'
 import { useSystemStore } from '@/stores/system'
+import { useContentStore } from '@/stores/content'
+import { useOnline } from '@/composables/useOnline'
 import { Button } from '@/components/ui/button'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import {
   DropdownMenu,
@@ -44,6 +47,8 @@ const appSettings = useAppSettingsStore()
 const panelStore = useLeftPanelStore()
 const shortcutStore = useShortcutStore()
 const systemStore = useSystemStore()
+const contentStore = useContentStore()
+const { offline } = useOnline()
 
 const manageMembersOpen = ref(false)
 const brokenLinksOpen = ref(false)
@@ -53,6 +58,14 @@ const { canLint } = useBrokenLinks()
 const canManageMembers = computed(() =>
   Boolean(systemStore.currentSystem?.permissions?.['membership.manage']),
 )
+
+const showPinControl = computed(
+  () => !contentStore.canSwitchView || contentStore.viewMode === 'release',
+)
+
+function onViewModeChange(value: string | number): void {
+  contentStore.setViewMode(String(value) as 'draft' | 'release')
+}
 
 async function logout(): Promise<void> {
   await authStore.logout()
@@ -128,7 +141,22 @@ async function logout(): Promise<void> {
     </div>
 
     <!-- Right: offline pin + dropdown menu -->
-    <PinSystemControl v-if="systemStore.currentSystem" :system-id="systemStore.currentSystem.id" />
+    <Tabs
+      v-if="contentStore.canSwitchView && !offline"
+      :model-value="contentStore.viewMode"
+      class="shrink-0"
+      @update:model-value="onViewModeChange"
+    >
+      <TabsList class="h-7">
+        <TabsTrigger value="draft" class="text-xs px-2 h-6">Draft</TabsTrigger>
+        <TabsTrigger value="release" class="text-xs px-2 h-6">Release</TabsTrigger>
+      </TabsList>
+    </Tabs>
+
+    <PinSystemControl
+      v-if="systemStore.currentSystem && showPinControl"
+      :system-id="systemStore.currentSystem.id"
+    />
 
     <DropdownMenu>
       <DropdownMenuTrigger as-child>
