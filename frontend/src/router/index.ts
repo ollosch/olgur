@@ -81,7 +81,12 @@ router.beforeEach(async (to) => {
   if (requiresAuth && !authStore.user) {
     const requiresSystemAccess = to.meta.requiresSystemAccess === true
     const systemId = to.params['systemId'] as string | undefined
-    if (requiresSystemAccess && systemId && useCacheStore().isCached(systemId)) {
+    if (
+      requiresSystemAccess &&
+      systemId &&
+      useOnline().offline.value &&
+      useCacheStore().isCached(systemId)
+    ) {
       return true
     }
     if (useOnline().offline.value && to.name === 'home') {

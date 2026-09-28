@@ -40,15 +40,27 @@ describe('router guard — cached systems offline/logged-out', () => {
     await router.push('/reset-password-request')
   })
 
-  it('admits a cached system for a logged-out user', async () => {
+  it('admits a cached system for a logged-out user when offline', async () => {
     const authStore = useAuthStore()
     authStore.user = null
+    useOnline().online.value = false
     useCacheStore().cachedSystems = [meta('abc')]
 
     await router.push('/systems/abc')
 
     expect(router.currentRoute.value.name).toBe('system')
     expect(router.currentRoute.value.path).toBe('/systems/abc')
+  })
+
+  it('redirects a logged-out user to login for a cached system when online', async () => {
+    const authStore = useAuthStore()
+    authStore.user = null
+    useCacheStore().cachedSystems = [meta('abc')]
+
+    await router.push('/systems/abc')
+
+    expect(router.currentRoute.value.path).toBe('/login')
+    expect(router.currentRoute.value.query.redirect).toBe('/systems/abc')
   })
 
   it('redirects a logged-out user to login for an uncached system', async () => {
