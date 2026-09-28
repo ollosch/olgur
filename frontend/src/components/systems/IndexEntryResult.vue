@@ -6,6 +6,7 @@ import { renderContent } from '@/lib/renderContent'
 import { useAppSettingsStore } from '@/stores/appSettings'
 import { useContentStore } from '@/stores/content'
 import { useAuthorization } from '@/composables/useAuthorization'
+import { useOnline } from '@/composables/useOnline'
 import EditIndexEntryDialog from '@/components/systems/EditIndexEntryDialog.vue'
 import ProofreadToggle from '@/components/systems/ProofreadToggle.vue'
 
@@ -20,9 +21,12 @@ const emit = defineEmits<{ seeAlsoClick: [term: string] }>()
 const appSettings = useAppSettingsStore()
 const contentStore = useContentStore()
 const { canEdit } = useAuthorization()
+const { offline } = useOnline()
 
 const canProofread = computed(
-  (): boolean => contentStore.permissionsFor(props.entry.module_id)?.['content.proofread'] ?? false,
+  (): boolean =>
+    !offline.value &&
+    (contentStore.permissionsFor(props.entry.module_id)?.['content.proofread'] ?? false),
 )
 
 const expanded = ref(false)

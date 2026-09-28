@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useContentStore } from '@/stores/content'
+import { useOnline } from '@/composables/useOnline'
 import MatrixTable from '@/components/game-data/MatrixTable.vue'
 import AttributeTable from '@/components/game-data/AttributeTable.vue'
 import ModifierList from '@/components/game-data/ModifierList.vue'
@@ -16,6 +17,7 @@ type TableContent = MatrixContent | AttributeTableContent | ModifierListContent 
 
 const route = useRoute()
 const contentStore = useContentStore()
+const { offline } = useOnline()
 
 const gameDatumId = computed(() => route.params['gameDatumId'] as string)
 
@@ -25,6 +27,7 @@ const gameDatum = computed(
 
 const canProofread = computed(
   (): boolean =>
+    !offline.value &&
     gameDatum.value !== null &&
     (contentStore.permissionsFor(gameDatum.value.module_id)?.['content.proofread'] ?? false),
 )

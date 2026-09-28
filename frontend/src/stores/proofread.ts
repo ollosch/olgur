@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { useApi } from '@/composables/useApi'
+import { useOnline } from '@/composables/useOnline'
 import { useSystemStore } from '@/stores/system'
 import { useContentStore } from '@/stores/content'
 import type {
@@ -24,13 +25,15 @@ export const useProofreadStore = defineStore('proofread', () => {
   const systemStore = useSystemStore()
   const contentStore = useContentStore()
   const { get, post, del } = useApi()
+  const { offline } = useOnline()
 
   const statusMap = ref<Record<string, ProofreadEntityStatus>>({})
   const threshold = ref(3)
 
   /** Whether the current user can proofread at least one module of this system. */
-  const canProofread = computed((): boolean =>
-    systemStore.modules.some((m) => m.permissions['content.proofread']),
+  const canProofread = computed(
+    (): boolean =>
+      !offline.value && systemStore.modules.some((m) => m.permissions['content.proofread']),
   )
 
   function applyStatus(status: ProofreadStatus): void {

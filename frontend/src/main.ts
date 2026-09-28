@@ -9,7 +9,6 @@ import { globalErrorHandler } from './lib/globalErrorHandler'
 import '@/styles.css'
 import { useAuthStore } from './stores/auth'
 import { useAppSettingsStore } from './stores/appSettings'
-import { useSystemStore } from './stores/system'
 
 const app = createApp(App)
 
@@ -23,19 +22,6 @@ app.mount('#app')
 
 const authStore = useAuthStore()
 
-async function bootstrap(): Promise<void> {
-  try {
-    await authStore.fetchCsrfCookie()
-    await authStore.fetchUser().catch(() => {})
-
-    if (authStore.user) {
-      await useSystemStore().init()
-    }
-  } finally {
-    authStore.initialized = true
-  }
-}
-
-bootstrap().catch((err: unknown) => globalErrorHandler(err, null))
+authStore.bootstrap().catch((err: unknown) => globalErrorHandler(err, null))
 
 registerSW({ immediate: true })

@@ -1,9 +1,11 @@
 import { ref, computed, markRaw, type ComputedRef } from 'vue'
 import { defineStore } from 'pinia'
 import { useApi } from '@/composables/useApi'
+import { useOnline } from '@/composables/useOnline'
 import { request } from '@/lib/http'
 import type { ApiResult } from '@/lib/http'
 import { useSystemStore } from '@/stores/system'
+import { useCacheStore } from '@/stores/cacheStore'
 import type {
   Rule,
   IndexEntry,
@@ -22,6 +24,8 @@ import type {
 export const useContentStore = defineStore('content', () => {
   const { get, put, del, loading } = useApi()
   const systemStore = useSystemStore()
+  const cacheStore = useCacheStore()
+  const { offline } = useOnline()
 
   const rulesByModule = ref<Record<string, Rule[]>>({})
   const indexEntriesByModule = ref<Record<string, IndexEntry[]>>({})
@@ -308,6 +312,19 @@ export const useContentStore = defineStore('content', () => {
    * before any content fetches.
    */
   async function fetchManifest(systemId: string): Promise<void> {
+    if (offline.value) {
+      const cached = await cacheStore.getCachedSystem(systemId)
+      if (cached) {
+        const map: Record<string, ManifestEntry> = {}
+        for (const module of cached.modules) {
+          const entry = await cacheStore.getCachedManifest(systemId, module.id)
+          if (entry) map[module.id] = entry
+        }
+        manifestByModule.value = map
+      }
+      return
+    }
+
     // The backend returns { data: { system_id, name, modules: ManifestEntry[] } }
     // `useApi()` returns `res.data` as `result.data`, so modules live at
     // result.data.data.modules.
@@ -343,6 +360,16 @@ export const useContentStore = defineStore('content', () => {
   }
 
   async function fetchRules(systemId: string, moduleId: string): Promise<void> {
+    if (offline.value) {
+      const cached = await cacheStore.getCachedContent<Rule>(systemId, moduleId, 'rules')
+      if (cached) {
+        rulesByModule.value[moduleId] = cached.items.map((r) =>
+          markRaw({ ...r, content: r.content.split('<br>').join('\n') }),
+        )
+      }
+      return
+    }
+
     if (canViewLive(moduleId)) {
       const result = await get<ApiCollection<Rule>>(
         `/systems/${systemId}/modules/${moduleId}/rules`,
@@ -412,6 +439,14 @@ export const useContentStore = defineStore('content', () => {
   }
 
   async function fetchIndexEntries(systemId: string, moduleId: string): Promise<void> {
+    if (offline.value) {
+      const cached = await cacheStore.getCachedContent<IndexEntry>(systemId, moduleId, 'index')
+      if (cached) {
+        indexEntriesByModule.value[moduleId] = cached.items.map((e) => markRaw(e))
+      }
+      return
+    }
+
     if (canViewLive(moduleId)) {
       const result = await get<ApiCollection<IndexEntry>>(
         `/systems/${systemId}/modules/${moduleId}/index-entries`,
@@ -433,6 +468,14 @@ export const useContentStore = defineStore('content', () => {
   }
 
   async function fetchGameData(systemId: string, moduleId: string): Promise<void> {
+    if (offline.value) {
+      const cached = await cacheStore.getCachedContent<GameDatum>(systemId, moduleId, 'game-data')
+      if (cached) {
+        gameDataByModule.value[moduleId] = cached.items.map((d) => markRaw(d))
+      }
+      return
+    }
+
     if (canViewLive(moduleId)) {
       const result = await get<ApiCollection<GameDatum>>(
         `/systems/${systemId}/modules/${moduleId}/game-data`,

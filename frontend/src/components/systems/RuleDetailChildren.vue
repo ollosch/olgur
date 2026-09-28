@@ -6,6 +6,7 @@ import { useAppSettingsStore } from '@/stores/appSettings'
 import { useBookmarkStore } from '@/stores/bookmarks'
 import { useContentStore } from '@/stores/content'
 import { useLeftPanelStore } from '@/stores/leftPanel'
+import { useOnline } from '@/composables/useOnline'
 import { Crosshair, Pencil, Star, Trash2 } from '@lucide/vue'
 import EditRuleDialog from '@/components/systems/EditRuleDialog.vue'
 import DeleteRuleDialog from '@/components/systems/DeleteRuleDialog.vue'
@@ -28,9 +29,12 @@ const appSettings = useAppSettingsStore()
 const bookmarkStore = useBookmarkStore()
 const panelStore = useLeftPanelStore()
 const contentStore = useContentStore()
+const { offline } = useOnline()
 
 const canProofread = computed(
-  (): boolean => contentStore.permissionsFor(props.rule.module_id)?.['content.proofread'] ?? false,
+  (): boolean =>
+    !offline.value &&
+    (contentStore.permissionsFor(props.rule.module_id)?.['content.proofread'] ?? false),
 )
 
 const editDialogOpen = ref(false)

@@ -4,6 +4,7 @@ import { useGlobalShortcuts } from '@/composables/useGlobalShortcuts'
 import RulePopupOverlay from '@/components/RulePopupOverlay.vue'
 import GlobalSearchOverlay from '@/components/GlobalSearchOverlay.vue'
 import LeaveSystemConfirmDialog from '@/components/systems/LeaveSystemConfirmDialog.vue'
+import OfflineBanner from '@/components/OfflineBanner.vue'
 import 'vue-sonner/style.css'
 import { Toaster } from '@/components/ui/sonner'
 import { useAuthStore } from '@/stores/auth'
@@ -16,6 +17,7 @@ const authStore = useAuthStore()
 <template>
   <div class="dark">
     <template v-if="authStore.initialized">
+      <OfflineBanner />
       <router-view class="bg-background text-foreground" />
       <Toaster />
       <RulePopupOverlay />

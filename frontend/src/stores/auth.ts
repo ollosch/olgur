@@ -2,7 +2,10 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 
 import { useApi } from '@/composables/useApi'
-import type { ApiResult } from '@/lib/http'
+import { useOnline } from '@/composables/useOnline'
+import { useCacheStore } from '@/stores/cacheStore'
+import { useSystemStore } from '@/stores/system'
+import type { ApiResult, ApiError } from '@/lib/http'
 import type {
   User,
   LoginRequest,
@@ -57,6 +60,44 @@ export const useAuthStore = defineStore('auth', () => {
     await get(import.meta.env.VITE_COOKIE_URL)
   }
 
+  /**
+   * Resolve the session on startup. A network failure flips the app into
+   * offline mode (user stays null, no login redirect); an auth failure simply
+   * leaves the user logged out. The cached-system registry is loaded so the
+   * router guard can admit pinned systems while offline.
+   */
+  async function bootstrap(): Promise<void> {
+    try {
+      let offline = false
+
+      try {
+        await fetchCsrfCookie()
+      } catch (e) {
+        if ((e as ApiError).type === 'network') offline = true
+      }
+
+      if (!offline) {
+        try {
+          await fetchUser()
+        } catch (e) {
+          if ((e as ApiError).type === 'network') offline = true
+        }
+      }
+
+      if (offline) useOnline().online.value = false
+
+      await useCacheStore()
+        .loadRegistry()
+        .catch(() => {})
+
+      if (user.value && !offline) {
+        await useSystemStore().init()
+      }
+    } finally {
+      initialized.value = true
+    }
+  }
+
   async function fetchUser() {
     const result = await get<ApiResource<User>>('/me')
     if (result.ok) {
@@ -77,6 +118,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   return {
+    bootstrap,
     clear,
     fetchCsrfCookie,
     fetchUser,

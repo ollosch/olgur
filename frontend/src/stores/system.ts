@@ -1,7 +1,9 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { useApi } from '@/composables/useApi'
+import { useOnline } from '@/composables/useOnline'
 import { useMembershipStore } from '@/stores/membership'
+import { useCacheStore } from '@/stores/cacheStore'
 import type { ApiResult } from '@/lib/http'
 import type {
   System,
@@ -100,6 +102,15 @@ export const useSystemStore = defineStore('system', () => {
 
   // ── System entry / exit ──────────────────────────────────────────────────────
   async function enterSystem(systemId: string): Promise<void> {
+    if (useOnline().offline.value) {
+      const cached = await useCacheStore().getCachedSystem(systemId)
+      if (cached) {
+        currentSystem.value = cached.system
+        modulesBySystem.value[systemId] = cached.modules
+      }
+      return
+    }
+
     const [systemResult, modulesResult] = await Promise.all([
       get<ApiResource<System>>(`/systems/${systemId}`),
       get<ApiCollection<Module>>(`/systems/${systemId}/modules`),

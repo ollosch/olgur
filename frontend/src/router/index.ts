@@ -2,6 +2,7 @@ import { watch } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import authRoutes from '@/router/auth.ts'
 import { useAuthStore } from '@/stores/auth.ts'
+import { useCacheStore } from '@/stores/cacheStore'
 import HomeView from '@/views/HomeView.vue'
 
 const router = createRouter({
@@ -29,7 +30,7 @@ const router = createRouter({
     {
       name: 'system',
       path: '/systems/:systemId',
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, requiresSystemAccess: true },
       component: () => import('@/views/SystemView.vue'),
       children: [
         // Rule detail view
@@ -77,6 +78,11 @@ router.beforeEach(async (to) => {
   const requiresGuest = to.meta.requiresGuest
 
   if (requiresAuth && !authStore.user) {
+    const requiresSystemAccess = to.meta.requiresSystemAccess === true
+    const systemId = to.params['systemId'] as string | undefined
+    if (requiresSystemAccess && systemId && useCacheStore().isCached(systemId)) {
+      return true
+    }
     return {
       name: 'login',
       query: { redirect: to.fullPath },
