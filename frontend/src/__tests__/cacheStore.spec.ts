@@ -336,6 +336,19 @@ describe('useCacheStore — offline pinning', () => {
     expect(await store.getCachedManifest('sys1', 'mod1')).toBeUndefined()
   })
 
+  it('skips a module whose permissions map is missing without throwing', async () => {
+    const system = makeSystem('sys1')
+    const noPerms = makeModule('mod1')
+    noPerms.permissions = undefined as unknown as Module['permissions']
+    seedApi(system, [noPerms], [makeManifestEntry('mod1')])
+
+    const store = useCacheStore()
+    await expect(store.pinSystem('sys1')).resolves.toBeUndefined()
+
+    expect(store.isCached('sys1')).toBe(false)
+    expect(await store.getCachedManifest('sys1', 'mod1')).toBeUndefined()
+  })
+
   it('marks pinInProgress while pinning and clears it when done', async () => {
     const system = makeSystem('sys1')
     const module = makeModule('mod1')

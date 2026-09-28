@@ -145,7 +145,7 @@ export const useCacheStore = defineStore('cache', () => {
 
       const viewable = modules.filter(
         (module) =>
-          module.permissions['content.view_released'] &&
+          (module.permissions?.['content.view_released'] ?? false) &&
           manifestByModule.get(module.id)?.content != null,
       )
 

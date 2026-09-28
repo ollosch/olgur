@@ -33,7 +33,8 @@ export const useProofreadStore = defineStore('proofread', () => {
   /** Whether the current user can proofread at least one module of this system. */
   const canProofread = computed(
     (): boolean =>
-      !offline.value && systemStore.modules.some((m) => m.permissions['content.proofread']),
+      !offline.value &&
+      systemStore.modules.some((m) => (m.permissions?.['content.proofread'] ?? false)),
   )
 
   function applyStatus(status: ProofreadStatus): void {

@@ -289,6 +289,16 @@ describe('useProofreadStore', () => {
       seedSystem(false)
       expect(useProofreadStore().canProofread).toBe(false)
     })
+
+    it('is false when a module omits its permissions map', () => {
+      const systemStore = useSystemStore()
+      systemStore.currentSystem = makeSystem('sys1')
+      const module = makeModule('mod1', true)
+      module.permissions = undefined as unknown as Module['permissions']
+      systemStore.modulesBySystem['sys1'] = [module]
+
+      expect(useProofreadStore().canProofread).toBe(false)
+    })
   })
 })
 
