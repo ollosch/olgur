@@ -35,7 +35,17 @@ function openDatabase(): Promise<IDBDatabase> {
     }
 
     request.onsuccess = () => resolve(request.result)
-    request.onerror = () => reject(request.error ?? new Error('Failed to open IndexedDB'))
+    request.onerror = () => {
+      dbPromise = null
+      reject(request.error ?? new Error('Failed to open IndexedDB'))
+    }
+    // A future version bump triggers `onupgradeneeded`; if another connection
+    // holds an older version open, `onblocked` fires instead of hanging. Reset
+    // `dbPromise` so a later call retries a fresh open.
+    request.onblocked = () => {
+      dbPromise = null
+      reject(new Error('IndexedDB open was blocked by another connection'))
+    }
   })
 
   return dbPromise
