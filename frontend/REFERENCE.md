@@ -39,16 +39,16 @@ Current boot order:
 - Create app.
 - Install Pinia.
 - Install router.
-- Register `globalErrorHandler`.
+- Register `globalErrorHandler` (`app.config.errorHandler`) and wire `setupUnhandledRejectionHandler()`.
 - Initialize app settings.
 - Mount app.
 - `authStore.bootstrap()` (async, fire-and-forget; escaped failures forward to `globalErrorHandler`).
-- `registerSW({ immediate: true })` registers the PWA service worker.
+- `registerSW({ immediate: true })` registers the PWA service worker with `onNeedRefresh` / `onOfflineReady` toast prompts.
 
 `authStore.bootstrap()` (in `frontend/src/stores/auth.ts`) runs:
 
 - `fetchCsrfCookie()` — a `network` failure flips the app into offline mode.
-- `fetchUser()` — a `network` failure also flips into offline mode; a non-network auth failure just leaves the user logged out.
+- `fetchUser()` — a `network` failure also flips into offline mode; an `auth` failure just leaves the user logged out; any other (server) error shows an error toast and retries `fetchUser()` once before giving up.
 - On offline, `useOnline().online.value = false`.
 - `cacheStore.loadRegistry()` — loads the cached-system registry so the router guard can admit pinned systems while offline.
 - If authenticated and online, `useSystemStore().init()`.
@@ -85,7 +85,7 @@ Router files: `frontend/src/router/index.ts`, `frontend/src/router/auth.ts`
 
 - `requiresAuth` without `authStore.user` redirects to `login?redirect=<fullPath>`.
 - `requiresGuest` with `authStore.user` redirects to `home`.
-- `requiresSystemAccess` (meta on the `system` route): when unauthenticated, the guard still admits the route if the target `systemId` is pinned (`cacheStore.isCached(systemId)`), enabling read-only guest access to a cached system.
+- `requiresSystemAccess` (meta on the `system` route): when unauthenticated AND offline, the guard still admits the route if the target `systemId` is pinned (`cacheStore.isCached(systemId)`), enabling read-only guest access to a cached system. Cached systems are admitted to logged-out users only while offline.
 - When offline, `home` is admitted without auth (`useOnline().offline`), landing on the cached-systems screen.
 - Both guards wait for `authStore.initialized` before executing, so deep links opened while the app is still bootstrapping are handled correctly.
 - `LoginView` reads the `redirect` query after a successful login and navigates there; falls back to `home`.
@@ -115,6 +115,7 @@ Main API-facing types:
 - `MembershipConfig` includes optional `bookmarks`, `ignored_tags`, and `preferred_rule_format`.
 - `Rule` has a client-calculated `depth` field.
 - `GameDatum.type` is one of `sop`, `table`, `ordnance`, `vehicle`. The type selects the tool component (`sop` → SOP viewer, `table` → table renderer, `vehicle` → unit browser, `ordnance` → ordnance tool).
+- `Rule`, `IndexEntry`, and `GameDatum` carry an optional stable reference to their original live entity — `rule_id`, `index_entry_id`, `game_datum_id` respectively — populated on released (snapshot) records so released content can be re-keyed to the live ids.
 - `RuleDeletionMode` (`re_parent` | `recursive`) and `BrokenReference` describe the rule deletion operation and lint results.
 
 ## Main Stores
@@ -156,6 +157,7 @@ Owns:
 - `indexEntriesByModule`
 - `gameDataByModule`
 - `manifestByModule` — version manifest keyed by module ID, loaded on system entry; contains `version_id`, `version_string`, `released_at`, and versioned content API URLs
+- `viewMode` (`'draft' | 'release'`, default `'draft'`) — whether editable admins/editors read live draft content or the latest released snapshot
 
 Derived state:
 
@@ -165,7 +167,14 @@ Derived state:
 - `resolveRuleReference(number, { moduleSlug?, moduleId? })` resolves bare links in the owning module (or system-wide when `globalRuleNumbers`) and qualified `{{L:slug:n}}` links in the named module.
 - `childrenMap` calculates and mutates `rule.depth` client-side.
 - `visibleIndexEntryIds` hides empty index branches unless they or their descendants still have visible content after filtering rule refs to resolvable rules.
-- `isDesigner` — true when the current user is a super_admin, a system admin, or a module editor for at least one viewable module; used to determine whether to serve draft content or released versions.
+- `canSwitchView` — true when at least one active module has `content.view_live`; gates the Draft/Release toggle (players never see it).
+
+Content source and mode switching:
+
+- `setViewMode(mode)` flips between draft and release. In `draft` mode, modules the user can edit live (`content.view_live`) fetch from the standard REST endpoints; other modules fetch released content from the manifest's versioned content URLs.
+- Released reads are cache-first and version-aware: the cached `version_id` is compared against the manifest's current `version_id`, serving IndexedDB on a match and the network otherwise. Released reads also null-guard `manifestEntry.content` before fetching.
+- Released content is re-keyed by stable live ids via shared `normalizeRules` / `normalizeIndexEntries` / `normalizeGameData` helpers, which map each snapshot `id` to its `rule_id` / `index_entry_id` / `game_datum_id` and remap `parent_id` from snapshot ids to live ids — keeping bookmarks, history, proofreads, and the `*ById` lookups consistent across draft/release/offline.
+- `refreshContent()` clears per-module content, bumps a monotonic `refreshSeq` token (discarding in-flight fetches from an earlier mode), then fans out re-fetches via `Promise.allSettled`.
 
 Rule editor operations:
 
@@ -182,7 +191,7 @@ Backed by IndexedDB via `frontend/src/lib/idb.ts` (see "Content Tiers And Offlin
 - `pinInProgress`, `bytesUsed`, `quota` — pin state and storage accounting.
 - `isCached(systemId)`, `loadRegistry()`, `estimateStorage()`, `pinSystem(systemId)`, `unpinSystem(systemId)`.
 - `getCachedSystem()`, `getCachedManifest()`, `getCachedContent()` — offline reads.
-- `pinSystem()` fetches the system, its modules, its manifest, and versioned content for every viewable module, then writes them to IndexedDB and records a `meta` entry.
+- `pinSystem()` fetches the system, its modules, its manifest, and versioned content for every viewable module, then writes them to IndexedDB atomically and records a `meta` entry. It pre-checks storage quota and rolls back partial writes on failure; a failed content download (`fetchCollection`, which throws) aborts the pin and surfaces an error toast in `PinSystemControl`.
 
 ### `proofreadStore`
 
@@ -190,7 +199,7 @@ File: `frontend/src/stores/proofread.ts`
 
 - `statusMap` — per-entity `{ count, me }` proofread counts; `threshold` — the system's proofread threshold.
 - `canProofread` — true when online and at least one module grants `content.proofread`.
-- `fetchStatus(systemId)`, `record(entityType, entityId)`, `remove(entityType, entityId)`.
+- `fetchStatus(systemId)`, `record(entityType, entityId)`, `remove(entityType, entityId)`; `remove()` re-fetches status from the server after a successful delete (server-authoritative).
 - `countFor()`, `isDone()`, `hasMarked()`, `needsProofreading` — derive the per-entity proofread state and the "needs proofreading" list.
 - UI: `frontend/src/components/systems/ProofreadToggle.vue` (per-entity mark/remove button) and `frontend/src/components/systems/ProofreadTab.vue` (needs-proofreading list in the left panel).
 
@@ -217,7 +226,7 @@ File: `frontend/src/lib/http.ts`
 
 File: `frontend/src/composables/useApi.ts`
 
-- Sets `loading` and clears previous field errors before each request.
+- Tracks `loading` with a concurrent request counter so it only flips false once the last in-flight request settles.
 - Returns `null` on validation errors and stores flattened field errors.
 - Re-throws non-validation errors for global handling.
 
@@ -228,8 +237,10 @@ File: `frontend/src/lib/globalErrorHandler.ts`
 - `auth`: clears user and redirects to `login`, except `Already authenticated.` which redirects to `home`
 - `forbidden`: toast only
 - `conflict`: toast only
-- `network`: toast only
+- `network`: flips the app offline (`useOnline().online = false`) and shows a toast
 - `validation`: first-message toast if it ever bubbles up
+
+`setupUnhandledRejectionHandler()` (wired in `main.ts`) routes unhandled promise rejections that are `ApiError`s into `globalErrorHandler`.
 
 ## System Session Flow
 
@@ -337,6 +348,7 @@ The API supplies a computed current-user permission map for each module. The fro
 - Backend policies resolve permissions from the existing role facts and remain authoritative for every request.
 - No role or permission database tables are needed.
 - Permission vocabulary: `system.manage`, `membership.manage`, `module.create`, `module.update`, `module.delete`, `content.view_live`, `content.view_released`, `content.edit`, `content.proofread`, `version.publish`, `version.amend_latest`, `subscription.manage`.
+- Module permission maps may be absent/null (e.g. before a module's permissions load); consumers null-guard `module.permissions` (`module.permissions?.['content.view_released']`) rather than assuming the object exists.
 
 The backend remains the source of truth for actual authorization. The frontend only mirrors or smooths some flows.
 
@@ -375,9 +387,11 @@ Content splits into two tiers:
 ### Cache Layer
 
 - Store: `frontend/src/stores/cacheStore.ts`
-- IndexedDB helpers: `frontend/src/lib/idb.ts` — a single database `olgur-offline` with object stores `systems`, `manifests`, `content`, and `meta`.
+- IndexedDB helpers: `frontend/src/lib/idb.ts` — a single database `olgur-offline` with object stores `systems`, `manifests`, `content`, and `meta`. `idb.ts` handles `onblocked` (a version-bump collision with another open connection) and resets its cached connection promise on error so later calls retry a fresh open.
 
-`pinSystem(systemId)` fetches the system, its modules, its manifest, and the versioned content for every viewable module, then writes them to IndexedDB and records a `meta` registry entry. `unpinSystem(systemId)` removes everything under the `systemId:` key prefix.
+`pinSystem(systemId)` fetches the system, its modules, its manifest, and the versioned content for every viewable module, then writes them to IndexedDB and records a `meta` registry entry. The pin is atomic: it pre-checks storage quota, throws (via `fetchCollection`) if a content kind cannot be downloaded, and rolls back partial writes on failure — the error surfaces as a `vue-sonner` toast in `PinSystemControl.vue`. `unpinSystem(systemId)` removes everything under the `systemId:` key prefix.
+
+Rule images (`/rules/images/`) are cached offline via a workbox `runtimeCaching` `CacheFirst` rule in `frontend/vite.config.ts`.
 
 ### Offline Boot And Data-Source Fallback
 
@@ -390,7 +404,9 @@ Content splits into two tiers:
 Composable: `frontend/src/composables/useOnline.ts`
 
 - Module-level reactive `online` ref (seeded from `navigator.onLine`, updated by `online`/`offline` window events) and a derived `offline` computed.
-- `probe()` performs a HEAD request to re-check connectivity.
+- `probe()` performs a HEAD request (to `VITE_COOKIE_URL`) to re-check connectivity and is run on the window `online` event before flipping online.
+- `setOnline(value)` sets the flag and notifies reconnect callbacks when transitioning offline → online.
+- `onOnline(cb)` registers a reconnect callback and returns an unregister function; `SystemView` uses it to re-run the system load on reconnect.
 - `OfflineBanner.vue` shows a read-only cached-content banner when `offline`.
 
 ### PWA Shell
@@ -403,10 +419,11 @@ Configured via `vite-plugin-pwa` in `frontend/vite.config.ts` and registered in 
 
 ### Content Loading Strategy
 
-`contentStore` checks `isDesigner` on system entry:
+`contentStore` tracks a `viewMode` (`'draft' | 'release'`, default `'draft'`) and a `canSwitchView` flag (true when any active module has `content.view_live`):
 
-- **Designers** (editors, system admins, super_admins) load live draft content from the standard REST endpoints so edits are visible immediately without republishing.
-- **Players** load content from cached versioned API endpoints whose URLs come from the module manifest (`manifestByModule`). This keeps players on stable released content.
+- **Admins / editors** (`content.view_live`) can toggle Draft vs Release via the header (`SystemHeader.vue`); in Draft they read live draft content from the standard REST endpoints, in Release they read the latest released snapshot from the manifest's versioned content URLs.
+- **Players** have no toggle (`canSwitchView` false) and always read the latest released snapshot from the manifest content URLs.
+- `SystemView.vue` resets `viewMode` to `'draft'` on a genuine system switch (via `contentStore.clear()`) and re-fetches content whenever `viewMode` changes. The pin control (`PinSystemControl`, "make available offline") is shown only when `!canSwitchView || viewMode === 'release'` — always for players, and for admins only on the Release view.
 
 ### RetrofixEditor
 
@@ -422,14 +439,15 @@ Used when a designer applies a post-release editorial amendment to the latest re
 
 ## Read These Files First
 
-- Boot and auth: `frontend/src/main.ts`, `frontend/src/stores/auth.ts`, `frontend/src/lib/http.ts`, `frontend/src/lib/globalErrorHandler.ts`
+- Boot and auth: `frontend/src/main.ts`, `frontend/src/stores/auth.ts`, `frontend/src/lib/http.ts`, `frontend/src/lib/globalErrorHandler.ts`, `frontend/src/composables/useApi.ts`
 - Routing: `frontend/src/router/index.ts`, `frontend/src/router/auth.ts`
 - System session flow: `frontend/src/views/SystemView.vue`, `frontend/src/stores/system.ts`, `frontend/src/stores/content.ts`
 - Domain types: `frontend/src/types/domain.ts`
 - Search and popup behavior: `frontend/src/components/GlobalSearchOverlay.vue`, `frontend/src/composables/useRuleDelegation.ts`, `frontend/src/composables/useRulePopup.ts`, `frontend/src/lib/renderContent.ts`
 - Bookmarks and history: `frontend/src/stores/bookmarks.ts`, `frontend/src/stores/history.ts`
 - Settings and theming: `frontend/src/stores/appSettings.ts`, `frontend/src/views/AppSettingsView.vue`
-- Offline cache and connectivity: `frontend/src/stores/cacheStore.ts`, `frontend/src/lib/idb.ts`, `frontend/src/composables/useOnline.ts`, `frontend/src/stores/proofread.ts`
+- Offline cache and connectivity: `frontend/src/stores/cacheStore.ts`, `frontend/src/lib/idb.ts`, `frontend/src/composables/useOnline.ts`, `frontend/src/stores/proofread.ts`, `frontend/vite.config.ts`
+- UI shell and guards: `frontend/src/components/systems/SystemHeader.vue`, `frontend/src/components/systems/PinSystemControl.vue`, `frontend/src/composables/useModalShortcutGuard.ts`
 - Game data views: `frontend/src/views/GameDataView.vue`, `frontend/src/components/game-data/GameDataDrawer.vue`, `frontend/src/components/layout/BottomPanel.vue`
 - Tools: `frontend/src/lib/gameDataTools.ts`
 - Rule editing and lint: `frontend/src/components/systems/DeleteRuleDialog.vue`, `frontend/src/components/systems/BrokenLinksDialog.vue`, `frontend/src/composables/useBrokenLinks.ts`

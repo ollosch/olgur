@@ -209,11 +209,11 @@ Endpoint: `DELETE /api/systems/{system}/modules/{module}/rules/{rule}` (optional
   
 ### Published Versions
 
-Action: `backend/app/Actions/PublishModuleVersion.php`
+Actions: `backend/app/Actions/PublishModuleVersion.php`, `backend/app/Actions/SnapshotModuleVersion.php`, `backend/app/Actions/ReleaseModuleVersion.php`
 
-- Runs inside a DB transaction.
-- Creates one `module_versions` row.
-- Copies rules, index entries, and game data into their version tables.
+- `PublishModuleVersion` runs the full draft-review workflow — it locks the module, aborts on a stale draft revision (`409`), validates release-note coverage — then creates one `module_versions` row inside a DB transaction.
+- `SnapshotModuleVersion` holds the shared snapshot logic: it copies live rules, index entries, and game data into `RuleVersion` / `IndexEntryVersion` / `GameDatumVersion` (chunked inserts), stamping each snapshot row with the original live id (`rule_id` / `index_entry_id` / `game_datum_id`) and remapping `parent_id` from live ids to fresh snapshot ids. Both `PublishModuleVersion` and `ReleaseModuleVersion` delegate to it.
+- `ReleaseModuleVersion` releases a module's current content as a version WITHOUT the draft-review workflow — no draft-revision check and no release-note coverage validation. It creates one `module_versions` row and delegates snapshotting to `SnapshotModuleVersion`. Used by the importer to produce an immediately readable, offline-cacheable snapshot.
 
 ### Importing External Data
 
@@ -225,6 +225,7 @@ Command: `backend/app/Console/Commands/ImportGame.php`
 - Imports the system-level index into the core module.
 - Imports `vehicles`, `ordnance`, and `sop` into the core module when present. SOP source data must follow the standard SOP schema used by the frontend viewer.
 - Can optionally grant an existing user system-admin status and editor subscriptions to all modules.
+- `--create-version[=VALUE]` releases every module in the system after import: it creates a `ModuleVersion` per module via `ReleaseModuleVersion` (with `released_at`, `released_by` = the `--user`, and `version_string` = VALUE, or `"0.1"` when the option is passed without a value) and snapshots that module's rules/index/game-data. Requires a valid `--user`; warns and skips version creation otherwise.
 - JSON reader tolerates line comments, block comments, and trailing commas left behind by commented-out lines.
 
 ## Auth And Authorization
@@ -337,7 +338,7 @@ All application routes live under `/api`. Nested resources use `Route::scopeBind
 - Rules and numbering: `backend/app/Models/Rule.php`, `backend/app/Http/Requests/StoreRuleRequest.php`, `backend/app/Http/Controllers/RuleController.php`, `backend/app/Actions/DeleteRule.php`, `backend/app/Services/RuleReferenceParser.php`
 - Index and game data: `backend/app/Models/IndexEntry.php`, `backend/app/Models/GameDatum.php`, `backend/app/Http/Controllers/IndexEntryController.php`, `backend/app/Http/Controllers/GameDatumController.php`
 - Broken-link lint: `backend/app/Services/BrokenLinkLinter.php`, `backend/app/Actions/ScanBrokenLinks.php`, `backend/app/Http/Controllers/SystemLintController.php`, `backend/app/Console/Commands/LintBrokenLinks.php`
-- Versions and export: `backend/app/Actions/PublishModuleVersion.php`, `backend/app/Actions/ApplyModuleVersionBackEdit.php`, `backend/app/Services/ModuleVersionContent.php`, `backend/app/Http/Controllers/ModuleVersionController.php`, `backend/app/Http/Controllers/ModuleVersionContentController.php`, `backend/app/Http/Controllers/SystemManifestController.php`
+- Versions and export: `backend/app/Actions/PublishModuleVersion.php`, `backend/app/Actions/SnapshotModuleVersion.php`, `backend/app/Actions/ReleaseModuleVersion.php`, `backend/app/Actions/ApplyModuleVersionBackEdit.php`, `backend/app/Services/ModuleVersionContent.php`, `backend/app/Http/Controllers/ModuleVersionController.php`, `backend/app/Http/Controllers/ModuleVersionContentController.php`, `backend/app/Http/Controllers/SystemManifestController.php`
 - Auth and current user: `backend/routes/auth.php`, `backend/app/Http/Controllers/MeController.php`, `backend/app/Providers/AppServiceProvider.php`
 - Proofreads: `backend/app/Models/Proofread.php`, `backend/app/Http/Controllers/ProofreadController.php`, `backend/app/Http/Requests/StoreProofreadRequest.php`, `backend/app/Http/Requests/DeleteProofreadRequest.php`, `backend/app/Policies/ProofreadPolicy.php`
 - Import pipeline: `backend/app/Console/Commands/ImportGame.php`, `backend/app/Services/ModuleDataImporter.php`
