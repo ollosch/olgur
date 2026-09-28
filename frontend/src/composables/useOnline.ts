@@ -6,12 +6,25 @@ const online = ref<boolean>(
     : true,
 )
 
+type OnlineCallback = () => void
+const onlineCallbacks = new Set<OnlineCallback>()
+
+function notifyReconnected(): void {
+  for (const cb of onlineCallbacks) cb()
+}
+
+function setOnline(value: boolean): void {
+  const wasOffline = !online.value
+  online.value = value
+  if (value && wasOffline) notifyReconnected()
+}
+
 if (typeof window !== 'undefined') {
   window.addEventListener('online', () => {
-    online.value = true
+    void probe()
   })
   window.addEventListener('offline', () => {
-    online.value = false
+    setOnline(false)
   })
 }
 
@@ -19,9 +32,9 @@ async function probe(): Promise<boolean> {
   const url = (import.meta.env.VITE_COOKIE_URL as string | undefined) ?? '/'
   try {
     await fetch(url, { method: 'HEAD', cache: 'no-store' })
-    online.value = true
+    setOnline(true)
   } catch {
-    online.value = false
+    setOnline(false)
   }
   return online.value
 }
@@ -29,5 +42,10 @@ async function probe(): Promise<boolean> {
 export function useOnline() {
   const offline = computed(() => !online.value)
 
-  return { online, offline, probe }
+  function onOnline(cb: OnlineCallback): () => void {
+    onlineCallbacks.add(cb)
+    return () => onlineCallbacks.delete(cb)
+  }
+
+  return { online, offline, probe, onOnline }
 }

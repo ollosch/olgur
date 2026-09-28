@@ -444,6 +444,81 @@ describe('useContentStore — manifest & content routing', () => {
     })
   })
 
+  // ── released read path with null content ─────────────────────────────────────
+
+  describe('released read path with null content', () => {
+    it('skips rules/index/game-data when the manifest entry content is null', async () => {
+      seedModules({ mod1: { 'content.view_released': true } })
+      const contentStore = useContentStore()
+      contentStore.manifestByModule['mod1'] = {
+        ...makeManifestEntry('mod1'),
+        content: null,
+      } as unknown as ManifestEntry
+
+      await expect(contentStore.fetchRules('sys1', 'mod1')).resolves.toBeUndefined()
+      await expect(contentStore.fetchIndexEntries('sys1', 'mod1')).resolves.toBeUndefined()
+      await expect(contentStore.fetchGameData('sys1', 'mod1')).resolves.toBeUndefined()
+
+      expect(mockRequest).not.toHaveBeenCalled()
+      expect(contentStore.rulesByModule['mod1']).toBeUndefined()
+      expect(contentStore.indexEntriesByModule['mod1']).toBeUndefined()
+      expect(contentStore.gameDataByModule['mod1']).toBeUndefined()
+    })
+  })
+
+  // ── refreshContent ───────────────────────────────────────────────────────────
+
+  describe('refreshContent', () => {
+    it('clears per-module content before re-fetching', async () => {
+      seedModules({ mod1: { 'content.view_live': true } })
+      const contentStore = useContentStore()
+
+      contentStore.rulesByModule['mod1'] = [makeRule('stale')]
+      contentStore.indexEntriesByModule['mod1'] = [makeIndexEntry('stale')]
+      contentStore.gameDataByModule['mod1'] = [makeGameDatum('stale')]
+
+      mockGet.mockResolvedValue({ ok: true, data: { data: [] } })
+
+      await contentStore.refreshContent('sys1')
+
+      expect(contentStore.rulesByModule['mod1']).toEqual([])
+      expect(contentStore.indexEntriesByModule['mod1']).toEqual([])
+      expect(contentStore.gameDataByModule['mod1']).toEqual([])
+    })
+
+    it('discards out-of-order responses so the newest refresh wins', async () => {
+      seedModules({ mod1: { 'content.view_live': true } })
+      const contentStore = useContentStore()
+
+      contentStore.rulesByModule['mod1'] = [makeRule('stale')]
+
+      const pending: Array<(value: unknown) => void> = []
+      mockGet.mockImplementation(
+        () => new Promise((resolve) => pending.push(resolve)),
+      )
+
+      const first = contentStore.refreshContent('sys1')
+      const second = contentStore.refreshContent('sys1')
+
+      // Each refresh fans out to rules/index/game-data, in that order.
+      expect(pending).toHaveLength(6)
+
+      // Resolve the newer refresh first.
+      pending[3]!({ ok: true, data: { data: [makeRule('new')] } })
+      pending[4]!({ ok: true, data: { data: [makeIndexEntry('new-e')] } })
+      pending[5]!({ ok: true, data: { data: [makeGameDatum('new-gd')] } })
+      await second
+
+      // Resolve the stale refresh last — its writes must be discarded.
+      pending[0]!({ ok: true, data: { data: [makeRule('old')] } })
+      pending[1]!({ ok: true, data: { data: [makeIndexEntry('old-e')] } })
+      pending[2]!({ ok: true, data: { data: [makeGameDatum('old-gd')] } })
+      await first
+
+      expect(contentStore.rulesByModule['mod1']?.map((r) => r.id)).toEqual(['new'])
+    })
+  })
+
   // ── clear ────────────────────────────────────────────────────────────────────
 
   describe('clear', () => {
@@ -462,6 +537,16 @@ describe('useContentStore — manifest & content routing', () => {
       expect(contentStore.rulesByModule).toEqual({})
       expect(contentStore.indexEntriesByModule).toEqual({})
       expect(contentStore.gameDataByModule).toEqual({})
+    })
+
+    it('resets viewMode back to draft', () => {
+      seedModules({ mod1: {} })
+      const contentStore = useContentStore()
+
+      contentStore.setViewMode('release')
+      contentStore.clear()
+
+      expect(contentStore.viewMode).toBe('draft')
     })
   })
 })

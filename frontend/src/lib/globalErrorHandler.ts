@@ -2,6 +2,7 @@ import type { ApiError } from './http'
 import type { ComponentPublicInstance } from 'vue'
 import router from '@/router'
 import { useAuthStore } from '@/stores/auth'
+import { useOnline } from '@/composables/useOnline'
 import { toast } from 'vue-sonner'
 import { redirectAlreadyAuthenticated, redirectOnSessionExpiry } from '@/lib/sessionNavigation'
 
@@ -53,6 +54,7 @@ export async function globalErrorHandler(
       break
 
     case 'network':
+      useOnline().online.value = false
       toast.error('Network error. Please check your internet connection.')
       break
 

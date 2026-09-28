@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch, nextTick } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch, nextTick } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useAppSettingsStore } from '@/stores/appSettings'
 import { useContentStore } from '@/stores/content'
@@ -9,6 +9,7 @@ import { useProofreadStore } from '@/stores/proofread'
 import { useSystemStore } from '@/stores/system'
 import { useRuleDelegation } from '@/composables/useRuleDelegation'
 import { useResizablePanel } from '@/composables/useResizablePanel'
+import { useOnline } from '@/composables/useOnline'
 import { useInteractionStore } from '@/stores/interaction'
 import { requestLeaveSystemConfirmation } from '@/composables/useLeaveSystemConfirm'
 import { renderContent } from '@/lib/renderContent'
@@ -31,6 +32,8 @@ const proofreadStore = useProofreadStore()
 
 const systemId = computed(() => route.params['systemId'] as string)
 const loading = ref(true)
+
+const { onOnline } = useOnline()
 
 // ---------------------------------------------------------------------------
 // Left panel resize
@@ -86,9 +89,8 @@ async function loadSystem(id: string): Promise<void> {
   if (previousId) {
     historyStore.clearSystem(previousId)
     proofreadStore.clear()
+    contentStore.clear()
   }
-
-  contentStore.setViewMode('draft')
 
   await systemStore.enterSystem(id)
 
@@ -98,7 +100,7 @@ async function loadSystem(id: string): Promise<void> {
 
   const activeModuleList = contentStore.activeModules
 
-  await Promise.all([
+  await Promise.allSettled([
     ...activeModuleList.map((m) => contentStore.fetchRules(id, m.id)),
     ...activeModuleList.map((m) => contentStore.fetchIndexEntries(id, m.id)),
     ...activeModuleList.map((m) => contentStore.fetchGameData(id, m.id)),
@@ -118,7 +120,32 @@ async function fetchProofreadStatus(id: string): Promise<void> {
   await proofreadStore.fetchStatus(id)
 }
 
-onMounted(() => loadSystem(systemId.value))
+// Re-enter the live system on reconnect so permissions and content reflect
+// fresh server data instead of stale cached/snapshot content.
+async function reconnect(): Promise<void> {
+  const id = systemId.value
+  if (systemStore.currentSystem?.id !== id) return
+
+  try {
+    await systemStore.enterSystem(id)
+    await contentStore.fetchManifest(id)
+    await contentStore.refreshContent(id)
+    await fetchProofreadStatus(id)
+  } catch {
+    // A failed reconnect leaves cached content in place.
+  }
+}
+
+let unregisterOnline: (() => void) | undefined
+
+onMounted(() => {
+  loadSystem(systemId.value)
+  unregisterOnline = onOnline(reconnect)
+})
+
+onBeforeUnmount(() => {
+  unregisterOnline?.()
+})
 
 // Handle direct URL navigation between different systems
 watch(systemId, (newId) => loadSystem(newId))

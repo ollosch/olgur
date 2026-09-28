@@ -32,6 +32,7 @@ vi.mock('@/stores/auth', () => ({
 }))
 
 import { globalErrorHandler } from '@/lib/globalErrorHandler'
+import { useOnline } from '@/composables/useOnline'
 
 describe('globalErrorHandler', () => {
   beforeEach(() => {
@@ -40,6 +41,7 @@ describe('globalErrorHandler', () => {
     mockToastError.mockReset()
     mockClear.mockReset()
     mockUser.value = null
+    useOnline().online.value = true
   })
 
   // ── auth errors ─────────────────────────────────────────────────────────────
@@ -95,6 +97,11 @@ describe('globalErrorHandler', () => {
       expect(mockToastError).toHaveBeenCalledWith(
         'Network error. Please check your internet connection.',
       )
+    })
+
+    it('marks the app offline so cache fallback can take over', async () => {
+      await globalErrorHandler({ type: 'network' }, null)
+      expect(useOnline().online.value).toBe(false)
     })
   })
 

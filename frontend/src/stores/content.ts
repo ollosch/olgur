@@ -33,6 +33,10 @@ export const useContentStore = defineStore('content', () => {
   const manifestByModule = ref<Record<string, ManifestEntry>>({})
   const viewMode = ref<'draft' | 'release'>('draft')
 
+  // Monotonic token bumped on every refresh/system-switch. Each fetch captures
+  // it at start and discards its writes if a newer refresh has since started.
+  let refreshSeq = 0
+
   // ---------------------------------------------------------------------------
   // Derived state
   // ---------------------------------------------------------------------------
@@ -371,8 +375,11 @@ export const useContentStore = defineStore('content', () => {
   }
 
   async function fetchRules(systemId: string, moduleId: string): Promise<void> {
+    const seq = refreshSeq
+
     if (offline.value) {
       const cached = await cacheStore.getCachedContent<Rule>(systemId, moduleId, 'rules')
+      if (seq !== refreshSeq) return
       if (cached) {
         rulesByModule.value[moduleId] = cached.items.map((r) =>
           markRaw({ ...r, content: r.content.split('<br>').join('\n') }),
@@ -385,6 +392,7 @@ export const useContentStore = defineStore('content', () => {
       const result = await get<ApiCollection<Rule>>(
         `/systems/${systemId}/modules/${moduleId}/rules`,
       )
+      if (seq !== refreshSeq) return
       if (result.ok) {
         rulesByModule.value[moduleId] = result.data.data.map((r) =>
           markRaw({ ...r, content: r.content.split('<br>').join('\n') }),
@@ -395,8 +403,9 @@ export const useContentStore = defineStore('content', () => {
 
     if (canViewReleased(moduleId)) {
       const manifestEntry = manifestByModule.value[moduleId]
-      if (!manifestEntry) return
+      if (!manifestEntry?.content) return
       const data = await fetchAuthenticatedCollection<Rule>(manifestEntry.content.rules)
+      if (seq !== refreshSeq) return
       if (data !== null) {
         rulesByModule.value[moduleId] = data.map((r) =>
           markRaw({ ...r, content: r.content.split('<br>').join('\n') }),
@@ -450,8 +459,11 @@ export const useContentStore = defineStore('content', () => {
   }
 
   async function fetchIndexEntries(systemId: string, moduleId: string): Promise<void> {
+    const seq = refreshSeq
+
     if (offline.value) {
       const cached = await cacheStore.getCachedContent<IndexEntry>(systemId, moduleId, 'index')
+      if (seq !== refreshSeq) return
       if (cached) {
         indexEntriesByModule.value[moduleId] = cached.items.map((e) => markRaw(e))
       }
@@ -462,6 +474,7 @@ export const useContentStore = defineStore('content', () => {
       const result = await get<ApiCollection<IndexEntry>>(
         `/systems/${systemId}/modules/${moduleId}/index-entries`,
       )
+      if (seq !== refreshSeq) return
       if (result.ok) {
         indexEntriesByModule.value[moduleId] = result.data.data.map((e) => markRaw(e))
       }
@@ -470,8 +483,9 @@ export const useContentStore = defineStore('content', () => {
 
     if (canViewReleased(moduleId)) {
       const manifestEntry = manifestByModule.value[moduleId]
-      if (!manifestEntry) return
+      if (!manifestEntry?.content) return
       const data = await fetchAuthenticatedCollection<IndexEntry>(manifestEntry.content.index)
+      if (seq !== refreshSeq) return
       if (data !== null) {
         indexEntriesByModule.value[moduleId] = data.map((e) => markRaw(e))
       }
@@ -479,8 +493,11 @@ export const useContentStore = defineStore('content', () => {
   }
 
   async function fetchGameData(systemId: string, moduleId: string): Promise<void> {
+    const seq = refreshSeq
+
     if (offline.value) {
       const cached = await cacheStore.getCachedContent<GameDatum>(systemId, moduleId, 'game-data')
+      if (seq !== refreshSeq) return
       if (cached) {
         gameDataByModule.value[moduleId] = cached.items.map((d) => markRaw(d))
       }
@@ -491,6 +508,7 @@ export const useContentStore = defineStore('content', () => {
       const result = await get<ApiCollection<GameDatum>>(
         `/systems/${systemId}/modules/${moduleId}/game-data`,
       )
+      if (seq !== refreshSeq) return
       if (result.ok) {
         gameDataByModule.value[moduleId] = result.data.data.map((d) => markRaw(d))
       }
@@ -499,8 +517,9 @@ export const useContentStore = defineStore('content', () => {
 
     if (canViewReleased(moduleId)) {
       const manifestEntry = manifestByModule.value[moduleId]
-      if (!manifestEntry) return
+      if (!manifestEntry?.content) return
       const data = await fetchAuthenticatedCollection<GameDatum>(manifestEntry.content['game-data'])
+      if (seq !== refreshSeq) return
       if (data !== null) {
         gameDataByModule.value[moduleId] = data.map((d) => markRaw(d))
       }
@@ -514,7 +533,7 @@ export const useContentStore = defineStore('content', () => {
   async function fetchMissingModules(systemId: string, modules: Module[]): Promise<Module[]> {
     const toLoad = modules.filter((m) => !isUnavailable(m.id) && !rulesByModule.value[m.id])
     if (toLoad.length === 0) return []
-    await Promise.all([
+    await Promise.allSettled([
       ...toLoad.map((m) => fetchRules(systemId, m.id)),
       ...toLoad.map((m) => fetchIndexEntries(systemId, m.id)),
       ...toLoad.map((m) => fetchGameData(systemId, m.id)),
@@ -571,10 +590,14 @@ export const useContentStore = defineStore('content', () => {
 
   /**
    * Re-fetch rules, index entries and game data for every active module.
+   * Clears the per-module maps first and bumps the refresh token so any
+   * in-flight fetch from a previous mode is discarded on resolution.
    */
   async function refreshContent(systemId: string): Promise<void> {
+    refreshSeq++
+    clearPerModuleContent()
     const modules = activeModules.value
-    await Promise.all([
+    await Promise.allSettled([
       ...modules.map((m) => fetchRules(systemId, m.id)),
       ...modules.map((m) => fetchIndexEntries(systemId, m.id)),
       ...modules.map((m) => fetchGameData(systemId, m.id)),
@@ -597,11 +620,17 @@ export const useContentStore = defineStore('content', () => {
     return ids
   }
 
-  function clear(): void {
+  function clearPerModuleContent(): void {
     rulesByModule.value = {}
     indexEntriesByModule.value = {}
     gameDataByModule.value = {}
+  }
+
+  function clear(): void {
+    refreshSeq++
+    clearPerModuleContent()
     manifestByModule.value = {}
+    viewMode.value = 'draft'
   }
 
   return {
