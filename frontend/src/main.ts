@@ -1,5 +1,6 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
+import { registerSW } from 'virtual:pwa-register'
 
 import App from './App.vue'
 import router from './router'
@@ -36,3 +37,5 @@ async function bootstrap(): Promise<void> {
 }
 
 bootstrap().catch((err: unknown) => globalErrorHandler(err, null))
+
+registerSW({ immediate: true })

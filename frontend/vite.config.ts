@@ -4,6 +4,7 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
 import tailwindcss from '@tailwindcss/vite'
+import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -11,6 +12,34 @@ export default defineConfig({
     vue(),
     vueDevTools(),
     tailwindcss(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      injectRegister: null,
+      includeAssets: ['favicon.ico'],
+      manifest: {
+        name: 'Olgur',
+        short_name: 'Olgur',
+        theme_color: '#010101',
+        background_color: '#010101',
+        display: 'standalone',
+        start_url: '/',
+        icons: [
+          {
+            src: 'pwa-192x192.png',
+            sizes: '192x192',
+            type: 'image/png',
+          },
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+          },
+        ],
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+      },
+    }),
   ],
   resolve: {
     alias: {
