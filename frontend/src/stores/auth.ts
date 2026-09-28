@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
+import { toast } from 'vue-sonner'
 
 import { useApi } from '@/composables/useApi'
 import { useOnline } from '@/composables/useOnline'
@@ -80,7 +81,17 @@ export const useAuthStore = defineStore('auth', () => {
         try {
           await fetchUser()
         } catch (e) {
-          if ((e as ApiError).type === 'network') offline = true
+          const type = (e as ApiError).type
+          if (type === 'network') {
+            offline = true
+          } else if (type !== 'auth') {
+            toast.error('Something went wrong while loading your account. Please try again.')
+            try {
+              await fetchUser()
+            } catch {
+              // Remain logged out and keep the app usable after a retry failure.
+            }
+          }
         }
       }
 

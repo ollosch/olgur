@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ref } from 'vue'
 import { setActivePinia, createPinia } from 'pinia'
 
+const { mockToastError } = vi.hoisted(() => ({ mockToastError: vi.fn() }))
+
 // ─── Mock useApi composable ───────────────────────────────────────────────────
 const mockGet = vi.fn()
 const mockPost = vi.fn()
@@ -17,7 +19,24 @@ vi.mock('@/composables/useApi', () => ({
   })),
 }))
 
+vi.mock('vue-sonner', () => ({
+  toast: { error: mockToastError },
+}))
+
+vi.mock('@/stores/cacheStore', () => ({
+  useCacheStore: vi.fn(() => ({
+    loadRegistry: vi.fn().mockResolvedValue(undefined),
+  })),
+}))
+
+vi.mock('@/stores/system', () => ({
+  useSystemStore: vi.fn(() => ({
+    init: vi.fn().mockResolvedValue(undefined),
+  })),
+}))
+
 import { useAuthStore } from '@/stores/auth'
+import { useOnline } from '@/composables/useOnline'
 
 const mockUser = {
   id: '01abc',
@@ -34,7 +53,9 @@ describe('useAuthStore', () => {
     mockGet.mockReset()
     mockPost.mockReset()
     mockPatch.mockReset()
+    mockToastError.mockReset()
     mockLoading.value = false
+    useOnline().online.value = true
   })
 
   // ── clear ────────────────────────────────────────────────────────────────────
@@ -215,5 +236,68 @@ describe('useAuthStore', () => {
     mockLoading.value = true
     const auth = useAuthStore()
     expect(auth.loading).toBe(true)
+  })
+
+  // ── bootstrap ─────────────────────────────────────────────────────────────────
+  describe('bootstrap', () => {
+    function mockCookieThen(getMe: () => Promise<unknown>) {
+      mockGet.mockImplementation((url: string) => {
+        if (url === '/me') return getMe()
+        return Promise.resolve({ ok: true, data: undefined })
+      })
+    }
+
+    it('flips the app offline on a network failure while fetching the user', async () => {
+      mockCookieThen(() => Promise.reject({ type: 'network' }))
+      const auth = useAuthStore()
+
+      await auth.bootstrap()
+
+      expect(useOnline().online.value).toBe(false)
+      expect(auth.user).toBeNull()
+      expect(auth.initialized).toBe(true)
+    })
+
+    it('leaves the user logged out on an auth failure without a toast', async () => {
+      mockCookieThen(() => Promise.reject({ type: 'auth', message: 'Unauthenticated.' }))
+      const auth = useAuthStore()
+
+      await auth.bootstrap()
+
+      expect(useOnline().online.value).toBe(true)
+      expect(auth.user).toBeNull()
+      expect(auth.initialized).toBe(true)
+      expect(mockToastError).not.toHaveBeenCalled()
+    })
+
+    it('surfaces a server error and retries once before staying logged out', async () => {
+      mockCookieThen(() => Promise.reject({ type: 'unknown', original: { message: 'Server error' } }))
+      const auth = useAuthStore()
+
+      await auth.bootstrap()
+
+      expect(mockToastError).toHaveBeenCalledWith(
+        'Something went wrong while loading your account. Please try again.',
+      )
+      expect(mockGet).toHaveBeenCalledTimes(3)
+      expect(auth.user).toBeNull()
+      expect(auth.initialized).toBe(true)
+    })
+
+    it('recovers when the retried /me fetch succeeds', async () => {
+      mockGet.mockImplementation((url: string) => {
+        if (url !== '/me') return Promise.resolve({ ok: true, data: undefined })
+        return mockGet.mock.calls.filter((c) => c[0] === '/me').length === 1
+          ? Promise.reject({ type: 'unknown' })
+          : Promise.resolve({ ok: true, data: { data: mockUser } })
+      })
+      const auth = useAuthStore()
+
+      await auth.bootstrap()
+
+      expect(mockToastError).toHaveBeenCalledTimes(1)
+      expect(auth.user).toEqual(mockUser)
+      expect(auth.initialized).toBe(true)
+    })
   })
 })
