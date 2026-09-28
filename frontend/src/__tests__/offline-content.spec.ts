@@ -164,6 +164,24 @@ describe('useContentStore — offline cache reads', () => {
     expect(mockGet).not.toHaveBeenCalled()
   })
 
+  it('re-keys released rules by rule_id and remaps snapshot parent_id when offline', async () => {
+    useOnline().online.value = false
+    mockGetCachedContent.mockResolvedValue({
+      version_id: 'v1',
+      items: [
+        { ...makeRule('snap-parent'), rule_id: 'live-parent' },
+        { ...makeRule('snap-child'), rule_id: 'live-child', parent_id: 'snap-parent' },
+      ],
+    })
+
+    const store = useContentStore()
+    await store.fetchRules('sys1', 'mod1')
+
+    const rules = store.rulesByModule['mod1']!
+    expect(rules.map((r) => r.id)).toEqual(['live-parent', 'live-child'])
+    expect(rules[1]?.parent_id).toBe('live-parent')
+  })
+
   it('reads index entries from the cache when offline', async () => {
     useOnline().online.value = false
     mockGetCachedContent.mockResolvedValue({ version_id: 'v1', items: [makeIndexEntry('e1')] })
@@ -175,6 +193,24 @@ describe('useContentStore — offline cache reads', () => {
     expect(store.indexEntriesByModule['mod1']).toHaveLength(1)
   })
 
+  it('re-keys released index entries by index_entry_id when offline', async () => {
+    useOnline().online.value = false
+    mockGetCachedContent.mockResolvedValue({
+      version_id: 'v1',
+      items: [
+        { ...makeIndexEntry('snap-parent'), index_entry_id: 'live-parent' },
+        { ...makeIndexEntry('snap-child'), index_entry_id: 'live-child', parent_id: 'snap-parent' },
+      ],
+    })
+
+    const store = useContentStore()
+    await store.fetchIndexEntries('sys1', 'mod1')
+
+    const entries = store.indexEntriesByModule['mod1']!
+    expect(entries.map((e) => e.id)).toEqual(['live-parent', 'live-child'])
+    expect(entries[1]?.parent_id).toBe('live-parent')
+  })
+
   it('reads game data from the cache when offline', async () => {
     useOnline().online.value = false
     mockGetCachedContent.mockResolvedValue({ version_id: 'v1', items: [makeGameDatum('gd1')] })
@@ -184,6 +220,19 @@ describe('useContentStore — offline cache reads', () => {
 
     expect(mockGetCachedContent).toHaveBeenCalledWith('sys1', 'mod1', 'game-data')
     expect(store.gameDataByModule['mod1']).toHaveLength(1)
+  })
+
+  it('re-keys released game data by game_datum_id when offline', async () => {
+    useOnline().online.value = false
+    mockGetCachedContent.mockResolvedValue({
+      version_id: 'v1',
+      items: [{ ...makeGameDatum('snap-gd'), game_datum_id: 'live-gd' }],
+    })
+
+    const store = useContentStore()
+    await store.fetchGameData('sys1', 'mod1')
+
+    expect(store.gameDataByModule['mod1']?.[0]?.id).toBe('live-gd')
   })
 
   it('rebuilds the manifest from the cached system and manifests when offline', async () => {

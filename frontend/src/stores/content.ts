@@ -21,6 +21,55 @@ import type {
   RuleDeletionMode,
 } from '@/types/domain'
 
+/**
+ * Normalize released content entities so they are keyed by the original live
+ * entity id rather than the snapshot id. Released snapshots carry both the
+ * snapshot `id` and a stable reference (`rule_id` / `index_entry_id` /
+ * `game_datum_id`) to the original live entity, plus a `parent_id` that points
+ * at a sibling *snapshot* id. Re-keying on the stable id keeps bookmarks,
+ * history, proofreads and the various `*ById` lookups consistent across Draft,
+ * Release and offline.
+ */
+function normalizeRules(items: Rule[]): Rule[] {
+  const idBySnapshot = new Map<string, string>()
+  for (const rule of items) {
+    if (rule.rule_id) idBySnapshot.set(rule.id, rule.rule_id)
+  }
+  return items.map((rule) =>
+    markRaw({
+      ...rule,
+      id: rule.rule_id ?? rule.id,
+      parent_id:
+        rule.parent_id === null ? null : (idBySnapshot.get(rule.parent_id) ?? rule.parent_id),
+      content: rule.content.split('<br>').join('\n'),
+    }),
+  )
+}
+
+function normalizeIndexEntries(items: IndexEntry[]): IndexEntry[] {
+  const idBySnapshot = new Map<string, string>()
+  for (const entry of items) {
+    if (entry.index_entry_id) idBySnapshot.set(entry.id, entry.index_entry_id)
+  }
+  return items.map((entry) =>
+    markRaw({
+      ...entry,
+      id: entry.index_entry_id ?? entry.id,
+      parent_id:
+        entry.parent_id === null ? null : (idBySnapshot.get(entry.parent_id) ?? entry.parent_id),
+    }),
+  )
+}
+
+function normalizeGameData(items: GameDatum[]): GameDatum[] {
+  return items.map((datum) =>
+    markRaw({
+      ...datum,
+      id: datum.game_datum_id ?? datum.id,
+    }),
+  )
+}
+
 export const useContentStore = defineStore('content', () => {
   const { get, put, del, loading } = useApi()
   const systemStore = useSystemStore()
@@ -381,9 +430,7 @@ export const useContentStore = defineStore('content', () => {
       const cached = await cacheStore.getCachedContent<Rule>(systemId, moduleId, 'rules')
       if (seq !== refreshSeq) return
       if (cached) {
-        rulesByModule.value[moduleId] = cached.items.map((r) =>
-          markRaw({ ...r, content: r.content.split('<br>').join('\n') }),
-        )
+        rulesByModule.value[moduleId] = normalizeRules(cached.items)
       }
       return
     }
@@ -407,17 +454,13 @@ export const useContentStore = defineStore('content', () => {
       const cached = await cacheStore.getCachedContent<Rule>(systemId, moduleId, 'rules')
       if (seq !== refreshSeq) return
       if (cached && cached.version_id === manifestEntry.version_id) {
-        rulesByModule.value[moduleId] = cached.items.map((r) =>
-          markRaw({ ...r, content: r.content.split('<br>').join('\n') }),
-        )
+        rulesByModule.value[moduleId] = normalizeRules(cached.items)
         return
       }
       const data = await fetchAuthenticatedCollection<Rule>(manifestEntry.content.rules)
       if (seq !== refreshSeq) return
       if (data !== null) {
-        rulesByModule.value[moduleId] = data.map((r) =>
-          markRaw({ ...r, content: r.content.split('<br>').join('\n') }),
-        )
+        rulesByModule.value[moduleId] = normalizeRules(data)
       }
     }
   }
@@ -473,7 +516,7 @@ export const useContentStore = defineStore('content', () => {
       const cached = await cacheStore.getCachedContent<IndexEntry>(systemId, moduleId, 'index')
       if (seq !== refreshSeq) return
       if (cached) {
-        indexEntriesByModule.value[moduleId] = cached.items.map((e) => markRaw(e))
+        indexEntriesByModule.value[moduleId] = normalizeIndexEntries(cached.items)
       }
       return
     }
@@ -495,13 +538,13 @@ export const useContentStore = defineStore('content', () => {
       const cached = await cacheStore.getCachedContent<IndexEntry>(systemId, moduleId, 'index')
       if (seq !== refreshSeq) return
       if (cached && cached.version_id === manifestEntry.version_id) {
-        indexEntriesByModule.value[moduleId] = cached.items.map((e) => markRaw(e))
+        indexEntriesByModule.value[moduleId] = normalizeIndexEntries(cached.items)
         return
       }
       const data = await fetchAuthenticatedCollection<IndexEntry>(manifestEntry.content.index)
       if (seq !== refreshSeq) return
       if (data !== null) {
-        indexEntriesByModule.value[moduleId] = data.map((e) => markRaw(e))
+        indexEntriesByModule.value[moduleId] = normalizeIndexEntries(data)
       }
     }
   }
@@ -513,7 +556,7 @@ export const useContentStore = defineStore('content', () => {
       const cached = await cacheStore.getCachedContent<GameDatum>(systemId, moduleId, 'game-data')
       if (seq !== refreshSeq) return
       if (cached) {
-        gameDataByModule.value[moduleId] = cached.items.map((d) => markRaw(d))
+        gameDataByModule.value[moduleId] = normalizeGameData(cached.items)
       }
       return
     }
@@ -535,13 +578,13 @@ export const useContentStore = defineStore('content', () => {
       const cached = await cacheStore.getCachedContent<GameDatum>(systemId, moduleId, 'game-data')
       if (seq !== refreshSeq) return
       if (cached && cached.version_id === manifestEntry.version_id) {
-        gameDataByModule.value[moduleId] = cached.items.map((d) => markRaw(d))
+        gameDataByModule.value[moduleId] = normalizeGameData(cached.items)
         return
       }
       const data = await fetchAuthenticatedCollection<GameDatum>(manifestEntry.content['game-data'])
       if (seq !== refreshSeq) return
       if (data !== null) {
-        gameDataByModule.value[moduleId] = data.map((d) => markRaw(d))
+        gameDataByModule.value[moduleId] = normalizeGameData(data)
       }
     }
   }

@@ -322,6 +322,23 @@ describe('useContentStore — manifest & content routing', () => {
 
       expect(contentStore.rulesByModule['mod1']?.[0]?.content).toBe('line1\nline2')
     })
+
+    it('re-keys released rules by rule_id and remaps snapshot parent_id', async () => {
+      seedModules({ mod1: { 'content.view_released': true } })
+      const contentStore = useContentStore()
+      contentStore.manifestByModule['mod1'] = makeManifestEntry('mod1')
+
+      mockRequest.mockResolvedValue([
+        { ...makeRule('snap-parent'), rule_id: 'live-parent' },
+        { ...makeRule('snap-child'), rule_id: 'live-child', parent_id: 'snap-parent' },
+      ])
+
+      await contentStore.fetchRules('sys1', 'mod1')
+
+      const rules = contentStore.rulesByModule['mod1']!
+      expect(rules.map((r) => r.id)).toEqual(['live-parent', 'live-child'])
+      expect(rules[1]?.parent_id).toBe('live-parent')
+    })
   })
 
   // ── fetchIndexEntries ────────────────────────────────────────────────────────
@@ -363,6 +380,23 @@ describe('useContentStore — manifest & content routing', () => {
       expect(mockRequest).not.toHaveBeenCalled()
       expect(contentStore.indexEntriesByModule['mod1']).toBeUndefined()
     })
+
+    it('re-keys released index entries by index_entry_id and remaps snapshot parent_id', async () => {
+      seedModules({ mod1: { 'content.view_released': true } })
+      const contentStore = useContentStore()
+      contentStore.manifestByModule['mod1'] = makeManifestEntry('mod1')
+
+      mockRequest.mockResolvedValue([
+        { ...makeIndexEntry('snap-parent'), index_entry_id: 'live-parent' },
+        { ...makeIndexEntry('snap-child'), index_entry_id: 'live-child', parent_id: 'snap-parent' },
+      ])
+
+      await contentStore.fetchIndexEntries('sys1', 'mod1')
+
+      const entries = contentStore.indexEntriesByModule['mod1']!
+      expect(entries.map((e) => e.id)).toEqual(['live-parent', 'live-child'])
+      expect(entries[1]?.parent_id).toBe('live-parent')
+    })
   })
 
   // ── fetchGameData ────────────────────────────────────────────────────────────
@@ -403,6 +437,18 @@ describe('useContentStore — manifest & content routing', () => {
 
       expect(mockRequest).not.toHaveBeenCalled()
       expect(contentStore.gameDataByModule['mod1']).toBeUndefined()
+    })
+
+    it('re-keys released game data by game_datum_id', async () => {
+      seedModules({ mod1: { 'content.view_released': true } })
+      const contentStore = useContentStore()
+      contentStore.manifestByModule['mod1'] = makeManifestEntry('mod1')
+
+      mockRequest.mockResolvedValue([{ ...makeGameDatum('snap-gd'), game_datum_id: 'live-gd' }])
+
+      await contentStore.fetchGameData('sys1', 'mod1')
+
+      expect(contentStore.gameDataByModule['mod1']?.[0]?.id).toBe('live-gd')
     })
   })
 

@@ -229,6 +229,26 @@ describe('useContentStore — version-aware cache-first released reads', () => {
       expect(mockRequest).toHaveBeenCalledWith({ method: 'GET', url: entry.content.rules })
       expect(contentStore.rulesByModule['mod1']).toHaveLength(1)
     })
+
+    it('re-keys cached rules by rule_id and remaps snapshot parent_id', async () => {
+      seedReleasedModule('mod1')
+      const contentStore = useContentStore()
+      contentStore.manifestByModule['mod1'] = makeManifestEntry('mod1')
+
+      mockGetCachedContent.mockResolvedValue({
+        version_id: 'v1',
+        items: [
+          { ...makeRule('snap-parent'), rule_id: 'live-parent' },
+          { ...makeRule('snap-child'), rule_id: 'live-child', parent_id: 'snap-parent' },
+        ],
+      })
+
+      await contentStore.fetchRules('sys1', 'mod1')
+
+      const rules = contentStore.rulesByModule['mod1']!
+      expect(rules.map((r) => r.id)).toEqual(['live-parent', 'live-child'])
+      expect(rules[1]?.parent_id).toBe('live-parent')
+    })
   })
 
   describe('fetchIndexEntries', () => {

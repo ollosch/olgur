@@ -104,6 +104,7 @@ export interface Membership {
 
 export interface Rule {
   id: string
+  rule_id?: string
   module_id: string
   parent_id: string | null
   number: string
@@ -122,6 +123,7 @@ export interface IndexEntryRelations {
 
 export interface IndexEntry {
   id: string
+  index_entry_id?: string
   module_id: string
   parent_id: string | null
   term: string
@@ -134,6 +136,7 @@ export interface IndexEntry {
 
 export interface GameDatum {
   id: string
+  game_datum_id?: string
   module_id: string
   type: 'sop' | 'table' | 'ordnance' | 'vehicle'
   slug: string
