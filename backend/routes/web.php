@@ -10,6 +10,7 @@ use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\ModuleDraftChangeController;
 use App\Http\Controllers\ModuleVersionContentController;
 use App\Http\Controllers\ModuleVersionController;
+use App\Http\Controllers\ProofreadController;
 use App\Http\Controllers\RuleController;
 use App\Http\Controllers\RuleImageController;
 use App\Http\Controllers\SubscriptionController;
@@ -61,6 +62,13 @@ Route::prefix('api')->group(function (): void {
                 ->name('draft-changes.index');
             Route::patch('/systems/{system}/modules/{module}/draft-changes/{draftChange}', [ModuleDraftChangeController::class, 'reclassify'])
                 ->name('draft-changes.reclassify');
+
+            Route::get('/systems/{system}/proofreads', [ProofreadController::class, 'index'])
+                ->name('systems.proofreads.index');
+            Route::post('/systems/{system}/proofreads', [ProofreadController::class, 'store'])
+                ->name('systems.proofreads.store');
+            Route::delete('/systems/{system}/proofreads/{entity_type}/{entity_id}', [ProofreadController::class, 'destroy'])
+                ->name('systems.proofreads.destroy');
         });
     });
 

@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Model;
  * Mutable fields:
  *   - $tocDepth
  *   - $coverImage
+ *   - $proofreadThreshold
  *
  * @see \App\Models\System::$config
  * @see \App\Http\Requests\StoreSystemRequest
@@ -34,6 +35,8 @@ final readonly class SystemConfig implements Castable
         public int $tocDepth,
         /** Cover image URL (display only). */
         public ?string $coverImage,
+        /** Number of distinct proofreaders required before an entity is considered proofread. */
+        public int $proofreadThreshold,
     ) {}
 
     /**
@@ -49,6 +52,7 @@ final readonly class SystemConfig implements Castable
             sortRulesBy: is_string($data['sort_rules_by'] ?? null) ? $data['sort_rules_by'] : 'sort_order',
             tocDepth: is_int($data['toc_depth'] ?? null) ? $data['toc_depth'] : 1,
             coverImage: is_string($data['cover_image'] ?? null) ? $data['cover_image'] : null,
+            proofreadThreshold: is_int($data['proofread_threshold'] ?? null) ? $data['proofread_threshold'] : 3,
         );
     }
 
@@ -106,6 +110,7 @@ final readonly class SystemConfig implements Castable
             'sort_rules_by' => $this->sortRulesBy,
             'toc_depth' => $this->tocDepth,
             'cover_image' => $this->coverImage,
+            'proofread_threshold' => $this->proofreadThreshold,
         ];
     }
 
@@ -115,5 +120,13 @@ final readonly class SystemConfig implements Castable
     public function hasGlobalRuleNumbers(): bool
     {
         return $this->globalRuleNumbers;
+    }
+
+    /**
+     * Number of distinct proofreaders required before an entity is considered proofread.
+     */
+    public function proofreadThreshold(): int
+    {
+        return $this->proofreadThreshold;
     }
 }

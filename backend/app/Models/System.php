@@ -77,4 +77,9 @@ final class System extends Model
     {
         return $this->memberships()->where('user_id', $user->id)->where('admin', true)->exists();
     }
+
+    public function isProofreader(User $user): bool
+    {
+        return $this->memberships()->where('user_id', $user->id)->where('proofreader', true)->exists();
+    }
 }

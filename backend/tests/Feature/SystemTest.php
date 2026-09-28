@@ -77,6 +77,23 @@ test('isAdmin returns false when user is not an admin', function (): void {
     expect($system->isAdmin($user))->toBeFalse();
 });
 
+// ── System::isProofreader ─────────────────────────────────────────────────
+
+test('isProofreader returns true when user is a proofreader', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    Membership::factory()->for($user)->for($system)->proofreader()->create();
+
+    expect($system->isProofreader($user))->toBeTrue();
+});
+
+test('isProofreader returns false when user is not a proofreader', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+
+    expect($system->isProofreader($user))->toBeFalse();
+});
+
 // ── System::coreModule ─────────────────────────────────────────────────────
 
 test('coreModule returns the core module', function (): void {
@@ -101,7 +118,8 @@ test('SystemConfig::fromArray uses defaults for missing keys', function (): void
     expect($config->globalRuleNumbers)->toBeFalse()
         ->and($config->sortRulesBy)->toBe('sort_order')
         ->and($config->tocDepth)->toBe(1)
-        ->and($config->coverImage)->toBeNull();
+        ->and($config->coverImage)->toBeNull()
+        ->and($config->proofreadThreshold)->toBe(3);
 });
 
 test('SystemConfig::fromArray uses provided values', function (): void {
@@ -131,6 +149,7 @@ test('SystemConfig::toArray serialises to the expected shape', function (): void
         'sort_rules_by' => 'number',
         'toc_depth' => 2,
         'cover_image' => null,
+        'proofread_threshold' => 3,
     ]);
 });
 

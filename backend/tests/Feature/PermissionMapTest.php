@@ -37,6 +37,7 @@ test('a super admin receives every module permission', function (): void {
         'content.view_live' => true,
         'content.view_released' => true,
         'content.edit' => true,
+        'content.proofread' => true,
         'version.publish' => true,
         'version.amend_latest' => true,
         'subscription.manage' => true,
@@ -84,6 +85,21 @@ test('a module editor loads live content and can publish but cannot manage subsc
         ->and($permissions['content.view_released'])->toBeTrue();
 });
 
+test('a proofreader can proofread content but cannot manage it', function (): void {
+    $system = System::factory()->create();
+    $proofreader = User::factory()->create();
+    Membership::factory()->for($proofreader)->for($system)->proofreader()->create();
+    $module = Module::factory()->for($system)->create();
+    Subscription::factory()->for($proofreader)->for($module)->create(['editor' => false]);
+    actingAs($proofreader);
+
+    $permissions = modulePermissions($system, $module);
+
+    expect($permissions['content.proofread'])->toBeTrue()
+        ->and($permissions['content.view_live'])->toBeFalse()
+        ->and($permissions['content.edit'])->toBeFalse();
+});
+
 test('a plain subscriber reads released content but cannot view or edit live content', function (): void {
     $system = System::factory()->create();
     $subscriber = User::factory()->create();
@@ -98,6 +114,7 @@ test('a plain subscriber reads released content but cannot view or edit live con
     expect($permissions['content.view_live'])->toBeFalse()
         ->and($permissions['content.view_released'])->toBeTrue()
         ->and($permissions['content.edit'])->toBeFalse()
+        ->and($permissions['content.proofread'])->toBeFalse()
         ->and($permissions['module.update'])->toBeFalse()
         ->and($permissions['version.publish'])->toBeFalse()
         ->and($permissions['module.delete'])->toBeFalse()

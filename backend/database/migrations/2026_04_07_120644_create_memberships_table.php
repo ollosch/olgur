@@ -19,6 +19,7 @@ return new class extends Migration
             $table->foreignUlid('system_id')->constrained()->cascadeOnDelete();
 
             $table->boolean('admin')->default(false);
+            $table->boolean('proofreader')->default(false);
             $table->json('config')->default('[]');
             $table->timestamps();
 

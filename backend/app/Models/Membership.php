@@ -19,11 +19,12 @@ use Illuminate\Support\Carbon;
  * @property string $user_id
  * @property string $system_id
  * @property bool $admin
+ * @property bool $proofreader
  * @property MembershipConfig $config
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['user_id', 'system_id', 'admin', 'config'])]
+#[Fillable(['user_id', 'system_id', 'admin', 'proofreader', 'config'])]
 #[Table(name: 'memberships')]
 final class Membership extends Model
 {
@@ -41,6 +42,7 @@ final class Membership extends Model
     {
         return [
             'admin' => 'boolean',
+            'proofreader' => 'boolean',
             'config' => MembershipConfig::class,
         ];
     }

@@ -25,6 +25,7 @@ final class MembershipFactory extends Factory
             'user_id' => User::factory(),
             'system_id' => System::factory(),
             'admin' => false,
+            'proofreader' => false,
             'config' => [],
         ];
     }
@@ -36,6 +37,16 @@ final class MembershipFactory extends Factory
     {
         return $this->state(fn (array $attributes): array => [
             'admin' => true,
+        ]);
+    }
+
+    /**
+     * Mark this membership as a proofreader.
+     */
+    public function proofreader(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'proofreader' => true,
         ]);
     }
 }

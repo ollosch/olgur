@@ -46,6 +46,7 @@ final class PermissionMap
         }
 
         $isAdmin = $system->isAdmin($user);
+        $isProofreader = $system->isProofreader($user);
         $isEditor = $module->isEditor($user);
         $isSubscriber = $module->isSubscriber($user);
         $canViewLive = $isAdmin || $isEditor;
@@ -57,6 +58,7 @@ final class PermissionMap
             'content.view_live' => $canViewLive,
             'content.view_released' => $hasReleasedSnapshot && ($isSubscriber || $isAdmin),
             'content.edit' => $canViewLive,
+            'content.proofread' => $isAdmin || $isProofreader,
             'version.publish' => $canViewLive,
             'version.amend_latest' => $canViewLive,
             'subscription.manage' => $isAdmin,
@@ -74,6 +76,7 @@ final class PermissionMap
             'content.view_live' => $value,
             'content.view_released' => $value,
             'content.edit' => $value,
+            'content.proofread' => $value,
             'version.publish' => $value,
             'version.amend_latest' => $value,
             'subscription.manage' => $value,
