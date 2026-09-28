@@ -47,6 +47,13 @@ vi.mock('@/components/ui/badge', () => ({
   Badge: defineComponent({ name: 'BadgeStub', template: '<span><slot /></span>' }),
 }))
 
+// ─── Mock the sonner toast used for surfacing pin failures ─────────────────────
+const { mockToastError } = vi.hoisted(() => ({ mockToastError: vi.fn() }))
+
+vi.mock('vue-sonner', () => ({
+  toast: { error: mockToastError, success: vi.fn() },
+}))
+
 import PinSystemControl from '@/components/systems/PinSystemControl.vue'
 import { useCacheStore } from '@/stores/cacheStore'
 import { useContentStore } from '@/stores/content'
@@ -222,6 +229,7 @@ describe('PinSystemControl', () => {
     setActivePinia(createPinia())
     mockGet.mockReset()
     mockRequest.mockReset()
+    mockToastError.mockReset()
     useOnline().online.value = true
     await resetIndexedDb()
   })
@@ -277,6 +285,20 @@ describe('PinSystemControl', () => {
     })
 
     expect(cacheStore.isCached('sys1')).toBe(false)
+  })
+
+  it('surfaces a pin failure as an error toast and leaves the system uncached', async () => {
+    seedApi(makeSystem('sys1'), [makeModule('mod1')], [makeManifestEntry('mod1')])
+    mockRequest.mockImplementation(() => Promise.resolve(null))
+
+    const wrapper = mountControl()
+    await wrapper.find('[role="switch"]').trigger('click')
+
+    await vi.waitFor(() => {
+      expect(mockToastError).toHaveBeenCalled()
+    })
+    expect(useCacheStore().isCached('sys1')).toBe(false)
+    expect(wrapper.text()).not.toContain('Cached')
   })
 
   it('shows "Update available" when online and the cached version differs from the manifest', () => {

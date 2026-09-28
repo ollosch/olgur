@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { useApi } from '@/composables/useApi'
 import { request } from '@/lib/http'
 import { idbDelete, idbGet, idbGetAll, idbGetAllKeys, idbPut } from '@/lib/idb'
+import type { IdbStore } from '@/lib/idb'
 import type {
   System,
   Module,
@@ -59,6 +60,12 @@ function extractManifestEntries(
   return payload?.modules ?? []
 }
 
+interface WriteRecord {
+  store: IdbStore
+  key: string
+  value: unknown
+}
+
 export const useCacheStore = defineStore('cache', () => {
   const { get } = useApi()
 
@@ -73,15 +80,20 @@ export const useCacheStore = defineStore('cache', () => {
 
   /**
    * Fetch a released JSON collection from an absolute URL using the
-   * authenticated axios instance. Returns null on any error.
+   * authenticated axios instance. Throws a descriptive Error on any failure so
+   * a missing content kind aborts the pin rather than being silently skipped.
    */
-  async function fetchCollection<T>(url: string): Promise<T[] | null> {
+  async function fetchCollection<T>(url: string): Promise<T[]> {
+    let json: T[]
     try {
-      const json = await request<T[]>({ method: 'GET', url })
-      return Array.isArray(json) ? json : null
+      json = await request<T[]>({ method: 'GET', url })
     } catch {
-      return null
+      throw new Error(`Failed to download content from ${url}`)
     }
+    if (!Array.isArray(json)) {
+      throw new Error(`Content from ${url} was not a collection`)
+    }
+    return json
   }
 
   async function loadRegistry(): Promise<void> {
@@ -140,12 +152,14 @@ export const useCacheStore = defineStore('cache', () => {
       if (viewable.length === 0) return
 
       let size = jsonSize(system) + jsonSize(modules)
-      const writes: Promise<void>[] = [idbPut('systems', systemId, { system, modules })]
+      const records: WriteRecord[] = [
+        { store: 'systems', key: systemId, value: { system, modules } },
+      ]
 
       for (const module of viewable) {
         const entry = manifestByModule.get(module.id)!
         size += jsonSize(entry)
-        writes.push(idbPut('manifests', manifestKey(systemId, module.id), entry))
+        records.push({ store: 'manifests', key: manifestKey(systemId, module.id), value: entry })
 
         const [rules, index, gameData] = await Promise.all([
           fetchCollection<Rule>(entry.content.rules),
@@ -153,26 +167,22 @@ export const useCacheStore = defineStore('cache', () => {
           fetchCollection<GameDatum>(entry.content['game-data']),
         ])
 
-        const byKind: Partial<Record<ContentKind, unknown[]>> = {
-          rules: rules ?? undefined,
-          index: index ?? undefined,
-          'game-data': gameData ?? undefined,
+        const byKind: Record<ContentKind, unknown[]> = {
+          rules,
+          index,
+          'game-data': gameData,
         }
 
         for (const kind of CONTENT_KINDS) {
           const items = byKind[kind]
-          if (!items) continue
           size += jsonSize(items)
-          writes.push(
-            idbPut('content', contentKey(systemId, module.id, kind), {
-              version_id: entry.version_id,
-              items,
-            }),
-          )
+          records.push({
+            store: 'content',
+            key: contentKey(systemId, module.id, kind),
+            value: { version_id: entry.version_id, items },
+          })
         }
       }
-
-      await Promise.all(writes)
 
       const meta: CachedSystemMeta = {
         systemId,
@@ -183,12 +193,37 @@ export const useCacheStore = defineStore('cache', () => {
         cachedAt: Date.now(),
         size,
       }
-      await idbPut('meta', systemId, meta)
+      records.push({ store: 'meta', key: systemId, value: meta })
+
+      await assertStorageHeadroom(size)
+      await writeRecords(records)
 
       cachedSystems.value = [...cachedSystems.value.filter((e) => e.systemId !== systemId), meta]
       bytesUsed.value = cachedSystems.value.reduce((sum, e) => sum + e.size, 0)
     } finally {
       pinInProgress.value = new Set([...pinInProgress.value].filter((id) => id !== systemId))
+    }
+  }
+
+  async function assertStorageHeadroom(pendingSize: number): Promise<void> {
+    const { usage, quota } = await estimateStorage()
+    if (quota > 0 && usage + pendingSize > quota) {
+      throw new Error('Not enough storage space to cache this system offline.')
+    }
+  }
+
+  async function writeRecords(records: WriteRecord[]): Promise<void> {
+    const written: WriteRecord[] = []
+    try {
+      for (const record of records) {
+        await idbPut(record.store, record.key, record.value)
+        written.push(record)
+      }
+    } catch {
+      await Promise.all(
+        written.map((record) => idbDelete(record.store, record.key).catch(() => undefined)),
+      )
+      throw new Error('Failed to save the offline cache. Please try again.')
     }
   }
 

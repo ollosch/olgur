@@ -27,6 +27,18 @@ vi.mock('@/lib/http', async (importOriginal) => {
   return { ...actual, request: mockRequest }
 })
 
+// ─── Mock idbPut so write failures can be injected while delegating by default ──
+const { mockIdbPut, idbPutHolder } = vi.hoisted(() => ({
+  mockIdbPut: vi.fn(),
+  idbPutHolder: { impl: null as null | ((...args: unknown[]) => Promise<unknown>) },
+}))
+
+vi.mock('@/lib/idb', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/idb')>()
+  idbPutHolder.impl = actual.idbPut as unknown as (...args: unknown[]) => Promise<unknown>
+  return { ...actual, idbPut: mockIdbPut }
+})
+
 import { useCacheStore } from '@/stores/cacheStore'
 import type {
   System,
@@ -192,11 +204,14 @@ describe('useCacheStore — offline pinning', () => {
     setActivePinia(createPinia())
     mockGet.mockReset()
     mockRequest.mockReset()
+    mockIdbPut.mockReset()
+    mockIdbPut.mockImplementation((...args: unknown[]) => idbPutHolder.impl!(...args))
     await resetIndexedDb()
   })
 
   afterEach(async () => {
     vi.restoreAllMocks()
+    vi.unstubAllGlobals()
     await resetIndexedDb()
   })
 
@@ -334,5 +349,63 @@ describe('useCacheStore — offline pinning', () => {
     await pending
 
     expect(store.pinInProgress.has('sys1')).toBe(false)
+  })
+
+  it('rejects and leaves nothing cached when a content download returns null', async () => {
+    const system = makeSystem('sys1')
+    const module = makeModule('mod1')
+    seedApi(system, [module], [makeManifestEntry('mod1')])
+    mockRequest.mockImplementation(() => Promise.resolve(null))
+
+    const store = useCacheStore()
+    await expect(store.pinSystem('sys1')).rejects.toThrow('was not a collection')
+
+    expect(store.isCached('sys1')).toBe(false)
+    expect(store.cachedSystems).toEqual([])
+    expect(await store.getCachedSystem('sys1')).toBeUndefined()
+    expect(await store.getCachedManifest('sys1', 'mod1')).toBeUndefined()
+    expect(await store.getCachedContent('sys1', 'mod1', 'rules')).toBeUndefined()
+  })
+
+  it('rolls back partial writes when an IndexedDB write fails', async () => {
+    const system = makeSystem('sys1')
+    const module = makeModule('mod1')
+    seedApi(system, [module], [makeManifestEntry('mod1')])
+
+    mockIdbPut.mockImplementation(async (store: unknown, key: unknown, value: unknown) => {
+      if (store === 'content' && key === 'sys1:mod1:rules') {
+        throw new Error('boom')
+      }
+      await idbPutHolder.impl!(store, key, value)
+    })
+
+    const store = useCacheStore()
+    await expect(store.pinSystem('sys1')).rejects.toThrow('Failed to save the offline cache')
+
+    expect(store.isCached('sys1')).toBe(false)
+    expect(store.cachedSystems).toEqual([])
+    expect(await store.getCachedSystem('sys1')).toBeUndefined()
+    expect(await store.getCachedManifest('sys1', 'mod1')).toBeUndefined()
+    expect(await store.getCachedContent('sys1', 'mod1', 'rules')).toBeUndefined()
+  })
+
+  it('aborts before writing when the pending size exceeds available quota', async () => {
+    const system = makeSystem('sys1')
+    const module = makeModule('mod1')
+    seedApi(system, [module], [makeManifestEntry('mod1')])
+
+    vi.stubGlobal('navigator', {
+      storage: {
+        estimate: vi.fn().mockResolvedValue({ usage: 0, quota: 1 }),
+      },
+    })
+
+    const store = useCacheStore()
+    await expect(store.pinSystem('sys1')).rejects.toThrow(
+      'Not enough storage space to cache this system offline.',
+    )
+
+    expect(store.isCached('sys1')).toBe(false)
+    expect(await store.getCachedSystem('sys1')).toBeUndefined()
   })
 })

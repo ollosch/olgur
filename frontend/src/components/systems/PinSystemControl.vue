@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { toast } from 'vue-sonner'
 import { useCacheStore } from '@/stores/cacheStore'
 import { useContentStore } from '@/stores/content'
 import { useOnline } from '@/composables/useOnline'
@@ -39,8 +40,15 @@ const newVersionAvailable = computed(() => {
 })
 
 async function toggle(checked: boolean): Promise<void> {
-  if (checked) await cacheStore.pinSystem(props.systemId)
-  else await cacheStore.unpinSystem(props.systemId)
+  if (checked) {
+    try {
+      await cacheStore.pinSystem(props.systemId)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to cache this system offline.')
+    }
+  } else {
+    await cacheStore.unpinSystem(props.systemId)
+  }
 }
 </script>
 
