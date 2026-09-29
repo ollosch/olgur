@@ -6,7 +6,9 @@ namespace App\Http\Controllers;
 
 use App\Actions\ApplyModuleVersionBackEdit;
 use App\Actions\PublishModuleVersion;
+use App\Actions\ReleaseModuleVersion;
 use App\Http\Requests\AmendModuleVersionRequest;
+use App\Http\Requests\ReleaseModuleVersionRequest;
 use App\Http\Requests\StoreModuleVersionRequest;
 use App\Http\Resources\ModuleVersionResource;
 use App\Models\Module;
@@ -72,6 +74,41 @@ final class ModuleVersionController
             $notes,
             $expectedDraftRevision,
             $releaseNotes,
+        );
+
+        $moduleVersion->load('releaseNotes');
+
+        return new ModuleVersionResource($moduleVersion);
+    }
+
+    /**
+     * Release the module's current content as a new version without the
+     * draft-review workflow.
+     */
+    public function release(
+        ReleaseModuleVersionRequest $request,
+        System $system,
+        Module $module,
+        ReleaseModuleVersion $releaseModuleVersion
+    ): ModuleVersionResource {
+        Gate::authorize('create', [ModuleVersion::class, $module]);
+
+        /** @var User $user */
+        $user = $request->user();
+
+        $validated = $request->validated();
+
+        /** @var string $versionString */
+        $versionString = $validated['version_string'];
+
+        /** @var string $notes */
+        $notes = $validated['notes'] ?? '';
+
+        $moduleVersion = $releaseModuleVersion->execute(
+            $module,
+            $user,
+            $versionString,
+            $notes,
         );
 
         $moduleVersion->load('releaseNotes');

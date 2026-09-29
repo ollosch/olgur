@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { ChevronRight, ChevronDown } from '@lucide/vue'
 import CreateModuleDialog from '@/components/systems/CreateModuleDialog.vue'
 import DeleteConfirmDialog from '@/components/systems/DeleteConfirmDialog.vue'
+import ReleaseVersionDialog from '@/components/systems/ReleaseVersionDialog.vue'
 
 interface Props {
   system: System
@@ -27,12 +28,13 @@ const membershipStore = useMembershipStore()
 const cacheStore = useCacheStore()
 const { modulesBySystem, loading } = storeToRefs(systemStore)
 const { subscriptions } = storeToRefs(membershipStore)
-const { fetchModules, deleteSystem, deleteModule, createVersion } = systemStore
+const { fetchModules, deleteSystem, deleteModule } = systemStore
 
 const expanded = ref(false)
 const showCreateModule = ref(false)
 const showDeleteSystem = ref(false)
 const deletingModuleId = ref<string | null>(null)
+const versioningModuleId = ref<string | null>(null)
 
 const modules = computed(() => modulesBySystem.value[props.system.id] ?? [])
 const canManage = computed(() => props.system.permissions?.['system.manage'] ?? false)
@@ -46,6 +48,10 @@ function isUnavailable(mod: Module): boolean {
 }
 
 const hasCoreModule = computed(() => modules.value.some((m) => m.is_core))
+
+const versioningModule = computed(() =>
+  modules.value.find((m) => m.id === versioningModuleId.value) ?? null,
+)
 
 async function toggle() {
   expanded.value = !expanded.value
@@ -62,10 +68,6 @@ async function handleDeleteSystem() {
 async function handleDeleteModule(moduleId: string) {
   await deleteModule(props.system.id, moduleId)
   deletingModuleId.value = null
-}
-
-async function handleCreateVersion(moduleId: string) {
-  await createVersion(props.system.id, moduleId)
 }
 
 function openSystem() {
@@ -148,7 +150,7 @@ function openSystem() {
               size="sm"
               class="text-xs h-6 text-muted-foreground"
               :disabled="loading"
-              @click="handleCreateVersion(mod.id)"
+              @click="versioningModuleId = mod.id"
             >
               Version
             </Button>
@@ -192,5 +194,15 @@ function openSystem() {
     @update:open="!$event ? (deletingModuleId = null) : undefined"
     @confirm="handleDeleteModule(deletingModuleId!)"
     @cancel="deletingModuleId = null"
+  />
+
+  <!-- Release Version Dialog -->
+  <ReleaseVersionDialog
+    v-if="versioningModule"
+    :system-id="system.id"
+    :module-id="versioningModule.id"
+    :module-name="versioningModule.name"
+    :open="!!versioningModule"
+    @update:open="versioningModuleId = null"
   />
 </template>

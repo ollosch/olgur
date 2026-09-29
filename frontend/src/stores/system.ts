@@ -163,11 +163,19 @@ export const useSystemStore = defineStore('system', () => {
     return result
   }
 
-  async function createVersion(systemId: string, moduleId: string): Promise<ApiResult<void>> {
-    const result = await post<void>(`/systems/${systemId}/modules/${moduleId}/versions`, {
-      version_string: `v${Date.now()}`,
+  async function createVersion(
+    systemId: string,
+    moduleId: string,
+    versionString: string,
+  ): Promise<ApiResult<void>> {
+    const result = await post<void>(`/systems/${systemId}/modules/${moduleId}/versions/release`, {
+      version_string: versionString,
       notes: '',
     })
+    if (result.ok) {
+      const { useContentStore } = await import('@/stores/content')
+      await useContentStore().fetchManifest(systemId)
+    }
     return result
   }
 
