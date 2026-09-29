@@ -503,6 +503,52 @@ describe('useContentStore — manifest & content routing', () => {
     })
   })
 
+  // ── releaseViewEmpty ─────────────────────────────────────────────────────────
+
+  describe('releaseViewEmpty', () => {
+    it('is true when in release mode and every active module has no released content', () => {
+      seedModules({ mod1: { 'content.view_released': true } })
+      const contentStore = useContentStore()
+
+      contentStore.setViewMode('release')
+
+      expect(contentStore.releaseViewEmpty).toBe(true)
+    })
+
+    it('is true when every active module has a manifest entry with null content', () => {
+      seedModules({ mod1: { 'content.view_released': true } })
+      const contentStore = useContentStore()
+      contentStore.manifestByModule['mod1'] = {
+        ...makeManifestEntry('mod1'),
+        content: null,
+      } as unknown as ManifestEntry
+
+      contentStore.setViewMode('release')
+
+      expect(contentStore.releaseViewEmpty).toBe(true)
+    })
+
+    it('is false when at least one active module has released content', () => {
+      seedModules({
+        mod1: { 'content.view_released': true },
+        mod2: { 'content.view_released': true },
+      })
+      const contentStore = useContentStore()
+      contentStore.manifestByModule['mod1'] = makeManifestEntry('mod1')
+
+      contentStore.setViewMode('release')
+
+      expect(contentStore.releaseViewEmpty).toBe(false)
+    })
+
+    it('is false in draft view even with no released content', () => {
+      seedModules({ mod1: { 'content.view_released': true } })
+      const contentStore = useContentStore()
+
+      expect(contentStore.releaseViewEmpty).toBe(false)
+    })
+  })
+
   // ── released read path with null content ─────────────────────────────────────
 
   describe('released read path with null content', () => {

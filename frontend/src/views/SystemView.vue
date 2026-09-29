@@ -368,7 +368,11 @@ function openDrawer(mode: DrawerMode): void {
 
               <!-- Top-level TOC: shown when no child route is active -->
               <div v-else class="overflow-auto p-6 h-full">
-                <template v-for="mod in contentStore.activeModules" :key="mod.id">
+                <div v-if="contentStore.releaseViewEmpty" class="text-muted-foreground text-sm">
+                  No released version yet.
+                </div>
+                <template v-else>
+                  <template v-for="mod in contentStore.activeModules" :key="mod.id">
                   <div v-if="buildTopLevelRules(getModuleRules(mod)).length > 0" class="mb-8">
                     <h2
                       class="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3"
@@ -397,6 +401,7 @@ function openDrawer(mode: DrawerMode): void {
                       </span>
                     </button>
                   </div>
+                  </template>
                 </template>
               </div>
             </RouterView>

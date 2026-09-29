@@ -138,6 +138,12 @@ export const useContentStore = defineStore('content', () => {
    */
   const canSwitchView = computed(() => activeModules.value.some((m) => canViewLive(m.id)))
 
+  const releaseViewEmpty = computed((): boolean =>
+    viewMode.value === 'release' &&
+    activeModules.value.length > 0 &&
+    activeModules.value.every((m) => !manifestByModule.value[m.id]?.content),
+  )
+
   const allRules = computed((): Rule[] =>
     activeModules.value.flatMap((m) => rulesByModule.value[m.id] ?? []),
   )
@@ -710,6 +716,7 @@ export const useContentStore = defineStore('content', () => {
     isUnavailable,
     setViewMode,
     canSwitchView,
+    releaseViewEmpty,
     canEditModule,
     allRules,
     rulesById,
