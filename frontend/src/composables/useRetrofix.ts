@@ -100,6 +100,8 @@ export function useRetrofix(
       return
     }
 
+    await contentStore.fetchManifest(systemId)
+
     const revision = result.data?.data?.revision
     if (revision !== undefined) {
       expectedRevision.value = revision

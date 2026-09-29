@@ -11,12 +11,13 @@ vi.mock('@/lib/http', async (importOriginal) => {
 })
 
 // ── Mock useApi (used by useRetrofix and contentStore) ────────────────────────
+const mockGet = vi.fn()
 const mockPost = vi.fn()
 const mockPut = vi.fn()
 
 vi.mock('@/composables/useApi', () => ({
   useApi: vi.fn(() => ({
-    get: vi.fn(),
+    get: mockGet,
     post: mockPost,
     put: mockPut,
     del: vi.fn(),
@@ -68,6 +69,8 @@ function makeManifestEntry(overrides: Partial<ManifestEntry> = {}): ManifestEntr
 describe('useRetrofix', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    mockGet.mockReset()
+    mockGet.mockResolvedValue({ ok: true, data: { data: [] } })
     mockPost.mockReset()
     mockPut.mockReset()
     mockRequest.mockReset()
@@ -302,6 +305,17 @@ describe('useRetrofix', () => {
       await applyAmendment()
 
       expect(errors.value).toBeNull()
+    })
+
+    it('re-fetches the manifest after a successful amend', async () => {
+      const contentStore = useContentStore()
+      const spy = vi.spyOn(contentStore, 'fetchManifest').mockResolvedValue(undefined)
+      mockPost.mockResolvedValue({ ok: true, data: { data: { revision: 1 } } })
+
+      const { applyAmendment } = useRetrofix('sys1', 'mod1', 'v1', 'rule1')
+      await applyAmendment()
+
+      expect(spy).toHaveBeenCalledWith('sys1')
     })
   })
 
