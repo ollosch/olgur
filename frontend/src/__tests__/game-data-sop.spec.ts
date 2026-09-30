@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ref } from 'vue'
-import { shallowMount } from '@vue/test-utils'
+import { shallowMount, mount, flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 
+// ─── Mock useApi for all stores that import it ────────────────────────────────
 const mockGet = vi.fn()
 const mockPatch = vi.fn()
 const mockLoading = ref(false)
@@ -18,10 +19,29 @@ vi.mock('@/composables/useApi', () => ({
   })),
 }))
 
+// ─── Mock the sonner toast ────────────────────────────────────────────────────
+const { mockToastSuccess } = vi.hoisted(() => ({ mockToastSuccess: vi.fn() }))
+
+vi.mock('vue-sonner', () => ({
+  toast: { success: mockToastSuccess, error: vi.fn() },
+}))
+
 import { useContentStore } from '@/stores/content'
 import { useSystemStore } from '@/stores/system'
+import { useMembershipStore } from '@/stores/membership'
+import { useGameDataPanelStore } from '@/stores/gameDataPanel'
 import GameDataDrawerContent from '@/components/game-data/GameDataDrawerContent.vue'
-import type { GameDatum, System, Module } from '@/types/domain'
+import SopViewer from '@/components/game-data/SopViewer.vue'
+import SopListBlock from '@/components/game-data/SopListBlock.vue'
+import type {
+  GameDatum,
+  System,
+  Module,
+  Membership,
+  MembershipConfig,
+  SopContent,
+  SopList,
+} from '@/types/domain'
 
 // ─── Fixture helpers ──────────────────────────────────────────────────────────
 
@@ -83,6 +103,99 @@ function makeSop(id: string, moduleId: string): GameDatum {
   }
 }
 
+function makeMembership(config: MembershipConfig = {}): Membership {
+  return {
+    id: 'mem1',
+    system_id: 'sys1',
+    user_id: 'user1',
+    admin: false,
+    config,
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  }
+}
+
+function makeSopContent(): SopContent {
+  return {
+    topics: {
+      groups: [
+        { slug: 'night', label: 'Night', ref: 'E1', topics: [] },
+        {
+          slug: 'theatre',
+          label: 'Theatre',
+          ref: 'G',
+          topics: [
+            { slug: 'japanese', label: 'Japanese', ref: 'G1' },
+            { slug: 'marine', label: 'Marine', ref: 'G14' },
+          ],
+        },
+      ],
+    },
+    pre_game: {
+      blocks: [
+        { type: 'paragraph', runs: [{ text: 'Set up forces.', tags: [] }] },
+        {
+          type: 'list',
+          items: [
+            {
+              runs: [{ text: 'Choose sides.', tags: [] }],
+              children: {
+                type: 'list',
+                ordered: true,
+                items: [{ runs: [{ text: 'Roll initiative.', tags: [] }] }],
+              },
+            },
+          ],
+        },
+      ],
+    },
+    phases: [
+      {
+        slug: 'rally',
+        label: 'Rally Phase',
+        parts: [
+          {
+            slug: 'start',
+            label: 'START of RPh',
+            steps: [
+              {
+                mpath: '1.1',
+                player: 'A',
+                blocks: [
+                  {
+                    type: 'paragraph',
+                    runs: [
+                      { text: 'Remove PF markers.', tags: [] },
+                      { text: ' Japanese units +2.', tags: ['japanese'] },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  }
+}
+
+function makeNestedList(): SopList {
+  return {
+    type: 'list',
+    ordered: false,
+    items: [
+      {
+        runs: [{ text: 'Outer item', tags: [] }],
+        children: {
+          type: 'list',
+          ordered: true,
+          items: [{ runs: [{ text: 'Inner ordered item', tags: [] }] }],
+        },
+      },
+    ],
+  }
+}
+
 // ─── Store seeding ────────────────────────────────────────────────────────────
 
 function seedSopProviders(): void {
@@ -108,6 +221,37 @@ function mountDrawerContent() {
     props: { mode: 'sop', isPinned: false, isDragging: false },
     global: { plugins: [pinia] },
   })
+}
+
+function mountSop(
+  content: SopContent,
+  opts: { ignored?: string[]; bold?: string[]; expandedPhases?: string[]; preGame?: boolean } = {},
+) {
+  const pinia = createPinia()
+  setActivePinia(pinia)
+
+  const systemStore = useSystemStore()
+  systemStore.currentSystem = makeSystem('sys1')
+
+  const membershipStore = useMembershipStore()
+  membershipStore.setMembership(
+    'sys1',
+    makeMembership({ ignored_tags: opts.ignored ?? [], bold_tags: opts.bold ?? [] }),
+  )
+
+  const panel = useGameDataPanelStore()
+  const state = panel.getSopState('sop1')
+  for (const slug of opts.expandedPhases ?? []) state.expandedPhases.add(slug)
+  if (opts.preGame) state.preGameExpanded = true
+
+  return shallowMount(SopViewer, {
+    props: { sopId: 'sop1', content },
+    global: { plugins: [pinia], renderStubDefaultSlot: true },
+  })
+}
+
+function findButtonByText(wrapper: ReturnType<typeof shallowMount>, text: string) {
+  return wrapper.findAll('button').find((b) => b.text().trim() === text)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -142,5 +286,84 @@ describe('GameDataDrawerContent — SOP rendering', () => {
     })
 
     expect(wrapper.text()).toContain('No sequence of play data available.')
+  })
+})
+
+describe('SopViewer — new SOP schema', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    mockGet.mockReset()
+    mockPatch.mockReset()
+    mockToastSuccess.mockReset()
+  })
+
+  it('renders a paragraph and hands list blocks to the recursive list component', () => {
+    const wrapper = mountSop(makeSopContent(), { preGame: true })
+
+    expect(wrapper.text()).toContain('Set up forces.')
+
+    const listStub = wrapper.findComponent(SopListBlock)
+    expect(listStub.exists()).toBe(true)
+    const list = listStub.props('list') as SopList
+    expect(list.items[0]?.runs[0]?.text).toBe('Choose sides.')
+  })
+
+  it('hides a run when all of its tags are ignored', () => {
+    const wrapper = mountSop(makeSopContent(), { ignored: ['japanese'], expandedPhases: ['rally'] })
+
+    expect(wrapper.text()).toContain('Remove PF markers.')
+    expect(wrapper.text()).not.toContain('Japanese units +2.')
+  })
+
+  it('bolds a run when one of its tags is bold', () => {
+    const wrapper = mountSop(makeSopContent(), { bold: ['japanese'], expandedPhases: ['rally'] })
+
+    const strongs = wrapper.findAll('strong')
+    const boldRun = strongs.find((s) => s.text().includes('Japanese units +2.'))
+    expect(boldRun).toBeTruthy()
+  })
+
+  it('renders a nested list recursively', () => {
+    const wrapper = mount(SopListBlock, {
+      props: { list: makeNestedList(), ignoredTags: [], boldTags: [] },
+    })
+
+    expect(wrapper.find('ul').exists()).toBe(true)
+    expect(wrapper.find('ol').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Outer item')
+    expect(wrapper.text()).toContain('Inner ordered item')
+  })
+
+  it('cycles a topic through normal → bold → hidden and persists both lists', async () => {
+    mockPatch.mockResolvedValue({ ok: true, data: { data: makeMembership() } })
+    const wrapper = mountSop(makeSopContent())
+
+    // Pre-expand the "theatre" group so its sub-topics are visible.
+    useGameDataPanelStore().getSopState('sop1').expandedGroups.add('theatre')
+
+    await findButtonByText(wrapper, 'Topics')!.trigger('click')
+
+    const japanese = wrapper.find('button[data-topic="japanese"]')
+    const marine = wrapper.find('button[data-topic="marine"]')
+
+    expect(japanese.attributes('data-state')).toBe('normal')
+
+    // japanese → bold (one click)
+    await japanese.trigger('click')
+    expect(japanese.attributes('data-state')).toBe('bold')
+
+    // marine → hidden (two clicks)
+    await marine.trigger('click')
+    expect(marine.attributes('data-state')).toBe('bold')
+    await marine.trigger('click')
+    expect(marine.attributes('data-state')).toBe('hidden')
+
+    await findButtonByText(wrapper, 'Save')!.trigger('click')
+    await flushPromises()
+
+    expect(mockPatch).toHaveBeenCalledWith('/me/memberships/sys1', {
+      config: { ignored_tags: ['marine'], bold_tags: ['japanese'] },
+    })
+    expect(mockToastSuccess).toHaveBeenCalledWith('Topics saved.')
   })
 })

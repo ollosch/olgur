@@ -11,7 +11,7 @@ import ProofreadToggle from '@/components/systems/ProofreadToggle.vue'
 import type { MatrixContent } from '@/components/game-data/MatrixTable.vue'
 import type { AttributeTableContent } from '@/components/game-data/AttributeTable.vue'
 import type { ModifierListContent } from '@/components/game-data/ModifierList.vue'
-import type { SopContent } from '@/components/game-data/SopViewer.vue'
+import type { SopContent } from '@/types/domain'
 
 type TableContent = MatrixContent | AttributeTableContent | ModifierListContent | SopContent
 

@@ -89,6 +89,7 @@ export interface UserSubscription {
 export interface MembershipConfig {
   bookmarks?: BookmarkEntry[]
   ignored_tags?: string[]
+  bold_tags?: string[]
   preferred_rule_format?: 'content' | 'markdown'
 }
 
@@ -144,6 +145,74 @@ export interface GameDatum {
   content: Record<string, unknown>
   created_at: string
   updated_at: string
+}
+
+// -- SOP content schema --
+
+export interface SopTopic {
+  slug: string
+  label: string
+  ref: string
+}
+
+export interface SopTopicGroup {
+  slug: string
+  label: string
+  ref: string
+  topics: SopTopic[]
+}
+
+export interface SopRun {
+  text: string
+  tags: string[]
+}
+
+export interface SopParagraph {
+  type: 'paragraph'
+  runs: SopRun[]
+}
+
+export interface SopListItem {
+  runs: SopRun[]
+  children?: SopList
+}
+
+export interface SopList {
+  type: 'list'
+  ordered?: boolean
+  items: SopListItem[]
+}
+
+export type SopBlock = SopParagraph | SopList
+
+export interface SopStep {
+  mpath: string
+  player?: 'A' | 'D' | 'B' | null
+  blocks: SopBlock[]
+}
+
+export interface SopPart {
+  slug: string
+  label: string
+  steps: SopStep[]
+}
+
+export interface SopPhase {
+  slug: string
+  label: string
+  sniper?: boolean
+  description?: SopRun[]
+  parts: SopPart[]
+}
+
+export interface SopContent {
+  topics: {
+    groups: SopTopicGroup[]
+  }
+  pre_game: {
+    blocks: SopBlock[]
+  }
+  phases: SopPhase[]
 }
 
 export type ProofreadEntityType = 'rule' | 'index_entry' | 'game_datum'

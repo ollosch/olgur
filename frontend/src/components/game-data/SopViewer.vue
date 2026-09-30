@@ -6,55 +6,17 @@ import { useGameDataPanelStore } from '@/stores/gameDataPanel'
 import { renderContent } from '@/lib/renderContent'
 import { toast } from 'vue-sonner'
 import ScrollArea from '@/components/ui/scroll-area/ScrollArea.vue'
-
-// ── Schema types ────────────────────────────────────────────────────────────
-
-export interface SopRun {
-  text: string
-  tags: string[]
-}
-
-export interface SopSegment {
-  mpath?: string
-  player?: 'A' | 'D' | 'B' | null
-  runs: SopRun[]
-}
-
-export interface SopStep {
-  slug: string
-  label: string
-  segments: SopSegment[]
-}
-
-export interface SopPhase {
-  slug: string
-  label: string
-  sniper?: boolean
-  steps: SopStep[]
-}
-
-export interface SopTopic {
-  slug: string
-  label: string
-  ref: string
-}
-
-export interface SopTopicGroup {
-  slug: string
-  label: string
-  ref: string
-  topics: SopTopic[]
-}
-
-export interface SopContent {
-  topics: {
-    groups: SopTopicGroup[]
-  }
-  pre_game: {
-    segments: SopSegment[]
-  }
-  phases: SopPhase[]
-}
+import SopListBlock from '@/components/game-data/SopListBlock.vue'
+import type {
+  SopContent,
+  SopRun,
+  SopBlock,
+  SopListItem,
+  SopStep,
+  SopPart,
+  SopPhase,
+  SopTopicGroup,
+} from '@/types/domain'
 
 // ── Props ────────────────────────────────────────────────────────────────────
 
@@ -66,105 +28,125 @@ const systemStore = useSystemStore()
 const membershipStore = useMembershipStore()
 const gameDataPanelStore = useGameDataPanelStore()
 
-// ── Disabled topics (persisted to membership config) ─────────────────────────
+// ── Topic states (persisted to membership config) ───────────────────────────
 
-const localDisabled = ref<string[]>(membershipStore.membership?.config?.ignored_tags ?? [])
+type TopicState = 'normal' | 'bold' | 'hidden'
+
+const STATE_ORDER: TopicState[] = ['normal', 'bold', 'hidden']
+
+const localIgnored = ref<string[]>(membershipStore.membership?.config?.ignored_tags ?? [])
+const localBold = ref<string[]>(membershipStore.membership?.config?.bold_tags ?? [])
 
 watch(
   () => membershipStore.membership?.config?.ignored_tags,
   (val) => {
-    localDisabled.value = val ?? []
+    localIgnored.value = val ?? []
   },
 )
 
-const disabledTopics = computed<string[]>(() => localDisabled.value)
+watch(
+  () => membershipStore.membership?.config?.bold_tags,
+  (val) => {
+    localBold.value = val ?? []
+  },
+)
 
-async function saveDisabled(): Promise<void> {
+async function saveTopics(): Promise<void> {
   const systemId = systemStore.currentSystem?.id
   if (!systemId) return
-  await membershipStore.updateMembership(systemId, { ignored_tags: localDisabled.value })
+  await membershipStore.updateMembership(systemId, {
+    ignored_tags: localIgnored.value,
+    bold_tags: localBold.value,
+  })
   toast.success('Topics saved.')
 }
 
-function setDisabled(value: string[]): void {
-  localDisabled.value = value
+function topicState(slug: string): TopicState {
+  if (localIgnored.value.includes(slug)) return 'hidden'
+  if (localBold.value.includes(slug)) return 'bold'
+  return 'normal'
 }
 
-// ── Topic helpers ─────────────────────────────────────────────────────────────
-
-function isGroupDisabled(group: SopTopicGroup): boolean {
-  if (group.topics.length === 0) return disabledTopics.value.includes(group.slug)
-  return group.topics.every((t) => disabledTopics.value.includes(t.slug))
+function setTopicState(slug: string, state: TopicState): void {
+  const ignored = localIgnored.value.filter((s) => s !== slug)
+  const bold = localBold.value.filter((s) => s !== slug)
+  if (state === 'hidden') ignored.push(slug)
+  else if (state === 'bold') bold.push(slug)
+  localIgnored.value = ignored
+  localBold.value = bold
 }
 
-function isGroupPartial(group: SopTopicGroup): boolean {
-  if (group.topics.length === 0) return false
-  const disabledCount = group.topics.filter((t) => disabledTopics.value.includes(t.slug)).length
-  return disabledCount > 0 && disabledCount < group.topics.length
-}
-
-function toggleGroup(group: SopTopicGroup): void {
-  const slugs = group.topics.length === 0 ? [group.slug] : group.topics.map((t) => t.slug)
-  const allDisabled = slugs.every((s) => disabledTopics.value.includes(s))
-  if (allDisabled) {
-    setDisabled(disabledTopics.value.filter((s) => !slugs.includes(s)))
-  } else {
-    const newDisabled = [...disabledTopics.value]
-    for (const s of slugs) {
-      if (!newDisabled.includes(s)) newDisabled.push(s)
-    }
-    setDisabled(newDisabled)
-  }
-}
-
-function toggleTopic(slug: string): void {
-  if (disabledTopics.value.includes(slug)) {
-    setDisabled(disabledTopics.value.filter((s) => s !== slug))
-  } else {
-    setDisabled([...disabledTopics.value, slug])
-  }
+function cycleTopic(slug: string): void {
+  const current = topicState(slug)
+  const idx = STATE_ORDER.indexOf(current)
+  const next = STATE_ORDER[(idx + 1) % STATE_ORDER.length]!
+  setTopicState(slug, next)
 }
 
 function resetTopics(): void {
-  setDisabled([])
+  localIgnored.value = []
+  localBold.value = []
 }
 
-// ── Visibility logic ──────────────────────────────────────────────────────────
+// ── Group helpers ─────────────────────────────────────────────────────────────
 
-function isRunVisible(run: SopRun): boolean {
-  if (run.tags.length === 0) return true
-  return run.tags.some((tag) => !disabledTopics.value.includes(tag))
+function groupSlugs(group: SopTopicGroup): string[] {
+  return group.topics.length === 0 ? [group.slug] : group.topics.map((t) => t.slug)
 }
 
-function visibleText(segment: SopSegment): string {
-  const parts: string[] = []
-  let prevHidden = false
-  for (const run of segment.runs) {
-    if (isRunVisible(run)) {
-      if (prevHidden && parts.length > 0 && run.text.length > 0) {
-        const tail = parts[parts.length - 1] ?? ''
-        const needsSpace = tail.length > 0 && !tail.endsWith(' ') && !/^[,;.!?):]/.test(run.text)
-        if (needsSpace) parts.push(' ')
-      }
-      parts.push(run.text)
-      prevHidden = false
-    } else {
-      prevHidden = true
-    }
+function isGroupHidden(group: SopTopicGroup): boolean {
+  const slugs = groupSlugs(group)
+  return slugs.length > 0 && slugs.every((s) => topicState(s) === 'hidden')
+}
+
+function isGroupPartial(group: SopTopicGroup): boolean {
+  const slugs = groupSlugs(group)
+  if (slugs.length === 0) return false
+  const hiddenCount = slugs.filter((s) => topicState(s) === 'hidden').length
+  return hiddenCount > 0 && hiddenCount < slugs.length
+}
+
+function toggleGroup(group: SopTopicGroup): void {
+  const slugs = groupSlugs(group)
+  const allHidden = slugs.length > 0 && slugs.every((s) => topicState(s) === 'hidden')
+  for (const s of slugs) {
+    setTopicState(s, allHidden ? 'normal' : 'hidden')
   }
-  return parts.join('').trim()
 }
 
-function isSegmentVisible(segment: SopSegment): boolean {
-  return visibleText(segment).length > 0
+// ── Run visibility / emphasis ─────────────────────────────────────────────────
+
+function runVisible(run: SopRun): boolean {
+  if (run.tags.length === 0) return true
+  return run.tags.some((t) => !localIgnored.value.includes(t))
 }
 
-function isStepVisible(step: SopStep): boolean {
-  return step.segments.some(isSegmentVisible)
+function runBold(run: SopRun): boolean {
+  return runVisible(run) && run.tags.some((t) => localBold.value.includes(t))
 }
 
-function isPhaseVisible(phase: SopPhase): boolean {
-  return phase.steps.some(isStepVisible)
+// ── Block visibility ──────────────────────────────────────────────────────────
+
+function itemVisible(item: SopListItem): boolean {
+  if (item.runs.some(runVisible)) return true
+  return item.children ? item.children.items.some(itemVisible) : false
+}
+
+function blockVisible(block: SopBlock): boolean {
+  if (block.type === 'paragraph') return block.runs.some(runVisible)
+  return block.items.some(itemVisible)
+}
+
+function stepVisible(step: SopStep): boolean {
+  return step.blocks.some(blockVisible)
+}
+
+function partVisible(part: SopPart): boolean {
+  return part.steps.some(stepVisible)
+}
+
+function phaseVisible(phase: SopPhase): boolean {
+  return phase.parts.some(partVisible)
 }
 
 // ── Persisted UI state ────────────────────────────────────────────────────────
@@ -185,16 +167,27 @@ function matchesSearch(text: string): boolean {
   return text.toLowerCase().includes(searchQuery.value.toLowerCase().trim())
 }
 
-function segmentMatchesSearch(segment: SopSegment): boolean {
-  return matchesSearch(visibleText(segment))
+function runMatches(run: SopRun): boolean {
+  return runVisible(run) && matchesSearch(run.text)
 }
 
-function stepMatchesSearch(step: SopStep): boolean {
-  return step.segments.some((seg) => isSegmentVisible(seg) && segmentMatchesSearch(seg))
+function itemMatches(item: SopListItem): boolean {
+  if (item.runs.some(runMatches)) return true
+  return item.children ? item.children.items.some(itemMatches) : false
 }
 
-function phaseMatchesSearch(phase: SopPhase): boolean {
-  return phase.steps.some(stepMatchesSearch)
+function blockMatches(block: SopBlock): boolean {
+  if (block.type === 'paragraph') return block.runs.some(runMatches)
+  return block.items.some(itemMatches)
+}
+
+function stepMatches(step: SopStep): boolean {
+  return step.blocks.some((b) => blockVisible(b) && blockMatches(b))
+}
+
+function phaseMatches(phase: SopPhase): boolean {
+  if ((phase.description ?? []).some(runMatches)) return true
+  return phase.parts.some((p) => p.steps.some(stepMatches))
 }
 
 // ── Expand / collapse ─────────────────────────────────────────────────────────
@@ -217,7 +210,7 @@ function togglePhase(slug: string): void {
 }
 
 function isPhaseExpanded(phase: SopPhase): boolean {
-  if (searchQuery.value.trim()) return phaseMatchesSearch(phase)
+  if (searchQuery.value.trim()) return phaseMatches(phase)
   return expandedPhases.has(phase.slug)
 }
 
@@ -234,13 +227,26 @@ function toggleGroupExpand(slug: string): void {
   }
 }
 
-// ── Pre-game visible segments ─────────────────────────────────────────────────
+// ── Pre-game visible blocks ───────────────────────────────────────────────────
 
-const visiblePreGameSegments = computed(() =>
-  props.content.pre_game.segments.filter(
-    (seg) => isSegmentVisible(seg) && segmentMatchesSearch(seg),
-  ),
+const visiblePreGameBlocks = computed(() =>
+  props.content.pre_game.blocks.filter((b) => blockVisible(b) && blockMatches(b)),
 )
+
+// ── Player badge styling ──────────────────────────────────────────────────────
+
+function playerBadge(player: SopStep['player']): string {
+  switch (player) {
+    case 'A':
+      return 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
+    case 'D':
+      return 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400'
+    case 'B':
+      return 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+    default:
+      return ''
+  }
+}
 </script>
 
 <template>
@@ -276,7 +282,7 @@ const visiblePreGameSegments = computed(() =>
         <!-- Popover panel -->
         <div
           v-if="topicsOpen"
-          class="absolute right-0 top-full mt-1 z-50 w-64 rounded-md border border-border bg-popover shadow-md"
+          class="absolute right-0 top-full mt-1 z-50 w-72 rounded-md border border-border bg-popover shadow-md"
         >
           <!-- Backdrop -->
           <div class="fixed inset-0 z-40" @click="topicsOpen = false" />
@@ -304,7 +310,7 @@ const visiblePreGameSegments = computed(() =>
                     <input
                       type="checkbox"
                       class="h-3.5 w-3.5 cursor-pointer accent-primary"
-                      :checked="!isGroupDisabled(group)"
+                      :checked="!isGroupHidden(group)"
                       :indeterminate="isGroupPartial(group)"
                       @change="toggleGroup(group)"
                     />
@@ -340,20 +346,26 @@ const visiblePreGameSegments = computed(() =>
                     <div
                       v-for="topic in group.topics"
                       :key="topic.slug"
-                      class="flex items-center gap-2 px-1 py-0.5 rounded hover:bg-accent/50 cursor-pointer"
-                      @click="toggleTopic(topic.slug)"
+                      class="flex items-center gap-2 px-1 py-0.5 rounded hover:bg-accent/50"
                     >
-                      <input
-                        type="checkbox"
-                        class="h-3.5 w-3.5 cursor-pointer accent-primary"
-                        :checked="!disabledTopics.includes(topic.slug)"
-                        @click.stop
-                        @change="toggleTopic(topic.slug)"
-                      />
                       <span class="flex-1 text-sm select-none">
                         {{ topic.label }}
                         <span class="text-xs text-muted-foreground ml-1">{{ topic.ref }}</span>
                       </span>
+                      <button
+                        class="text-[10px] font-semibold rounded border px-1.5 py-0.5 leading-none shrink-0"
+                        :class="{
+                          'border-border text-muted-foreground': topicState(topic.slug) === 'normal',
+                          'border-primary text-primary bg-primary/10': topicState(topic.slug) === 'bold',
+                          'border-border bg-muted text-muted-foreground line-through':
+                            topicState(topic.slug) === 'hidden',
+                        }"
+                        :data-topic="topic.slug"
+                        :data-state="topicState(topic.slug)"
+                        @click="cycleTopic(topic.slug)"
+                      >
+                        {{ topicState(topic.slug) }}
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -363,7 +375,7 @@ const visiblePreGameSegments = computed(() =>
             <div class="pt-2 border-t border-border mt-1">
               <button
                 class="w-full h-8 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-                @click="saveDisabled"
+                @click="saveTopics"
               >
                 Save
               </button>
@@ -375,7 +387,7 @@ const visiblePreGameSegments = computed(() =>
 
     <!-- Pre-Game Sequence -->
     <div
-      v-if="visiblePreGameSegments.length > 0"
+      v-if="visiblePreGameBlocks.length > 0"
       class="border border-border rounded-lg overflow-hidden"
     >
       <button
@@ -398,39 +410,26 @@ const visiblePreGameSegments = computed(() =>
         >
       </button>
 
-      <div v-if="preGameExpanded || searchQuery.trim()" class="px-4 py-3 space-y-1.5">
-        <div
-          v-for="(segment, i) in visiblePreGameSegments"
-          :key="i"
-          class="flex items-start gap-2 text-sm"
-        >
-          <span
-            v-if="segment.mpath"
-            class="shrink-0 font-mono text-xs text-muted-foreground w-10 text-right pt-0.5"
-            >{{ segment.mpath }}</span
-          >
-          <span
-            v-if="segment.player"
-            class="shrink-0 text-[10px] font-bold rounded px-1 py-0.5 leading-none"
-            :class="{
-              'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400':
-                segment.player === 'A',
-              'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400':
-                segment.player === 'D',
-              'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400':
-                segment.player === 'B',
-            }"
-            >{{ segment.player }}</span
-          >
-          <!-- eslint-disable-next-line vue/no-v-html -->
-          <span class="text-foreground/90" v-html="renderContent(visibleText(segment))" />
-        </div>
+      <div v-if="preGameExpanded || searchQuery.trim()" class="px-4 py-3 space-y-3">
+        <template v-for="(block, bi) in visiblePreGameBlocks" :key="bi">
+          <p v-if="block.type === 'paragraph'" class="text-sm text-foreground/90">
+            <template v-for="(run, ri) in block.runs" :key="ri">
+              <template v-if="runVisible(run)">
+                <!-- eslint-disable-next-line vue/no-v-html -->
+                <strong v-if="runBold(run)" v-html="renderContent(run.text)" />
+                <!-- eslint-disable-next-line vue/no-v-html -->
+                <span v-else v-html="renderContent(run.text)" />
+              </template>
+            </template>
+          </p>
+          <SopListBlock v-else :list="block" :ignored-tags="localIgnored" :bold-tags="localBold" />
+        </template>
       </div>
     </div>
 
     <!-- Phases -->
     <div
-      v-for="phase in props.content.phases.filter(isPhaseVisible)"
+      v-for="phase in props.content.phases.filter(phaseVisible)"
       :key="phase.slug"
       class="border border-border rounded-lg overflow-hidden"
     >
@@ -458,45 +457,71 @@ const visiblePreGameSegments = computed(() =>
         >
       </button>
 
-      <!-- Steps -->
+      <!-- Phase body -->
       <div v-if="isPhaseExpanded(phase)" class="divide-y divide-border">
-        <template v-for="step in phase.steps.filter(isStepVisible)" :key="step.slug">
-          <div v-if="stepMatchesSearch(step)" class="px-4 py-3">
+        <!-- Description -->
+        <div v-if="(phase.description ?? []).some(runVisible)" class="px-4 py-3">
+          <p class="text-sm text-foreground/90">
+            <template v-for="(run, ri) in phase.description" :key="ri">
+              <template v-if="runVisible(run)">
+                <!-- eslint-disable-next-line vue/no-v-html -->
+                <strong v-if="runBold(run)" v-html="renderContent(run.text)" />
+                <!-- eslint-disable-next-line vue/no-v-html -->
+                <span v-else v-html="renderContent(run.text)" />
+              </template>
+            </template>
+          </p>
+        </div>
+
+        <!-- Parts -->
+        <template v-for="part in phase.parts.filter(partVisible)" :key="part.slug">
+          <div class="px-4 py-3">
             <p
               class="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2"
             >
-              {{ step.label }}
+              {{ part.label }}
             </p>
 
-            <div class="space-y-1.5">
-              <div
-                v-for="(segment, si) in step.segments.filter(
-                  (seg) => isSegmentVisible(seg) && segmentMatchesSearch(seg),
-                )"
-                :key="si"
-                class="flex items-start gap-2 text-sm"
-              >
-                <span
-                  v-if="segment.mpath"
-                  class="shrink-0 font-mono text-xs text-muted-foreground w-10 text-right pt-0.5"
-                  >{{ segment.mpath }}</span
-                >
-                <span
-                  v-if="segment.player"
-                  class="shrink-0 text-[10px] font-bold rounded px-1 py-0.5 leading-none mt-0.5"
-                  :class="{
-                    'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400':
-                      segment.player === 'A',
-                    'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400':
-                      segment.player === 'D',
-                    'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400':
-                      segment.player === 'B',
-                  }"
-                  >{{ segment.player }}</span
-                >
-                <!-- eslint-disable-next-line vue/no-v-html -->
-                <span class="text-foreground/90" v-html="renderContent(visibleText(segment))" />
-              </div>
+            <div class="space-y-3">
+              <template v-for="step in part.steps.filter(stepVisible)" :key="step.mpath">
+                <div v-if="stepMatches(step)" class="space-y-1.5">
+                  <div class="flex items-start gap-2 text-sm">
+                    <span
+                      class="shrink-0 font-mono text-xs text-muted-foreground w-10 text-right pt-0.5"
+                      >{{ step.mpath }}</span
+                    >
+                    <span
+                      v-if="step.player"
+                      class="shrink-0 text-[10px] font-bold rounded px-1 py-0.5 leading-none mt-0.5"
+                      :class="playerBadge(step.player)"
+                      >{{ step.player }}</span
+                    >
+                  </div>
+
+                  <div class="space-y-1.5">
+                    <template v-for="(block, bi) in step.blocks" :key="bi">
+                      <template v-if="blockVisible(block) && blockMatches(block)">
+                        <p v-if="block.type === 'paragraph'" class="text-sm text-foreground/90">
+                          <template v-for="(run, ri) in block.runs" :key="ri">
+                            <template v-if="runVisible(run)">
+                              <!-- eslint-disable-next-line vue/no-v-html -->
+                              <strong v-if="runBold(run)" v-html="renderContent(run.text)" />
+                              <!-- eslint-disable-next-line vue/no-v-html -->
+                              <span v-else v-html="renderContent(run.text)" />
+                            </template>
+                          </template>
+                        </p>
+                        <SopListBlock
+                          v-else
+                          :list="block"
+                          :ignored-tags="localIgnored"
+                          :bold-tags="localBold"
+                        />
+                      </template>
+                    </template>
+                  </div>
+                </div>
+              </template>
             </div>
           </div>
         </template>
@@ -505,8 +530,8 @@ const visiblePreGameSegments = computed(() =>
 
     <p
       v-if="
-        props.content.phases.filter(isPhaseVisible).length === 0 &&
-        visiblePreGameSegments.length === 0
+        props.content.phases.filter(phaseVisible).length === 0 &&
+        visiblePreGameBlocks.length === 0
       "
       class="text-sm text-muted-foreground italic"
     >

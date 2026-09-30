@@ -7,7 +7,7 @@
 import type { MatrixContent } from '@/components/game-data/MatrixTable.vue'
 import type { AttributeTableContent } from '@/components/game-data/AttributeTable.vue'
 import type { ModifierListContent } from '@/components/game-data/ModifierList.vue'
-import type { SopContent } from '@/components/game-data/SopViewer.vue'
+import type { SopContent } from '@/types/domain'
 
 export const fakeIft: MatrixContent = {
   kind: 'matrix',
@@ -396,10 +396,9 @@ export const fakeSop: SopContent = {
     ],
   },
   pre_game: {
-    segments: [
+    blocks: [
       {
-        mpath: '0.1',
-        player: 'B',
+        type: 'paragraph',
         runs: [{ text: 'Set up scenario forces per scenario special rules.', tags: [] }],
       },
     ],
@@ -408,57 +407,82 @@ export const fakeSop: SopContent = {
     {
       slug: 'rally-phase',
       label: 'Rally Phase',
-      steps: [
+      parts: [
         {
-          slug: 'start-of-rph',
-          label: 'Start of RPh',
-          segments: [
+          slug: 'start',
+          label: 'START of RPh',
+          steps: [
             {
               mpath: '1.1',
               player: 'B',
-              runs: [
-                { text: 'Remove all Prep Fire (PF) markers from units of both sides.', tags: [] },
+              blocks: [
+                {
+                  type: 'paragraph',
+                  runs: [
+                    { text: 'Remove all Prep Fire (PF) markers from units of both sides.', tags: [] },
+                  ],
+                },
               ],
             },
           ],
         },
         {
-          slug: 'during-rph',
-          label: 'During RPh',
-          segments: [
+          slug: 'during',
+          label: 'DURING RPh',
+          steps: [
             {
               mpath: '1.2',
               player: 'A',
-              runs: [
+              blocks: [
                 {
-                  text: 'Attempt to repair Malfunctioned SW or recover SW from adjacent hex.',
-                  tags: [],
+                  type: 'paragraph',
+                  runs: [
+                    {
+                      text: 'Attempt to repair Malfunctioned SW or recover SW from adjacent hex.',
+                      tags: [],
+                    },
+                  ],
                 },
               ],
             },
             {
               mpath: '1.3',
               player: 'A',
-              runs: [
-                { text: 'Roll for each broken unit: ≤ current morale → rallied.', tags: [] },
-                { text: ' Japanese fanatic units add +2 DRM.', tags: ['japanese'] },
+              blocks: [
+                {
+                  type: 'paragraph',
+                  runs: [
+                    { text: 'Roll for each broken unit: ≤ current morale → rallied.', tags: [] },
+                    { text: ' Japanese fanatic units add +2 DRM.', tags: ['japanese'] },
+                  ],
+                },
               ],
             },
             {
               mpath: '1.4',
               player: 'A',
-              runs: [{ text: 'Night rally: ELR check applies.', tags: ['night'] }],
+              blocks: [
+                {
+                  type: 'paragraph',
+                  runs: [{ text: 'Night rally: ELR check applies.', tags: ['night'] }],
+                },
+              ],
             },
           ],
         },
         {
-          slug: 'end-of-rph',
-          label: 'End of RPh',
-          segments: [
+          slug: 'end',
+          label: 'END of RPh',
+          steps: [
             {
               mpath: '1.9',
               player: 'B',
-              runs: [{ text: 'Remove DM markers from all rallied units.', tags: [] }],
+              blocks: [
+                {
+                  type: 'paragraph',
+                  runs: [{ text: 'Remove DM markers from all rallied units.', tags: [] }],
+                },
+              ],
             },
           ],
         },
@@ -467,25 +491,35 @@ export const fakeSop: SopContent = {
     {
       slug: 'prep-fire-phase',
       label: 'Prep Fire Phase',
-      steps: [
+      parts: [
         {
-          slug: 'during-pfph',
-          label: 'During PFPh',
-          segments: [
+          slug: 'during',
+          label: 'DURING PFPh',
+          steps: [
             {
               mpath: '2.1',
               player: 'A',
-              runs: [
-                { text: 'Phasing player fires any non-moving units; place PF marker.', tags: [] },
+              blocks: [
+                {
+                  type: 'paragraph',
+                  runs: [
+                    { text: 'Phasing player fires any non-moving units; place PF marker.', tags: [] },
+                  ],
+                },
               ],
             },
             {
               mpath: '2.2',
               player: 'A',
-              runs: [
+              blocks: [
                 {
-                  text: 'Resolve fire on IFT / TH / TK as appropriate. Apply results immediately.',
-                  tags: [],
+                  type: 'paragraph',
+                  runs: [
+                    {
+                      text: 'Resolve fire on IFT / TH / TK as appropriate. Apply results immediately.',
+                      tags: [],
+                    },
+                  ],
                 },
               ],
             },
@@ -497,28 +531,38 @@ export const fakeSop: SopContent = {
       slug: 'movement-phase',
       label: 'Movement Phase',
       sniper: true,
-      steps: [
+      parts: [
         {
-          slug: 'during-mph',
-          label: 'During MPh',
-          segments: [
+          slug: 'during',
+          label: 'DURING MPh',
+          steps: [
             {
               mpath: '3.1',
               player: 'A',
-              runs: [
+              blocks: [
                 {
-                  text: 'Spend MF/MP to enter hexes. Announce each move before executing.',
-                  tags: [],
+                  type: 'paragraph',
+                  runs: [
+                    {
+                      text: 'Spend MF/MP to enter hexes. Announce each move before executing.',
+                      tags: [],
+                    },
+                  ],
                 },
               ],
             },
             {
               mpath: '3.2',
               player: 'D',
-              runs: [
+              blocks: [
                 {
-                  text: "Non-phasing player may fire Defensive First Fire at any point in a unit's movement.",
-                  tags: [],
+                  type: 'paragraph',
+                  runs: [
+                    {
+                      text: "Non-phasing player may fire Defensive First Fire at any point in a unit's movement.",
+                      tags: [],
+                    },
+                  ],
                 },
               ],
             },

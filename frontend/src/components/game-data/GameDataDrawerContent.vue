@@ -13,8 +13,7 @@ import SopViewer from '@/components/game-data/SopViewer.vue'
 import type { MatrixContent } from '@/components/game-data/MatrixTable.vue'
 import type { AttributeTableContent } from '@/components/game-data/AttributeTable.vue'
 import type { ModifierListContent } from '@/components/game-data/ModifierList.vue'
-import type { SopContent } from '@/components/game-data/SopViewer.vue'
-import type { GameDatum } from '@/types/domain'
+import type { GameDatum, SopContent } from '@/types/domain'
 
 export type DrawerMode = 'tables' | 'sop'
 
