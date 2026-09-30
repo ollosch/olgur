@@ -46,7 +46,7 @@ w- Top-level structure: `system -> modules -> rules / index entries / game data 
 - `admin` means system-level admin rights including membership management. Can create, modify and delete modules and their contents. Can send invites.
 - `proofreader` marks the member as a proofreader for the system; they may record proofreads against content they can view (see `content.proofread`).
 - System administrators are co-owners: they may manage the system, its access, and its content. There is no separate non-delegable owner role; `super_admin` is the operational recovery authority.
-- `config` stores per-user, per-system runtime state such as bookmarks and reading preferences.
+- `config` stores per-user, per-system runtime state such as bookmarks, reading preferences, and the currently-played module selection (`selected_module_id`).
 - Membership grants access to a system and lets members browse its module metadata. Subscriptions control module content access; system admins also have access to all module content.
 
 ### Subscription
@@ -134,18 +134,21 @@ Stored in `systems.config` and serialized to the API as a plain object.
 
 ## Membership Config
 
-Current shape in `memberships.config`:
+Current shape in `memberships.config` (typed by `App\Data\MembershipConfig`):
 
 | Key | Type | Meaning |
 |---|---|---|
-| `bookmarks` | `{ type: 'rule', id: string }[]` | Frontend bookmarks stored per system |
+| `bookmarks` | `{ type: 'rule' \| 'table' \| 'unit', id: string }[]` | Polymorphic frontend bookmarks stored per system |
 | `ignored_tags` | `string[]` | SOP topic tags the player has hidden |
+| `bold_tags` | `string[]` | SOP topic tags the player bolds |
+| `acronym_popups` | `boolean` | Whether acronym popups are enabled for this user |
 | `preferred_rule_format` | `'content' \| 'markdown'` | The reader's preferred rule display format |
+| `selected_module_id` | `string \| null` | The single module currently being played, or `null` when all subscribed modules are active |
 
 Important current behavior:
 
-- `PATCH /api/me/memberships/{system}` replaces the stored config with the submitted object.
-- There is no stored module activation or SOP selection: a subscriber reads every module they are subscribed to, and the SOP shown is the core's (or the currently navigated module's if it provides one).
+- `PATCH /api/me/memberships/{system}` replaces the stored config with the submitted object. `UpdateMembershipConfigRequest` validates it: `selected_module_id` is a nullable string (max 26), and each bookmark `type` must be one of `rule`, `table`, `unit`.
+- `selected_module_id` is a frontend display preference, not an entitlement: a subscriber is still entitled to read every module they are subscribed to. The selection only scopes which modules contribute to the composed reading view (core always first, plus the selected module). The backend stores it and nulls it when that module's subscription is revoked.
 
 ## Current Business Rules
 
@@ -180,10 +183,11 @@ Action: `backend/app/Actions/UnsubscribeFromModule.php`
 
 - Deletes the `Subscription` record only when an administrator or future payment integration revokes the entitlement.
 - Core subscriptions are never individually revocable; they are removed only atomically with the membership.
+- Prunes the membership's `selected_module_id` (sets it to `null`) when the removed module was the selected one, so a stored selection never points at a module the user no longer holds.
 
 ### Module Entitlement
 
-There is no runtime module activation. "Entitled to read" is purely subscription (or admin/editor). A subscriber reads every module they are subscribed to; which module is on screen is navigation state (URL/route), not stored state.
+There is no runtime module activation. "Entitled to read" is purely subscription (or admin/editor): a subscriber reads every module they are subscribed to. The stored `selected_module_id` preference does not change entitlement — it only scopes the frontend's composed reading view (core always first, plus the selected module). Which module is on screen is otherwise navigation state (URL/route).
 
 ### Rule Number Uniqueness
 

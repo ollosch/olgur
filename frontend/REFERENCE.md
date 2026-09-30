@@ -7,7 +7,7 @@ This file is the read-first map for `frontend/`. It is designed for LLMs that ne
 - Vue 3.5.40 SPA with TypeScript 5.9.3 and Vite 8.
 - Cookie/session auth against the Laravel API. No bearer tokens.
 - Main logged-in experience is a persistent reading workspace for one system at a time.
-- Primary shell: left navigation panel, center content, right game-data drawer, bottom unit-data panel.
+- Primary shell: left navigation panel, center content, and a top toolbar that opens full-screen modals (Sequence of Play, Table Browser, tools). The former right game-data drawer and bottom unit-data panel are gone.
 - Pinia 4.0.2 setup stores hold almost all domain and UI state.
 
 ## Stack
@@ -112,7 +112,7 @@ Main API-facing types:
 - `User` includes `super_admin`.
 - `SystemConfig` includes `global_rule_numbers`, `sort_rules_by`, `toc_depth`, `proofread_threshold`, and `cover_image`. When `global_rule_numbers` is true, bare `{{L:n}}` links resolve system-wide; otherwise they resolve in the module that owns the content. `proofread_threshold` is the number of distinct proofreaders required before an entity counts as proofread.
 - `ProofreadEntityType` (`rule` | `index_entry` | `game_datum`) and `ProofreadStatus` (`{ threshold, proofreads: Record<entity_id, { count, me }> }`) describe the proofread counter state.
-- `MembershipConfig` includes optional `bookmarks`, `ignored_tags`, and `preferred_rule_format`.
+- `MembershipConfig` includes optional `bookmarks` (`BookmarkEntry[]`, type `rule` | `table` | `unit`), `ignored_tags`, `bold_tags`, `preferred_rule_format`, and `selected_module_id` (`string | null`).
 - `Rule` has a client-calculated `depth` field.
 - `GameDatum.type` is one of `sop`, `table`, `ordnance`, `vehicle`. The type selects the tool component (`sop` → SOP viewer, `table` → table renderer, `vehicle` → unit browser, `ordnance` → ordnance tool).
 - `Rule`, `IndexEntry`, and `GameDatum` carry an optional stable reference to their original live entity — `rule_id`, `index_entry_id`, `game_datum_id` respectively — populated on released (snapshot) records so released content can be re-keyed to the live ids.
@@ -136,16 +136,32 @@ Owns:
 
 - `systems`
 - `modulesBySystem`
-- `membershipsBySystem`
-- `subscriptions`
 - `currentSystem`
+- `modules` — computed shortcut for the current system's modules
 
 Key behaviors:
 
-- `init()` loads systems, memberships, and subscriptions after login.
-- `enterSystem(systemId)` loads the system record and its modules.
-- `subscribe()` stores the subscription and refreshes memberships.
-- There is no client-side activation or single-active logic; which module is on screen is navigation state.
+- `init()` loads systems (memberships and subscriptions are loaded by `membershipStore`).
+- `enterSystem(systemId)` loads the system record and its modules (from the cache when offline).
+- `exitSystem()` clears the current system context.
+- `createSystem` / `deleteSystem` / `updateSystem` / `createModule` / `deleteModule` / `createVersion` — system/module lifecycle actions.
+- Holds raw systems/modules only; module composition (the "currently played" set) is derived in `contentStore` from `selected_module_id`, which is persisted by `membershipStore`.
+
+### `membershipStore`
+
+File: `frontend/src/stores/membership.ts`
+
+Owns:
+
+- `membershipsBySystem` — the current user's membership per system (keyed by system id).
+- `subscriptions` — flat map of the user's subscriptions keyed by module id.
+- `membership` — computed shortcut for the current system's membership.
+
+Key behaviors:
+
+- `fetchMemberships()` / `fetchSubscriptions()` / `refreshMembership(systemId)` load the current user's memberships and subscriptions.
+- `updateMembership(systemId, config)` — `PATCH /me/memberships/{system}` with the given config object, then stores the response.
+- `selectModule(systemId, moduleId | null)` — persists the "currently played" module as `selected_module_id`; `null` clears the selection (all subscribed modules become active). Drives `contentStore`'s composition model.
 
 ### `contentStore`
 
@@ -159,15 +175,19 @@ Owns:
 - `manifestByModule` — version manifest keyed by module ID, loaded on system entry; contains `version_id`, `version_string`, `released_at`, and versioned content API URLs
 - `viewMode` (`'draft' | 'release'`, default `'draft'`) — whether editable admins/editors read live draft content or the latest released snapshot
 
-Derived state:
+Derived state (composition model):
 
-- `activeModules` = every module the user can view (`content.view_live` or `content.view_released`); there is no activation toggle.
-- `allRules`, `allIndexEntries`, `allGameData` are derived from viewable modules.
-- `rulesById`, `rulesByNumber`, `rulesByModuleNumber`, `moduleBySlug`, `indexEntriesById`, `indexEntriesByTerm` power navigation, popup lookup, and search.
+- `selectedModuleId` — the `selected_module_id` from the current membership config, or `null`.
+- `coreModule` — the system's single core module (`is_core`), falling back to the first module.
+- `activeModules` — the composed "active set": core first, then the selected module if `selected_module_id` is set (and isn't core), else every viewable non-core module (`content.view_live` or `content.view_released`) sorted by `sort_order`. Core is always first.
+- `singularModule` — the ONE module whose singular surfaces come from: the selected module if set, else core. Singular surfaces are never merged across modules.
+- `allRules`, `allGameData` — flattened over `activeModules`.
+- `allIndexEntries`, `singularGameData` — from `singularModule` only (index and SOP are single-module surfaces).
+- `rulesById`, `rulesByNumber`, `rulesByModuleNumber`, `moduleById`, `moduleBySlug`, `indexEntriesById`, `indexEntriesByTerm` power navigation, popup lookup, and search.
 - `resolveRuleReference(number, { moduleSlug?, moduleId? })` resolves bare links in the owning module (or system-wide when `globalRuleNumbers`) and qualified `{{L:slug:n}}` links in the named module.
-- `childrenMap` calculates and mutates `rule.depth` client-side.
+- `childrenMap` / `ruleDepths` compute `rule.depth` client-side; `flattenedRulesByModule` provides depth-first order per module.
 - `visibleIndexEntryIds` hides empty index branches unless they or their descendants still have visible content after filtering rule refs to resolvable rules.
-- `canSwitchView` — true when at least one active module has `content.view_live`; gates the Draft/Release toggle (players never see it).
+- `canSwitchView` — true when at least one active module has `content.view_live`; gates the Draft/Release toggle (players never see it). `releaseViewEmpty` — true on the Release view when no active module has manifest content.
 
 Content source and mode switching:
 
@@ -205,11 +225,17 @@ File: `frontend/src/stores/proofread.ts`
 
 ### Smaller Supporting Stores
 
-- `bookmarks.ts`: persists rule bookmarks into membership config via `PATCH /me/memberships/{system}`.
+- `bookmarks.ts`: persists polymorphic bookmarks (`rule` | `table` | `unit`) into membership config via `PATCH /me/memberships/{system}`. `resolvedBookmarks` labels each entry (rule number/title, table name); `isBookmarked` / `addBookmark` / `removeBookmark` are type-aware.
 - `history.ts`: in-memory per-system recent rule history, capped at 20 and cleared on system exit.
 - `appSettings.ts`: localStorage-backed acronym popup toggle, theme hue, and sidebar pin state.
-- `leftPanel.ts`, `bottomPanel.ts`, `shortcut.ts`: UI shell state.
-- `unitSelection.ts`: temporary handoff when global search opens a vehicle or ordnance entry in the bottom panel.
+- `leftPanel.ts`, `shortcut.ts`: UI shell state — left-panel tab, module/rule expansion, focus; `shortcut.ts` also owns the Super-Search overlay flag.
+- `gameDataModal.ts`: full-screen game-data modal state — `sopOpen`, `tableBrowserOpen`, `selectedTableId`; `openSop`/`closeSop`, `openTableBrowser`/`closeTableBrowser`, `selectTable(id)`.
+- `toolModal.ts`: full-screen tool modal state — `isOpen`, `activeToolId`; `open(toolId)`/`close()`.
+- `gameDataPanel.ts`: per-record game-data UI state (active SOP/table id, SOP expand/collapse + search) so it survives a modal close/reopen.
+- `unitBrowser.ts`: Unit Data browser search/filter/selection state, so it survives the tool modal closing.
+- `unitSelection.ts`: temporary handoff when global search opens a vehicle or ordnance entry in the tool modal (`UnitDataTab` consumes the pending unit on mount).
+- `interaction.ts`: shared popup state (rule/range/acronym) and navigation handlers; see "Rule Popup System".
+- `memberManagement.ts`: member management dialog state.
 
 ## HTTP And Error Handling
 
@@ -249,8 +275,8 @@ Main shell: `frontend/src/views/SystemView.vue`
 When a system is opened:
 
 - `systemStore.enterSystem(systemId)` loads the system and its modules.
-- `contentStore` loads rules, index entries, and game data for every viewable module.
-- Viewable modules are expanded in the left panel.
+- `contentStore` loads rules, index entries, and game data for every active module.
+- Active modules are expanded in the left panel.
 - The shell stays mounted while child routes change between rule detail and game-data detail.
 
 While inside a system:
@@ -264,7 +290,7 @@ While inside a system:
 
 Primary component: `frontend/src/components/systems/LeftPanelContent.vue`
 
-- Tabs: rules tree, index, history, bookmarks.
+- Tabs: rules tree, index, bookmarks, history, proofread.
 - Module expansion state lives in store state and local interaction.
 - Width is resizable and persisted in localStorage.
 
@@ -274,20 +300,25 @@ Primary component: `frontend/src/components/systems/LeftPanelContent.vue`
 - `/rule/:ruleId`: `RuleDetailView`.
 - `/game-data/:gameDatumId`: `GameDataView` for tables and SOP content.
 
-### Right Drawer
+### Top Toolbar
 
-Component: `frontend/src/components/game-data/GameDataDrawer.vue`
+Component: `frontend/src/components/systems/SystemHeader.vue`
 
-- Modes: `tables` and `sop`.
-- Can be pinned inline or shown as a sheet overlay.
-- Width and pin state persist in localStorage.
-- Uses real `contentStore.allGameData` when available.
-- Falls back to fake table and SOP data from `src/lib/fakeGameData.ts` when no real data exists.
+- Module selector ("currently played") — a dropdown over non-core modules plus "All modules"; persists the choice via `membershipStore.selectModule()`. Only shown when more than one non-core module exists.
+- Table Browser — opens `TableBrowserModal`.
+- Super-Search — opens the global search overlay (`shortcutStore.overlayOpen`).
+- Sequence of Play — opens `SopModal`.
+- Tools ▾ — lists tools derived from `gameDataTools()`; opens each in `ToolModal`.
+- Table bookmarks ▾ — lists pinned tables (bookmarks of type `table`); opens the table in `TableBrowserModal`.
+- System ▾ — exit system, manage members, broken links, profile, settings, logout.
+- Right side: Draft/Release tabs (only when `canSwitchView`) and the pin control.
 
-### Bottom Panel
+### Full-Screen Modals
 
-- Hosts unit detail workflows.
-- Vehicles and ordnance selected from search open here, not in `GameDataView`.
+The former right game-data drawer and bottom panel are replaced by full-screen modals (open/close state in the `gameDataModal` / `toolModal` stores):
+
+- `SopModal.vue` (Sequence of Play) and `TableBrowserModal.vue` (tables) — backed by `gameDataModalStore`. The table browser lists all tables in the active set; each row can pin/unpin a `table` bookmark, and the toolbar "Table bookmarks ▾" lists pinned tables.
+- `ToolModal.vue` — hosts unit data (`UnitDataTab`) and Ordnance vs Armor (`OrdnanceVersusArmorTool`), plus any bespoke system tools, in a full-screen dialog. Active tool + its internal store-backed state survive open → close → open.
 
 ## Search, Popups, And Content Rendering
 
@@ -335,7 +366,7 @@ Selection behavior:
 
 - Rule result -> navigate to `system-rule`
 - Table or SOP result -> navigate to `system-game-datum`
-- Vehicle or ordnance result -> open bottom panel unit view
+- Vehicle or ordnance result -> set `unitSelectionStore` pending unit and open the tool modal (`toolModalStore.open(item.type)`)
 
 ## Authorization And UI Responsibilities
 
@@ -372,9 +403,8 @@ The backend remains the source of truth for actual authorization. The frontend o
 ## Current Non-Obvious Truths
 
 - `authStore.user` is not persisted anywhere; reloads always re-bootstrap from `/me`.
-- Only viewable modules contribute to `allRules`, `allIndexEntries`, `allGameData`, search results, and popup lookups.
-- `GameDataDrawer` may show fake tables or fake SOP data when no real entries are loaded.
-- Vehicles and ordnance are searchable game data, but they do not render in `GameDataView`; they open in the bottom unit-data panel.
+- The composed "active set" (`activeModules`) drives `allRules`, `allGameData`, search results, and popup lookups; the singular module (`singularModule`) drives `allIndexEntries` and `singularGameData`.
+- Vehicles and ordnance are searchable game data, but they do not render in `GameDataView`; they open in the full-screen `ToolModal` (Unit Data / Ordnance vs Armor).
 - Tools are derived from `game_data` type (see `frontend/src/lib/gameDataTools.ts`); there is no module tool registry.
 
 ## Content Tiers And Offline Caching
@@ -441,13 +471,13 @@ Used when a designer applies a post-release editorial amendment to the latest re
 
 - Boot and auth: `frontend/src/main.ts`, `frontend/src/stores/auth.ts`, `frontend/src/lib/http.ts`, `frontend/src/lib/globalErrorHandler.ts`, `frontend/src/composables/useApi.ts`
 - Routing: `frontend/src/router/index.ts`, `frontend/src/router/auth.ts`
-- System session flow: `frontend/src/views/SystemView.vue`, `frontend/src/stores/system.ts`, `frontend/src/stores/content.ts`
+- System session flow: `frontend/src/views/SystemView.vue`, `frontend/src/stores/system.ts`, `frontend/src/stores/content.ts`, `frontend/src/stores/membership.ts`
 - Domain types: `frontend/src/types/domain.ts`
-- Search and popup behavior: `frontend/src/components/GlobalSearchOverlay.vue`, `frontend/src/composables/useRuleDelegation.ts`, `frontend/src/composables/useRulePopup.ts`, `frontend/src/lib/renderContent.ts`
+- Search and popup behavior: `frontend/src/components/GlobalSearchOverlay.vue`, `frontend/src/composables/useRuleDelegation.ts`, `frontend/src/composables/useRulePopup.ts`, `frontend/src/stores/interaction.ts`, `frontend/src/lib/renderContent.ts`
 - Bookmarks and history: `frontend/src/stores/bookmarks.ts`, `frontend/src/stores/history.ts`
 - Settings and theming: `frontend/src/stores/appSettings.ts`, `frontend/src/views/AppSettingsView.vue`
 - Offline cache and connectivity: `frontend/src/stores/cacheStore.ts`, `frontend/src/lib/idb.ts`, `frontend/src/composables/useOnline.ts`, `frontend/src/stores/proofread.ts`, `frontend/vite.config.ts`
 - UI shell and guards: `frontend/src/components/systems/SystemHeader.vue`, `frontend/src/components/systems/PinSystemControl.vue`, `frontend/src/composables/useModalShortcutGuard.ts`
-- Game data views: `frontend/src/views/GameDataView.vue`, `frontend/src/components/game-data/GameDataDrawer.vue`, `frontend/src/components/layout/BottomPanel.vue`
+- Game data surfaces and modals: `frontend/src/views/GameDataView.vue`, `frontend/src/components/game-data/SopModal.vue`, `frontend/src/components/game-data/TableBrowserModal.vue`, `frontend/src/components/ToolModal.vue`, `frontend/src/stores/gameDataModal.ts`, `frontend/src/stores/toolModal.ts`
 - Tools: `frontend/src/lib/gameDataTools.ts`
 - Rule editing and lint: `frontend/src/components/systems/DeleteRuleDialog.vue`, `frontend/src/components/systems/BrokenLinksDialog.vue`, `frontend/src/composables/useBrokenLinks.ts`
