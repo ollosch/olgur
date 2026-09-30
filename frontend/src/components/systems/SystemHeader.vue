@@ -17,12 +17,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Menu, MoreVertical, Search, Table2, ListOrdered, TriangleAlert } from '@lucide/vue'
+import { Menu, Search, Table2, ListOrdered, TriangleAlert, Wrench, Bookmark, ChevronDown } from '@lucide/vue'
 import LeftPanelContent from '@/components/systems/LeftPanelContent.vue'
 import ManageMembersDialog from '@/components/systems/ManageMembersDialog.vue'
 import BrokenLinksDialog from '@/components/systems/BrokenLinksDialog.vue'
 import PinSystemControl from '@/components/systems/PinSystemControl.vue'
 import { useBrokenLinks } from '@/composables/useBrokenLinks'
+import { gameDataTools } from '@/lib/gameDataTools'
 import type { Rule, Module } from '@/types/domain'
 import { ref, computed } from 'vue'
 
@@ -37,8 +38,9 @@ const emit = defineEmits<{
   select: [rule: Rule]
   toggleModule: [id: string]
   togglePin: []
-  openTables: []
+  openTableBrowser: []
   openSop: []
+  openTool: [toolId: string]
 }>()
 
 const router = useRouter()
@@ -61,6 +63,10 @@ const canManageMembers = computed(() =>
 
 const showPinControl = computed(
   () => !contentStore.canSwitchView || contentStore.viewMode === 'release',
+)
+
+const tools = computed(() =>
+  gameDataTools(contentStore.allGameData, systemStore.currentSystem?.slug),
 )
 
 function onViewModeChange(value: string | number): void {
@@ -106,41 +112,108 @@ async function logout(): Promise<void> {
       </span>
     </div>
 
-    <!-- Center: search + nav buttons -->
+    <!-- Center: toolbar controls -->
     <div class="flex-1 flex items-center justify-center gap-1">
-      <!-- Search -->
-      <Button
-        variant="ghost"
-        size="icon"
-        class="w-8 h-8"
-        title="Search (⌘K)"
-        @click="shortcutStore.overlayOpen = true"
-      >
-        <Search class="w-4 h-4" />
-      </Button>
-
-      <!-- Tables -->
+      <!-- Table Browser -->
       <Button
         variant="ghost"
         class="h-8 px-3 text-xs gap-1.5 text-muted-foreground"
-        @click="emit('openTables')"
+        @click="emit('openTableBrowser')"
       >
         <Table2 class="w-3.5 h-3.5" />
-        Tables
+        Table Browser
       </Button>
 
-      <!-- SOP -->
+      <!-- Super-Search -->
+      <Button
+        variant="ghost"
+        class="h-8 px-3 text-xs gap-1.5 text-muted-foreground"
+        title="Search (⌘K)"
+        @click="shortcutStore.overlayOpen = true"
+      >
+        <Search class="w-3.5 h-3.5" />
+        Super-Search
+      </Button>
+
+      <!-- Sequence of Play -->
       <Button
         variant="ghost"
         class="h-8 px-3 text-xs gap-1.5 text-muted-foreground"
         @click="emit('openSop')"
       >
         <ListOrdered class="w-3.5 h-3.5" />
-        SOP
+        Sequence of Play
       </Button>
+
+      <!-- Tools ▾ -->
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <Button variant="ghost" class="h-8 px-3 text-xs gap-1.5 text-muted-foreground">
+            <Wrench class="w-3.5 h-3.5" />
+            Tools
+            <ChevronDown class="w-3.5 h-3.5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent class="w-56">
+          <DropdownMenuItem
+            v-for="tool in tools"
+            :key="tool.id"
+            @click="emit('openTool', tool.id)"
+          >
+            {{ tool.label }}
+          </DropdownMenuItem>
+          <DropdownMenuItem v-if="tools.length === 0" disabled>
+            No tools available
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <!-- Table bookmarks ▾ -->
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <Button variant="ghost" class="h-8 px-3 text-xs gap-1.5 text-muted-foreground">
+            <Bookmark class="w-3.5 h-3.5" />
+            Table bookmarks
+            <ChevronDown class="w-3.5 h-3.5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent class="w-56">
+          <DropdownMenuItem disabled> No bookmarks yet </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <!-- System ▾ -->
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <Button variant="ghost" class="h-8 px-3 text-xs gap-1.5 text-muted-foreground">
+            System
+            <ChevronDown class="w-3.5 h-3.5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" class="w-48">
+          <DropdownMenuItem @click="router.push({ name: 'home' })"> Exit System </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem v-if="canManageMembers" @click="manageMembersOpen = true">
+            Manage Members
+          </DropdownMenuItem>
+          <DropdownMenuItem v-if="canLint" @click="brokenLinksOpen = true">
+            <TriangleAlert class="w-4 h-4" />
+            Broken Links
+          </DropdownMenuItem>
+          <DropdownMenuSeparator v-if="canManageMembers || canLint" />
+          <DropdownMenuItem @click="router.push({ name: 'profile' })">
+            User Profile
+          </DropdownMenuItem>
+          <DropdownMenuItem @click="router.push({ name: 'settings' })">
+            App Settings
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem class="text-destructive" @click="logout"> Logout </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
 
-    <!-- Right: offline pin + dropdown menu -->
+    <!-- Right: draft/release tabs + pin control -->
     <Tabs
       v-if="contentStore.canSwitchView && !offline"
       :model-value="contentStore.viewMode"
@@ -157,37 +230,6 @@ async function logout(): Promise<void> {
       v-if="systemStore.currentSystem && showPinControl"
       :system-id="systemStore.currentSystem.id"
     />
-
-    <DropdownMenu>
-      <DropdownMenuTrigger as-child>
-        <Button variant="ghost" size="icon" class="w-8 h-8">
-          <MoreVertical class="w-4 h-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" class="w-48">
-        <DropdownMenuItem @click="router.push({ name: 'home' })"> Exit System </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          v-if="canManageMembers"
-          @click="manageMembersOpen = true"
-        >
-          Manage Members
-        </DropdownMenuItem>
-        <DropdownMenuItem v-if="canLint" @click="brokenLinksOpen = true">
-          <TriangleAlert class="w-4 h-4" />
-          Broken Links
-        </DropdownMenuItem>
-        <DropdownMenuSeparator v-if="canManageMembers || canLint" />
-        <DropdownMenuItem @click="router.push({ name: 'profile' })">
-          User Profile
-        </DropdownMenuItem>
-        <DropdownMenuItem @click="router.push({ name: 'settings' })">
-          App Settings
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem class="text-destructive" @click="logout"> Logout </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
   </header>
 
   <!-- Manage Members Dialog (lives here so manageMembersOpen state is local) -->

@@ -303,6 +303,23 @@ function openDrawer(mode: DrawerMode): void {
   drawerMode.value = mode
   drawerOpen.value = true
 }
+
+// ---------------------------------------------------------------------------
+// Toolbar actions
+//
+// Table Browser and tools open in full-screen modals built in later tasks
+// (Task 6/7 and Task 5 respectively); their handlers are stubbed for now so
+// this toolbar task compiles standalone. Sequence of Play keeps the existing
+// SOP drawer wiring.
+// ---------------------------------------------------------------------------
+
+function openTableBrowser(): void {
+  // Placeholder: the Table Browser modal lands in Task 6/7.
+}
+
+function openTool(): void {
+  // Placeholder: tools open in a full-screen modal in Task 5.
+}
 </script>
 
 <template>
@@ -315,8 +332,9 @@ function openDrawer(mode: DrawerMode): void {
       @select="selectRule"
       @toggle-module="toggleModule"
       @toggle-pin="togglePin"
-      @open-tables="openDrawer('tables')"
+      @open-table-browser="openTableBrowser"
       @open-sop="openDrawer('sop')"
+      @open-tool="openTool"
     />
 
     <div
