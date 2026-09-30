@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 
 // Module-level singleton — one instance shared across the entire app, mirrors
-// the pattern used by useRulePopup.ts.
+// the singleton pattern used by the interaction store.
 const open = ref(false)
 let resolver: ((confirmed: boolean) => void) | null = null
 

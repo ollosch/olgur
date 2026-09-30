@@ -32,12 +32,6 @@ export function rankMatchLower(field: string, q: string): number {
   if (field.includes(q)) return 2
   return 3
 }
-
-/** Returns a sort rank (0=exact, 1=prefix, 2=contains, 3=no match) for `field` against query `q`. */
-export function rankMatch(field: string, q: string): number {
-  return rankMatchLower(field.toLowerCase(), q)
-}
-
 /**
  * Ranks a rule against a search query.
  * Number matches always beat title matches.

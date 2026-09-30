@@ -20,7 +20,7 @@ type RuleResolver = (number: string, opts?: RuleLinkModifiers) => Rule | null
 
 /**
  * Owns all shared popup state that was previously scattered as module-level
- * globals in useRulePopup.ts. Non-reactive handles (timers, registered
+ * globals. Non-reactive handles (timers, registered
  * callbacks) are kept as private closure variables — not returned — so they
  * are encapsulated but persist for the lifetime of the store.
  */

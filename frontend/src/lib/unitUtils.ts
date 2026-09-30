@@ -33,11 +33,6 @@ export const ORDNANCE_TYPE_LABELS: Record<string, string> = {
 }
 
 // ── Helper functions ──────────────────────────────────────────────────────────
-
-export function getUnitDisplayType(item: GameDatum): 'vehicle' | 'ordnance' {
-  return item.type === 'vehicle' ? 'vehicle' : 'ordnance'
-}
-
 export function unitTypeLabel(item: GameDatum): string {
   const raw = (item.content['type'] as string | undefined) ?? item.type
   if (item.type === 'vehicle') return VEHICLE_TYPE_LABELS[raw] ?? raw
