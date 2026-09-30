@@ -6,6 +6,8 @@ import { useLeftPanelStore } from '@/stores/leftPanel'
 import { useShortcutStore } from '@/stores/shortcut'
 import { useSystemStore } from '@/stores/system'
 import { useContentStore } from '@/stores/content'
+import { useBookmarkStore } from '@/stores/bookmarks'
+import { useGameDataModalStore } from '@/stores/gameDataModal'
 import { useOnline } from '@/composables/useOnline'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -50,6 +52,8 @@ const panelStore = useLeftPanelStore()
 const shortcutStore = useShortcutStore()
 const systemStore = useSystemStore()
 const contentStore = useContentStore()
+const bookmarkStore = useBookmarkStore()
+const gameDataModalStore = useGameDataModalStore()
 const { offline } = useOnline()
 
 const manageMembersOpen = ref(false)
@@ -68,6 +72,14 @@ const showPinControl = computed(
 const tools = computed(() =>
   gameDataTools(contentStore.allGameData, systemStore.currentSystem?.slug),
 )
+
+const tableBookmarks = computed(() =>
+  bookmarkStore.resolvedBookmarks.filter((b) => b.entry.type === 'table'),
+)
+
+function openTableBookmark(tableId: string): void {
+  gameDataModalStore.selectTable(tableId)
+}
 
 function onViewModeChange(value: string | number): void {
   contentStore.setViewMode(String(value) as 'draft' | 'release')
@@ -177,8 +189,17 @@ async function logout(): Promise<void> {
             <ChevronDown class="w-3.5 h-3.5" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent class="w-56">
-          <DropdownMenuItem disabled> No bookmarks yet </DropdownMenuItem>
+        <DropdownMenuContent class="w-64">
+          <DropdownMenuItem
+            v-for="bookmark in tableBookmarks"
+            :key="bookmark.entry.id"
+            @click="openTableBookmark(bookmark.entry.id)"
+          >
+            {{ bookmark.label }}
+          </DropdownMenuItem>
+          <DropdownMenuItem v-if="tableBookmarks.length === 0" disabled>
+            No table bookmarks yet
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 

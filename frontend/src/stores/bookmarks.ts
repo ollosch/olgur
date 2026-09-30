@@ -4,7 +4,7 @@ import { useSystemStore } from '@/stores/system'
 import { useMembershipStore } from '@/stores/membership'
 import { useContentStore } from '@/stores/content'
 import { useApi } from '@/composables/useApi'
-import type { BookmarkEntry, Membership, ApiResource } from '@/types/domain'
+import type { BookmarkEntry, GameDatum, Membership, ApiResource } from '@/types/domain'
 
 export interface ResolvedBookmark {
   entry: BookmarkEntry
@@ -24,6 +24,13 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
     (): BookmarkEntry[] => membershipStore.membership?.config?.bookmarks ?? [],
   )
 
+  /** O(1) lookup by game-datum id — used to resolve table/unit bookmark labels. */
+  const gameDataById = computed((): Map<string, GameDatum> => {
+    const m = new Map<string, GameDatum>()
+    for (const d of contentStore.allGameData) m.set(d.id, d)
+    return m
+  })
+
   const resolvedBookmarks = computed((): ResolvedBookmark[] => {
     return bookmarks.value
       .map((b): ResolvedBookmark => {
@@ -34,6 +41,15 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
             label: rule ? `${rule.number} ${rule.title}` : b.id,
             sublabel: rule ? rule.number : null,
             sortKey: rule ? rule.number : b.id,
+          }
+        }
+        if (b.type === 'table') {
+          const table = gameDataById.value.get(b.id)
+          return {
+            entry: b,
+            label: table?.name ?? b.id,
+            sublabel: null,
+            sortKey: table?.name ?? b.id,
           }
         }
         return {

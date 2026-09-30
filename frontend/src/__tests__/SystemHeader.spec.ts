@@ -84,8 +84,9 @@ vi.mock('@/components/systems/PinSystemControl.vue', () => ({
 import SystemHeader from '@/components/systems/SystemHeader.vue'
 import { useSystemStore } from '@/stores/system'
 import { useContentStore } from '@/stores/content'
+import { useMembershipStore } from '@/stores/membership'
 import { useOnline } from '@/composables/useOnline'
-import type { Module, ModulePermissions, System } from '@/types/domain'
+import type { Module, ModulePermissions, System, Membership, GameDatum } from '@/types/domain'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -137,6 +138,31 @@ function seedSystem(permissions: Partial<ModulePermissions>): void {
   const systemStore = useSystemStore()
   systemStore.currentSystem = makeSystem('sys1')
   systemStore.modulesBySystem['sys1'] = [makeModule('mod1', makePermissions(permissions))]
+}
+
+function makeMembership(bookmarks: Membership['config']): Membership {
+  return {
+    id: 'mem1',
+    system_id: 'sys1',
+    user_id: 'user1',
+    admin: false,
+    config: bookmarks,
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  }
+}
+
+function makeTable(id: string, moduleId: string, name: string): GameDatum {
+  return {
+    id,
+    module_id: moduleId,
+    type: 'table',
+    slug: id,
+    name,
+    content: {},
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  }
 }
 
 function buildRouter() {
@@ -221,6 +247,34 @@ describe('SystemHeader — draft/release switch', () => {
       const wrapper = mountHeader()
 
       expect(wrapper.find('[data-test="pin-control"]').exists()).toBe(true)
+    })
+  })
+
+  describe('table bookmarks dropdown', () => {
+    beforeEach(() => {
+      setActivePinia(createPinia())
+      mockGet.mockReset()
+      useOnline().online.value = true
+    })
+
+    it('shows the empty state when there are no table bookmarks', () => {
+      seedSystem({ 'content.view_released': true })
+      const wrapper = mountHeader()
+
+      expect(wrapper.text()).toContain('No table bookmarks yet')
+    })
+
+    it('lists pinned tables', () => {
+      seedSystem({ 'content.view_released': true })
+      const contentStore = useContentStore()
+      contentStore.rulesByModule['mod1'] = []
+      contentStore.indexEntriesByModule['mod1'] = []
+      contentStore.gameDataByModule['mod1'] = [makeTable('t1', 'mod1', 'Firepower Table')]
+      useMembershipStore().setMembership('sys1', makeMembership({ bookmarks: [{ type: 'table', id: 't1' }] }))
+      const wrapper = mountHeader()
+
+      expect(wrapper.text()).toContain('Firepower Table')
+      expect(wrapper.text()).not.toContain('No table bookmarks yet')
     })
   })
 })

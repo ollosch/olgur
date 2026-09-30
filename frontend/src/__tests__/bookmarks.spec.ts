@@ -24,7 +24,8 @@ vi.mock('@/composables/useApi', () => ({
 import { useBookmarkStore } from '@/stores/bookmarks'
 import { useSystemStore } from '@/stores/system'
 import { useMembershipStore } from '@/stores/membership'
-import type { System, Membership, BookmarkEntry } from '@/types/domain'
+import { useContentStore } from '@/stores/content'
+import type { System, Membership, BookmarkEntry, Module, GameDatum } from '@/types/domain'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -61,6 +62,45 @@ function makeMembership(systemId: string): Membership {
 
 function makeMembershipWithBookmarks(systemId: string, bookmarks: BookmarkEntry[]): Membership {
   return { ...makeMembership(systemId), config: { bookmarks } }
+}
+
+function makeModule(id: string): Module {
+  return {
+    id,
+    system_id: 'sys1',
+    slug: id,
+    name: `Module ${id}`,
+    description: null,
+    config: null,
+    is_core: true,
+    sort_order: 0,
+    permissions: {
+      'module.update': false,
+      'module.delete': false,
+      'content.view_live': true,
+      'content.view_released': false,
+      'content.edit': false,
+      'content.proofread': false,
+      'version.publish': false,
+      'version.amend_latest': false,
+      'subscription.manage': false,
+    },
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  }
+}
+
+function makeTable(id: string, moduleId: string, name: string): GameDatum {
+  return {
+    id,
+    module_id: moduleId,
+    type: 'table',
+    slug: id,
+    name,
+    content: {},
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -133,5 +173,27 @@ describe('useBookmarkStore', () => {
     expect(bookmarkStore.isBookmarked('table', 't1')).toBe(true)
     expect(bookmarkStore.isBookmarked('unit', 'u1')).toBe(true)
     expect(bookmarkStore.isBookmarked('rule', 'r1')).toBe(false)
+  })
+
+  it('resolves table bookmarks to their table names', () => {
+    const { systemStore, bookmarkStore } = setup([{ type: 'table', id: 't1' }])
+    systemStore.modulesBySystem['sys1'] = [makeModule('mod1')]
+    const contentStore = useContentStore()
+    contentStore.rulesByModule['mod1'] = []
+    contentStore.indexEntriesByModule['mod1'] = []
+    contentStore.gameDataByModule['mod1'] = [makeTable('t1', 'mod1', 'Firepower Table')]
+
+    const resolved = bookmarkStore.resolvedBookmarks
+    expect(resolved).toHaveLength(1)
+    expect(resolved[0]?.label).toBe('Firepower Table')
+    expect(resolved[0]?.entry).toEqual({ type: 'table', id: 't1' })
+  })
+
+  it('falls back to the id for a table bookmark with no matching content', () => {
+    const { bookmarkStore } = setup([{ type: 'table', id: 'missing' }])
+
+    const resolved = bookmarkStore.resolvedBookmarks
+    expect(resolved).toHaveLength(1)
+    expect(resolved[0]?.label).toBe('missing')
   })
 })

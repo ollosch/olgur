@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { X } from '@lucide/vue'
+import { X, Bookmark } from '@lucide/vue'
 import { useContentStore } from '@/stores/content'
 import { useGameDataModalStore } from '@/stores/gameDataModal'
+import { useBookmarkStore } from '@/stores/bookmarks'
 import { useModalShortcutGuard } from '@/composables/useModalShortcutGuard'
 import MatrixTable from '@/components/game-data/MatrixTable.vue'
 import AttributeTable from '@/components/game-data/AttributeTable.vue'
@@ -17,6 +18,7 @@ type TableContent = MatrixContent | AttributeTableContent | ModifierListContent
 
 const contentStore = useContentStore()
 const gameDataModalStore = useGameDataModalStore()
+const bookmarkStore = useBookmarkStore()
 
 useModalShortcutGuard(() => gameDataModalStore.tableBrowserOpen)
 
@@ -30,6 +32,18 @@ const selectedTable = computed(
 
 function tableContent(item: GameDatum): TableContent | null {
   return item.content as unknown as TableContent
+}
+
+function isPinned(tableId: string): boolean {
+  return bookmarkStore.isBookmarked('table', tableId)
+}
+
+function togglePin(table: GameDatum): void {
+  if (isPinned(table.id)) {
+    void bookmarkStore.removeBookmark('table', table.id)
+  } else {
+    void bookmarkStore.addBookmark('table', table.id)
+  }
 }
 
 function onOpenChange(open: boolean): void {
@@ -56,36 +70,83 @@ function onOpenChange(open: boolean): void {
         </button>
       </div>
 
-      <!-- Single-table renderer (opened by game-datum id). The table listing /
-           bookmarks are added in Task 7; until then the shell shows a
-           placeholder when no table is selected. -->
-      <div class="flex-1 min-h-0 overflow-hidden flex flex-col">
-        <template v-if="selectedTable">
-          <div class="shrink-0 flex items-center gap-2 px-4 py-2 border-b border-border">
-            <span class="text-sm font-semibold text-foreground">{{ selectedTable.name }}</span>
-          </div>
-          <div class="flex-1 overflow-auto p-6" :data-rule-context="selectedTable.module_id">
-            <template v-if="tableContent(selectedTable)">
-              <MatrixTable
-                v-if="tableContent(selectedTable)!.kind === 'matrix'"
-                :content="tableContent(selectedTable) as MatrixContent"
-              />
-              <AttributeTable
-                v-else-if="tableContent(selectedTable)!.kind === 'attribute_table'"
-                :content="tableContent(selectedTable) as AttributeTableContent"
-              />
-              <ModifierList
-                v-else-if="tableContent(selectedTable)!.kind === 'modifier_list'"
-                :content="tableContent(selectedTable) as ModifierListContent"
-              />
-            </template>
-          </div>
-        </template>
-        <div
-          v-else
-          class="flex-1 flex items-center justify-center text-sm text-muted-foreground"
+      <!-- Table listing + single-table renderer. The listing is always
+           visible; clicking a table selects it, and each row has a pin/unpin
+           control backed by the polymorphic bookmark store. -->
+      <div class="flex-1 min-h-0 flex">
+        <!-- Browsable table list -->
+        <aside
+          class="w-72 shrink-0 border-r border-border flex flex-col overflow-y-auto"
+          data-test="table-list"
         >
-          No table selected.
+          <div
+            v-if="tables.length === 0"
+            class="px-4 py-4 text-sm text-muted-foreground"
+          >
+            No tables available.
+          </div>
+          <div v-else class="py-2">
+            <div
+              v-for="table in tables"
+              :key="table.id"
+              class="flex items-center gap-1 px-2 py-0.5 hover:bg-muted/30 transition-colors group"
+              :class="table.id === gameDataModalStore.selectedTableId ? 'bg-muted/50' : ''"
+            >
+              <button
+                class="flex-1 min-w-0 text-left px-2 py-1.5 rounded text-sm text-foreground/90 hover:text-foreground transition-colors"
+                :data-table-id="table.id"
+                @click="gameDataModalStore.selectTable(table.id)"
+              >
+                <span class="truncate block">{{ table.name }}</span>
+              </button>
+              <button
+                class="shrink-0 p-1.5 rounded hover:bg-muted/50 transition-colors"
+                :title="isPinned(table.id) ? 'Unpin table' : 'Pin table'"
+                :data-pin="table.id"
+                @click.stop="togglePin(table)"
+              >
+                <Bookmark
+                  class="w-3.5 h-3.5 transition-colors"
+                  :class="
+                    isPinned(table.id)
+                      ? 'text-primary fill-primary'
+                      : 'text-muted-foreground'
+                  "
+                />
+              </button>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Single-table renderer -->
+        <div class="flex-1 min-h-0 overflow-hidden flex flex-col">
+          <template v-if="selectedTable">
+            <div class="shrink-0 flex items-center gap-2 px-4 py-2 border-b border-border">
+              <span class="text-sm font-semibold text-foreground">{{ selectedTable.name }}</span>
+            </div>
+            <div class="flex-1 overflow-auto p-6" :data-rule-context="selectedTable.module_id">
+              <template v-if="tableContent(selectedTable)">
+                <MatrixTable
+                  v-if="tableContent(selectedTable)!.kind === 'matrix'"
+                  :content="tableContent(selectedTable) as MatrixContent"
+                />
+                <AttributeTable
+                  v-else-if="tableContent(selectedTable)!.kind === 'attribute_table'"
+                  :content="tableContent(selectedTable) as AttributeTableContent"
+                />
+                <ModifierList
+                  v-else-if="tableContent(selectedTable)!.kind === 'modifier_list'"
+                  :content="tableContent(selectedTable) as ModifierListContent"
+                />
+              </template>
+            </div>
+          </template>
+          <div
+            v-else
+            class="flex-1 flex items-center justify-center text-sm text-muted-foreground"
+          >
+            No table selected.
+          </div>
         </div>
       </div>
     </DialogContent>
