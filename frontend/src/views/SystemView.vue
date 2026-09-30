@@ -7,6 +7,7 @@ import { useHistoryStore } from '@/stores/history'
 import { useLeftPanelStore } from '@/stores/leftPanel'
 import { useProofreadStore } from '@/stores/proofread'
 import { useSystemStore } from '@/stores/system'
+import { useToolModalStore } from '@/stores/toolModal'
 import { useRuleDelegation } from '@/composables/useRuleDelegation'
 import { useResizablePanel } from '@/composables/useResizablePanel'
 import { useOnline } from '@/composables/useOnline'
@@ -18,7 +19,7 @@ import type { Rule, Module } from '@/types/domain'
 import LeftPanelContent from '@/components/systems/LeftPanelContent.vue'
 import SystemHeader from '@/components/systems/SystemHeader.vue'
 import GameDataDrawer from '@/components/game-data/GameDataDrawer.vue'
-import BottomPanel from '@/components/layout/BottomPanel.vue'
+import ToolModal from '@/components/ToolModal.vue'
 import type { DrawerMode } from '@/components/game-data/GameDataDrawer.vue'
 
 const route = useRoute()
@@ -29,6 +30,7 @@ const appSettings = useAppSettingsStore()
 const panelStore = useLeftPanelStore()
 const historyStore = useHistoryStore()
 const proofreadStore = useProofreadStore()
+const toolModalStore = useToolModalStore()
 
 const systemId = computed(() => route.params['systemId'] as string)
 const loading = ref(true)
@@ -317,8 +319,8 @@ function openTableBrowser(): void {
   // Placeholder: the Table Browser modal lands in Task 6/7.
 }
 
-function openTool(): void {
-  // Placeholder: tools open in a full-screen modal in Task 5.
+function openTool(toolId: string): void {
+  toolModalStore.open(toolId)
 }
 </script>
 
@@ -377,7 +379,7 @@ function openTool(): void {
           />
         </div>
 
-        <!-- Main area (shrinks when bottom panel is pinned) -->
+        <!-- Main area -->
         <div class="flex-1 flex flex-col overflow-hidden relative">
           <!-- Rule content -->
           <div class="flex-1 overflow-hidden">
@@ -424,13 +426,13 @@ function openTool(): void {
               </div>
             </RouterView>
           </div>
-
-          <!-- Bottom panel -->
-          <BottomPanel />
         </div>
 
         <!-- Right panel (pinned inline or sheet overlay) -->
         <GameDataDrawer v-model:open="drawerOpen" v-model:mode="drawerMode" />
+
+        <!-- Full-screen tool modal (opened from Tools ▾) -->
+        <ToolModal />
       </div>
     </div>
   </div>

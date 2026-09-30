@@ -11,7 +11,7 @@ import type { Rule, IndexEntry, GameDatum } from '@/types/domain'
 import IndexEntryResult from '@/components/systems/IndexEntryResult.vue'
 import { unitTypeLabel, unitNation } from '@/lib/unitUtils'
 import { useUnitSelectionStore } from '@/stores/unitSelection'
-import { useBottomPanelStore } from '@/stores/bottomPanel'
+import { useToolModalStore } from '@/stores/toolModal'
 
 const DEFAULT_CAP = 10
 const shortcutStore = useShortcutStore()
@@ -19,7 +19,7 @@ const contentStore = useContentStore()
 const router = useRouter()
 const route = useRoute()
 const unitSelectionStore = useUnitSelectionStore()
-const bottomPanelStore = useBottomPanelStore()
+const toolModalStore = useToolModalStore()
 
 // Persistent state — survives open/close cycles
 const query = ref('')
@@ -206,8 +206,7 @@ function selectGameDatum(item: GameDatum): void {
 
 function selectUnit(item: GameDatum): void {
   unitSelectionStore.selectUnit(item)
-  bottomPanelStore.open()
-  bottomPanelStore.setActiveTab('unit_browser')
+  toolModalStore.open(item.type)
   shortcutStore.overlayOpen = false
 }
 
