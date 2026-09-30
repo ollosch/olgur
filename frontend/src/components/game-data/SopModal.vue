@@ -42,7 +42,13 @@ function onOpenChange(open: boolean): void {
 </script>
 
 <template>
-  <Dialog :open="gameDataModalStore.sopOpen" @update:open="onOpenChange">
+  <!-- Keep content mounted while hidden so the active SOP tab and its store-backed
+       expand/search state survive open → close → open. -->
+  <Dialog
+    :open="gameDataModalStore.sopOpen"
+    :unmount-on-hide="false"
+    @update:open="onOpenChange"
+  >
     <DialogContent
       :show-close-button="false"
       class="max-w-none sm:max-w-none w-full h-full top-0 left-0 translate-x-0 translate-y-0 rounded-none border-0 p-0 gap-0 flex flex-col shadow-none"

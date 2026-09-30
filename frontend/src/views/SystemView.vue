@@ -163,6 +163,20 @@ watch(
   },
 )
 
+// Re-fetch content when the "currently played" module selection changes so the
+// composed view (TOC, tree, SOP) reflects the newly scoped active modules.
+watch(
+  () => contentStore.selectedModuleId,
+  async () => {
+    if (loading.value) return
+    if (systemStore.currentSystem?.id !== systemId.value) return
+    const loaded = await contentStore.fetchMissingModules(systemId.value, contentStore.activeModules)
+    for (const m of loaded) {
+      panelStore.expandedModuleIds.add(m.id)
+    }
+  },
+)
+
 // ---------------------------------------------------------------------------
 // Confirm before leaving to HomeView
 //

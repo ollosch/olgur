@@ -1,12 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ref } from 'vue'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import { defineComponent } from 'vue'
 import { createRouter, createMemoryHistory } from 'vue-router'
 
 // ─── Mock useApi for all stores that import it ────────────────────────────────
 const mockGet = vi.fn()
+const mockPatch = vi.fn()
 const mockLoading = ref(false)
 
 vi.mock('@/composables/useApi', () => ({
@@ -15,7 +16,7 @@ vi.mock('@/composables/useApi', () => ({
     post: vi.fn(),
     put: vi.fn(),
     del: vi.fn(),
-    patch: vi.fn(),
+    patch: mockPatch,
     loading: mockLoading,
   })),
 }))
@@ -56,7 +57,12 @@ vi.mock('@/components/ui/sheet', () => ({
 vi.mock('@/components/ui/dropdown-menu', () => ({
   DropdownMenu: passthrough('DropdownMenuStub'),
   DropdownMenuContent: passthrough('DropdownMenuContentStub'),
-  DropdownMenuItem: passthrough('DropdownMenuItemStub'),
+  DropdownMenuItem: defineComponent({
+    name: 'DropdownMenuItemStub',
+    inheritAttrs: false,
+    emits: ['click'],
+    template: '<button v-bind="$attrs" @click="$emit(\'click\')"><slot /></button>',
+  }),
   DropdownMenuSeparator: passthrough('DropdownMenuSeparatorStub'),
   DropdownMenuTrigger: passthrough('DropdownMenuTriggerStub'),
 }))
@@ -118,7 +124,7 @@ function makePermissions(overrides: Partial<ModulePermissions> = {}): ModulePerm
   }
 }
 
-function makeModule(id: string, permissions: ModulePermissions): Module {
+function makeModule(id: string, permissions: ModulePermissions, isCore = true): Module {
   return {
     id,
     system_id: 'sys1',
@@ -126,7 +132,7 @@ function makeModule(id: string, permissions: ModulePermissions): Module {
     name: `Module ${id}`,
     description: null,
     config: null,
-    is_core: true,
+    is_core: isCore,
     sort_order: 0,
     permissions,
     created_at: '2024-01-01T00:00:00Z',
@@ -275,6 +281,92 @@ describe('SystemHeader — draft/release switch', () => {
 
       expect(wrapper.text()).toContain('Firepower Table')
       expect(wrapper.text()).not.toContain('No table bookmarks yet')
+    })
+  })
+
+  describe('module selector (currently played)', () => {
+    beforeEach(() => {
+      setActivePinia(createPinia())
+      mockGet.mockReset()
+      mockPatch.mockReset()
+      useOnline().online.value = true
+    })
+
+    function seedSelectableModules(nonCore: string[]): void {
+      const systemStore = useSystemStore()
+      systemStore.currentSystem = makeSystem('sys1')
+      const perms = makePermissions({ 'content.view_released': true })
+      systemStore.modulesBySystem['sys1'] = [
+        makeModule('core', perms, true),
+        ...nonCore.map((id) => makeModule(id, perms, false)),
+      ]
+      useMembershipStore().setMembership('sys1', makeMembership({}))
+    }
+
+    it('renders nothing when only one non-core module exists', () => {
+      seedSelectableModules(['exp1'])
+      const wrapper = mountHeader()
+
+      expect(wrapper.find('[data-test="module-selector"]').exists()).toBe(false)
+    })
+
+    it('renders the selector with an "all modules" option when multiple non-core modules exist', () => {
+      seedSelectableModules(['exp1', 'exp2'])
+      const wrapper = mountHeader()
+
+      expect(wrapper.find('[data-test="module-selector"]').exists()).toBe(true)
+      expect(wrapper.text()).toContain('All modules')
+      expect(wrapper.text()).toContain('Module exp1')
+      expect(wrapper.text()).toContain('Module exp2')
+    })
+
+    it('shows the selected module name as the current label', () => {
+      seedSelectableModules(['exp1', 'exp2'])
+      useMembershipStore().setMembership('sys1', makeMembership({ selected_module_id: 'exp2' }))
+      const wrapper = mountHeader()
+
+      expect(wrapper.find('[data-test="module-selector"]').text()).toContain('Module exp2')
+    })
+
+    it('selecting a module persists the choice and re-scopes the active modules', async () => {
+      seedSelectableModules(['exp1', 'exp2'])
+      mockPatch.mockResolvedValue({
+        ok: true,
+        data: { data: makeMembership({ selected_module_id: 'exp1' }) },
+      })
+
+      const wrapper = mountHeader()
+      const contentStore = useContentStore()
+
+      expect(contentStore.activeModules.map((m) => m.id)).toEqual(['core', 'exp1', 'exp2'])
+
+      await wrapper.find('[data-module-id="exp1"]').trigger('click')
+      await flushPromises()
+
+      expect(mockPatch).toHaveBeenCalledWith('/me/memberships/sys1', {
+        config: { selected_module_id: 'exp1' },
+      })
+      expect(contentStore.activeModules.map((m) => m.id)).toEqual(['core', 'exp1'])
+    })
+
+    it('selecting "all modules" clears the selection', async () => {
+      seedSelectableModules(['exp1', 'exp2'])
+      useMembershipStore().setMembership('sys1', makeMembership({ selected_module_id: 'exp1' }))
+      mockPatch.mockResolvedValue({
+        ok: true,
+        data: { data: makeMembership({ selected_module_id: null }) },
+      })
+
+      const wrapper = mountHeader()
+      const contentStore = useContentStore()
+
+      await wrapper.find('[data-module-id="all"]').trigger('click')
+      await flushPromises()
+
+      expect(mockPatch).toHaveBeenCalledWith('/me/memberships/sys1', {
+        config: { selected_module_id: null },
+      })
+      expect(contentStore.activeModules.map((m) => m.id)).toEqual(['core', 'exp1', 'exp2'])
     })
   })
 })

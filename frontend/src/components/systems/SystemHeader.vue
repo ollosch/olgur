@@ -6,6 +6,7 @@ import { useLeftPanelStore } from '@/stores/leftPanel'
 import { useShortcutStore } from '@/stores/shortcut'
 import { useSystemStore } from '@/stores/system'
 import { useContentStore } from '@/stores/content'
+import { useMembershipStore } from '@/stores/membership'
 import { useBookmarkStore } from '@/stores/bookmarks'
 import { useGameDataModalStore } from '@/stores/gameDataModal'
 import { useOnline } from '@/composables/useOnline'
@@ -19,7 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Menu, Search, Table2, ListOrdered, TriangleAlert, Wrench, Bookmark, ChevronDown } from '@lucide/vue'
+import { Menu, Search, Table2, ListOrdered, TriangleAlert, Wrench, Bookmark, ChevronDown, Layers } from '@lucide/vue'
 import LeftPanelContent from '@/components/systems/LeftPanelContent.vue'
 import ManageMembersDialog from '@/components/systems/ManageMembersDialog.vue'
 import BrokenLinksDialog from '@/components/systems/BrokenLinksDialog.vue'
@@ -52,6 +53,7 @@ const panelStore = useLeftPanelStore()
 const shortcutStore = useShortcutStore()
 const systemStore = useSystemStore()
 const contentStore = useContentStore()
+const membershipStore = useMembershipStore()
 const bookmarkStore = useBookmarkStore()
 const gameDataModalStore = useGameDataModalStore()
 const { offline } = useOnline()
@@ -64,6 +66,26 @@ const { canLint } = useBrokenLinks()
 const canManageMembers = computed(() =>
   Boolean(systemStore.currentSystem?.permissions?.['membership.manage']),
 )
+
+/**
+ * The "currently played" module selector. Only the non-core modules are
+ * selectable — the core module is always active. Rendering only makes sense
+ * when more than one non-core module exists, otherwise there is no meaningful
+ * choice between "all modules" and a single exclusive module.
+ */
+const selectableModules = computed(() => systemStore.modules.filter((m) => !m.is_core))
+
+const currentModuleLabel = computed(() => {
+  const selectedId = contentStore.selectedModuleId
+  if (!selectedId) return 'All modules'
+  return selectableModules.value.find((m) => m.id === selectedId)?.name ?? 'All modules'
+})
+
+function selectModule(moduleId: string | null): void {
+  const systemId = systemStore.currentSystem?.id
+  if (!systemId) return
+  void membershipStore.selectModule(systemId, moduleId)
+}
 
 const showPinControl = computed(
   () => !contentStore.canSwitchView || contentStore.viewMode === 'release',
@@ -126,6 +148,34 @@ async function logout(): Promise<void> {
 
     <!-- Center: toolbar controls -->
     <div class="flex-1 flex items-center justify-center gap-1">
+      <!-- Currently played module ▾ -->
+      <DropdownMenu v-if="selectableModules.length > 1">
+        <DropdownMenuTrigger as-child>
+          <Button
+            variant="ghost"
+            class="h-8 px-3 text-xs gap-1.5 text-muted-foreground"
+            data-test="module-selector"
+          >
+            <Layers class="w-3.5 h-3.5" />
+            {{ currentModuleLabel }}
+            <ChevronDown class="w-3.5 h-3.5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent class="w-56">
+          <DropdownMenuItem data-module-id="all" @click="selectModule(null)">
+            All modules
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            v-for="mod in selectableModules"
+            :key="mod.id"
+            :data-module-id="mod.id"
+            @click="selectModule(mod.id)"
+          >
+            {{ mod.name }}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
       <!-- Table Browser -->
       <Button
         variant="ghost"
