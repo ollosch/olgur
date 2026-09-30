@@ -44,9 +44,11 @@ describe('useSystemStore', () => {
 
       await useSystemStore().createVersion('sys1', 'mod1', '1.0.0')
 
-      expect(mockPost).toHaveBeenCalledWith('/systems/sys1/modules/mod1/versions/release', {
+      expect(mockPost).toHaveBeenCalledWith('/systems/sys1/modules/mod1/versions', {
         version_string: '1.0.0',
         notes: '',
+        expected_draft_revision: 0,
+        release_notes: [],
       })
       expect(mockFetchManifest).toHaveBeenCalledWith('sys1')
     })

@@ -44,9 +44,6 @@ Route::prefix('api')->group(function (): void {
             Route::apiResource('systems.modules.versions', ModuleVersionController::class)
                 ->only(['index', 'store', 'show']);
 
-            Route::post('/systems/{system}/modules/{module}/versions/release', [ModuleVersionController::class, 'release'])
-                ->name('versions.release');
-
             Route::get('/systems/{system}/manifest', SystemManifestController::class);
 
             Route::get('/systems/{system}/lint', SystemLintController::class)

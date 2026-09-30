@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Actions\ReleaseModuleVersion;
+use App\Actions\PublishModuleVersion;
 use App\Data\SystemConfig;
 use App\Enums\GameDataType;
 use App\Models\GameDatum;
@@ -32,7 +32,7 @@ final class ImportGame extends Command
 {
     public function __construct(
         private readonly ModuleDataImporter $importer,
-        private readonly ReleaseModuleVersion $releaseModuleVersion,
+        private readonly PublishModuleVersion $publishModuleVersion,
     ) {
         parent::__construct();
     }
@@ -292,7 +292,7 @@ final class ImportGame extends Command
                 $system = System::query()->where('slug', $systemSlug)->firstOrFail();
 
                 foreach ($system->modules()->get() as $module) {
-                    $this->releaseModuleVersion->execute($module, $user, $versionString, '');
+                    $this->publishModuleVersion->execute($module, $user, $versionString, 'Created by Importer', 0, []);
                     $this->info(sprintf('Released version "%s" for module "%s".', $versionString, $module->slug));
                 }
             }
