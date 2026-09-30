@@ -124,7 +124,8 @@ test('MembershipConfig::fromArray uses defaults for missing keys', function (): 
 
     expect($config->bookmarks)->toBe([])
         ->and($config->ignoredTags)->toBe([])
-        ->and($config->boldTags)->toBe([]);
+        ->and($config->boldTags)->toBe([])
+        ->and($config->selectedModuleId)->toBeNull();
 });
 
 test('MembershipConfig::fromArray filters malformed bookmarks', function (): void {
@@ -162,5 +163,20 @@ test('MembershipConfig::toArray serialises to the expected shape', function (): 
         'bold_tags' => ['tag-b'],
         'acronym_popups' => false,
         'preferred_rule_format' => 'content',
+        'selected_module_id' => null,
     ]);
+});
+
+test('MembershipConfig round-trips selected_module_id', function (): void {
+    $id = 'abcdefghijklmnopqrstuvwxyz';
+    $config = MembershipConfig::fromArray(['selected_module_id' => $id]);
+
+    expect($config->selectedModuleId)->toBe($id)
+        ->and($config->toArray()['selected_module_id'])->toBe($id);
+});
+
+test('MembershipConfig::fromArray ignores non-string selected_module_id', function (): void {
+    $config = MembershipConfig::fromArray(['selected_module_id' => 123]);
+
+    expect($config->selectedModuleId)->toBeNull();
 });

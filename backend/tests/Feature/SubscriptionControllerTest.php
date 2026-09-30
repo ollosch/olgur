@@ -451,3 +451,48 @@ test('unsubscribing preserves other config keys like bookmarks', function (): vo
 
     expect($membership?->config?->bookmarks ?? [])->toBe([$bookmark]);
 });
+
+test('unsubscribing from the selected module clears selected_module_id', function (): void {
+    $member = User::factory()->create();
+    $admin = User::factory()->create();
+    $system = System::factory()->create();
+    $expansion = Module::factory()->for($system)->create();
+    $subscription = Subscription::factory()->for($member)->for($expansion)->create();
+    Membership::factory()->for($member)->for($system)->create([
+        'config' => ['selected_module_id' => $expansion->id],
+    ]);
+    Membership::factory()->for($admin)->for($system)->admin()->create();
+    actingAs($admin);
+
+    deleteJson(subscriptionUrl($system, $expansion, $subscription))->assertNoContent();
+
+    $membership = Membership::query()
+        ->where('user_id', $member->id)
+        ->where('system_id', $system->id)
+        ->first();
+
+    expect($membership?->config?->selectedModuleId)->toBeNull();
+});
+
+test('unsubscribing from another module preserves selected_module_id', function (): void {
+    $member = User::factory()->create();
+    $admin = User::factory()->create();
+    $system = System::factory()->create();
+    $selected = Module::factory()->for($system)->create();
+    $other = Module::factory()->for($system)->create();
+    $otherSubscription = Subscription::factory()->for($member)->for($other)->create();
+    Membership::factory()->for($member)->for($system)->create([
+        'config' => ['selected_module_id' => $selected->id],
+    ]);
+    Membership::factory()->for($admin)->for($system)->admin()->create();
+    actingAs($admin);
+
+    deleteJson(subscriptionUrl($system, $other, $otherSubscription))->assertNoContent();
+
+    $membership = Membership::query()
+        ->where('user_id', $member->id)
+        ->where('system_id', $system->id)
+        ->first();
+
+    expect($membership?->config?->selectedModuleId)->toBe($selected->id);
+});

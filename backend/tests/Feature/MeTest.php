@@ -350,3 +350,61 @@ it('rejects non-string values in bold_tags', function (): void {
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['config.bold_tags.0']);
 });
+
+it('member can set selected_module_id in membership config', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $membership = Membership::factory()->for($user)->for($system)->create();
+    actingAs($user);
+
+    $moduleId = 'abcdefghijklmnopqrstuvwxyz';
+
+    patchJson('/api/me/memberships/'.$system->id, [
+        'config' => ['selected_module_id' => $moduleId],
+    ])->assertSuccessful();
+
+    $fresh = $membership->fresh();
+    expect($fresh?->config?->selectedModuleId)->toBe($moduleId);
+});
+
+it('member can clear selected_module_id by passing null', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $membership = Membership::factory()->for($user)->for($system)->create([
+        'config' => ['selected_module_id' => 'abcdefghijklmnopqrstuvwxyz'],
+    ]);
+    actingAs($user);
+
+    patchJson('/api/me/memberships/'.$system->id, [
+        'config' => ['selected_module_id' => null],
+    ])->assertSuccessful();
+
+    $fresh = $membership->fresh();
+    expect($fresh?->config?->selectedModuleId)->toBeNull();
+});
+
+it('rejects non-string selected_module_id in membership config', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    Membership::factory()->for($user)->for($system)->create();
+    actingAs($user);
+
+    patchJson('/api/me/memberships/'.$system->id, [
+        'config' => ['selected_module_id' => 123],
+    ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['config.selected_module_id']);
+});
+
+it('rejects selected_module_id longer than 26 characters', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    Membership::factory()->for($user)->for($system)->create();
+    actingAs($user);
+
+    patchJson('/api/me/memberships/'.$system->id, [
+        'config' => ['selected_module_id' => str_repeat('a', 27)],
+    ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['config.selected_module_id']);
+});

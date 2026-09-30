@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Actions;
 
+use App\Data\MembershipConfig;
+use App\Models\Membership;
 use App\Models\Module;
 use App\Models\Subscription;
 use App\Models\User;
@@ -31,5 +33,19 @@ final class UnsubscribeFromModule
             ->where('user_id', $user->id)
             ->where('module_id', $module->id)
             ->delete();
+
+        $membership = Membership::query()
+            ->where('user_id', $user->id)
+            ->where('system_id', $module->system_id)
+            ->first();
+
+        if ($membership !== null && $membership->config->selectedModuleId === $module->id) {
+            $membership->update([
+                'config' => MembershipConfig::fromArray(array_merge(
+                    $membership->config->toArray(),
+                    ['selected_module_id' => null],
+                )),
+            ]);
+        }
     }
 }

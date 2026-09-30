@@ -34,6 +34,7 @@ final class UpdateMembershipConfigRequest extends FormRequest
             'config.ignored_tags.*' => ['string'],
             'config.bold_tags' => ['sometimes', 'array'],
             'config.bold_tags.*' => ['string'],
+            'config.selected_module_id' => ['sometimes', 'nullable', 'string', 'max:26'],
         ];
     }
 }
