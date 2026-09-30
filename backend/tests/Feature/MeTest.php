@@ -205,6 +205,25 @@ it('member can update their own membership config', function (): void {
     expect($fresh?->config?->bookmarks)->toBe([['type' => 'rule', 'id' => 'abcdefghijklmnopqrstuvwxyz']]);
 });
 
+it('accepts table and unit bookmark types on update membership config', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $membership = Membership::factory()->for($user)->for($system)->create();
+    actingAs($user);
+
+    $bookmarks = [
+        ['type' => 'table', 'id' => 'table-1'],
+        ['type' => 'unit', 'id' => 'unit-1'],
+        ['type' => 'rule', 'id' => 'abcdefghijklmnopqrstuvwxyz'],
+    ];
+
+    patchJson('/api/me/memberships/'.$system->id, ['config' => ['bookmarks' => $bookmarks]])
+        ->assertSuccessful();
+
+    $fresh = $membership->fresh();
+    expect($fresh?->config?->bookmarks)->toBe($bookmarks);
+});
+
 it('returns 404 when user has no membership for the system', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->create();

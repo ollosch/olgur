@@ -50,7 +50,7 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
     return bookmarks.value.some((b) => b.type === type && b.id === id)
   }
 
-  async function addBookmark(type: 'rule', id: string): Promise<void> {
+  async function addBookmark(type: BookmarkEntry['type'], id: string): Promise<void> {
     const systemId = systemStore.currentSystem?.id
     if (!systemId) return
     const existing = bookmarks.value
@@ -59,7 +59,7 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
     await _patchConfig(systemId, updated)
   }
 
-  async function removeBookmark(type: 'rule', id: string): Promise<void> {
+  async function removeBookmark(type: BookmarkEntry['type'], id: string): Promise<void> {
     const systemId = systemStore.currentSystem?.id
     if (!systemId) return
     const updated = bookmarks.value.filter((b) => !(b.type === type && b.id === id))

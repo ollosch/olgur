@@ -28,7 +28,7 @@ final class UpdateMembershipConfigRequest extends FormRequest
             'config.acronym_popups' => ['sometimes', 'boolean'],
             'config.preferred_rule_format' => ['sometimes', 'string', 'in:content,markdown'],
             'config.bookmarks' => ['sometimes', 'array'],
-            'config.bookmarks.*.type' => ['required_with:config.bookmarks', 'string', 'in:rule'],
+            'config.bookmarks.*.type' => ['required_with:config.bookmarks', 'string', 'in:rule,table,unit'],
             'config.bookmarks.*.id' => ['required_with:config.bookmarks', 'string', 'max:26'],
             'config.ignored_tags' => ['sometimes', 'array'],
             'config.ignored_tags.*' => ['string'],
