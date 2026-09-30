@@ -19,12 +19,15 @@ final readonly class MembershipConfig implements Castable
     /**
      * @param  array<int, array{type: string, id: string}>  $bookmarks
      * @param  array<int, string>  $ignoredTags
+     * @param  array<int, string>  $boldTags
      */
     public function __construct(
         /** Per-system rule bookmarks stored by the frontend. */
         public array $bookmarks,
         /** Tag slugs ignored in the ASOP view for this user. */
         public array $ignoredTags,
+        /** Tag slugs bolded in the ASOP view for this user. */
+        public array $boldTags,
         /** Whether acronym popups are enabled for this user. */
         public bool $acronymPopups,
         /** The preferred rule format for this user. */
@@ -52,6 +55,10 @@ final readonly class MembershipConfig implements Castable
             ? array_values(array_filter($data['ignored_tags'], is_string(...)))
             : [];
 
+        $boldTags = is_array($data['bold_tags'] ?? null)
+            ? array_values(array_filter($data['bold_tags'], is_string(...)))
+            : [];
+
         $preferredRuleFormat = is_string($data['preferred_rule_format'] ?? null)
             ? $data['preferred_rule_format']
             : 'content';
@@ -59,6 +66,7 @@ final readonly class MembershipConfig implements Castable
         return new self(
             bookmarks: $bookmarks,
             ignoredTags: $ignoredTags,
+            boldTags: $boldTags,
             acronymPopups: (bool) ($data['acronym_popups'] ?? false),
             preferredRuleFormat: $preferredRuleFormat,
         );
@@ -108,6 +116,7 @@ final readonly class MembershipConfig implements Castable
         return [
             'bookmarks' => $this->bookmarks,
             'ignored_tags' => $this->ignoredTags,
+            'bold_tags' => $this->boldTags,
             'acronym_popups' => $this->acronymPopups,
             'preferred_rule_format' => $this->preferredRuleFormat,
         ];

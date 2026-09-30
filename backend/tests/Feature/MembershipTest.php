@@ -109,20 +109,22 @@ test('isMember returns true when user has a membership', function (): void {
 
 test('membership config is cast to MembershipConfig instance', function (): void {
     $membership = Membership::factory()->create([
-        'config' => ['bookmarks' => [], 'ignored_tags' => ['tag-a']],
+        'config' => ['bookmarks' => [], 'ignored_tags' => ['tag-a'], 'bold_tags' => ['tag-b']],
     ]);
 
     $fresh = $membership->fresh();
     expect($fresh?->config)->toBeInstanceOf(MembershipConfig::class)
         ->and($fresh?->config?->bookmarks)->toBe([])
-        ->and($fresh?->config?->ignoredTags)->toBe(['tag-a']);
+        ->and($fresh?->config?->ignoredTags)->toBe(['tag-a'])
+        ->and($fresh?->config?->boldTags)->toBe(['tag-b']);
 });
 
 test('MembershipConfig::fromArray uses defaults for missing keys', function (): void {
     $config = MembershipConfig::fromArray([]);
 
     expect($config->bookmarks)->toBe([])
-        ->and($config->ignoredTags)->toBe([]);
+        ->and($config->ignoredTags)->toBe([])
+        ->and($config->boldTags)->toBe([]);
 });
 
 test('MembershipConfig::fromArray filters malformed bookmarks', function (): void {
@@ -137,15 +139,27 @@ test('MembershipConfig::fromArray filters malformed bookmarks', function (): voi
     expect($config->bookmarks)->toBe([['type' => 'rule', 'id' => 'abc123']]);
 });
 
+test('MembershipConfig::fromArray filters non-string ignored and bold tags', function (): void {
+    $config = MembershipConfig::fromArray([
+        'ignored_tags' => ['tag-a', 123, null, 'tag-b'],
+        'bold_tags' => ['tag-c', 456, null, 'tag-d'],
+    ]);
+
+    expect($config->ignoredTags)->toBe(['tag-a', 'tag-b'])
+        ->and($config->boldTags)->toBe(['tag-c', 'tag-d']);
+});
+
 test('MembershipConfig::toArray serialises to the expected shape', function (): void {
     $config = MembershipConfig::fromArray([
         'bookmarks' => [['type' => 'rule', 'id' => 'abc123']],
         'ignored_tags' => ['tag-a'],
+        'bold_tags' => ['tag-b'],
     ]);
 
     expect($config->toArray())->toBe([
         'bookmarks' => [['type' => 'rule', 'id' => 'abc123']],
         'ignored_tags' => ['tag-a'],
+        'bold_tags' => ['tag-b'],
         'acronym_popups' => false,
         'preferred_rule_format' => 'content',
     ]);

@@ -260,6 +260,24 @@ it('member can update ignored_tags in membership config', function (): void {
     expect($fresh?->config?->ignoredTags)->toBe(['topic-alpha', 'topic-beta']);
 });
 
+it('member can update bold_tags in membership config', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $membership = Membership::factory()->for($user)->for($system)->create();
+    actingAs($user);
+
+    $response = patchJson('/api/me/memberships/'.$system->id, [
+        'config' => [
+            'bold_tags' => ['topic-alpha', 'topic-beta'],
+        ],
+    ])->assertSuccessful();
+
+    $response->assertJsonPath('data.config.bold_tags', ['topic-alpha', 'topic-beta']);
+
+    $fresh = $membership->fresh();
+    expect($fresh?->config?->boldTags)->toBe(['topic-alpha', 'topic-beta']);
+});
+
 it('ignored_tags defaults to empty array when not set', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->create();
@@ -271,6 +289,19 @@ it('ignored_tags defaults to empty array when not set', function (): void {
     ])->assertSuccessful();
 
     $response->assertJsonPath('data.config.ignored_tags', []);
+});
+
+it('bold_tags defaults to empty array when not set', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    Membership::factory()->for($user)->for($system)->create();
+    actingAs($user);
+
+    $response = patchJson('/api/me/memberships/'.$system->id, [
+        'config' => ['bookmarks' => []],
+    ])->assertSuccessful();
+
+    $response->assertJsonPath('data.config.bold_tags', []);
 });
 
 it('updating a partial config merges with existing config fields', function (): void {
@@ -303,4 +334,19 @@ it('rejects non-string values in ignored_tags', function (): void {
     ])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['config.ignored_tags.0']);
+});
+
+it('rejects non-string values in bold_tags', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    Membership::factory()->for($user)->for($system)->create();
+    actingAs($user);
+
+    patchJson('/api/me/memberships/'.$system->id, [
+        'config' => [
+            'bold_tags' => [123, 456],
+        ],
+    ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['config.bold_tags.0']);
 });

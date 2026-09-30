@@ -32,6 +32,8 @@ final class UpdateMembershipConfigRequest extends FormRequest
             'config.bookmarks.*.id' => ['required_with:config.bookmarks', 'string', 'max:26'],
             'config.ignored_tags' => ['sometimes', 'array'],
             'config.ignored_tags.*' => ['string'],
+            'config.bold_tags' => ['sometimes', 'array'],
+            'config.bold_tags.*' => ['string'],
         ];
     }
 }
