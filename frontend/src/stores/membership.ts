@@ -103,6 +103,17 @@ export const useMembershipStore = defineStore('membership', () => {
     membershipsBySystem.value[systemId] = newMembership
   }
 
+  /**
+   * Persist the single module currently being played for this system. `null`
+   * clears the selection (all subscribed modules become active).
+   */
+  async function selectModule(
+    systemId: string,
+    moduleId: string | null,
+  ): Promise<ApiResult<void>> {
+    return updateMembership(systemId, { selected_module_id: moduleId })
+  }
+
   return {
     // state
     membershipsBySystem,
@@ -120,5 +131,6 @@ export const useMembershipStore = defineStore('membership', () => {
     refreshMembership,
     updateMembership,
     setMembership,
+    selectModule,
   }
 })

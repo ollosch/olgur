@@ -102,4 +102,37 @@ describe('useMembershipStore', () => {
       expect(membershipStore.membershipsBySystem['sys1']).toEqual(updated)
     })
   })
+
+  describe('selectModule', () => {
+    it('patches selected_module_id on the membership config', async () => {
+      const updated = {
+        ...makeMembership('sys1'),
+        config: { bookmarks: [], selected_module_id: 'mod2' },
+      }
+      mockPatch.mockResolvedValue({ ok: true, data: { data: updated } })
+
+      const membershipStore = useMembershipStore()
+      await membershipStore.selectModule('sys1', 'mod2')
+
+      expect(mockPatch).toHaveBeenCalledWith('/me/memberships/sys1', {
+        config: { selected_module_id: 'mod2' },
+      })
+      expect(membershipStore.membershipsBySystem['sys1']).toEqual(updated)
+    })
+
+    it('clears selected_module_id when passed null', async () => {
+      const updated = {
+        ...makeMembership('sys1'),
+        config: { bookmarks: [], selected_module_id: null },
+      }
+      mockPatch.mockResolvedValue({ ok: true, data: { data: updated } })
+
+      const membershipStore = useMembershipStore()
+      await membershipStore.selectModule('sys1', null)
+
+      expect(mockPatch).toHaveBeenCalledWith('/me/memberships/sys1', {
+        config: { selected_module_id: null },
+      })
+    })
+  })
 })

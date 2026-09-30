@@ -35,7 +35,9 @@ const contentStore = useContentStore()
 
 const tables = computed(() => contentStore.allGameData.filter((d) => d.type === 'table'))
 
-const sops = computed((): GameDatum[] => contentStore.allGameData.filter((d) => d.type === 'sop'))
+const sops = computed((): GameDatum[] =>
+  contentStore.singularGameData.filter((d) => d.type === 'sop'),
+)
 
 // Backed by a store (rather than local refs) so the active tab and each
 // SOP's expand/collapse + search state survive the drawer's Sheet being

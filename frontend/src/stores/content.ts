@@ -5,6 +5,7 @@ import { useOnline } from '@/composables/useOnline'
 import { request } from '@/lib/http'
 import type { ApiResult } from '@/lib/http'
 import { useSystemStore } from '@/stores/system'
+import { useMembershipStore } from '@/stores/membership'
 import { useCacheStore } from '@/stores/cacheStore'
 import type {
   Rule,
@@ -73,6 +74,7 @@ function normalizeGameData(items: GameDatum[]): GameDatum[] {
 export const useContentStore = defineStore('content', () => {
   const { get, put, del, loading } = useApi()
   const systemStore = useSystemStore()
+  const membershipStore = useMembershipStore()
   const cacheStore = useCacheStore()
   const { offline } = useOnline()
 
@@ -90,9 +92,43 @@ export const useContentStore = defineStore('content', () => {
   // Derived state
   // ---------------------------------------------------------------------------
 
-  const activeModules = computed((): Module[] =>
-    systemStore.modules.filter((m) => !isUnavailable(m.id)),
+  const selectedModuleId = computed((): string | null =>
+    membershipStore.membership?.config?.selected_module_id ?? null,
   )
+
+  /** The system's single core module (identified by `is_core`, else the first module). */
+  const coreModule = computed((): Module | undefined => {
+    const modules = systemStore.modules
+    return modules.find((m) => m.is_core) ?? modules[0]
+  })
+
+  const activeModules = computed((): Module[] => {
+    const core = coreModule.value
+    const selectedId = selectedModuleId.value
+
+    const rest: Module[] = []
+    if (selectedId) {
+      const selected = systemStore.modules.find((m) => m.id === selectedId)
+      if (selected && selected.id !== core?.id) rest.push(selected)
+    } else {
+      for (const m of systemStore.modules) {
+        if (m.id !== core?.id && !isUnavailable(m.id)) rest.push(m)
+      }
+    }
+    rest.sort((a, b) => a.sort_order - b.sort_order)
+
+    return core ? [core, ...rest] : rest
+  })
+
+  /**
+   * The one module whose SOP and index are shown: the selected module if set,
+   * else the core module. Singular surfaces are never merged.
+   */
+  const singularModule = computed((): Module | undefined => {
+    const selectedId = selectedModuleId.value
+    if (!selectedId) return coreModule.value
+    return systemStore.modules.find((m) => m.id === selectedId) ?? coreModule.value
+  })
 
   /**
    * The current user's permission map for the given module, as supplied by the
@@ -292,13 +328,20 @@ export const useContentStore = defineStore('content', () => {
     return result
   })
 
-  const allIndexEntries = computed((): IndexEntry[] =>
-    activeModules.value.flatMap((m) => indexEntriesByModule.value[m.id] ?? []),
-  )
+  const allIndexEntries = computed((): IndexEntry[] => {
+    const singular = singularModule.value
+    return singular ? (indexEntriesByModule.value[singular.id] ?? []) : []
+  })
 
   const allGameData = computed((): GameDatum[] =>
     activeModules.value.flatMap((m) => gameDataByModule.value[m.id] ?? []),
   )
+
+  /** Game data from the singular module only — backs the SOP surface (never merged). */
+  const singularGameData = computed((): GameDatum[] => {
+    const singular = singularModule.value
+    return singular ? (gameDataByModule.value[singular.id] ?? []) : []
+  })
 
   /** O(1) lookup by indexEntry.term — used by delegation hover */
   const indexEntriesByTerm = computed((): Map<string, IndexEntry> => {
@@ -709,7 +752,10 @@ export const useContentStore = defineStore('content', () => {
     manifestByModule,
     viewMode,
     loading,
+    selectedModuleId,
+    coreModule,
     activeModules,
+    singularModule,
     permissionsFor,
     canViewLive,
     canViewReleased,
@@ -735,6 +781,7 @@ export const useContentStore = defineStore('content', () => {
     indexEntriesByParent,
     visibleIndexEntryIds,
     allGameData,
+    singularGameData,
     fetchManifest,
     fetchRules,
     updateRule,

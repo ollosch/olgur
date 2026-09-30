@@ -77,7 +77,7 @@ export interface Module {
 }
 
 export interface BookmarkEntry {
-  type: 'rule'
+  type: 'rule' | 'table' | 'unit'
   id: string
 }
 
@@ -91,6 +91,7 @@ export interface MembershipConfig {
   ignored_tags?: string[]
   bold_tags?: string[]
   preferred_rule_format?: 'content' | 'markdown'
+  selected_module_id?: string | null
 }
 
 export interface Membership {

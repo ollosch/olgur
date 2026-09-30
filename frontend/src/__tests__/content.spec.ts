@@ -23,7 +23,8 @@ vi.mock('@/composables/useApi', () => ({
 
 import { useContentStore } from '@/stores/content'
 import { useSystemStore } from '@/stores/system'
-import type { Rule, IndexEntry, Module, System } from '@/types/domain'
+import { useMembershipStore } from '@/stores/membership'
+import type { Rule, IndexEntry, Module, System, Membership } from '@/types/domain'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -98,6 +99,18 @@ function makeIndexEntry(
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
     ...overrides,
+  }
+}
+
+function makeMembership(systemId: string, config?: Membership['config']): Membership {
+  return {
+    id: 'mem1',
+    system_id: systemId,
+    user_id: 'user1',
+    admin: false,
+    config: config ?? null,
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
   }
 }
 
@@ -363,6 +376,121 @@ describe('useContentStore', () => {
       ]
 
       expect(contentStore.resolveRuleReference('1.2', { moduleSlug: 'missing' })).toBeNull()
+    })
+  })
+
+  // ── activeModules / singularModule / allIndexEntries (composition) ──────────
+
+  function seedModules(
+    systemStore: ReturnType<typeof useSystemStore>,
+    modules: Module[],
+  ): void {
+    systemStore.currentSystem = makeSystem('sys1')
+    systemStore.modulesBySystem['sys1'] = modules
+  }
+
+  function select(
+    membershipStore: ReturnType<typeof useMembershipStore>,
+    moduleId: string | null,
+  ): void {
+    membershipStore.membershipsBySystem['sys1'] = makeMembership('sys1', {
+      selected_module_id: moduleId,
+    })
+  }
+
+  describe('activeModules', () => {
+    it('with no selection includes core first, then all viewable non-core by sort_order', () => {
+      const systemStore = useSystemStore()
+      const contentStore = useContentStore()
+
+      seedModules(systemStore, [
+        { ...makeModule('core', true), sort_order: 0 },
+        { ...makeModule('m2', false), sort_order: 5 },
+        { ...makeModule('m1', false), sort_order: 1 },
+      ])
+
+      expect(contentStore.activeModules.map((m) => m.id)).toEqual(['core', 'm1', 'm2'])
+    })
+
+    it('with a selection includes core and the selected module only', () => {
+      const systemStore = useSystemStore()
+      const membershipStore = useMembershipStore()
+      const contentStore = useContentStore()
+
+      seedModules(systemStore, [
+        { ...makeModule('core', true), sort_order: 0 },
+        { ...makeModule('m1', false), sort_order: 1 },
+        { ...makeModule('m2', false), sort_order: 2 },
+      ])
+      select(membershipStore, 'm2')
+
+      expect(contentStore.activeModules.map((m) => m.id)).toEqual(['core', 'm2'])
+    })
+
+    it('yields only core when the selection points at core', () => {
+      const systemStore = useSystemStore()
+      const membershipStore = useMembershipStore()
+      const contentStore = useContentStore()
+
+      seedModules(systemStore, [
+        { ...makeModule('core', true), sort_order: 0 },
+        { ...makeModule('m1', false), sort_order: 1 },
+      ])
+      select(membershipStore, 'core')
+
+      expect(contentStore.activeModules.map((m) => m.id)).toEqual(['core'])
+    })
+  })
+
+  describe('singularModule', () => {
+    it('defaults to the core module when nothing is selected', () => {
+      const systemStore = useSystemStore()
+      const contentStore = useContentStore()
+
+      seedModules(systemStore, [
+        { ...makeModule('core', true), sort_order: 0 },
+        { ...makeModule('m1', false), sort_order: 1 },
+      ])
+
+      expect(contentStore.singularModule?.id).toBe('core')
+    })
+
+    it('returns the selected module when set', () => {
+      const systemStore = useSystemStore()
+      const membershipStore = useMembershipStore()
+      const contentStore = useContentStore()
+
+      seedModules(systemStore, [
+        { ...makeModule('core', true), sort_order: 0 },
+        { ...makeModule('m1', false), sort_order: 1 },
+      ])
+      select(membershipStore, 'm1')
+
+      expect(contentStore.singularModule?.id).toBe('m1')
+    })
+  })
+
+  describe('allIndexEntries (singular)', () => {
+    it('sources entries from the singular module only, never a union', () => {
+      const systemStore = useSystemStore()
+      const membershipStore = useMembershipStore()
+      const contentStore = useContentStore()
+
+      seedModules(systemStore, [
+        { ...makeModule('core', true), sort_order: 0 },
+        { ...makeModule('m1', false), sort_order: 1 },
+      ])
+      contentStore.indexEntriesByModule['core'] = [
+        makeIndexEntry({ id: 'e-core', module_id: 'core' }),
+      ]
+      contentStore.indexEntriesByModule['m1'] = [
+        makeIndexEntry({ id: 'e-m1', module_id: 'm1' }),
+      ]
+
+      expect(contentStore.allIndexEntries.map((e) => e.id)).toEqual(['e-core'])
+
+      select(membershipStore, 'm1')
+      expect(contentStore.allIndexEntries.map((e) => e.id)).toEqual(['e-m1'])
     })
   })
 })
