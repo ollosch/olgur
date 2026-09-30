@@ -35,6 +35,7 @@ import type { ManifestEntry, Rule } from '@/types/domain'
 function makeRule(overrides: Partial<Rule> = {}): Rule {
   return {
     id: 'rule1',
+    rule_id: 'rule1',
     module_id: 'mod1',
     parent_id: null,
     number: '1.1',
@@ -46,6 +47,14 @@ function makeRule(overrides: Partial<Rule> = {}): Rule {
     updated_at: '2024-01-01T00:00:00Z',
     ...overrides,
   }
+}
+
+/**
+ * A released snapshot rule: its `id` is the snapshot ULID (distinct from the
+ * stable live `rule_id`), mirroring what the released-content endpoint returns.
+ */
+function makeReleasedRule(overrides: Partial<Rule> = {}): Rule {
+  return makeRule({ id: 'snap1', rule_id: 'rule1', ...overrides })
 }
 
 function makeManifestEntry(overrides: Partial<ManifestEntry> = {}): ManifestEntry {
@@ -143,7 +152,7 @@ describe('useRetrofix', () => {
       const contentStore = useContentStore()
       contentStore.rulesByModule['mod1'] = [makeRule()]
 
-      const releasedRule = makeRule({ content: 'Released content' })
+      const releasedRule = makeReleasedRule({ content: 'Released content' })
       mockRequest.mockResolvedValue({ data: [releasedRule] })
 
       const { releasedContent, loadReleasedContent } = useRetrofix('sys1', 'mod1', 'v1', 'rule1')
@@ -160,7 +169,7 @@ describe('useRetrofix', () => {
       const contentStore = useContentStore()
       contentStore.rulesByModule['mod1'] = [makeRule()]
 
-      mockRequest.mockResolvedValue({ data: [makeRule({ content: 'line1<br>line2' })] })
+      mockRequest.mockResolvedValue({ data: [makeReleasedRule({ content: 'line1<br>line2' })] })
 
       const { releasedContent, loadReleasedContent } = useRetrofix('sys1', 'mod1', 'v1', 'rule1')
       await loadReleasedContent('https://cdn.example.com/mod1/rules.json')
@@ -172,7 +181,7 @@ describe('useRetrofix', () => {
       const contentStore = useContentStore()
       contentStore.rulesByModule['mod1'] = [makeRule({ content: 'Store draft content' })]
 
-      mockRequest.mockResolvedValue({ data: [makeRule({ content: 'Released content' })] })
+      mockRequest.mockResolvedValue({ data: [makeReleasedRule({ content: 'Released content' })] })
 
       const { draftContent, loadReleasedContent } = useRetrofix('sys1', 'mod1', 'v1', 'rule1')
       await loadReleasedContent('https://cdn.example.com/mod1/rules.json')
@@ -184,7 +193,7 @@ describe('useRetrofix', () => {
       const contentStore = useContentStore()
       contentStore.manifestByModule['mod1'] = makeManifestEntry({ revision: 3 })
 
-      mockRequest.mockResolvedValue({ data: [makeRule()] })
+      mockRequest.mockResolvedValue({ data: [makeReleasedRule()] })
 
       const { expectedRevision, loadReleasedContent } = useRetrofix('sys1', 'mod1', 'v1', 'rule1')
       await loadReleasedContent('https://cdn.example.com/mod1/rules.json')
@@ -193,7 +202,7 @@ describe('useRetrofix', () => {
     })
 
     it('defaults expectedRevision to zero when no manifest entry exists', async () => {
-      mockRequest.mockResolvedValue({ data: [makeRule()] })
+      mockRequest.mockResolvedValue({ data: [makeReleasedRule()] })
 
       const { expectedRevision, loadReleasedContent } = useRetrofix('sys1', 'mod1', 'v1', 'rule1')
       await loadReleasedContent('https://cdn.example.com/mod1/rules.json')
@@ -204,7 +213,7 @@ describe('useRetrofix', () => {
     it('sets isLoading to false after completion', async () => {
       const contentStore = useContentStore()
       contentStore.rulesByModule['mod1'] = [makeRule()]
-      mockRequest.mockResolvedValue({ data: [makeRule()] })
+      mockRequest.mockResolvedValue({ data: [makeReleasedRule()] })
 
       const { isLoading, loadReleasedContent } = useRetrofix('sys1', 'mod1', 'v1', 'rule1')
       await loadReleasedContent('https://cdn.example.com/mod1/rules.json')
@@ -227,18 +236,54 @@ describe('useRetrofix', () => {
   describe('applyAmendment', () => {
     it('PATCHes to the amend endpoint with the expected revision payload', async () => {
       mockPost.mockResolvedValue({ ok: true, data: { data: { revision: 1 } } })
+      mockRequest.mockResolvedValue({ data: [makeReleasedRule()] })
 
-      const { releasedContent, applyAmendment } = useRetrofix('sys1', 'mod1', 'v1', 'rule1')
+      const { releasedContent, loadReleasedContent, applyAmendment } = useRetrofix(
+        'sys1',
+        'mod1',
+        'v1',
+        'rule1',
+      )
+      await loadReleasedContent('https://cdn.example.com/mod1/rules.json')
       releasedContent.value = 'Fixed content'
 
       await applyAmendment()
 
       expect(mockPost).toHaveBeenCalledWith('/systems/sys1/modules/mod1/versions/v1/amend', {
         entity_type: 'rule',
-        entity_id: 'rule1',
+        entity_id: 'snap1',
         expected_revision: 0,
         content: { content: 'Fixed content' },
       })
+    })
+
+    it('posts entity_id as the released snapshot id, not the live rule id', async () => {
+      const contentStore = useContentStore()
+      contentStore.rulesByModule['mod1'] = [makeRule()]
+      mockRequest.mockResolvedValue({
+        data: [makeReleasedRule({ id: 'snapshot-ulid-42', rule_id: 'rule1' })],
+      })
+      mockPost.mockResolvedValue({ ok: true, data: { data: { revision: 1 } } })
+
+      const { releasedContent, loadReleasedContent, applyAmendment } = useRetrofix(
+        'sys1',
+        'mod1',
+        'v1',
+        'rule1',
+      )
+      await loadReleasedContent('https://cdn.example.com/mod1/rules.json')
+      releasedContent.value = 'Fixed'
+
+      await applyAmendment()
+
+      expect(mockPost).toHaveBeenCalledWith(
+        '/systems/sys1/modules/mod1/versions/v1/amend',
+        expect.objectContaining({ entity_id: 'snapshot-ulid-42' }),
+      )
+      expect(mockPost).not.toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ entity_id: 'rule1' }),
+      )
     })
 
     it('converts newlines to <br> in the posted content', async () => {
@@ -266,7 +311,7 @@ describe('useRetrofix', () => {
         'v1',
         'rule1',
       )
-      mockRequest.mockResolvedValue({ data: [makeRule()] })
+      mockRequest.mockResolvedValue({ data: [makeReleasedRule()] })
       await loadReleasedContent('https://cdn.example.com/mod1/rules.json')
       releasedContent.value = 'Fixed'
 

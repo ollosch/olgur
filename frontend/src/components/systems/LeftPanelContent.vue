@@ -12,6 +12,7 @@ import IndexTab from '@/components/systems/IndexTab.vue'
 import HistoryTab from '@/components/systems/HistoryTab.vue'
 import BookmarksTab from '@/components/systems/BookmarksTab.vue'
 import ProofreadTab from '@/components/systems/ProofreadTab.vue'
+import VersionStatusBadge from '@/components/versions/VersionStatusBadge.vue'
 
 interface Props {
   expandedModules: Set<string>
@@ -145,6 +146,7 @@ watch(
               />
               <span class="text-xs text-primary font-semibold uppercase tracking-wide">
                 {{ mod.name }}
+                <VersionStatusBadge :module-id="mod.id" />
               </span>
             </button>
 

@@ -36,6 +36,13 @@ export function useRetrofix(
   const expectedRevision: Ref<number> = ref(0)
 
   /**
+   * The snapshot `id` of the released rule matched by `rule_id`. The backend
+   * amend endpoint resolves `RuleVersion` by snapshot id, so this must be used
+   * as `entity_id` rather than the stable live `ruleId`.
+   */
+  const releasedRuleId: Ref<string> = ref('')
+
+  /**
    * True when the released version text differs from the current draft text
    * (trimmed comparison). Determines whether to render single or dual editor.
    */
@@ -44,10 +51,11 @@ export function useRetrofix(
   )
 
   /**
-   * Fetches the versioned rules at `manifestRulesUrl`, finds the rule by
-   * `ruleId`, and populates `releasedContent`. Also seeds `draftContent` from
-   * the live store and `expectedRevision` from the manifest so both values are
-   * ready for the divergence check and the optimistic-concurrency back-edit.
+   * Fetches the versioned rules at `manifestRulesUrl`, finds the rule by its
+   * stable `rule_id` (matching `ruleId`), and populates `releasedContent` while
+   * capturing the snapshot `id`. Also seeds `draftContent` from the live store
+   * and `expectedRevision` from the manifest so both values are ready for the
+   * divergence check and the optimistic-concurrency back-edit.
    */
   async function loadReleasedContent(manifestRulesUrl: string): Promise<void> {
     isLoading.value = true
@@ -64,10 +72,13 @@ export function useRetrofix(
       // Seed the expected snapshot revision from the manifest
       expectedRevision.value = contentStore.manifestByModule[moduleId]?.revision ?? 0
 
-      // Fetch and normalise the released version
+      // Fetch and normalise the released version. The released snapshot carries
+      // both a snapshot `id` and a stable `rule_id`; match on `rule_id` and
+      // capture the snapshot `id` for the amend `entity_id`.
       const json = await request<ApiCollection<Rule>>({ method: 'GET', url: manifestRulesUrl })
-      const releasedRule = json.data.find((r) => r.id === ruleId)
+      const releasedRule = json.data.find((r) => r.rule_id === ruleId)
       if (releasedRule) {
+        releasedRuleId.value = releasedRule.id
         releasedContent.value = releasedRule.content.split('<br>').join('\n')
       }
     } catch {
@@ -88,7 +99,7 @@ export function useRetrofix(
       `/systems/${systemId}/modules/${moduleId}/versions/${versionId}/amend`,
       {
         entity_type: 'rule',
-        entity_id: ruleId,
+        entity_id: releasedRuleId.value,
         expected_revision: expectedRevision.value,
         // Re-normalise newlines to <br> for the backend storage format
         content: { content: releasedContent.value.split('\n').join('<br>') },

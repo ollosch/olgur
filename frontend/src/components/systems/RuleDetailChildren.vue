@@ -7,10 +7,11 @@ import { useBookmarkStore } from '@/stores/bookmarks'
 import { useContentStore } from '@/stores/content'
 import { useLeftPanelStore } from '@/stores/leftPanel'
 import { useOnline } from '@/composables/useOnline'
-import { Crosshair, Pencil, Star, Trash2 } from '@lucide/vue'
+import { Crosshair, Pencil, Star, Trash2, Wrench } from '@lucide/vue'
 import EditRuleDialog from '@/components/systems/EditRuleDialog.vue'
 import DeleteRuleDialog from '@/components/systems/DeleteRuleDialog.vue'
 import ProofreadToggle from '@/components/systems/ProofreadToggle.vue'
+import RetrofixDialog from '@/components/versions/RetrofixDialog.vue'
 
 interface Props {
   rule: Rule
@@ -44,6 +45,18 @@ const editingRule = ref<Rule | null>(null)
 const deleteDialogOpen = ref(false)
 const deletingRule = ref<Rule | null>(null)
 
+const retrofixDialogOpen = ref(false)
+const retrofixRule = ref<Rule | null>(null)
+
+const canRetrofix = computed((): boolean => {
+  const manifest = contentStore.manifestByModule[props.rule.module_id]
+  return (
+    contentStore.viewMode === 'draft' &&
+    !!manifest?.content &&
+    (contentStore.permissionsFor(props.rule.module_id)?.['version.amend_latest'] ?? false)
+  )
+})
+
 function openEditDialog(rule: Rule): void {
   editingRule.value = rule
   editDialogOpen.value = true
@@ -52,6 +65,11 @@ function openEditDialog(rule: Rule): void {
 function openDeleteDialog(rule: Rule): void {
   deletingRule.value = rule
   deleteDialogOpen.value = true
+}
+
+function openRetrofixDialog(rule: Rule): void {
+  retrofixRule.value = rule
+  retrofixDialogOpen.value = true
 }
 
 function showInTree(rule: Rule): void {
@@ -109,6 +127,14 @@ const childRules = computed((): Rule[] => props.childrenMap.get(props.rule.id) ?
         @click="openDeleteDialog(rule)"
       >
         <Trash2 class="w-3.5 h-3.5 text-muted-foreground" />
+      </button>
+      <button
+        v-if="canRetrofix"
+        class="p-1 rounded hover:bg-muted/40 transition-colors"
+        title="Back-edit released version"
+        @click="openRetrofixDialog(rule)"
+      >
+        <Wrench class="w-3.5 h-3.5 text-muted-foreground" />
       </button>
       <button
         class="p-1 rounded hover:bg-muted/40 transition-colors"
@@ -179,5 +205,12 @@ const childRules = computed((): Rule[] => props.childrenMap.get(props.rule.id) ?
     :rule="deletingRule"
     @update:open="deleteDialogOpen = $event"
     @deleted="emit('ruleDeleted')"
+  />
+
+  <RetrofixDialog
+    v-if="retrofixRule"
+    :open="retrofixDialogOpen"
+    :rule="retrofixRule"
+    @update:open="retrofixDialogOpen = $event"
   />
 </template>

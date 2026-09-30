@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { ArrowLeft, ArrowRight } from '@lucide/vue'
 import RuleDetailChildren from '@/components/systems/RuleDetailChildren.vue'
 import RuleTocView from '@/components/systems/RuleTocView.vue'
+import DraftStatusBanner from '@/components/versions/DraftStatusBanner.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -157,6 +158,11 @@ watch(ruleId, () => {
 
 <template>
   <div ref="scrollEl" class="overflow-auto p-6 h-full">
+    <DraftStatusBanner
+      v-if="selectedRule && contentStore.viewMode === 'draft'"
+      :module-id="selectedRule.module_id"
+    />
+
     <!-- ------------------------------------------------------------------ -->
     <!-- Range mode                                                           -->
     <!-- ------------------------------------------------------------------ -->
