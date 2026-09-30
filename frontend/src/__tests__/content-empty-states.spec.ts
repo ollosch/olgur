@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { ref } from 'vue'
-import { shallowMount } from '@vue/test-utils'
+import { ref, defineComponent } from 'vue'
+import { mount } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
+import { dialogStubs } from './helpers/dialogStubs'
 
 // ─── Mock useApi for all stores ───────────────────────────────────────────────
 const mockGet = vi.fn()
@@ -18,9 +19,20 @@ vi.mock('@/composables/useApi', () => ({
   })),
 }))
 
+function passthrough(name: string) {
+  return defineComponent({ name, template: '<div><slot /></div>' })
+}
+
+vi.mock('@/components/ui/tabs', () => ({
+  Tabs: passthrough('Tabs'),
+  TabsList: passthrough('TabsList'),
+  TabsTrigger: passthrough('TabsTrigger'),
+  TabsContent: passthrough('TabsContent'),
+}))
+
 import { useContentStore } from '@/stores/content'
 import { useSystemStore } from '@/stores/system'
-import GameDataDrawerContent from '@/components/game-data/GameDataDrawerContent.vue'
+import SopModal from '@/components/game-data/SopModal.vue'
 import type { GameDatum, System, Module } from '@/types/domain'
 
 // ─── Fixture helpers ──────────────────────────────────────────────────────────
@@ -88,7 +100,8 @@ function makeGameDatum(
 
 /**
  * Seed a single core module (mod1) into the stores so that
- * `contentStore.allGameData` reflects whatever is in `gameDataByModule['mod1']`.
+ * `contentStore.singularGameData` reflects whatever is in
+ * `gameDataByModule['mod1']`.
  */
 function seedCoreModule(): void {
   const systemStore = useSystemStore()
@@ -103,18 +116,16 @@ function seedCoreModule(): void {
 
 // ─── Mount helper ─────────────────────────────────────────────────────────────
 
-function mountDrawerContent(mode: 'tables' | 'sop') {
+function mountSopModal() {
   const pinia = createPinia()
   setActivePinia(pinia)
   seedCoreModule()
   return {
-    wrapper: shallowMount(GameDataDrawerContent, {
-      props: {
-        mode,
-        isPinned: false,
-        isDragging: false,
+    wrapper: mount(SopModal, {
+      global: {
+        plugins: [pinia],
+        stubs: { ...dialogStubs(), SopViewer: true },
       },
-      global: { plugins: [pinia] },
     }),
     contentStore: useContentStore(),
   }
@@ -122,57 +133,29 @@ function mountDrawerContent(mode: 'tables' | 'sop') {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('GameDataDrawerContent — empty states', () => {
+describe('SopModal — empty states', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     mockGet.mockReset()
   })
 
-  // ── tables mode ─────────────────────────────────────────────────────────────
-
-  describe('tables mode', () => {
-    it('shows "No tables available." when allGameData is empty', () => {
-      const { wrapper } = mountDrawerContent('tables')
-      expect(wrapper.text()).toContain('No tables available.')
-    })
-
-    it('hides the empty state when table-type game data is present', async () => {
-      const { wrapper, contentStore } = mountDrawerContent('tables')
-      contentStore.gameDataByModule['mod1'] = [makeGameDatum({ id: 'tbl1', type: 'table' })]
-      await wrapper.vm.$nextTick()
-      expect(wrapper.text()).not.toContain('No tables available.')
-    })
-
-    it('still shows empty state when only sop data exists (no tables)', async () => {
-      const { wrapper, contentStore } = mountDrawerContent('tables')
-      contentStore.gameDataByModule['mod1'] = [makeGameDatum({ id: 'sop1', type: 'sop' })]
-      await wrapper.vm.$nextTick()
-      // SOP data does not count as a table
-      expect(wrapper.text()).toContain('No tables available.')
-    })
+  it('shows "No sequence of play data available." when singular game data is empty', () => {
+    const { wrapper } = mountSopModal()
+    expect(wrapper.text()).toContain('No sequence of play data available.')
   })
 
-  // ── sop mode ────────────────────────────────────────────────────────────────
+  it('hides the empty state when sop-type game data is present', async () => {
+    const { wrapper, contentStore } = mountSopModal()
+    contentStore.gameDataByModule['mod1'] = [makeGameDatum({ id: 'sop1', type: 'sop' })]
+    await wrapper.vm.$nextTick()
+    expect(wrapper.text()).not.toContain('No sequence of play data available.')
+  })
 
-  describe('sop mode', () => {
-    it('shows the SOP empty state when allGameData is empty', () => {
-      const { wrapper } = mountDrawerContent('sop')
-      expect(wrapper.text()).toContain('No sequence of play data available.')
-    })
-
-    it('hides the SOP empty state when sop-type game data is present', async () => {
-      const { wrapper, contentStore } = mountDrawerContent('sop')
-      contentStore.gameDataByModule['mod1'] = [makeGameDatum({ id: 'sop1', type: 'sop' })]
-      await wrapper.vm.$nextTick()
-      expect(wrapper.text()).not.toContain('No sequence of play data available.')
-    })
-
-    it('still shows SOP empty state when only table data exists (no sops)', async () => {
-      const { wrapper, contentStore } = mountDrawerContent('sop')
-      contentStore.gameDataByModule['mod1'] = [makeGameDatum({ id: 'tbl1', type: 'table' })]
-      await wrapper.vm.$nextTick()
-      // Table data does not count as a SOP
-      expect(wrapper.text()).toContain('No sequence of play data available.')
-    })
+  it('still shows the empty state when only table data exists (no sops)', async () => {
+    const { wrapper, contentStore } = mountSopModal()
+    contentStore.gameDataByModule['mod1'] = [makeGameDatum({ id: 'tbl1', type: 'table' })]
+    await wrapper.vm.$nextTick()
+    // Table data does not count as a SOP
+    expect(wrapper.text()).toContain('No sequence of play data available.')
   })
 })

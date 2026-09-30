@@ -8,6 +8,7 @@ import { useLeftPanelStore } from '@/stores/leftPanel'
 import { useProofreadStore } from '@/stores/proofread'
 import { useSystemStore } from '@/stores/system'
 import { useToolModalStore } from '@/stores/toolModal'
+import { useGameDataModalStore } from '@/stores/gameDataModal'
 import { useRuleDelegation } from '@/composables/useRuleDelegation'
 import { useResizablePanel } from '@/composables/useResizablePanel'
 import { useOnline } from '@/composables/useOnline'
@@ -18,9 +19,9 @@ import type { Rule, Module } from '@/types/domain'
 
 import LeftPanelContent from '@/components/systems/LeftPanelContent.vue'
 import SystemHeader from '@/components/systems/SystemHeader.vue'
-import GameDataDrawer from '@/components/game-data/GameDataDrawer.vue'
 import ToolModal from '@/components/ToolModal.vue'
-import type { DrawerMode } from '@/components/game-data/GameDataDrawer.vue'
+import SopModal from '@/components/game-data/SopModal.vue'
+import TableBrowserModal from '@/components/game-data/TableBrowserModal.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -31,6 +32,7 @@ const panelStore = useLeftPanelStore()
 const historyStore = useHistoryStore()
 const proofreadStore = useProofreadStore()
 const toolModalStore = useToolModalStore()
+const gameDataModalStore = useGameDataModalStore()
 
 const systemId = computed(() => route.params['systemId'] as string)
 const loading = ref(true)
@@ -295,28 +297,18 @@ useInteractionStore().registerNavigate(
 )
 
 // ---------------------------------------------------------------------------
-// Game data drawer
-// ---------------------------------------------------------------------------
-
-const drawerOpen = ref(false)
-const drawerMode = ref<DrawerMode>('tables')
-
-function openDrawer(mode: DrawerMode): void {
-  drawerMode.value = mode
-  drawerOpen.value = true
-}
-
-// ---------------------------------------------------------------------------
 // Toolbar actions
 //
-// Table Browser and tools open in full-screen modals built in later tasks
-// (Task 6/7 and Task 5 respectively); their handlers are stubbed for now so
-// this toolbar task compiles standalone. Sequence of Play keeps the existing
-// SOP drawer wiring.
+// SOP and the Table Browser open as full-screen modals (Task 6); tools open
+// in the full-screen tool modal (Task 5).
 // ---------------------------------------------------------------------------
 
 function openTableBrowser(): void {
-  // Placeholder: the Table Browser modal lands in Task 6/7.
+  gameDataModalStore.openTableBrowser()
+}
+
+function openSop(): void {
+  gameDataModalStore.openSop()
 }
 
 function openTool(toolId: string): void {
@@ -335,7 +327,7 @@ function openTool(toolId: string): void {
       @toggle-module="toggleModule"
       @toggle-pin="togglePin"
       @open-table-browser="openTableBrowser"
-      @open-sop="openDrawer('sop')"
+      @open-sop="openSop"
       @open-tool="openTool"
     />
 
@@ -428,8 +420,9 @@ function openTool(toolId: string): void {
           </div>
         </div>
 
-        <!-- Right panel (pinned inline or sheet overlay) -->
-        <GameDataDrawer v-model:open="drawerOpen" v-model:mode="drawerMode" />
+        <!-- Full-screen game-data modals (SOP + Table Browser) -->
+        <SopModal />
+        <TableBrowserModal />
 
         <!-- Full-screen tool modal (opened from Tools ▾) -->
         <ToolModal />

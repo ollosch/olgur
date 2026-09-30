@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { ref } from 'vue'
+import { ref, defineComponent } from 'vue'
 import { shallowMount, mount, flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
+import { dialogStubs } from './helpers/dialogStubs'
 
 // ─── Mock useApi for all stores that import it ────────────────────────────────
 const mockGet = vi.fn()
@@ -30,7 +31,7 @@ import { useContentStore } from '@/stores/content'
 import { useSystemStore } from '@/stores/system'
 import { useMembershipStore } from '@/stores/membership'
 import { useGameDataPanelStore } from '@/stores/gameDataPanel'
-import GameDataDrawerContent from '@/components/game-data/GameDataDrawerContent.vue'
+import SopModal from '@/components/game-data/SopModal.vue'
 import SopViewer from '@/components/game-data/SopViewer.vue'
 import SopListBlock from '@/components/game-data/SopListBlock.vue'
 import type {
@@ -213,13 +214,26 @@ function seedSopProviders(): void {
   contentStore.gameDataByModule['mod2'] = [makeSop('sop2', 'mod2')]
 }
 
-function mountDrawerContent() {
+function passthrough(name: string) {
+  return defineComponent({ name, template: '<div><slot /></div>' })
+}
+
+function mountSopModal() {
   const pinia = createPinia()
   setActivePinia(pinia)
   seedSopProviders()
-  return shallowMount(GameDataDrawerContent, {
-    props: { mode: 'sop', isPinned: false, isDragging: false },
-    global: { plugins: [pinia] },
+  return mount(SopModal, {
+    global: {
+      plugins: [pinia],
+      stubs: {
+        ...dialogStubs(),
+        SopViewer: true,
+        Tabs: passthrough('Tabs'),
+        TabsList: passthrough('TabsList'),
+        TabsTrigger: passthrough('TabsTrigger'),
+        TabsContent: passthrough('TabsContent'),
+      },
+    },
   })
 }
 
@@ -256,15 +270,15 @@ function findButtonByText(wrapper: ReturnType<typeof shallowMount>, text: string
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('GameDataDrawerContent — SOP rendering', () => {
+describe('SopModal — SOP rendering', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     mockGet.mockReset()
     mockPatch.mockReset()
   })
 
-  it('renders every viewable module SOP without a provider picker', () => {
-    const wrapper = mountDrawerContent()
+  it('renders the singular SOP without a provider picker', () => {
+    const wrapper = mountSopModal()
     expect(wrapper.text()).not.toContain('Choose SOP')
     expect(wrapper.text()).not.toContain('Select an SOP to view.')
   })
@@ -280,9 +294,18 @@ describe('GameDataDrawerContent — SOP rendering', () => {
     contentStore.indexEntriesByModule['mod1'] = []
     contentStore.gameDataByModule['mod1'] = []
 
-    const wrapper = shallowMount(GameDataDrawerContent, {
-      props: { mode: 'sop', isPinned: false, isDragging: false },
-      global: { plugins: [pinia] },
+    const wrapper = mount(SopModal, {
+      global: {
+        plugins: [pinia],
+        stubs: {
+          ...dialogStubs(),
+          SopViewer: true,
+          Tabs: passthrough('Tabs'),
+          TabsList: passthrough('TabsList'),
+          TabsTrigger: passthrough('TabsTrigger'),
+          TabsContent: passthrough('TabsContent'),
+        },
+      },
     })
 
     expect(wrapper.text()).toContain('No sequence of play data available.')

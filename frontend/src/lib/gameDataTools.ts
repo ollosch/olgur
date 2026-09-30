@@ -22,8 +22,8 @@ const TOOL_LABELS: Record<GameDatum['type'], string> = {
  * in the bottom panel.
  *
  * `sop` and `table` are not listed here: they are rendered by the game-data
- * drawer (`GameDataDrawerContent` / `GameDataView`), which dispatches on
- * `game_data.type` and supplies per-record props to the SOP viewer / table
+ * surfaces (`SopModal` / `TableBrowserModal` / `GameDataView`), which dispatch
+ * on `game_data.type` and supply per-record props to the SOP viewer / table
  * renderer. Only the prop-less tools are registered below.
  */
 export const GAME_DATA_TOOL_COMPONENTS: Partial<Record<GameDatum['type'], Component>> = {
