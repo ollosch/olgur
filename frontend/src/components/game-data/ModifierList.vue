@@ -9,6 +9,8 @@ interface ModifierEntry {
   value: string
   tags: string[]
   markers: string[]
+  effect_type?: 'drm' | 'fp_multiplier' | 'column_shift' | 'other'
+  effect_value?: number | null
 }
 
 interface ModifierFootnote {
@@ -76,7 +78,8 @@ function footnoteClass(fn: ModifierFootnote): string {
           class="hover:bg-muted/20 transition-colors"
         >
           <td class="border border-border px-3 py-1.5 text-foreground">
-            {{ entry.label }}
+            <!-- eslint-disable-next-line vue/no-v-html -->
+            <span v-html="renderContent(entry.label)" />
             <sup v-if="entry.markers.length > 0" class="text-[9px] ml-0.5 text-primary">
               {{ entry.markers.join('') }}
             </sup>
