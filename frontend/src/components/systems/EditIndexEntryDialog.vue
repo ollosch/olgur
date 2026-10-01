@@ -8,6 +8,7 @@ import type { IndexEntry, Rule } from '@/types/domain'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Dialog,
   DialogContent,
@@ -302,13 +303,12 @@ const onSubmit = handleSubmit(async (values) => {
           <!-- Definition -->
           <Field>
             <FieldLabel for="entry-definition">Definition</FieldLabel>
-            <textarea
+            <Textarea
               id="entry-definition"
               v-model="definition"
               v-bind="definitionAttrs"
               rows="4"
               placeholder="Definition…"
-              class="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex min-h-[60px] w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
             />
             <div v-if="errors.definition" class="text-destructive text-sm">
               {{ errors.definition }}
@@ -318,13 +318,12 @@ const onSubmit = handleSubmit(async (values) => {
           <!-- Notes -->
           <Field>
             <FieldLabel for="entry-notes">Notes</FieldLabel>
-            <textarea
+            <Textarea
               id="entry-notes"
               v-model="notes"
               v-bind="notesAttrs"
               rows="3"
               placeholder="Notes…"
-              class="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex min-h-[60px] w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
             />
             <div v-if="errors.notes" class="text-destructive text-sm">{{ errors.notes }}</div>
           </Field>

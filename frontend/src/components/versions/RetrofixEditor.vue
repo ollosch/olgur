@@ -3,6 +3,8 @@ import { computed, onMounted, ref } from 'vue'
 
 import { useRetrofix } from '@/composables/useRetrofix'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Textarea } from '@/components/ui/textarea'
 import type { Rule } from '@/types/domain'
 
 interface Props {
@@ -117,9 +119,6 @@ async function handleSaveDraft(): Promise<void> {
     isSaving.value = false
   }
 }
-
-const textareaClass =
-  'border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50'
 </script>
 
 <template>
@@ -146,10 +145,13 @@ const textareaClass =
         Released version and current draft are identical.
       </div>
 
-      <textarea v-model="singleEditorContent" rows="8" :class="textareaClass" />
+      <Textarea v-model="singleEditorContent" rows="8" />
 
       <label class="flex items-center gap-2 text-sm text-foreground">
-        <input v-model="portToDraft" type="checkbox" class="h-4 w-4" />
+        <Checkbox
+          :model-value="portToDraft"
+          @update:model-value="portToDraft = $event as boolean"
+        />
         Also apply this correction to the current draft
       </label>
     </template>
@@ -162,7 +164,7 @@ const textareaClass =
           <div class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Released version ({{ versionString }})
           </div>
-          <textarea v-model="releasedContent" rows="10" :class="textareaClass" />
+          <Textarea v-model="releasedContent" rows="10" />
         </div>
 
         <!-- Current draft (right) -->
@@ -170,7 +172,7 @@ const textareaClass =
           <div class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Current draft
           </div>
-          <textarea v-model="draftContent" rows="10" :class="textareaClass" />
+          <Textarea v-model="draftContent" rows="10" />
         </div>
       </div>
     </template>

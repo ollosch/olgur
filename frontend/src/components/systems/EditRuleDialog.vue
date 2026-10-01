@@ -9,6 +9,7 @@ import type { Rule } from '@/types/domain'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Dialog,
   DialogContent,
@@ -30,7 +31,7 @@ interface FormValues {
   number: string
   title: string
   content: string
-  markdown: string | null
+  markdown: string
   parent_id: string | null
 }
 
@@ -208,26 +209,26 @@ const onSubmit = handleSubmit(async (values) => {
 
           <Field>
             <FieldLabel for="rule-content">Content</FieldLabel>
-            <textarea
+            <Textarea
               id="rule-content"
               v-model="content"
               v-bind="contentAttrs"
               rows="6"
               placeholder="Rule content…"
-              class="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex min-h-[80px] w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
+              class="min-h-[80px]"
             />
             <div v-if="errors.content" class="text-destructive text-sm">{{ errors.content }}</div>
           </Field>
 
           <Field>
             <FieldLabel for="rule-markdown">Markdown</FieldLabel>
-            <textarea
+            <Textarea
               id="rule-markdown"
               v-model="markdown"
               v-bind="markdownAttrs"
               rows="6"
               placeholder="Rule markdown…"
-              class="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex min-h-[80px] w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
+              class="min-h-[80px]"
             />
             <div v-if="errors.markdown" class="text-destructive text-sm">{{ errors.markdown }}</div>
           </Field>

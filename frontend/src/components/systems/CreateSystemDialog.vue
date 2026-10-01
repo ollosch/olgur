@@ -4,8 +4,16 @@ import { storeToRefs } from 'pinia'
 import { useForm } from 'vee-validate'
 import { useSystemStore } from '@/stores/system'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   Dialog,
   DialogContent,
@@ -134,11 +142,10 @@ function formError(key: string): string | undefined {
 
         <div class="space-y-1.5">
           <div class="flex items-center gap-2">
-            <input
+            <Checkbox
               id="sys-global-rule-numbers"
-              v-model="globalRuleNumbers"
-              type="checkbox"
-              class="rounded border-border bg-background text-primary focus:ring-ring"
+              :model-value="globalRuleNumbers"
+              @update:model-value="globalRuleNumbers = $event as boolean"
             />
             <Label for="sys-global-rule-numbers">Global rule numbers</Label>
           </div>
@@ -149,14 +156,15 @@ function formError(key: string): string | undefined {
 
         <div class="space-y-1.5">
           <Label for="sys-sort-rules-by">Sort Rules By</Label>
-          <select
-            id="sys-sort-rules-by"
-            v-model="sortRulesBy"
-            class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-          >
-            <option value="sort_order">Manual order</option>
-            <option value="number">Rule number</option>
-          </select>
+          <Select v-model="sortRulesBy">
+            <SelectTrigger id="sys-sort-rules-by" class="w-full">
+              <SelectValue placeholder="Sort rules by…" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="sort_order">Manual order</SelectItem>
+              <SelectItem value="number">Rule number</SelectItem>
+            </SelectContent>
+          </Select>
           <p v-if="formError('config.sort_rules_by')" class="text-destructive text-xs">
             {{ formError('config.sort_rules_by') }}
           </p>

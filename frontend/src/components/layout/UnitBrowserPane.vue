@@ -4,6 +4,13 @@ import { storeToRefs } from 'pinia'
 import { refDebounced } from '@vueuse/core'
 import { ArrowLeft, GitCompare } from '@lucide/vue'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { SEARCH_DEBOUNCE_MS, rankMatchLower } from '@/lib/utils'
 import { unitTypeLabel, unitNation } from '@/lib/unitUtils'
 import { useContentStore } from '@/stores/content'
@@ -228,13 +235,15 @@ function back(): void {
               {{ opt.label }}
             </button>
           </div>
-          <select
-            v-model="nationFilter"
-            class="h-6 text-[11px] bg-muted/50 border border-border rounded px-1.5 text-foreground outline-none cursor-pointer"
-          >
-            <option value="all">All nations</option>
-            <option v-for="n in availableNations" :key="n" :value="n">{{ n }}</option>
-          </select>
+          <Select v-model="nationFilter">
+            <SelectTrigger class="h-6 w-auto gap-1 border-border bg-muted/50 px-1.5 text-[11px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All nations</SelectItem>
+              <SelectItem v-for="n in availableNations" :key="n" :value="n">{{ n }}</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <!-- Letter chips (when not searching/filtering) -->

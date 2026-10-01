@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useCacheStore } from '@/stores/cacheStore'
 import { formatBytes } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
 
 const router = useRouter()
 const cacheStore = useCacheStore()
@@ -36,9 +37,7 @@ async function unpin(systemId: string): Promise<void> {
       </span>
     </div>
 
-    <div v-if="cacheStore.quota > 0" class="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-      <div class="h-full bg-primary transition-all" :style="{ width: `${usagePercent}%` }" />
-    </div>
+    <Progress v-if="cacheStore.quota > 0" :model-value="usagePercent" class="h-1.5 bg-muted" />
 
     <div
       v-if="cacheStore.cachedSystems.length === 0"

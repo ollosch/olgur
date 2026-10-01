@@ -5,6 +5,8 @@ import { useSystemStore } from '@/stores/system'
 import type { Rule, RuleDeletionMode } from '@/types/domain'
 
 import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import {
   Dialog,
   DialogContent,
@@ -76,24 +78,26 @@ async function confirm(): Promise<void> {
           This rule has {{ childCount }} direct child rule{{ childCount === 1 ? '' : 's' }}. Choose
           how to handle them:
         </p>
-        <label class="flex items-start gap-2 text-sm cursor-pointer">
-          <input v-model="mode" type="radio" value="re_parent" class="mt-0.5" />
-          <span>
-            <span class="font-medium">Re-parent</span>
-            <span class="block text-muted-foreground text-xs">
-              Move children up to this rule's parent.
-            </span>
-          </span>
-        </label>
-        <label class="flex items-start gap-2 text-sm cursor-pointer">
-          <input v-model="mode" type="radio" value="recursive" class="mt-0.5" />
-          <span>
-            <span class="font-medium">Recursive</span>
-            <span class="block text-muted-foreground text-xs">
-              Delete this rule and all of its descendants.
-            </span>
-          </span>
-        </label>
+        <RadioGroup v-model="mode" class="space-y-3">
+          <div class="flex items-start gap-2 text-sm">
+            <RadioGroupItem id="delete-mode-re-parent" value="re_parent" class="mt-0.5" />
+            <Label for="delete-mode-re-parent" class="cursor-pointer">
+              <span class="font-medium">Re-parent</span>
+              <span class="block text-muted-foreground text-xs">
+                Move children up to this rule's parent.
+              </span>
+            </Label>
+          </div>
+          <div class="flex items-start gap-2 text-sm">
+            <RadioGroupItem id="delete-mode-recursive" value="recursive" class="mt-0.5" />
+            <Label for="delete-mode-recursive" class="cursor-pointer">
+              <span class="font-medium">Recursive</span>
+              <span class="block text-muted-foreground text-xs">
+                Delete this rule and all of its descendants.
+              </span>
+            </Label>
+          </div>
+        </RadioGroup>
       </div>
       <p v-else class="text-sm text-muted-foreground">
         This rule has no children. This action cannot be undone.

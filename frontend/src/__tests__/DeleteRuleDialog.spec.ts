@@ -105,26 +105,26 @@ describe('DeleteRuleDialog', () => {
     const child = makeRule({ id: 'r2', module_id: 'mod1', parent_id: 'r1' })
     const { wrapper } = mountDialog(rule, [child])
 
-    expect(wrapper.find('input[value="re_parent"]').exists()).toBe(true)
-    expect(wrapper.find('input[value="recursive"]').exists()).toBe(true)
+    expect(wrapper.find('[role="radio"][value="re_parent"]').exists()).toBe(true)
+    expect(wrapper.find('[role="radio"][value="recursive"]').exists()).toBe(true)
   })
 
   it('hides the mode choice when the rule has no children', () => {
     const rule = makeRule({ id: 'r1', module_id: 'mod1' })
     const { wrapper } = mountDialog(rule)
 
-    expect(wrapper.find('input[type="radio"]').exists()).toBe(false)
+    expect(wrapper.find('[role="radio"]').exists()).toBe(false)
   })
 
   it('deletes with the default re_parent mode and emits deleted', async () => {
     const rule = makeRule({ id: 'r1', module_id: 'mod1' })
     const child = makeRule({ id: 'r2', module_id: 'mod1', parent_id: 'r1' })
     const { wrapper, contentStore } = mountDialog(rule, [child])
-    const deleteRule = vi.spyOn(contentStore, 'deleteRule').mockResolvedValue({ ok: true, data: undefined })
+    const deleteRule = vi
+      .spyOn(contentStore, 'deleteRule')
+      .mockResolvedValue({ ok: true, data: undefined })
 
-    const deleteButton = wrapper
-      .findAll('button')
-      .find((b) => b.text().trim() === 'Delete')
+    const deleteButton = wrapper.findAll('button').find((b) => b.text().trim() === 'Delete')
     await deleteButton!.trigger('click')
 
     expect(deleteRule).toHaveBeenCalledWith('sys1', rule, 're_parent')
@@ -136,12 +136,12 @@ describe('DeleteRuleDialog', () => {
     const rule = makeRule({ id: 'r1', module_id: 'mod1' })
     const child = makeRule({ id: 'r2', module_id: 'mod1', parent_id: 'r1' })
     const { wrapper, contentStore } = mountDialog(rule, [child])
-    const deleteRule = vi.spyOn(contentStore, 'deleteRule').mockResolvedValue({ ok: true, data: undefined })
+    const deleteRule = vi
+      .spyOn(contentStore, 'deleteRule')
+      .mockResolvedValue({ ok: true, data: undefined })
 
-    await wrapper.find('input[value="recursive"]').setValue()
-    const deleteButton = wrapper
-      .findAll('button')
-      .find((b) => b.text().trim() === 'Delete')
+    await wrapper.find('[role="radio"][value="recursive"]').trigger('click')
+    const deleteButton = wrapper.findAll('button').find((b) => b.text().trim() === 'Delete')
     await deleteButton!.trigger('click')
 
     expect(deleteRule).toHaveBeenCalledWith('sys1', rule, 'recursive')
