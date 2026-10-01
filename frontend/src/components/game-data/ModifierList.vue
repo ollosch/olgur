@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { renderContent } from '@/lib/renderContent'
+import AnnotationMarker from '@/components/game-data/AnnotationMarker.vue'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -80,9 +81,12 @@ function footnoteClass(fn: ModifierFootnote): string {
           <td class="border border-border px-3 py-1.5 text-foreground">
             <!-- eslint-disable-next-line vue/no-v-html -->
             <span v-html="renderContent(entry.label)" />
-            <sup v-if="entry.markers.length > 0" class="text-[9px] ml-0.5 text-primary">
-              {{ entry.markers.join('') }}
-            </sup>
+            <AnnotationMarker
+              v-for="m in entry.markers"
+              :key="m"
+              :marker="m"
+              :text="props.content.footnotes?.[m]?.text"
+            />
           </td>
           <td
             class="border border-border px-3 py-1.5 text-center font-mono font-semibold text-foreground"

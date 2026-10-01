@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { renderContent } from '@/lib/renderContent'
 import { useTableHighlight } from '@/composables/useTableHighlight'
+import AnnotationMarker from '@/components/game-data/AnnotationMarker.vue'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -49,7 +50,7 @@ export interface IftContent {
 
 const props = defineProps<{ content: IftContent }>()
 
-const { onCellEnter, onCellLeave, onCellClick, isRowActive, isColActive } =
+const { onCellEnter, onCellLeave, onCellClick, cellClasses, rowHeaderClasses, colHeaderClasses } =
   useTableHighlight()
 
 // ── Header layout ────────────────────────────────────────────────────────────
@@ -130,7 +131,7 @@ function footnoteClass(fn: ModifierFootnote): string {
             v-for="col in props.content.columns"
             :key="col.id"
             class="border border-border px-2 py-1 text-center font-semibold text-foreground whitespace-nowrap"
-            :class="{ 'bg-primary/25': isColActive(col.id) }"
+            :class="colHeaderClasses(col.id)"
           >
             {{ col.fp_label }}/{{ columnDrLabel(col) }}
           </th>
@@ -154,7 +155,7 @@ function footnoteClass(fn: ModifierFootnote): string {
         <tr v-for="row in props.content.rows" :key="row.id">
           <th
             class="border border-border px-2 py-1 text-center font-semibold text-foreground whitespace-nowrap"
-            :class="{ 'bg-primary/25': isRowActive(row.id) }"
+            :class="rowHeaderClasses(row.id)"
           >
             {{ row.label }}
           </th>
@@ -164,7 +165,7 @@ function footnoteClass(fn: ModifierFootnote): string {
             :data-row="row.id"
             :data-col="col.id"
             class="border border-border px-2 py-1 text-center text-foreground"
-            :class="{ 'bg-primary/15': isRowActive(row.id) || isColActive(col.id) }"
+            :class="cellClasses(row.id, col.id)"
             @mouseenter="onCellEnter(row.id, col.id)"
             @mouseleave="onCellLeave()"
             @click="onCellClick(row.id, col.id)"
@@ -210,9 +211,12 @@ function footnoteClass(fn: ModifierFootnote): string {
             <td class="border border-border px-3 py-1.5 text-foreground">
               <!-- eslint-disable-next-line vue/no-v-html -->
               <span v-html="renderContent(entry.label)" />
-              <sup v-if="entry.markers.length > 0" class="text-[9px] ml-0.5 text-primary">
-                {{ entry.markers.join('') }}
-              </sup>
+              <AnnotationMarker
+                v-for="m in entry.markers"
+                :key="m"
+                :marker="m"
+                :text="props.content.footnotes?.[m]?.text"
+              />
             </td>
             <td
               class="border border-border px-3 py-1.5 text-center font-mono font-semibold text-foreground"

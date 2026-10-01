@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { renderContent } from '@/lib/renderContent'
 import { useTableHighlight } from '@/composables/useTableHighlight'
+import AnnotationMarker from '@/components/game-data/AnnotationMarker.vue'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -71,8 +72,16 @@ export interface ToHitContent {
 
 const props = defineProps<{ content: ToHitContent }>()
 
-const { onCellEnter, onCellLeave, onCellClick, isRowActive, isColActive } =
-  useTableHighlight()
+// Separate highlight state for the C3 matrix and the C4 gun/ammo matrix — they
+// share range-band column ids, so a single instance would cross-highlight.
+const c3 = useTableHighlight()
+const gunAmmo = useTableHighlight()
+
+// ── C3 cell values ────────────────────────────────────────────────────────────
+
+function cellValue(typeId: string, bandId: string): ToHitValue | null {
+  return props.content.values[typeId]?.[bandId] ?? null
+}
 
 // ── Footnote styling ─────────────────────────────────────────────────────────
 
@@ -96,71 +105,43 @@ function footnoteClass(fn: ModifierFootnote): string {
     <table class="text-xs border-collapse min-w-max font-mono">
       <thead>
         <tr>
-          <th
-            rowspan="2"
-            class="border border-border px-2 py-1 text-center font-semibold text-foreground"
-          >
+          <th class="border border-border px-2 py-1 text-center font-semibold text-foreground">
             Target Type
           </th>
           <th
             v-for="band in props.content.range_bands"
             :key="band.id"
-            colspan="2"
             class="border border-border px-2 py-1 text-center font-semibold text-foreground whitespace-nowrap"
-            :class="{ 'bg-primary/25': isColActive(band.id) }"
+            :class="c3.colHeaderClasses(band.id)"
           >
             {{ band.label }}
           </th>
-        </tr>
-        <tr>
-          <template v-for="band in props.content.range_bands" :key="`sub-${band.id}`">
-            <th
-              class="border border-border px-1 py-0.5 text-center text-muted-foreground"
-              :class="{ 'bg-primary/25': isColActive(band.id) }"
-            >
-              black
-            </th>
-            <th
-              class="border border-border px-1 py-0.5 text-center text-red-500"
-              :class="{ 'bg-primary/25': isColActive(band.id) }"
-            >
-              red
-            </th>
-          </template>
         </tr>
       </thead>
       <tbody>
         <tr v-for="type in props.content.target_types" :key="type.id">
           <th
             class="border border-border px-2 py-1 text-center font-semibold text-foreground whitespace-nowrap"
-            :class="{ 'bg-primary/25': isRowActive(type.id) }"
+            :class="c3.rowHeaderClasses(type.id)"
           >
             {{ type.label }}
           </th>
-          <template v-for="band in props.content.range_bands" :key="band.id">
-            <td
-              :data-row="type.id"
-              :data-col="band.id"
-              class="border border-border px-2 py-1 text-center text-foreground"
-              :class="{ 'bg-primary/15': isRowActive(type.id) || isColActive(band.id) }"
-              @mouseenter="onCellEnter(type.id, band.id)"
-              @mouseleave="onCellLeave()"
-              @click="onCellClick(type.id, band.id)"
-            >
-              {{ props.content.values[type.id]?.[band.id]?.black }}
-            </td>
-            <td
-              :data-row="type.id"
-              :data-col="band.id"
-              class="border border-border px-2 py-1 text-center text-red-500"
-              :class="{ 'bg-primary/15': isRowActive(type.id) || isColActive(band.id) }"
-              @mouseenter="onCellEnter(type.id, band.id)"
-              @mouseleave="onCellLeave()"
-              @click="onCellClick(type.id, band.id)"
-            >
-              {{ props.content.values[type.id]?.[band.id]?.red }}
-            </td>
-          </template>
+          <td
+            v-for="band in props.content.range_bands"
+            :key="band.id"
+            :data-row="type.id"
+            :data-col="band.id"
+            class="border border-border px-2 py-1 text-center text-foreground"
+            :class="c3.cellClasses(type.id, band.id)"
+            @mouseenter="c3.onCellEnter(type.id, band.id)"
+            @mouseleave="c3.onCellLeave()"
+            @click="c3.onCellClick(type.id, band.id)"
+          >
+            <span v-if="cellValue(type.id, band.id)?.black !== null" class="text-foreground">
+              {{ cellValue(type.id, band.id)?.black }}
+            </span>
+            <span class="ml-1 text-red-500">{{ cellValue(type.id, band.id)?.red }}</span>
+          </td>
         </tr>
       </tbody>
     </table>
@@ -180,6 +161,7 @@ function footnoteClass(fn: ModifierFootnote): string {
               v-for="col in props.content.gun_ammo.columns"
               :key="col.id"
               class="border border-border px-2 py-1 text-center font-semibold text-foreground whitespace-nowrap"
+              :class="gunAmmo.colHeaderClasses(col.id)"
             >
               {{ col.label }}
             </th>
@@ -191,13 +173,22 @@ function footnoteClass(fn: ModifierFootnote): string {
             :key="row.id"
             class="hover:bg-muted/20 transition-colors"
           >
-            <td class="border border-border px-2 py-1 font-medium text-foreground whitespace-nowrap">
+            <td
+              class="border border-border px-2 py-1 font-medium text-foreground whitespace-nowrap"
+              :class="gunAmmo.rowHeaderClasses(row.id)"
+            >
               {{ row.label }}
             </td>
             <td
               v-for="col in props.content.gun_ammo.columns"
               :key="col.id"
+              :data-row="row.id"
+              :data-col="col.id"
               class="border border-border px-2 py-1 text-center font-mono text-foreground"
+              :class="gunAmmo.cellClasses(row.id, col.id)"
+              @mouseenter="gunAmmo.onCellEnter(row.id, col.id)"
+              @mouseleave="gunAmmo.onCellLeave()"
+              @click="gunAmmo.onCellClick(row.id, col.id)"
             >
               {{ row.cells[col.id]?.value ?? '' }}
             </td>
@@ -233,9 +224,12 @@ function footnoteClass(fn: ModifierFootnote): string {
             <td class="border border-border px-3 py-1.5 text-foreground">
               <!-- eslint-disable-next-line vue/no-v-html -->
               <span v-html="renderContent(entry.label)" />
-              <sup v-if="entry.markers.length > 0" class="text-[9px] ml-0.5 text-primary">
-                {{ entry.markers.join('') }}
-              </sup>
+              <AnnotationMarker
+                v-for="m in entry.markers"
+                :key="m"
+                :marker="m"
+                :text="props.content.footnotes?.[m]?.text"
+              />
             </td>
             <td
               class="border border-border px-3 py-1.5 text-center font-mono font-semibold text-foreground"
@@ -274,9 +268,12 @@ function footnoteClass(fn: ModifierFootnote): string {
             <td class="border border-border px-3 py-1.5 text-foreground">
               <!-- eslint-disable-next-line vue/no-v-html -->
               <span v-html="renderContent(entry.label)" />
-              <sup v-if="entry.markers.length > 0" class="text-[9px] ml-0.5 text-primary">
-                {{ entry.markers.join('') }}
-              </sup>
+              <AnnotationMarker
+                v-for="m in entry.markers"
+                :key="m"
+                :marker="m"
+                :text="props.content.footnotes?.[m]?.text"
+              />
             </td>
             <td
               class="border border-border px-3 py-1.5 text-center font-mono font-semibold text-foreground"

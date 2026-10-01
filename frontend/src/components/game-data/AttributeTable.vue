@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { renderContent } from '@/lib/renderContent'
+import { useTableHighlight } from '@/composables/useTableHighlight'
+import AnnotationMarker from '@/components/game-data/AnnotationMarker.vue'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -40,6 +42,9 @@ export interface AttributeTableContent {
 const props = defineProps<{
   content: AttributeTableContent
 }>()
+
+const { onCellEnter, onCellLeave, onCellClick, cellClasses, rowHeaderClasses, colHeaderClasses } =
+  useTableHighlight()
 
 // ── Visibility ────────────────────────────────────────────────────────────────
 
@@ -84,6 +89,7 @@ function footnoteClass(fn: AttributeFootnote): string {
             v-for="col in visibleColumns"
             :key="col.id"
             class="border border-border px-2 py-1 text-center font-semibold text-foreground whitespace-nowrap"
+            :class="colHeaderClasses(col.id)"
           >
             {{ col.label }}
           </th>
@@ -91,22 +97,29 @@ function footnoteClass(fn: AttributeFootnote): string {
       </thead>
       <tbody>
         <tr v-for="row in visibleRows" :key="row.id" class="hover:bg-muted/20 transition-colors">
-          <td class="border border-border px-2 py-1 font-medium text-foreground whitespace-nowrap">
+          <td
+            class="border border-border px-2 py-1 font-medium text-foreground whitespace-nowrap"
+            :class="rowHeaderClasses(row.id)"
+          >
             {{ row.label }}
           </td>
           <td
             v-for="col in visibleColumns"
             :key="col.id"
             class="border border-border px-2 py-1 text-center font-mono text-foreground"
+            :class="cellClasses(row.id, col.id)"
+            @mouseenter="onCellEnter(row.id, col.id)"
+            @mouseleave="onCellLeave()"
+            @click="onCellClick(row.id, col.id)"
           >
             <!-- eslint-disable-next-line vue/no-v-html -->
             <span v-html="renderContent(row.cells[col.id]?.value ?? '')" />
-            <sup
-              v-if="(row.cells[col.id]?.markers ?? []).length > 0"
-              class="text-[9px] ml-0.5 text-primary"
-            >
-              {{ (row.cells[col.id]?.markers ?? []).join('') }}
-            </sup>
+            <AnnotationMarker
+              v-for="m in row.cells[col.id]?.markers ?? []"
+              :key="m"
+              :marker="m"
+              :text="props.content.footnotes?.[m]?.text"
+            />
           </td>
         </tr>
       </tbody>

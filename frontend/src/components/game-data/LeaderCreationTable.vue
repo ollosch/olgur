@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { renderContent } from '@/lib/renderContent'
+import { useTableHighlight } from '@/composables/useTableHighlight'
+import AnnotationMarker from '@/components/game-data/AnnotationMarker.vue'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -27,6 +29,11 @@ export interface LeaderCreationContent {
 }
 
 const props = defineProps<{ content: LeaderCreationContent }>()
+
+const { onCellEnter, onCellLeave, onCellClick, cellClasses, rowHeaderClasses } =
+  useTableHighlight()
+
+const leaderColId = 'leader'
 </script>
 
 <template>
@@ -60,10 +67,19 @@ const props = defineProps<{ content: LeaderCreationContent }>()
           <td
             class="border border-border px-3 py-1.5 text-foreground font-semibold"
             :data-roll="row.id"
+            :class="rowHeaderClasses(row.id)"
           >
             {{ row.label }}
           </td>
-          <td class="border border-border px-3 py-1.5 text-foreground">{{ row.leader }}</td>
+          <td
+            class="border border-border px-3 py-1.5 text-foreground"
+            :class="cellClasses(row.id, leaderColId)"
+            @mouseenter="onCellEnter(row.id, leaderColId)"
+            @mouseleave="onCellLeave()"
+            @click="onCellClick(row.id, leaderColId)"
+          >
+            {{ row.leader }}
+          </td>
         </tr>
       </tbody>
     </table>
@@ -93,9 +109,7 @@ const props = defineProps<{ content: LeaderCreationContent }>()
             <td class="border border-border px-3 py-1.5 text-foreground">
               <!-- eslint-disable-next-line vue/no-v-html -->
               <span v-html="renderContent(entry.label)" />
-              <sup v-if="entry.markers.length > 0" class="text-[9px] ml-0.5 text-primary">
-                {{ entry.markers.join('') }}
-              </sup>
+              <AnnotationMarker v-for="m in entry.markers" :key="m" :marker="m" />
             </td>
             <td
               class="border border-border px-3 py-1.5 text-center font-mono font-semibold text-foreground"

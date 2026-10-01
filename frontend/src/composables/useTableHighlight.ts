@@ -6,6 +6,8 @@ export interface CellHighlight {
   col: string | null
 }
 
+export type CellState = 'active' | 'row' | 'col' | 'none'
+
 /**
  * Row/column highlight state for matrix tables. Hover sets the active cell;
  * clicking pins it (so it survives mouse leave), and clicking the already-pinned
@@ -22,6 +24,10 @@ export function useTableHighlight(): {
   clear: () => void
   isRowActive: (row: string) => boolean
   isColActive: (col: string) => boolean
+  cellState: (row: string, col: string) => CellState
+  cellClasses: (row: string, col: string) => string
+  rowHeaderClasses: (row: string) => string
+  colHeaderClasses: (col: string) => string
 } {
   const hovered: Ref<CellHighlight> = ref({ row: null, col: null })
   const pinned: Ref<CellHighlight> = ref({ row: null, col: null })
@@ -62,6 +68,34 @@ export function useTableHighlight(): {
     return active.value.col === col
   }
 
+  function cellState(row: string, col: string): CellState {
+    const current = active.value
+    if (current.row === row && current.col === col) return 'active'
+    if (current.row === row) return 'row'
+    if (current.col === col) return 'col'
+    return 'none'
+  }
+
+  function cellClasses(row: string, col: string): string {
+    switch (cellState(row, col)) {
+      case 'active':
+        return 'bg-primary/30'
+      case 'row':
+      case 'col':
+        return 'bg-primary/10'
+      default:
+        return ''
+    }
+  }
+
+  function rowHeaderClasses(row: string): string {
+    return isRowActive(row) ? 'bg-primary/15' : ''
+  }
+
+  function colHeaderClasses(col: string): string {
+    return isColActive(col) ? 'bg-primary/15' : ''
+  }
+
   return {
     hovered,
     pinned,
@@ -72,5 +106,9 @@ export function useTableHighlight(): {
     clear,
     isRowActive,
     isColActive,
+    cellState,
+    cellClasses,
+    rowHeaderClasses,
+    colHeaderClasses,
   }
 }

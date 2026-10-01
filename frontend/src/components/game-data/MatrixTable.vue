@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { renderContent } from '@/lib/renderContent'
+import { useTableHighlight } from '@/composables/useTableHighlight'
+import AnnotationMarker from '@/components/game-data/AnnotationMarker.vue'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -37,6 +39,9 @@ export interface MatrixContent {
 }
 
 const props = defineProps<{ content: MatrixContent }>()
+
+const { onCellEnter, onCellLeave, onCellClick, cellClasses, rowHeaderClasses, colHeaderClasses } =
+  useTableHighlight()
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -114,6 +119,7 @@ function maxAnnotationRows(columns: MatrixColumn[]): number {
               v-for="col in props.content.columns"
               :key="col.id"
               class="border border-border px-2 py-1 text-center font-semibold text-foreground"
+              :class="colHeaderClasses(col.id)"
             >
               {{ col.label }}
             </th>
@@ -131,6 +137,7 @@ function maxAnnotationRows(columns: MatrixColumn[]): number {
               v-for="col in props.content.columns"
               :key="col.id"
               class="border border-border px-2 py-1 text-center font-semibold text-foreground"
+              :class="colHeaderClasses(col.id)"
             >
               {{ col.label }}
             </th>
@@ -143,6 +150,7 @@ function maxAnnotationRows(columns: MatrixColumn[]): number {
           <!-- Row label -->
           <th
             class="border border-border px-2 py-1 text-center font-semibold text-foreground whitespace-nowrap"
+            :class="rowHeaderClasses(row.id)"
           >
             {{ row.label }}
           </th>
@@ -153,16 +161,20 @@ function maxAnnotationRows(columns: MatrixColumn[]): number {
             :class="[
               'border border-border px-2 py-1 text-center relative',
               cellClass(props.content.cells[row.id]?.[col.id]),
+              cellClasses(row.id, col.id),
             ]"
+            @mouseenter="onCellEnter(row.id, col.id)"
+            @mouseleave="onCellLeave()"
+            @click="onCellClick(row.id, col.id)"
           >
             {{ props.content.cells[row.id]?.[col.id]?.value ?? '' }}
             <!-- Markers -->
-            <sup
-              v-if="(props.content.cells[row.id]?.[col.id]?.markers ?? []).length > 0"
-              class="text-[9px] ml-0.5 text-primary"
-            >
-              {{ (props.content.cells[row.id]?.[col.id]?.markers ?? []).join('') }}
-            </sup>
+            <AnnotationMarker
+              v-for="m in props.content.cells[row.id]?.[col.id]?.markers ?? []"
+              :key="m"
+              :marker="m"
+              :text="props.content.footnotes?.[m]?.text"
+            />
           </td>
         </tr>
       </tbody>

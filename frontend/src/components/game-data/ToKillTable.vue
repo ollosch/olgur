@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { renderContent } from '@/lib/renderContent'
 import { useTableHighlight } from '@/composables/useTableHighlight'
+import AnnotationMarker from '@/components/game-data/AnnotationMarker.vue'
 import type { CaseD, GunEntry, AfValue, UnarmoredBand } from '@/lib/toKill'
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -39,7 +40,7 @@ export interface ToKillContent {
 
 const props = defineProps<{ content: ToKillContent }>()
 
-const { onCellEnter, onCellLeave, onCellClick, isRowActive, isColActive } =
+const { onCellEnter, onCellLeave, onCellClick, cellClasses, rowHeaderClasses, colHeaderClasses } =
   useTableHighlight()
 
 const gunRowId = 'tk'
@@ -70,6 +71,26 @@ function supLabel(note: string): string {
 function gunTextColor(gun: GunEntry): string {
   const colorNote = gun.notes?.find((note) => GUN_NOTE_COLORS[note] !== undefined)
   return colorNote === undefined ? '' : (GUN_NOTE_COLORS[colorNote] ?? '')
+}
+
+/**
+ * Maps a gun note token (`purple`, `sup2`, …) to the matching flat `notes[]`
+ * line: color tokens key off the leading token before the first space (`purple`
+ * → "purple @: …"), sup tokens key off the digit before the first colon (`sup2`
+ * → "2: …").
+ */
+const gunNoteText = computed(() => {
+  const map = new Map<string, string>()
+  for (const note of props.content.notes ?? []) {
+    const key = note.split(/[: ]/, 1)[0] ?? ''
+    if (key) map.set(key, note)
+  }
+  return map
+})
+
+function gunNoteAnnotation(note: string): string | undefined {
+  const key = note.startsWith('sup') ? note.slice(3) : note
+  return gunNoteText.value.get(key)
 }
 
 const hasFinalTk = computed(() => props.content.guns.some((gun) => gun.final_tk !== undefined))
@@ -125,14 +146,18 @@ const unarmoredView = computed<UnarmoredView | null>(() => {
             v-for="gun in props.content.guns"
             :key="`size-${gun.size}`"
             class="border border-border px-2 py-1 text-center font-semibold text-foreground whitespace-nowrap"
-            :class="{ 'bg-primary/25': isColActive(gun.size) }"
+            :class="colHeaderClasses(gun.size)"
           >
             <span :class="gunTextColor(gun)">{{ gun.size }}</span>
             <sup
               v-for="note in gun.notes ?? []"
               :key="note"
               class="text-[9px] ml-0.5"
-              :class="noteColor(note)"
+              :class="[
+                noteColor(note),
+                gunNoteAnnotation(note) ? 'cursor-help underline decoration-dotted' : '',
+              ]"
+              :data-annotation="gunNoteAnnotation(note)"
             >
               {{ supLabel(note) }}
             </sup>
@@ -141,7 +166,10 @@ const unarmoredView = computed<UnarmoredView | null>(() => {
       </thead>
       <tbody>
         <tr>
-          <th class="border border-border px-2 py-1 text-center font-semibold text-foreground">
+          <th
+            class="border border-border px-2 py-1 text-center font-semibold text-foreground"
+            :class="rowHeaderClasses(gunRowId)"
+          >
             BASIC TK#
           </th>
           <td
@@ -149,7 +177,7 @@ const unarmoredView = computed<UnarmoredView | null>(() => {
             :key="`tk-${gun.size}`"
             :data-col="gun.size"
             class="border border-border px-2 py-1 text-center text-foreground"
-            :class="{ 'bg-primary/15': isColActive(gun.size) }"
+            :class="cellClasses(gunRowId, gun.size)"
             @mouseenter="onCellEnter(gunRowId, gun.size)"
             @mouseleave="onCellLeave()"
             @click="onCellClick(gunRowId, gun.size)"
@@ -185,7 +213,7 @@ const unarmoredView = computed<UnarmoredView | null>(() => {
               v-for="range in props.content.case_d.ranges"
               :key="range.id"
               class="border border-border px-2 py-1 text-center font-semibold text-foreground whitespace-nowrap"
-              :class="{ 'bg-primary/25': isColActive(range.id) }"
+              :class="colHeaderClasses(range.id)"
             >
               {{ range.label }}
             </th>
@@ -195,7 +223,7 @@ const unarmoredView = computed<UnarmoredView | null>(() => {
           <tr v-for="row in props.content.case_d.rows" :key="row.id">
             <th
               class="border border-border px-2 py-1 text-center font-semibold text-foreground whitespace-nowrap"
-              :class="{ 'bg-primary/25': isRowActive(row.id) }"
+              :class="rowHeaderClasses(row.id)"
             >
               {{ row.label }}
             </th>
@@ -205,7 +233,7 @@ const unarmoredView = computed<UnarmoredView | null>(() => {
               :data-row="row.id"
               :data-col="range.id"
               class="border border-border px-2 py-1 text-center text-foreground"
-              :class="{ 'bg-primary/15': isRowActive(row.id) || isColActive(range.id) }"
+              :class="cellClasses(row.id, range.id)"
               @mouseenter="onCellEnter(row.id, range.id)"
               @mouseleave="onCellLeave()"
               @click="onCellClick(row.id, range.id)"
@@ -264,9 +292,7 @@ const unarmoredView = computed<UnarmoredView | null>(() => {
             <td class="border border-border px-3 py-1.5 text-foreground">
               <!-- eslint-disable-next-line vue/no-v-html -->
               <span v-html="renderContent(entry.label)" />
-              <sup v-if="entry.markers.length > 0" class="text-[9px] ml-0.5 text-primary">
-                {{ entry.markers.join('') }}
-              </sup>
+              <AnnotationMarker v-for="m in entry.markers" :key="m" :marker="m" />
             </td>
             <td
               class="border border-border px-3 py-1.5 text-center font-mono font-semibold text-foreground"
@@ -291,6 +317,7 @@ const unarmoredView = computed<UnarmoredView | null>(() => {
               v-for="entry in props.content.armor_factor.af_values"
               :key="entry.af"
               class="border border-border px-2 py-1 text-center font-semibold text-foreground"
+              :class="colHeaderClasses(entry.af)"
             >
               {{ entry.af }}
             </th>
@@ -298,13 +325,20 @@ const unarmoredView = computed<UnarmoredView | null>(() => {
         </thead>
         <tbody>
           <tr>
-            <th class="border border-border px-2 py-1 text-center font-semibold text-foreground">
+            <th
+              class="border border-border px-2 py-1 text-center font-semibold text-foreground"
+              :class="rowHeaderClasses('aerial')"
+            >
               AERIAL AF
             </th>
             <td
               v-for="entry in props.content.armor_factor.af_values"
               :key="entry.af"
               class="border border-border px-2 py-1 text-center text-foreground"
+              :class="cellClasses('aerial', entry.af)"
+              @mouseenter="onCellEnter('aerial', entry.af)"
+              @mouseleave="onCellLeave()"
+              @click="onCellClick('aerial', entry.af)"
             >
               {{ entry.aerial ?? '' }}
             </td>

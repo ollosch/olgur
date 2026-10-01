@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { renderContent } from '@/lib/renderContent'
 import { useTableHighlight } from '@/composables/useTableHighlight'
+import AnnotationMarker from '@/components/game-data/AnnotationMarker.vue'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -47,7 +48,7 @@ export interface DestructionContent {
 
 const props = defineProps<{ content: DestructionContent }>()
 
-const { onCellEnter, onCellLeave, onCellClick, isRowActive, isColActive } =
+const { onCellEnter, onCellLeave, onCellClick, cellClasses, rowHeaderClasses, colHeaderClasses } =
   useTableHighlight()
 
 const activeTabId = ref(props.content.tabs[0]?.id ?? '')
@@ -58,6 +59,26 @@ const activeTab = computed(
 
 function selectTab(id: string): void {
   activeTabId.value = id
+}
+
+/**
+ * Marker → note text lookup for the active tab. Each `notes[]` line's prefix
+ * before the first `:` is split on `/` so `H/T: …` maps both `H` and `T` to the
+ * same text.
+ */
+const noteByMarker = computed(() => {
+  const map = new Map<string, string>()
+  for (const note of activeTab.value?.table.notes ?? []) {
+    const prefix = note.split(':', 1)[0] ?? ''
+    for (const key of prefix.split('/')) {
+      if (key) map.set(key, note)
+    }
+  }
+  return map
+})
+
+function noteText(marker: string): string | undefined {
+  return noteByMarker.value.get(marker)
 }
 
 interface CellView {
@@ -113,15 +134,15 @@ function cellView(cell: CellValue | undefined): CellView {
               v-for="attack in activeTab.table.attack_types"
               :key="attack.id"
               class="border border-border px-2 py-1 text-center font-semibold text-foreground whitespace-nowrap"
-              :class="{ 'bg-primary/25': isColActive(attack.id) }"
+              :class="colHeaderClasses(attack.id)"
             >
               {{ attack.label }}
-              <sup
-                v-if="attack.markers && attack.markers.length > 0"
-                class="text-[9px] ml-0.5 text-primary"
-              >
-                {{ attack.markers.join('') }}
-              </sup>
+              <AnnotationMarker
+                v-for="m in attack.markers ?? []"
+                :key="m"
+                :marker="m"
+                :text="noteText(m)"
+              />
             </th>
           </tr>
         </thead>
@@ -129,15 +150,15 @@ function cellView(cell: CellValue | undefined): CellView {
           <tr v-for="row in activeTab.table.outcome_rows" :key="row.id">
             <th
               class="border border-border px-2 py-1 text-center font-semibold text-foreground whitespace-nowrap"
-              :class="{ 'bg-primary/25': isRowActive(row.id) }"
+              :class="rowHeaderClasses(row.id)"
             >
               {{ row.label }}
-              <sup
-                v-if="row.markers && row.markers.length > 0"
-                class="text-[9px] ml-0.5 text-primary"
-              >
-                {{ row.markers.join('') }}
-              </sup>
+              <AnnotationMarker
+                v-for="m in row.markers ?? []"
+                :key="m"
+                :marker="m"
+                :text="noteText(m)"
+              />
             </th>
             <td
               v-for="attack in activeTab.table.attack_types"
@@ -145,7 +166,7 @@ function cellView(cell: CellValue | undefined): CellView {
               :data-row="row.id"
               :data-col="attack.id"
               class="border border-border px-2 py-1 text-center text-foreground"
-              :class="{ 'bg-primary/15': isRowActive(row.id) || isColActive(attack.id) }"
+              :class="cellClasses(row.id, attack.id)"
               @mouseenter="onCellEnter(row.id, attack.id)"
               @mouseleave="onCellLeave()"
               @click="onCellClick(row.id, attack.id)"
@@ -155,10 +176,12 @@ function cellView(cell: CellValue | undefined): CellView {
                 :key="view.value"
               >
                 {{ view.value }}
-                <sup v-if="view.hull" class="text-[9px] text-red-500 ml-0.5">{{ view.hull }}</sup>
-                <sup v-if="view.turret" class="text-[9px] text-red-500 ml-0.5">
-                  {{ view.turret }}
-                </sup>
+                <AnnotationMarker v-if="view.hull" :marker="view.hull" :text="noteText(view.hull)" />
+                <AnnotationMarker
+                  v-if="view.turret"
+                  :marker="view.turret"
+                  :text="noteText(view.turret)"
+                />
               </template>
             </td>
           </tr>

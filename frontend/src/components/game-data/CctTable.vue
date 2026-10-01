@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { renderContent } from '@/lib/renderContent'
 import { useTableHighlight } from '@/composables/useTableHighlight'
+import AnnotationMarker from '@/components/game-data/AnnotationMarker.vue'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -34,7 +35,8 @@ export interface CctContent {
 
 const props = defineProps<{ content: CctContent }>()
 
-const { onCellEnter, onCellLeave, onCellClick, isColActive } = useTableHighlight()
+const { onCellEnter, onCellLeave, onCellClick, cellClasses, colHeaderClasses } =
+  useTableHighlight()
 
 const killRowId = 'kill'
 </script>
@@ -51,7 +53,7 @@ const killRowId = 'kill'
             v-for="col in props.content.columns"
             :key="col.id"
             class="border border-border px-2 py-1 text-center font-semibold text-foreground whitespace-nowrap"
-            :class="{ 'bg-primary/25': isColActive(col.id) }"
+            :class="colHeaderClasses(col.id)"
           >
             {{ col.odds }}
           </th>
@@ -67,7 +69,7 @@ const killRowId = 'kill'
             :key="col.id"
             :data-col="col.id"
             class="border border-border px-2 py-1 text-center text-foreground"
-            :class="{ 'bg-primary/15': isColActive(col.id) }"
+            :class="cellClasses(killRowId, col.id)"
             @mouseenter="onCellEnter(killRowId, col.id)"
             @mouseleave="onCellLeave()"
             @click="onCellClick(killRowId, col.id)"
@@ -104,9 +106,7 @@ const killRowId = 'kill'
             <td class="border border-border px-3 py-1.5 text-foreground">
               <!-- eslint-disable-next-line vue/no-v-html -->
               <span v-html="renderContent(entry.label)" />
-              <sup v-if="entry.markers.length > 0" class="text-[9px] ml-0.5 text-primary">
-                {{ entry.markers.join('') }}
-              </sup>
+              <AnnotationMarker v-for="m in entry.markers" :key="m" :marker="m" />
             </td>
             <td
               class="border border-border px-3 py-1.5 text-center font-mono font-semibold text-foreground"
