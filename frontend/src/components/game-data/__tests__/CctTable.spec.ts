@@ -47,4 +47,43 @@ describe('CctTable', () => {
     expect(link.exists()).toBe(true)
     expect(link.text()).toBe('A.11.5.1')
   })
+
+  it('renders the CC / Firepower DRM modifiers section with rule links', () => {
+    const wrapper = mount(CctTable, {
+      props: {
+        content: makeContent({
+          modifiers: [
+            {
+              label: 'vs Motion/non-stopped vehicle ({{L:A.11.5.1}})',
+              value: '+2',
+              tags: [],
+              markers: ['*'],
+            },
+          ],
+        }),
+      },
+    })
+
+    expect(wrapper.text()).toContain('CC / Firepower DRM')
+    expect(wrapper.text()).toContain('DRM / Cause')
+
+    const link = wrapper.find('a[data-rule-number="A.11.5.1"]')
+    expect(link.exists()).toBe(true)
+    expect(link.text()).toBe('A.11.5.1')
+  })
+
+  it('highlights the active column when hovering a kill number cell', async () => {
+    const wrapper = mount(CctTable, { props: { content: makeContent() } })
+
+    const cell = wrapper.find('td[data-col="lt_1_8"]')
+    await cell.trigger('mouseenter')
+
+    expect(cell.classes()).toContain('bg-primary/15')
+
+    const colHeader = wrapper.findAll('th').find((t) => t.text() === '< 1-8')
+    expect(colHeader?.classes()).toContain('bg-primary/25')
+
+    await cell.trigger('mouseleave')
+    expect(cell.classes()).not.toContain('bg-primary/15')
+  })
 })
