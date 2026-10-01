@@ -97,6 +97,12 @@ function selectModule(moduleId: string | null): void {
   void membershipStore.selectModule(systemId, moduleId)
 }
 
+const systemName = computed(() => {
+  const system = systemStore.currentSystem
+  if (!system) return ''
+  return system.name.length <= 25 ? system.name : system.slug.toLocaleUpperCase()
+})
+
 const tools = computed(() =>
   gameDataTools(contentStore.allGameData, systemStore.currentSystem?.slug),
 )
@@ -180,12 +186,12 @@ async function logout(): Promise<void> {
         title="Table of contents"
         @click="goToRootToc"
       >
-        {{ systemStore.currentSystem?.slug.toLocaleUpperCase() }}
+        {{ systemName }}
       </button>
     </div>
 
     <!-- Center: toolbar button bar -->
-    <div class="flex-1 min-w-0 flex items-center gap-1 overflow-hidden">
+    <div class="flex-1 min-w-0 flex items-center justify-center gap-1 overflow-hidden">
       <!-- Table Browser -->
       <Button
         variant="ghost"
