@@ -57,7 +57,7 @@ Primary component: `frontend/src/components/systems/LeftPanelContent.vue`
 
 ### Center Content
 
-- No child route: top-level TOC grouped by active module.
+- No child route: top-level TOC. Grouped by module, except for `global_rule_numbers` systems (e.g. ASL) where it renders one flat list; each entry shows a release-status dot (green = released, orange = no release, with version + date when released).
 - `/rule/:ruleId`: `RuleDetailView`.
 - `/game-data/:gameDatumId`: `GameDataView` for tables and SOP content.
 

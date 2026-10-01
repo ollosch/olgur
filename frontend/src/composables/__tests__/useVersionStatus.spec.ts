@@ -118,6 +118,24 @@ describe('useVersionStatus', () => {
     })
   })
 
+  // ── releasedAt ────────────────────────────────────────────────────────────
+
+  describe('releasedAt', () => {
+    it('is null when no manifest entry', () => {
+      const { releasedAt } = useVersionStatus('mod1')
+      expect(releasedAt.value).toBeNull()
+    })
+
+    it('returns the release timestamp from the manifest entry', () => {
+      const contentStore = useContentStore()
+      contentStore.manifestByModule['mod1'] = makeManifestEntry({
+        released_at: '2024-01-15T08:00:00Z',
+      })
+      const { releasedAt } = useVersionStatus('mod1')
+      expect(releasedAt.value).toBe('2024-01-15T08:00:00Z')
+    })
+  })
+
   // ── hasReleasedVersion ─────────────────────────────────────────────────────
 
   describe('hasReleasedVersion', () => {

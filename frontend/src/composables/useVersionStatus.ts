@@ -6,6 +6,7 @@ import { useContentStore } from '@/stores/content'
 
 export function useVersionStatus(moduleId: MaybeRefOrGetter<string>): {
   versionString: ComputedRef<string | null>
+  releasedAt: ComputedRef<string | null>
   revision: ComputedRef<number>
   hasReleasedVersion: ComputedRef<boolean>
   displayVersion: ComputedRef<string>
@@ -15,6 +16,10 @@ export function useVersionStatus(moduleId: MaybeRefOrGetter<string>): {
 
   const versionString: ComputedRef<string | null> = computed(
     () => contentStore.manifestByModule[toValue(moduleId)]?.version_string ?? null,
+  )
+
+  const releasedAt: ComputedRef<string | null> = computed(
+    () => contentStore.manifestByModule[toValue(moduleId)]?.released_at ?? null,
   )
 
   const revision: ComputedRef<number> = computed(
@@ -35,6 +40,7 @@ export function useVersionStatus(moduleId: MaybeRefOrGetter<string>): {
 
   return {
     versionString,
+    releasedAt,
     revision,
     hasReleasedVersion,
     displayVersion,

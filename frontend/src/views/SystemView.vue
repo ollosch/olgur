@@ -22,6 +22,7 @@ import SystemHeader from '@/components/systems/SystemHeader.vue'
 import ToolModal from '@/components/ToolModal.vue'
 import SopModal from '@/components/game-data/SopModal.vue'
 import TableBrowserModal from '@/components/game-data/TableBrowserModal.vue'
+import VersionStatusBadge from '@/components/versions/VersionStatusBadge.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -402,7 +403,7 @@ function openTool(toolId: string): void {
                     <button
                       v-for="rule in contentStore.flatRootRules"
                       :key="rule.id"
-                      class="w-full flex items-baseline gap-3 px-3 py-2.5 rounded-md hover:bg-muted/40 transition-colors text-left group"
+                      class="w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-muted/40 transition-colors text-left group"
                       @click="selectRule(rule)"
                     >
                       <span
@@ -411,7 +412,7 @@ function openTool(toolId: string): void {
                         {{ rule.number }}
                       </span>
                       <span
-                        class="text-foreground/90 text-sm group-hover:text-foreground transition-colors"
+                        class="text-foreground/90 text-sm group-hover:text-foreground transition-colors flex-1 min-w-0"
                       >
                         <!-- eslint-disable-next-line vue/no-v-html -->
                         <span
@@ -419,6 +420,7 @@ function openTool(toolId: string): void {
                           v-html="renderContent(rule.title)"
                         />
                       </span>
+                      <VersionStatusBadge :module-id="rule.module_id" show-details />
                     </button>
                   </template>
                   <template v-else>
