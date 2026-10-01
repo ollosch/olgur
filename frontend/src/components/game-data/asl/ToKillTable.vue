@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { renderContent } from '@/lib/renderContent'
 import { useTableHighlight } from '@/composables/useTableHighlight'
 import AnnotationMarker from '@/components/game-data/AnnotationMarker.vue'
@@ -26,22 +26,40 @@ type UnarmoredInfo =
   | { use_ap_table: boolean }
   | { final_tk: number; critical_hit_doubles?: boolean }
 
+interface ToKillTab {
+  id: string
+  label: string
+  table: {
+    title: string
+    guns: GunEntry[]
+    case_d: CaseD | null
+    unarmored: UnarmoredInfo | null
+    notes?: string[]
+  }
+}
+
 export interface ToKillContent {
   kind: 'to_kill'
-  subtype?: 'ap' | 'apcr_apds' | 'heat' | 'he_flame'
   title?: string
-  guns: GunEntry[]
-  case_d: CaseD | null
-  unarmored: UnarmoredInfo | null
+  tabs: ToKillTab[]
   modifiers?: ModifierEntry[]
   armor_factor?: ArmorFactor
-  notes?: string[]
 }
 
 const props = defineProps<{ content: ToKillContent }>()
 
 const { onCellEnter, onCellLeave, onCellClick, cellClasses, rowHeaderClasses, colHeaderClasses } =
   useTableHighlight()
+
+const activeTabId = ref(props.content.tabs[0]?.id ?? '')
+
+const activeTab = computed(
+  () => props.content.tabs.find((tab) => tab.id === activeTabId.value) ?? props.content.tabs[0],
+)
+
+function selectTab(id: string): void {
+  activeTabId.value = id
+}
 
 const gunRowId = 'tk'
 
@@ -81,7 +99,7 @@ function gunTextColor(gun: GunEntry): string {
  */
 const gunNoteText = computed(() => {
   const map = new Map<string, string>()
-  for (const note of props.content.notes ?? []) {
+  for (const note of activeTab.value?.table.notes ?? []) {
     const key = note.split(/[: ]/, 1)[0] ?? ''
     if (key) map.set(key, note)
   }
@@ -93,7 +111,9 @@ function gunNoteAnnotation(note: string): string | undefined {
   return gunNoteText.value.get(key)
 }
 
-const hasFinalTk = computed(() => props.content.guns.some((gun) => gun.final_tk !== undefined))
+const hasFinalTk = computed(() =>
+  (activeTab.value?.table.guns ?? []).some((gun) => gun.final_tk !== undefined),
+)
 
 // ── Case D ───────────────────────────────────────────────────────────────────
 
@@ -110,7 +130,7 @@ type UnarmoredView =
   | { kind: 'final'; finalTk: number; doubles: boolean }
 
 const unarmoredView = computed<UnarmoredView | null>(() => {
-  const info = props.content.unarmored
+  const info = activeTab.value?.table.unarmored ?? null
   if (info === null) return null
 
   if ('use_ap_table' in info) {
@@ -127,145 +147,174 @@ const unarmoredView = computed<UnarmoredView | null>(() => {
 
 <template>
   <div class="overflow-x-auto">
-    <h3
-      v-if="props.content.title"
-      class="text-base font-semibold text-foreground mb-4"
-      data-test="to-kill-title"
-    >
-      {{ props.content.title }}
-    </h3>
+    <!-- Tab switcher -->
+    <div class="flex flex-wrap gap-1 mb-4" role="tablist">
+      <button
+        v-for="tab in props.content.tabs"
+        :key="tab.id"
+        type="button"
+        role="tab"
+        :data-tab="tab.id"
+        class="px-3 py-1.5 rounded text-xs font-medium transition-colors border"
+        :class="
+          tab.id === activeTabId
+            ? 'bg-primary/20 border-primary text-foreground'
+            : 'border-border text-muted-foreground hover:bg-muted/40'
+        "
+        @click="selectTab(tab.id)"
+      >
+        {{ tab.label }}
+      </button>
+    </div>
 
-    <!-- Gun size → BASIC TK# table -->
-    <table class="text-xs border-collapse min-w-max font-mono">
-      <thead>
-        <tr>
-          <th class="border border-border px-2 py-1 text-center font-semibold text-foreground">
-            Gun Size
-          </th>
-          <th
-            v-for="gun in props.content.guns"
-            :key="`size-${gun.size}`"
-            class="border border-border px-2 py-1 text-center font-semibold text-foreground whitespace-nowrap"
-            :class="colHeaderClasses(gun.size)"
-          >
-            <span :class="gunTextColor(gun)">{{ gun.size }}</span>
-            <sup
-              v-for="note in gun.notes ?? []"
-              :key="note"
-              class="text-[9px] ml-0.5"
-              :class="[
-                noteColor(note),
-                gunNoteAnnotation(note) ? 'cursor-help underline decoration-dotted' : '',
-              ]"
-              :data-annotation="gunNoteAnnotation(note)"
-            >
-              {{ supLabel(note) }}
-            </sup>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <th
-            class="border border-border px-2 py-1 text-center font-semibold text-foreground"
-            :class="rowHeaderClasses(gunRowId)"
-          >
-            BASIC TK#
-          </th>
-          <td
-            v-for="gun in props.content.guns"
-            :key="`tk-${gun.size}`"
-            :data-col="gun.size"
-            class="border border-border px-2 py-1 text-center text-foreground"
-            :class="cellClasses(gunRowId, gun.size)"
-            @mouseenter="onCellEnter(gunRowId, gun.size)"
-            @mouseleave="onCellLeave()"
-            @click="onCellClick(gunRowId, gun.size)"
-          >
-            {{ gun.basic_tk }}
-          </td>
-        </tr>
-        <tr v-if="hasFinalTk">
-          <th class="border border-border px-2 py-1 text-center font-semibold text-foreground">
-            FINAL TK#
-          </th>
-          <td
-            v-for="gun in props.content.guns"
-            :key="`final-${gun.size}`"
-            class="border border-border px-2 py-1 text-center text-foreground"
-          >
-            {{ gun.final_tk }}
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <template v-if="activeTab">
+      <h3
+        class="text-base font-semibold text-foreground mb-4"
+        data-test="to-kill-title"
+      >
+        {{ activeTab.table.title }}
+      </h3>
 
-    <!-- Case D table -->
-    <section v-if="props.content.case_d" class="mt-6">
-      <h3 class="text-sm font-semibold text-foreground mb-2">Case D TK# Change</h3>
+      <!-- Gun size → BASIC TK# table -->
       <table class="text-xs border-collapse min-w-max font-mono">
         <thead>
           <tr>
             <th class="border border-border px-2 py-1 text-center font-semibold text-foreground">
-              Modification
+              Gun Size
             </th>
             <th
-              v-for="range in props.content.case_d.ranges"
-              :key="range.id"
+              v-for="gun in activeTab.table.guns"
+              :key="`size-${gun.size}`"
               class="border border-border px-2 py-1 text-center font-semibold text-foreground whitespace-nowrap"
-              :class="colHeaderClasses(range.id)"
+              :class="colHeaderClasses(gun.size)"
             >
-              {{ range.label }}
+              <span :class="gunTextColor(gun)">{{ gun.size }}</span>
+              <sup
+                v-for="note in gun.notes ?? []"
+                :key="note"
+                class="text-[9px] ml-0.5"
+                :class="[
+                  noteColor(note),
+                  gunNoteAnnotation(note) ? 'cursor-help underline decoration-dotted' : '',
+                ]"
+                :data-annotation="gunNoteAnnotation(note)"
+              >
+                {{ supLabel(note) }}
+              </sup>
             </th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="row in props.content.case_d.rows" :key="row.id">
+          <tr>
             <th
-              class="border border-border px-2 py-1 text-center font-semibold text-foreground whitespace-nowrap"
-              :class="rowHeaderClasses(row.id)"
+              class="border border-border px-2 py-1 text-center font-semibold text-foreground"
+              :class="rowHeaderClasses(gunRowId)"
             >
-              {{ row.label }}
+              BASIC TK#
             </th>
             <td
-              v-for="range in props.content.case_d.ranges"
-              :key="range.id"
-              :data-row="row.id"
-              :data-col="range.id"
+              v-for="gun in activeTab.table.guns"
+              :key="`tk-${gun.size}`"
+              :data-col="gun.size"
               class="border border-border px-2 py-1 text-center text-foreground"
-              :class="cellClasses(row.id, range.id)"
-              @mouseenter="onCellEnter(row.id, range.id)"
+              :class="cellClasses(gunRowId, gun.size)"
+              @mouseenter="onCellEnter(gunRowId, gun.size)"
               @mouseleave="onCellLeave()"
-              @click="onCellClick(row.id, range.id)"
+              @click="onCellClick(gunRowId, gun.size)"
             >
-              {{ formatCaseDValue(props.content.case_d.values[row.id]?.[range.id] ?? null) }}
+              {{ gun.basic_tk }}
+            </td>
+          </tr>
+          <tr v-if="hasFinalTk">
+            <th class="border border-border px-2 py-1 text-center font-semibold text-foreground">
+              FINAL TK#
+            </th>
+            <td
+              v-for="gun in activeTab.table.guns"
+              :key="`final-${gun.size}`"
+              class="border border-border px-2 py-1 text-center text-foreground"
+            >
+              {{ gun.final_tk }}
             </td>
           </tr>
         </tbody>
       </table>
-    </section>
 
-    <!-- Unarmored target -->
-    <section v-if="unarmoredView" class="mt-6">
-      <h3 class="text-sm font-semibold text-foreground mb-2">Unarmored Target</h3>
-      <p v-if="unarmoredView.kind === 'text'" class="text-xs text-foreground">
-        {{ unarmoredView.text }}
-      </p>
-      <ul v-else-if="unarmoredView.kind === 'bands'" class="text-xs text-foreground space-y-0.5">
-        <li v-for="band in unarmoredView.bands" :key="band.band" class="font-mono">
-          {{ band.band }}: {{ band.final_tk }}
-        </li>
-        <li v-if="unarmoredView.doubles" class="text-muted-foreground">
-          Double if Critical Hit
-        </li>
-      </ul>
-      <p v-else class="text-xs text-foreground">
-        Final TK#: {{ unarmoredView.finalTk }}
-        <span v-if="unarmoredView.doubles" class="text-muted-foreground">
-          (Double if Critical Hit)
-        </span>
-      </p>
-    </section>
+      <!-- Case D table -->
+      <section v-if="activeTab.table.case_d" class="mt-6">
+        <h3 class="text-sm font-semibold text-foreground mb-2">Case D TK# Change</h3>
+        <table class="text-xs border-collapse min-w-max font-mono">
+          <thead>
+            <tr>
+              <th class="border border-border px-2 py-1 text-center font-semibold text-foreground">
+                Modification
+              </th>
+              <th
+                v-for="range in activeTab.table.case_d.ranges"
+                :key="range.id"
+                class="border border-border px-2 py-1 text-center font-semibold text-foreground whitespace-nowrap"
+                :class="colHeaderClasses(range.id)"
+              >
+                {{ range.label }}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in activeTab.table.case_d.rows" :key="row.id">
+              <th
+                class="border border-border px-2 py-1 text-center font-semibold text-foreground whitespace-nowrap"
+                :class="rowHeaderClasses(row.id)"
+              >
+                {{ row.label }}
+              </th>
+              <td
+                v-for="range in activeTab.table.case_d.ranges"
+                :key="range.id"
+                :data-row="row.id"
+                :data-col="range.id"
+                class="border border-border px-2 py-1 text-center text-foreground"
+                :class="cellClasses(row.id, range.id)"
+                @mouseenter="onCellEnter(row.id, range.id)"
+                @mouseleave="onCellLeave()"
+                @click="onCellClick(row.id, range.id)"
+              >
+                {{ formatCaseDValue(activeTab.table.case_d.values[row.id]?.[range.id] ?? null) }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Unarmored target -->
+      <section v-if="unarmoredView" class="mt-6">
+        <h3 class="text-sm font-semibold text-foreground mb-2">Unarmored Target</h3>
+        <p v-if="unarmoredView.kind === 'text'" class="text-xs text-foreground">
+          {{ unarmoredView.text }}
+        </p>
+        <ul v-else-if="unarmoredView.kind === 'bands'" class="text-xs text-foreground space-y-0.5">
+          <li v-for="band in unarmoredView.bands" :key="band.band" class="font-mono">
+            {{ band.band }}: {{ band.final_tk }}
+          </li>
+          <li v-if="unarmoredView.doubles" class="text-muted-foreground">
+            Double if Critical Hit
+          </li>
+        </ul>
+        <p v-else class="text-xs text-foreground">
+          Final TK#: {{ unarmoredView.finalTk }}
+          <span v-if="unarmoredView.doubles" class="text-muted-foreground">
+            (Double if Critical Hit)
+          </span>
+        </p>
+      </section>
+
+      <!-- Notes -->
+      <dl v-if="activeTab.table.notes && activeTab.table.notes.length > 0" class="mt-3 space-y-1">
+        <div v-for="(note, i) in activeTab.table.notes" :key="i" class="flex gap-1.5 text-xs">
+          <!-- eslint-disable-next-line vue/no-v-html -->
+          <dd class="text-muted-foreground" v-html="renderContent(note)" />
+        </div>
+      </dl>
+    </template>
 
     <!-- C7.2 Basic TK# modifications -->
     <section v-if="props.content.modifiers && props.content.modifiers.length > 0" class="mt-6">
@@ -359,13 +408,5 @@ const unarmoredView = computed<UnarmoredView | null>(() => {
         </div>
       </dl>
     </section>
-
-    <!-- Notes -->
-    <dl v-if="props.content.notes && props.content.notes.length > 0" class="mt-3 space-y-1">
-      <div v-for="(note, i) in props.content.notes" :key="i" class="flex gap-1.5 text-xs">
-        <!-- eslint-disable-next-line vue/no-v-html -->
-        <dd class="text-muted-foreground" v-html="renderContent(note)" />
-      </div>
-    </dl>
   </div>
 </template>
