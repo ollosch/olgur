@@ -125,33 +125,49 @@ watch(
       <ScrollArea class="h-full">
         <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
         <div ref="treeContainerRef" class="py-4" data-tree-container @keydown="onTreeKeyDown">
-          <div v-for="mod in contentStore.activeModules" :key="mod.id" class="mb-2">
-            <button
-              class="w-full flex items-center gap-2 px-4 py-2 hover:bg-muted/30 transition-colors text-left"
-              @click="emit('toggleModule', mod.id)"
-            >
-              <component
-                :is="expandedModules.has(mod.id) ? ChevronDown : ChevronRight"
-                class="w-3.5 h-3.5 text-muted-foreground shrink-0"
-              />
-              <span class="text-xs text-primary font-semibold uppercase tracking-wide">
-                {{ mod.name }}
-                <VersionStatusBadge :module-id="mod.id" />
-              </span>
-            </button>
+          <!-- Flat tree for systems with globally unique rule numbers -->
+          <template v-if="contentStore.globalRuleNumbers">
+            <RuleTreeNode
+              v-for="rule in contentStore.flatRootRules"
+              :key="rule.id"
+              :rule="rule"
+              :children-map="contentStore.childrenMap"
+              :selected-id="selectedRule?.id ?? null"
+              :depth="1"
+              @select="emit('select', $event)"
+            />
+          </template>
 
-            <div v-if="expandedModules.has(mod.id)">
-              <RuleTreeNode
-                v-for="rule in buildTopLevelRules(getModuleRules(mod))"
-                :key="rule.id"
-                :rule="rule"
-                :children-map="contentStore.childrenMap"
-                :selected-id="selectedRule?.id ?? null"
-                :depth="1"
-                @select="emit('select', $event)"
-              />
+          <!-- Per-module tree otherwise -->
+          <template v-else>
+            <div v-for="mod in contentStore.activeModules" :key="mod.id" class="mb-2">
+              <button
+                class="w-full flex items-center gap-2 px-4 py-2 hover:bg-muted/30 transition-colors text-left"
+                @click="emit('toggleModule', mod.id)"
+              >
+                <component
+                  :is="expandedModules.has(mod.id) ? ChevronDown : ChevronRight"
+                  class="w-3.5 h-3.5 text-muted-foreground shrink-0"
+                />
+                <span class="text-xs text-primary font-semibold uppercase tracking-wide">
+                  {{ mod.name }}
+                  <VersionStatusBadge :module-id="mod.id" />
+                </span>
+              </button>
+
+              <div v-if="expandedModules.has(mod.id)">
+                <RuleTreeNode
+                  v-for="rule in buildTopLevelRules(getModuleRules(mod))"
+                  :key="rule.id"
+                  :rule="rule"
+                  :children-map="contentStore.childrenMap"
+                  :selected-id="selectedRule?.id ?? null"
+                  :depth="1"
+                  @select="emit('select', $event)"
+                />
+              </div>
             </div>
-          </div>
+          </template>
 
           <div
             v-if="contentStore.activeModules.length === 0"

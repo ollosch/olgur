@@ -65,6 +65,8 @@ Derived state (composition model):
 - `coreModule` — the system's single core module (`is_core`), falling back to the first module.
 - `activeModules` — the composed "active set": core first, then the selected module if `selected_module_id` is set (and isn't core), else every viewable non-core module (`content.view_live` or `content.view_released`) sorted by `sort_order`. Core is always first.
 - `singularModule` — the ONE module whose singular surfaces come from: the selected module if set, else core. Singular surfaces are never merged across modules.
+- `globalRuleNumbers` — the system's `config.global_rule_numbers` flag; drives both link resolution and flat (header-less) tree rendering.
+- `flatRootRules` — top-level rules across the active modules, ordered module-first (core, then non-core by `sort_order`) then by `sort_order`; used only by `global_rule_numbers` systems to render one flat tree.
 - `allRules`, `allGameData` — flattened over `activeModules`.
 - `allIndexEntries`, `singularGameData` — from `singularModule` only (index and SOP are single-module surfaces).
 - `rulesById`, `rulesByNumber`, `rulesByModuleNumber`, `moduleById`, `moduleBySlug`, `indexEntriesById`, `indexEntriesByTerm` power navigation, popup lookup, and search.

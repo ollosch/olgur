@@ -53,6 +53,7 @@ Primary component: `frontend/src/components/systems/LeftPanelContent.vue`
 - Tabs: rules tree, index, bookmarks, history.
 - Module expansion state lives in store state and local interaction.
 - Width is resizable and persisted in localStorage.
+- For `global_rule_numbers` systems (e.g. ASL), the rules tree renders as one flat list (`flatRootRules`) with no per-module headers; otherwise rules are nested under per-module headers.
 
 ### Center Content
 

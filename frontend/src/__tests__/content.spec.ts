@@ -470,6 +470,42 @@ describe('useContentStore', () => {
     })
   })
 
+  describe('flatRootRules', () => {
+    it('merges roots across modules in module order, then rule sort_order', () => {
+      const systemStore = useSystemStore()
+      const contentStore = useContentStore()
+
+      seedModules(systemStore, [
+        { ...makeModule('core', true), sort_order: 0 },
+        { ...makeModule('m2', false), sort_order: 5 },
+        { ...makeModule('m1', false), sort_order: 1 },
+      ])
+
+      contentStore.rulesByModule['core'] = [
+        makeRule({ id: 'c2', module_id: 'core', sort_order: 2 }),
+        makeRule({ id: 'c1', module_id: 'core', sort_order: 1 }),
+        makeRule({ id: 'c1-child', module_id: 'core', parent_id: 'c1' }),
+      ]
+      contentStore.rulesByModule['m1'] = [makeRule({ id: 'm1a', module_id: 'm1' })]
+      contentStore.rulesByModule['m2'] = [makeRule({ id: 'm2a', module_id: 'm2' })]
+
+      expect(contentStore.flatRootRules.map((r) => r.id)).toEqual(['c1', 'c2', 'm1a', 'm2a'])
+    })
+  })
+
+  describe('globalRuleNumbers', () => {
+    it('reflects the system config', () => {
+      const systemStore = useSystemStore()
+      const contentStore = useContentStore()
+
+      seedModules(systemStore, [makeModule('core', true)])
+      expect(contentStore.globalRuleNumbers).toBe(true)
+
+      systemStore.currentSystem!.config!.global_rule_numbers = false
+      expect(contentStore.globalRuleNumbers).toBe(false)
+    })
+  })
+
   describe('allIndexEntries (singular)', () => {
     it('sources entries from the singular module only, never a union', () => {
       const systemStore = useSystemStore()

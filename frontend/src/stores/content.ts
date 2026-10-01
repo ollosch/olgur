@@ -131,6 +131,25 @@ export const useContentStore = defineStore('content', () => {
   })
 
   /**
+   * Top-level rules across the active modules, ordered module-first (core, then
+   * non-core by `sort_order`) and by `sort_order` within each module.
+   *
+   * Used only by `global_rule_numbers` systems, which render the whole system as
+   * one flat tree without per-module headers.
+   */
+  const flatRootRules = computed((): Rule[] => {
+    const roots: Rule[] = []
+    for (const mod of activeModules.value) {
+      const moduleRoots = (rulesByModule.value[mod.id] ?? [])
+        .filter((r) => r.parent_id === null)
+        .sort((a, b) => a.sort_order - b.sort_order)
+      roots.push(...moduleRoots)
+    }
+
+    return roots
+  })
+
+  /**
    * The current user's permission map for the given module, as supplied by the
    * API. Falls back to null when the module (or its permissions) are unknown.
    */
@@ -756,6 +775,8 @@ export const useContentStore = defineStore('content', () => {
     coreModule,
     activeModules,
     singularModule,
+    flatRootRules,
+    globalRuleNumbers,
     permissionsFor,
     canViewLive,
     canViewReleased,

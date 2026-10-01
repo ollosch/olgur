@@ -398,15 +398,9 @@ function openTool(toolId: string): void {
                   No released version yet.
                 </div>
                 <template v-else>
-                  <template v-for="mod in contentStore.activeModules" :key="mod.id">
-                  <div v-if="buildTopLevelRules(getModuleRules(mod)).length > 0" class="mb-8">
-                    <h2
-                      class="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3"
-                    >
-                      {{ mod.name }}
-                    </h2>
+                  <template v-if="contentStore.globalRuleNumbers">
                     <button
-                      v-for="rule in buildTopLevelRules(getModuleRules(mod))"
+                      v-for="rule in contentStore.flatRootRules"
                       :key="rule.id"
                       class="w-full flex items-baseline gap-3 px-3 py-2.5 rounded-md hover:bg-muted/40 transition-colors text-left group"
                       @click="selectRule(rule)"
@@ -426,7 +420,38 @@ function openTool(toolId: string): void {
                         />
                       </span>
                     </button>
-                  </div>
+                  </template>
+                  <template v-else>
+                    <template v-for="mod in contentStore.activeModules" :key="mod.id">
+                      <div v-if="buildTopLevelRules(getModuleRules(mod)).length > 0" class="mb-8">
+                        <h2
+                          class="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3"
+                        >
+                          {{ mod.name }}
+                        </h2>
+                        <button
+                          v-for="rule in buildTopLevelRules(getModuleRules(mod))"
+                          :key="rule.id"
+                          class="w-full flex items-baseline gap-3 px-3 py-2.5 rounded-md hover:bg-muted/40 transition-colors text-left group"
+                          @click="selectRule(rule)"
+                        >
+                          <span
+                            class="font-mono text-sm text-primary font-semibold shrink-0 w-16 text-right"
+                          >
+                            {{ rule.number }}
+                          </span>
+                          <span
+                            class="text-foreground/90 text-sm group-hover:text-foreground transition-colors"
+                          >
+                            <!-- eslint-disable-next-line vue/no-v-html -->
+                            <span
+                              :data-rule-context="rule.module_id"
+                              v-html="renderContent(rule.title)"
+                            />
+                          </span>
+                        </button>
+                      </div>
+                    </template>
                   </template>
                 </template>
               </div>
