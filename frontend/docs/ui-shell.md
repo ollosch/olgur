@@ -50,7 +50,7 @@ There is no separate public landing shell. The authenticated app is the default 
 
 Primary component: `frontend/src/components/systems/LeftPanelContent.vue`
 
-- Tabs: rules tree, index, bookmarks, history, proofread.
+- Tabs: rules tree, index, bookmarks, history.
 - Module expansion state lives in store state and local interaction.
 - Width is resizable and persisted in localStorage.
 
@@ -70,7 +70,7 @@ Component: `frontend/src/components/systems/SystemHeader.vue`
 - Sequence of Play — opens `SopModal`.
 - Tools ▾ — lists tools derived from `gameDataTools()`; opens each in `ToolModal`.
 - Table bookmarks ▾ — lists pinned tables (bookmarks of type `table`); opens the table in `TableBrowserModal`.
-- System ▾ — "Make available offline" toggle (pins/unpins the system's released content via `PinSystemControl`), exit system, manage members, broken links, profile, settings, logout.
+- System ▾ — "Make available offline" toggle (pins/unpins the system's released content via `PinSystemControl`), exit system, manage members, broken links, proofread, profile, settings, logout.
 - Right side: Draft/Release tabs (only when `canSwitchView`).
 
 ### Full-Screen Modals

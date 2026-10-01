@@ -9,6 +9,7 @@ import { useContentStore } from '@/stores/content'
 import { useMembershipStore } from '@/stores/membership'
 import { useBookmarkStore } from '@/stores/bookmarks'
 import { useGameDataModalStore } from '@/stores/gameDataModal'
+import { useProofreadStore } from '@/stores/proofread'
 import { useOnline } from '@/composables/useOnline'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -24,6 +25,7 @@ import { Menu, Search, Table2, ListOrdered, TriangleAlert, Wrench, Bookmark, Che
 import LeftPanelContent from '@/components/systems/LeftPanelContent.vue'
 import ManageMembersDialog from '@/components/systems/ManageMembersDialog.vue'
 import BrokenLinksDialog from '@/components/systems/BrokenLinksDialog.vue'
+import ProofreadDialog from '@/components/systems/ProofreadDialog.vue'
 import PinSystemControl from '@/components/systems/PinSystemControl.vue'
 import { useBrokenLinks } from '@/composables/useBrokenLinks'
 import { gameDataTools } from '@/lib/gameDataTools'
@@ -56,15 +58,21 @@ const contentStore = useContentStore()
 const membershipStore = useMembershipStore()
 const bookmarkStore = useBookmarkStore()
 const gameDataModalStore = useGameDataModalStore()
+const proofreadStore = useProofreadStore()
 const { offline } = useOnline()
 
 const manageMembersOpen = ref(false)
 const brokenLinksOpen = ref(false)
+const proofreadOpen = ref(false)
 
 const { canLint } = useBrokenLinks()
 
 const canManageMembers = computed(() =>
   Boolean(systemStore.currentSystem?.permissions?.['membership.manage']),
+)
+
+const canProofread = computed(
+  () => proofreadStore.canProofread && contentStore.viewMode === 'draft',
 )
 
 /**
@@ -272,7 +280,10 @@ async function logout(): Promise<void> {
             <TriangleAlert class="w-4 h-4" />
             Broken Links
           </DropdownMenuItem>
-          <DropdownMenuSeparator v-if="canManageMembers || canLint" />
+          <DropdownMenuItem v-if="canProofread" @click="proofreadOpen = true">
+            Proofread
+          </DropdownMenuItem>
+          <DropdownMenuSeparator v-if="canManageMembers || canLint || canProofread" />
           <DropdownMenuItem @click="router.push({ name: 'profile' })">
             User Profile
           </DropdownMenuItem>
@@ -308,4 +319,7 @@ async function logout(): Promise<void> {
 
   <!-- Broken Links Dialog -->
   <BrokenLinksDialog v-if="systemStore.currentSystem" v-model:open="brokenLinksOpen" />
+
+  <!-- Proofread Dialog -->
+  <ProofreadDialog v-if="systemStore.currentSystem" v-model:open="proofreadOpen" />
 </template>

@@ -105,7 +105,7 @@ File: `frontend/src/stores/proofread.ts`
 - `canProofread` — true when online and at least one module grants `content.proofread`.
 - `fetchStatus(systemId)`, `record(entityType, entityId)`, `remove(entityType, entityId)`; `remove()` re-fetches status from the server after a successful delete (server-authoritative).
 - `countFor()`, `isDone()`, `hasMarked()`, `needsProofreading` — derive the per-entity proofread state and the "needs proofreading" list.
-- UI: `frontend/src/components/systems/ProofreadToggle.vue` (per-entity mark/remove button) and `frontend/src/components/systems/ProofreadTab.vue` (needs-proofreading list in the left panel).
+- UI: `frontend/src/components/systems/ProofreadToggle.vue` (per-entity mark/remove button) and `frontend/src/components/systems/ProofreadDialog.vue` (needs-proofreading list opened from the System ▾ menu).
 
 ## Smaller Supporting Stores
 

@@ -79,6 +79,10 @@ vi.mock('@/components/systems/BrokenLinksDialog.vue', () => ({
   default: passthrough('BrokenLinksDialogStub'),
 }))
 
+vi.mock('@/components/systems/ProofreadDialog.vue', () => ({
+  default: passthrough('ProofreadDialogStub'),
+}))
+
 vi.mock('@/components/systems/PinSystemControl.vue', () => ({
   default: defineComponent({
     name: 'PinSystemControlStub',
@@ -244,6 +248,28 @@ describe('SystemHeader — draft/release switch', () => {
       const wrapper = mountHeader()
 
       expect(wrapper.find('[data-test="pin-control"]').exists()).toBe(true)
+    })
+  })
+
+  describe('proofread menu item', () => {
+    beforeEach(() => {
+      setActivePinia(createPinia())
+      mockGet.mockReset()
+      useOnline().online.value = true
+    })
+
+    it('shows Proofread for a proofreader in draft view', () => {
+      seedSystem({ 'content.proofread': true })
+      const wrapper = mountHeader()
+
+      expect(wrapper.text()).toContain('Proofread')
+    })
+
+    it('hides Proofread for a plain player', () => {
+      seedSystem({ 'content.view_released': true })
+      const wrapper = mountHeader()
+
+      expect(wrapper.text()).not.toContain('Proofread')
     })
   })
 
