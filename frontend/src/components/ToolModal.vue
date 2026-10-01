@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { X } from '@lucide/vue'
 import { useContentStore } from '@/stores/content'
 import { useSystemStore } from '@/stores/system'
@@ -37,6 +37,7 @@ function onOpenChange(open: boolean): void {
       class="max-w-none sm:max-w-none w-full h-full top-0 left-0 translate-x-0 translate-y-0 rounded-none border-0 p-0 gap-0 flex flex-col shadow-none"
     >
       <DialogTitle class="sr-only">{{ activeTool?.label ?? 'Tool' }}</DialogTitle>
+      <DialogDescription class="sr-only">Game tool</DialogDescription>
 
       <div class="shrink-0 flex items-center justify-between h-12 px-4 border-b border-border">
         <span class="text-sm font-semibold text-foreground">{{ activeTool?.label }}</span>

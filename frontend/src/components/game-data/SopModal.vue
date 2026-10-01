@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { X } from '@lucide/vue'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { useContentStore } from '@/stores/content'
@@ -54,6 +54,7 @@ function onOpenChange(open: boolean): void {
       class="max-w-none sm:max-w-none w-full h-full top-0 left-0 translate-x-0 translate-y-0 rounded-none border-0 p-0 gap-0 flex flex-col shadow-none"
     >
       <DialogTitle class="sr-only">Sequence of Play</DialogTitle>
+      <DialogDescription class="sr-only">Sequence of Play viewer</DialogDescription>
 
       <div class="shrink-0 flex items-center justify-between h-12 px-4 border-b border-border">
         <span class="text-sm font-semibold text-foreground">Sequence of Play</span>

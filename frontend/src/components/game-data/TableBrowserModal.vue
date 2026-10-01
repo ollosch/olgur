@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { X, Bookmark } from '@lucide/vue'
 import { useContentStore } from '@/stores/content'
 import { useGameDataModalStore } from '@/stores/gameDataModal'
@@ -85,6 +85,7 @@ function onOpenChange(open: boolean): void {
       class="max-w-none sm:max-w-none w-full h-full top-0 left-0 translate-x-0 translate-y-0 rounded-none border-0 p-0 gap-0 flex flex-col shadow-none"
     >
       <DialogTitle class="sr-only">Table Browser</DialogTitle>
+      <DialogDescription class="sr-only">Browse and inspect game tables</DialogDescription>
 
       <div class="shrink-0 flex items-center justify-between h-12 px-4 border-b border-border">
         <span class="text-sm font-semibold text-foreground">Table Browser</span>
