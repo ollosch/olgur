@@ -78,6 +78,11 @@ async function loadSystem(id: string): Promise<void> {
     // navigated to HomeView and back to the same system. Its store data is
     // intentionally kept around (see history clearing below), but any module
     // subscribed to in the meantime still needs its rules/index/game-data fetched.
+    //
+    // Re-fetch the manifest so a version released in the meantime is picked up,
+    // then refresh a stale offline copy in the background.
+    await contentStore.fetchManifest(id)
+    void contentStore.autoRefreshPin(id)
     const loaded = await contentStore.fetchMissingModules(id, systemStore.modules)
     for (const m of loaded) {
       panelStore.expandedModuleIds.add(m.id)
