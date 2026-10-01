@@ -14,6 +14,7 @@ import CctTable from '@/components/game-data/CctTable.vue'
 import LeaderCreationTable from '@/components/game-data/LeaderCreationTable.vue'
 import ToHitTable from '@/components/game-data/ToHitTable.vue'
 import ToKillTable from '@/components/game-data/ToKillTable.vue'
+import DestructionTable from '@/components/game-data/DestructionTable.vue'
 import type { MatrixContent } from '@/components/game-data/MatrixTable.vue'
 import type { AttributeTableContent } from '@/components/game-data/AttributeTable.vue'
 import type { ModifierListContent } from '@/components/game-data/ModifierList.vue'
@@ -22,6 +23,7 @@ import type { CctContent } from '@/components/game-data/CctTable.vue'
 import type { LeaderCreationContent } from '@/components/game-data/LeaderCreationTable.vue'
 import type { ToHitContent } from '@/components/game-data/ToHitTable.vue'
 import type { ToKillContent } from '@/components/game-data/ToKillTable.vue'
+import type { DestructionContent } from '@/components/game-data/DestructionTable.vue'
 import type { GameDatum } from '@/types/domain'
 
 type TableContent =
@@ -33,6 +35,7 @@ type TableContent =
   | LeaderCreationContent
   | ToHitContent
   | ToKillContent
+  | DestructionContent
 
 const contentStore = useContentStore()
 const gameDataModalStore = useGameDataModalStore()
@@ -181,6 +184,10 @@ function onOpenChange(open: boolean): void {
                 <ToKillTable
                   v-else-if="tableContent(selectedTable)!.kind === 'to_kill'"
                   :content="tableContent(selectedTable) as ToKillContent"
+                />
+                <DestructionTable
+                  v-else-if="tableContent(selectedTable)!.kind === 'destruction'"
+                  :content="tableContent(selectedTable) as DestructionContent"
                 />
               </template>
             </div>
