@@ -155,6 +155,43 @@ final class ModuleDataImporter
     }
 
     /**
+     * Import a flat list of game data tables into a module.
+     *
+     * @param  array<int, array<string, mixed>>  $items
+     */
+    public function importTables(array $items, string $moduleId): int
+    {
+        $total = 0;
+        $rows = [];
+
+        foreach ($items as $item) {
+            $now = now()->toDateTimeString();
+            $slug = is_string($item['slug'] ?? null) ? $item['slug'] : '';
+            $name = is_string($item['name'] ?? null) ? $item['name'] : $slug;
+            $content = is_array($item['content'] ?? null) ? $item['content'] : null;
+
+            $rows[] = [
+                'id' => Str::lower((string) Str::ulid()),
+                'module_id' => $moduleId,
+                'type' => GameDataType::Table->value,
+                'slug' => $slug,
+                'name' => $name,
+                'content' => $content !== null ? (json_encode($content) ?: '{}') : '{}',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+
+            $total++;
+        }
+
+        if ($rows !== []) {
+            $this->insertChunked('game_data', $rows);
+        }
+
+        return $total;
+    }
+
+    /**
      * @param  array<int, array<string, mixed>>  $rows
      */
     public function insertChunked(string $table, array $rows): void

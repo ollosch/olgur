@@ -237,6 +237,32 @@ final class ImportGame extends Command
                 $count = $this->importer->importGameData($gameDataItems, $coreModule->id, $gameDataType);
                 $this->info(sprintf('Imported %d %s.', $count, $manifestKey));
             }
+
+            // Import tables if present in manifest
+            $tablesRelPath = is_string($manifest['tables'] ?? null) ? $manifest['tables'] : '';
+
+            if ($tablesRelPath !== '') {
+                $tablesPath = $gameDir.'/'.$tablesRelPath;
+
+                if (! file_exists($tablesPath)) {
+                    $this->warn(sprintf('Tables file not found: %s, skipping.', $tablesPath));
+                } else {
+                    if ($fresh) {
+                        $this->warn('Deleting existing tables for core module...');
+                        GameDatum::query()
+                            ->where('module_id', $coreModule->id)
+                            ->where('type', GameDataType::Table->value)
+                            ->delete();
+                    }
+
+                    /** @var array<int, array<string, mixed>> $tablesData */
+                    $tablesData = $this->readJson($tablesPath) ?? [];
+
+                    $this->info('Importing tables...');
+                    $count = $this->importer->importTables($tablesData, $coreModule->id);
+                    $this->info(sprintf('Imported %d tables.', $count));
+                }
+            }
         });
 
         $this->info('Import complete.');
