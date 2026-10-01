@@ -11,11 +11,13 @@ import AttributeTable from '@/components/game-data/AttributeTable.vue'
 import ModifierList from '@/components/game-data/ModifierList.vue'
 import IftTable from '@/components/game-data/IftTable.vue'
 import CctTable from '@/components/game-data/CctTable.vue'
+import ToHitTable from '@/components/game-data/ToHitTable.vue'
 import type { MatrixContent } from '@/components/game-data/MatrixTable.vue'
 import type { AttributeTableContent } from '@/components/game-data/AttributeTable.vue'
 import type { ModifierListContent } from '@/components/game-data/ModifierList.vue'
 import type { IftContent } from '@/components/game-data/IftTable.vue'
 import type { CctContent } from '@/components/game-data/CctTable.vue'
+import type { ToHitContent } from '@/components/game-data/ToHitTable.vue'
 import type { GameDatum } from '@/types/domain'
 
 type TableContent =
@@ -24,6 +26,7 @@ type TableContent =
   | ModifierListContent
   | IftContent
   | CctContent
+  | ToHitContent
 
 const contentStore = useContentStore()
 const gameDataModalStore = useGameDataModalStore()
@@ -160,6 +163,10 @@ function onOpenChange(open: boolean): void {
                 <CctTable
                   v-else-if="tableContent(selectedTable)!.kind === 'cct'"
                   :content="tableContent(selectedTable) as CctContent"
+                />
+                <ToHitTable
+                  v-else-if="tableContent(selectedTable)!.kind === 'to_hit'"
+                  :content="tableContent(selectedTable) as ToHitContent"
                 />
               </template>
             </div>
