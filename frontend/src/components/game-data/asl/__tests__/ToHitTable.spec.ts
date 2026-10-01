@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import ToHitTable from '@/components/game-data/ToHitTable.vue'
-import type { ToHitContent } from '@/components/game-data/ToHitTable.vue'
+import ToHitTable from '@/components/game-data/asl/ToHitTable.vue'
+import type { ToHitContent } from '@/components/game-data/asl/ToHitTable.vue'
 
 function makeContent(overrides: Partial<ToHitContent> = {}): ToHitContent {
   return {

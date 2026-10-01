@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import CctTable from '@/components/game-data/CctTable.vue'
-import type { CctContent } from '@/components/game-data/CctTable.vue'
+import CctTable from '@/components/game-data/asl/CctTable.vue'
+import type { CctContent } from '@/components/game-data/asl/CctTable.vue'
 
 function makeContent(overrides: Partial<CctContent> = {}): CctContent {
   return {

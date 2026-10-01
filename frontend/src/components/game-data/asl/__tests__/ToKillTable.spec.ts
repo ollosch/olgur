@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import ToKillTable from '@/components/game-data/ToKillTable.vue'
-import type { ToKillContent } from '@/components/game-data/ToKillTable.vue'
+import ToKillTable from '@/components/game-data/asl/ToKillTable.vue'
+import type { ToKillContent } from '@/components/game-data/asl/ToKillTable.vue'
 
 function makeContent(overrides: Partial<ToKillContent> = {}): ToKillContent {
   return {

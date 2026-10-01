@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import IftTable from '@/components/game-data/IftTable.vue'
-import type { IftContent } from '@/components/game-data/IftTable.vue'
+import IftTable from '@/components/game-data/asl/IftTable.vue'
+import type { IftContent } from '@/components/game-data/asl/IftTable.vue'
 
 function makeContent(overrides: Partial<IftContent> = {}): IftContent {
   return {

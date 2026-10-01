@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import DestructionTable from '@/components/game-data/DestructionTable.vue'
-import type { DestructionContent } from '@/components/game-data/DestructionTable.vue'
+import DestructionTable from '@/components/game-data/asl/DestructionTable.vue'
+import type { DestructionContent } from '@/components/game-data/asl/DestructionTable.vue'
 
 function makeContent(overrides: Partial<DestructionContent> = {}): DestructionContent {
   return {

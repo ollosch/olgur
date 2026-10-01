@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import LeaderCreationTable from '@/components/game-data/LeaderCreationTable.vue'
-import type { LeaderCreationContent } from '@/components/game-data/LeaderCreationTable.vue'
+import LeaderCreationTable from '@/components/game-data/asl/LeaderCreationTable.vue'
+import type { LeaderCreationContent } from '@/components/game-data/asl/LeaderCreationTable.vue'
 
 function makeContent(overrides: Partial<LeaderCreationContent> = {}): LeaderCreationContent {
   return {
