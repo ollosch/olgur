@@ -9,18 +9,11 @@ const { isLiveContent, hasReleasedVersion, displayVersion } = useVersionStatus((
 </script>
 
 <template>
-  <template v-if="isLiveContent">
-    <span
-      v-if="!hasReleasedVersion"
-      class="inline-flex items-center rounded-full border border-amber-500/30 bg-amber-500/15 px-2.5 py-0.5 text-xs font-medium text-amber-400"
-    >
-      Draft only — no released version
-    </span>
-    <span
-      v-else
-      class="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/15 px-2.5 py-0.5 text-xs font-medium text-emerald-400"
-    >
-      Released: {{ displayVersion }}
-    </span>
-  </template>
+  <span
+    v-if="isLiveContent"
+    :class="hasReleasedVersion ? 'bg-emerald-500' : 'bg-amber-500'"
+    :title="hasReleasedVersion ? `Released: ${displayVersion}` : 'No released version'"
+    class="ml-1.5 inline-block h-2 w-2 shrink-0 rounded-full align-middle"
+    data-test="version-status-dot"
+  />
 </template>
