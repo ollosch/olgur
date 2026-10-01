@@ -42,7 +42,7 @@ const killRowId = 'kill'
 </script>
 
 <template>
-  <div class="overflow-x-auto">
+  <div class="overflow-x-auto max-w-full">
     <table class="text-xs border-collapse min-w-max font-mono">
       <thead>
         <tr>

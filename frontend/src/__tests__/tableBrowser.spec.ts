@@ -183,6 +183,17 @@ describe('TableBrowserModal — listing and bookmarks', () => {
     expect(wrapper.text()).toContain('table t1')
   })
 
+  it('contains horizontal scroll within the render area', async () => {
+    const wrapper = mountBrowser(seedContent)
+
+    await wrapper.find('[data-table-id="t1"]').trigger('click')
+
+    const renderArea = wrapper.find('[data-test="table-render-area"]')
+    expect(renderArea.exists()).toBe(true)
+    expect(renderArea.classes()).toContain('overflow-auto')
+    expect(renderArea.classes()).toContain('min-w-0')
+  })
+
   it('pins and unpins a table via the bookmark store', async () => {
     const wrapper = mountBrowser(() => {
       seedContent()

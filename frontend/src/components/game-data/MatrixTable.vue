@@ -78,7 +78,7 @@ function maxAnnotationRows(columns: MatrixColumn[]): number {
 </script>
 
 <template>
-  <div class="overflow-x-auto">
+  <div class="overflow-x-auto max-w-full">
     <table class="text-xs border-collapse min-w-max font-mono">
       <!-- Annotation rows (weapon names above FP numbers) -->
       <template v-if="maxAnnotationRows(props.content.columns) > 0">

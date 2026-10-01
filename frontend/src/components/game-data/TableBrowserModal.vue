@@ -101,7 +101,7 @@ function onOpenChange(open: boolean): void {
       <!-- Table listing + single-table renderer. The listing is always
            visible; clicking a table selects it, and each row has a pin/unpin
            control backed by the polymorphic bookmark store. -->
-      <div class="flex-1 min-h-0 flex">
+      <div class="flex-1 min-h-0 min-w-0 flex">
         <!-- Browsable table list -->
         <aside
           class="w-72 shrink-0 border-r border-border flex flex-col overflow-y-auto"
@@ -147,12 +147,16 @@ function onOpenChange(open: boolean): void {
         </aside>
 
         <!-- Single-table renderer -->
-        <div class="flex-1 min-h-0 overflow-hidden flex flex-col">
+        <div class="flex-1 min-h-0 min-w-0 overflow-hidden flex flex-col">
           <template v-if="selectedTable">
             <div class="shrink-0 flex items-center gap-2 px-4 py-2 border-b border-border">
               <span class="text-sm font-semibold text-foreground">{{ selectedTable.name }}</span>
             </div>
-            <div class="flex-1 overflow-auto p-6" :data-rule-context="selectedTable.module_id">
+            <div
+              class="flex-1 min-w-0 overflow-auto p-6"
+              data-test="table-render-area"
+              :data-rule-context="selectedTable.module_id"
+            >
               <template v-if="tableContent(selectedTable)">
                 <MatrixTable
                   v-if="tableContent(selectedTable)!.kind === 'matrix'"

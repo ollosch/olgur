@@ -95,7 +95,7 @@ function cellView(cell: CellValue | undefined): CellView {
 </script>
 
 <template>
-  <div class="overflow-x-auto">
+  <div class="overflow-x-auto max-w-full">
     <!-- Tab switcher -->
     <div class="flex flex-wrap gap-1 mb-4" role="tablist">
       <button

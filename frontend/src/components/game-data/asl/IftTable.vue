@@ -108,7 +108,7 @@ function footnoteClass(fn: ModifierFootnote): string {
 </script>
 
 <template>
-  <div class="overflow-x-auto">
+  <div class="overflow-x-auto max-w-full">
     <table class="text-xs border-collapse min-w-max font-mono">
       <thead>
         <tr v-for="(row, i) in annotationRows" :key="`ann-${i}`">

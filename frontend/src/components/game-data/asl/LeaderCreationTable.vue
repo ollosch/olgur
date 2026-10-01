@@ -37,7 +37,7 @@ const leaderColId = 'leader'
 </script>
 
 <template>
-  <div class="overflow-x-auto">
+  <div class="overflow-x-auto max-w-full">
     <p
       v-if="props.content.note"
       class="text-xs text-foreground mb-4"
