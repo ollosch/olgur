@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
-import { X, Bookmark } from '@lucide/vue'
+import { X, Bookmark, Search } from '@lucide/vue'
 import { useContentStore } from '@/stores/content'
 import { useGameDataModalStore } from '@/stores/gameDataModal'
 import { useBookmarkStore } from '@/stores/bookmarks'
@@ -45,6 +45,14 @@ useModalShortcutGuard(() => gameDataModalStore.tableBrowserOpen)
 
 // Tables are a union over the active set.
 const tables = computed(() => contentStore.allGameData.filter((d) => d.type === 'table'))
+
+const searchQuery = ref('')
+
+const filteredTables = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  if (!q) return tables.value
+  return tables.value.filter((t) => t.name.toLowerCase().includes(q))
+})
 
 const selectedTable = computed(
   (): GameDatum | null =>
@@ -104,44 +112,61 @@ function onOpenChange(open: boolean): void {
       <div class="flex-1 min-h-0 min-w-0 flex">
         <!-- Browsable table list -->
         <aside
-          class="w-72 shrink-0 border-r border-border flex flex-col overflow-y-auto"
+          class="w-72 shrink-0 border-r border-border flex flex-col"
           data-test="table-list"
         >
-          <div
-            v-if="tables.length === 0"
-            class="px-4 py-4 text-sm text-muted-foreground"
-          >
-            No tables available.
-          </div>
-          <div v-else class="py-2">
+          <div class="shrink-0 p-2 border-b border-border">
             <div
-              v-for="table in tables"
-              :key="table.id"
-              class="flex items-center gap-1 px-2 py-0.5 hover:bg-muted/30 transition-colors group"
-              :class="table.id === gameDataModalStore.selectedTableId ? 'bg-muted/50' : ''"
+              class="flex items-center gap-2 rounded-md border border-input bg-transparent px-3 py-1.5"
             >
-              <button
-                class="flex-1 min-w-0 text-left px-2 py-1.5 rounded text-sm text-foreground/90 hover:text-foreground transition-colors"
-                :data-table-id="table.id"
-                @click="gameDataModalStore.selectTable(table.id)"
+              <Search class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              <input
+                v-model="searchQuery"
+                type="text"
+                placeholder="Search tables…"
+                autocomplete="off"
+                data-test="table-search"
+                class="flex-1 min-w-0 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground"
+              />
+            </div>
+          </div>
+          <div class="flex-1 min-h-0 overflow-y-auto">
+            <div
+              v-if="filteredTables.length === 0"
+              class="px-4 py-4 text-sm text-muted-foreground"
+            >
+              {{ tables.length === 0 ? 'No tables available.' : 'No tables match your search.' }}
+            </div>
+            <div v-else class="py-2">
+              <div
+                v-for="table in filteredTables"
+                :key="table.id"
+                class="flex items-center gap-1 px-2 py-0.5 hover:bg-muted/30 transition-colors group"
+                :class="table.id === gameDataModalStore.selectedTableId ? 'bg-muted/50' : ''"
               >
-                <span class="truncate block">{{ table.name }}</span>
-              </button>
-              <button
-                class="shrink-0 p-1.5 rounded hover:bg-muted/50 transition-colors"
-                :title="isPinned(table.id) ? 'Unpin table' : 'Pin table'"
-                :data-pin="table.id"
-                @click.stop="togglePin(table)"
-              >
-                <Bookmark
-                  class="w-3.5 h-3.5 transition-colors"
-                  :class="
-                    isPinned(table.id)
-                      ? 'text-primary fill-primary'
-                      : 'text-muted-foreground'
-                  "
-                />
-              </button>
+                <button
+                  class="flex-1 min-w-0 text-left px-2 py-1.5 rounded text-sm text-foreground/90 hover:text-foreground transition-colors"
+                  :data-table-id="table.id"
+                  @click="gameDataModalStore.selectTable(table.id)"
+                >
+                  <span class="truncate block">{{ table.name }}</span>
+                </button>
+                <button
+                  class="shrink-0 p-1.5 rounded hover:bg-muted/50 transition-colors"
+                  :title="isPinned(table.id) ? 'Unpin table' : 'Pin table'"
+                  :data-pin="table.id"
+                  @click.stop="togglePin(table)"
+                >
+                  <Bookmark
+                    class="w-3.5 h-3.5 transition-colors"
+                    :class="
+                      isPinned(table.id)
+                        ? 'text-primary fill-primary'
+                        : 'text-muted-foreground'
+                    "
+                  />
+                </button>
+              </div>
             </div>
           </div>
         </aside>

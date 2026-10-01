@@ -174,6 +174,15 @@ describe('TableBrowserModal — listing and bookmarks', () => {
     expect(wrapper.text()).toContain('No tables available.')
   })
 
+  it('filters the table list by name as the search box is typed', async () => {
+    const wrapper = mountBrowser(seedContent)
+
+    await wrapper.find('[data-test="table-search"]').setValue('t2')
+
+    const rows = wrapper.findAll('[data-table-id]')
+    expect(rows.map((r) => r.attributes('data-table-id'))).toEqual(['t2'])
+  })
+
   it('selects a table when its row is clicked', async () => {
     const wrapper = mountBrowser(seedContent)
 
