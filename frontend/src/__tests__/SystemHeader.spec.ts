@@ -63,6 +63,7 @@ vi.mock('@/components/ui/dropdown-menu', () => ({
     emits: ['click'],
     template: '<button v-bind="$attrs" @click="$emit(\'click\')"><slot /></button>',
   }),
+  DropdownMenuLabel: passthrough('DropdownMenuLabelStub'),
   DropdownMenuSeparator: passthrough('DropdownMenuSeparatorStub'),
   DropdownMenuTrigger: passthrough('DropdownMenuTriggerStub'),
 }))
@@ -91,7 +92,13 @@ vi.mock('@/components/systems/PinSystemControl.vue', () => ({
   }),
 }))
 
+vi.mock('@/lib/gameDataTools', () => ({
+  gameDataTools: vi.fn(() => []),
+}))
+
 import SystemHeader from '@/components/systems/SystemHeader.vue'
+import { gameDataTools } from '@/lib/gameDataTools'
+import type { GameDataTool } from '@/lib/gameDataTools'
 import { useSystemStore } from '@/stores/system'
 import { useContentStore } from '@/stores/content'
 import { useMembershipStore } from '@/stores/membership'
@@ -175,6 +182,10 @@ function makeTable(id: string, moduleId: string, name: string): GameDatum {
   }
 }
 
+function makeTool(id: string, label: string): GameDataTool {
+  return { id, label, component: defineComponent({ name: `Tool-${id}` }) }
+}
+
 function buildRouter() {
   return createRouter({
     history: createMemoryHistory(),
@@ -205,6 +216,7 @@ describe('SystemHeader — draft/release switch', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     mockGet.mockReset()
+    vi.mocked(gameDataTools).mockReturnValue([])
     useOnline().online.value = true
   })
 
@@ -274,21 +286,22 @@ describe('SystemHeader — draft/release switch', () => {
     })
   })
 
-  describe('table bookmarks dropdown', () => {
+  describe('table bookmarks', () => {
     beforeEach(() => {
       setActivePinia(createPinia())
       mockGet.mockReset()
       useOnline().online.value = true
     })
 
-    it('shows the empty state when there are no table bookmarks', () => {
+    it('renders no bookmark buttons when there are no table bookmarks', () => {
       seedSystem({ 'content.view_released': true })
       const wrapper = mountHeader()
 
-      expect(wrapper.text()).toContain('No table bookmarks yet')
+      expect(wrapper.find('[data-test="inline-bookmark"]').exists()).toBe(false)
+      expect(wrapper.find('[data-test="bookmark-more"]').exists()).toBe(false)
     })
 
-    it('lists pinned tables', () => {
+    it('lists pinned tables inline', () => {
       seedSystem({ 'content.view_released': true })
       const contentStore = useContentStore()
       contentStore.rulesByModule['mod1'] = []
@@ -297,12 +310,92 @@ describe('SystemHeader — draft/release switch', () => {
       useMembershipStore().setMembership('sys1', makeMembership({ bookmarks: [{ type: 'table', id: 't1' }] }))
       const wrapper = mountHeader()
 
+      expect(wrapper.find('[data-test="inline-bookmark"]').exists()).toBe(true)
       expect(wrapper.text()).toContain('Firepower Table')
-      expect(wrapper.text()).not.toContain('No table bookmarks yet')
     })
   })
 
-  describe('module selector (currently played)', () => {
+  describe('table bookmarks overflow', () => {
+    beforeEach(() => {
+      setActivePinia(createPinia())
+      mockGet.mockReset()
+      useOnline().online.value = true
+    })
+
+    it('renders up to 5 bookmarks inline and overflows the rest into a "More" dropdown', () => {
+      seedSystem({ 'content.view_released': true })
+      const contentStore = useContentStore()
+      contentStore.rulesByModule['mod1'] = []
+      contentStore.indexEntriesByModule['mod1'] = []
+      contentStore.gameDataByModule['mod1'] = Array.from({ length: 6 }, (_, i) =>
+        makeTable(`t${i + 1}`, 'mod1', `Table ${i + 1}`),
+      )
+      useMembershipStore().setMembership(
+        'sys1',
+        makeMembership({
+          bookmarks: Array.from({ length: 6 }, (_, i) => ({ type: 'table', id: `t${i + 1}` })),
+        }),
+      )
+      const wrapper = mountHeader()
+
+      expect(wrapper.findAll('[data-test="inline-bookmark"]')).toHaveLength(5)
+      expect(wrapper.find('[data-test="bookmark-more"]').exists()).toBe(true)
+      expect(wrapper.text()).toContain('Table 6')
+    })
+
+    it('renders no "More" dropdown when there are 5 or fewer bookmarks', () => {
+      seedSystem({ 'content.view_released': true })
+      const contentStore = useContentStore()
+      contentStore.rulesByModule['mod1'] = []
+      contentStore.indexEntriesByModule['mod1'] = []
+      contentStore.gameDataByModule['mod1'] = [makeTable('t1', 'mod1', 'Firepower Table')]
+      useMembershipStore().setMembership('sys1', makeMembership({ bookmarks: [{ type: 'table', id: 't1' }] }))
+      const wrapper = mountHeader()
+
+      expect(wrapper.findAll('[data-test="inline-bookmark"]')).toHaveLength(1)
+      expect(wrapper.find('[data-test="bookmark-more"]').exists()).toBe(false)
+    })
+  })
+
+  describe('inline tools', () => {
+    beforeEach(() => {
+      setActivePinia(createPinia())
+      mockGet.mockReset()
+      useOnline().online.value = true
+    })
+
+    it('renders up to 4 tools inline and overflows the rest into a "More" dropdown', () => {
+      seedSystem({ 'content.view_released': true })
+      vi.mocked(gameDataTools).mockReturnValue([
+        makeTool('t1', 'Tool One'),
+        makeTool('t2', 'Tool Two'),
+        makeTool('t3', 'Tool Three'),
+        makeTool('t4', 'Tool Four'),
+        makeTool('t5', 'Tool Five'),
+        makeTool('t6', 'Tool Six'),
+      ])
+      const wrapper = mountHeader()
+
+      expect(wrapper.findAll('[data-test="inline-tool"]')).toHaveLength(4)
+      expect(wrapper.find('[data-test="tool-more"]').exists()).toBe(true)
+      expect(wrapper.text()).toContain('Tool Five')
+      expect(wrapper.text()).toContain('Tool Six')
+    })
+
+    it('renders no "More" dropdown when there are 4 or fewer tools', () => {
+      seedSystem({ 'content.view_released': true })
+      vi.mocked(gameDataTools).mockReturnValue([
+        makeTool('t1', 'Tool One'),
+        makeTool('t2', 'Tool Two'),
+      ])
+      const wrapper = mountHeader()
+
+      expect(wrapper.findAll('[data-test="inline-tool"]')).toHaveLength(2)
+      expect(wrapper.find('[data-test="tool-more"]').exists()).toBe(false)
+    })
+  })
+
+  describe('module selector in system menu', () => {
     beforeEach(() => {
       setActivePinia(createPinia())
       mockGet.mockReset()
@@ -321,29 +414,29 @@ describe('SystemHeader — draft/release switch', () => {
       useMembershipStore().setMembership('sys1', makeMembership({}))
     }
 
-    it('renders nothing when only one non-core module exists', () => {
+    it('renders no module items when only one non-core module exists', () => {
       seedSelectableModules(['exp1'])
       const wrapper = mountHeader()
 
-      expect(wrapper.find('[data-test="module-selector"]').exists()).toBe(false)
+      expect(wrapper.find('[data-test="system-menu"]').exists()).toBe(true)
+      expect(wrapper.find('[data-module-id]').exists()).toBe(false)
     })
 
-    it('renders the selector with an "all modules" option when multiple non-core modules exist', () => {
+    it('renders module items in the system menu when multiple non-core modules exist', () => {
       seedSelectableModules(['exp1', 'exp2'])
       const wrapper = mountHeader()
 
-      expect(wrapper.find('[data-test="module-selector"]').exists()).toBe(true)
-      expect(wrapper.text()).toContain('All modules')
+      expect(wrapper.find('[data-module-id="all"]').exists()).toBe(true)
       expect(wrapper.text()).toContain('Module exp1')
       expect(wrapper.text()).toContain('Module exp2')
     })
 
-    it('shows the selected module name as the current label', () => {
+    it('shows the selected module name as the active label', () => {
       seedSelectableModules(['exp1', 'exp2'])
       useMembershipStore().setMembership('sys1', makeMembership({ selected_module_id: 'exp2' }))
       const wrapper = mountHeader()
 
-      expect(wrapper.find('[data-test="module-selector"]').text()).toContain('Module exp2')
+      expect(wrapper.text()).toContain('Active module: Module exp2')
     })
 
     it('selecting a module persists the choice and re-scopes the active modules', async () => {

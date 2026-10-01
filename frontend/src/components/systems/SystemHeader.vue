@@ -18,10 +18,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Menu, Search, Table2, ListOrdered, TriangleAlert, Wrench, Bookmark, ChevronDown, Layers } from '@lucide/vue'
+import { Menu, Search, Table2, ListOrdered, TriangleAlert, Wrench, Bookmark, ChevronDown, MoreHorizontal } from '@lucide/vue'
 import LeftPanelContent from '@/components/systems/LeftPanelContent.vue'
 import ManageMembersDialog from '@/components/systems/ManageMembersDialog.vue'
 import BrokenLinksDialog from '@/components/systems/BrokenLinksDialog.vue'
@@ -103,6 +104,12 @@ const tableBookmarks = computed(() =>
   bookmarkStore.resolvedBookmarks.filter((b) => b.entry.type === 'table'),
 )
 
+const inlineTools = computed(() => tools.value.slice(0, 4))
+const overflowTools = computed(() => tools.value.slice(4))
+
+const inlineBookmarks = computed(() => tableBookmarks.value.slice(0, 5))
+const overflowBookmarks = computed(() => tableBookmarks.value.slice(5))
+
 function openTableBookmark(tableId: string): void {
   gameDataModalStore.selectTable(tableId)
 }
@@ -162,34 +169,6 @@ async function logout(): Promise<void> {
 
     <!-- Center: toolbar controls -->
     <div class="flex-1 flex items-center justify-center gap-1">
-      <!-- Currently played module ▾ -->
-      <DropdownMenu v-if="selectableModules.length > 1">
-        <DropdownMenuTrigger as-child>
-          <Button
-            variant="ghost"
-            class="h-8 px-3 text-xs gap-1.5 text-muted-foreground"
-            data-test="module-selector"
-          >
-            <Layers class="w-3.5 h-3.5" />
-            {{ currentModuleLabel }}
-            <ChevronDown class="w-3.5 h-3.5" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent class="w-56">
-          <DropdownMenuItem data-module-id="all" @click="selectModule(null)">
-            All modules
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            v-for="mod in selectableModules"
-            :key="mod.id"
-            :data-module-id="mod.id"
-            @click="selectModule(mod.id)"
-          >
-            {{ mod.name }}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
       <!-- Table Browser -->
       <Button
         variant="ghost"
@@ -221,48 +200,76 @@ async function logout(): Promise<void> {
         SOP
       </Button>
 
-      <!-- Tools ▾ -->
-      <DropdownMenu>
+      <!-- Inline tools -->
+      <template v-for="tool in inlineTools" :key="tool.id">
+        <Button
+          variant="ghost"
+          class="h-8 px-3 text-xs gap-1.5 text-muted-foreground"
+          :title="tool.label"
+          data-test="inline-tool"
+          @click="emit('openTool', tool.id)"
+        >
+          <Wrench class="w-3.5 h-3.5" />
+          {{ tool.label }}
+        </Button>
+      </template>
+
+      <!-- Overflow tools -->
+      <DropdownMenu v-if="overflowTools.length > 0">
         <DropdownMenuTrigger as-child>
-          <Button variant="ghost" class="h-8 px-3 text-xs gap-1.5 text-muted-foreground">
-            <Wrench class="w-3.5 h-3.5" />
-            Tools
-            <ChevronDown class="w-3.5 h-3.5" />
+          <Button
+            variant="ghost"
+            class="h-8 px-3 text-xs gap-1.5 text-muted-foreground"
+            data-test="tool-more"
+          >
+            <MoreHorizontal class="w-3.5 h-3.5" />
+            More
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent class="w-56">
           <DropdownMenuItem
-            v-for="tool in tools"
+            v-for="tool in overflowTools"
             :key="tool.id"
             @click="emit('openTool', tool.id)"
           >
             {{ tool.label }}
           </DropdownMenuItem>
-          <DropdownMenuItem v-if="tools.length === 0" disabled>
-            No tools available
-          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <!-- Table bookmarks ▾ -->
-      <DropdownMenu>
+      <!-- Inline table bookmarks -->
+      <template v-for="bookmark in inlineBookmarks" :key="bookmark.entry.id">
+        <Button
+          variant="ghost"
+          class="h-8 px-3 text-xs gap-1.5 text-muted-foreground"
+          :title="bookmark.label"
+          data-test="inline-bookmark"
+          @click="openTableBookmark(bookmark.entry.id)"
+        >
+          <Bookmark class="w-3.5 h-3.5" />
+          {{ bookmark.label }}
+        </Button>
+      </template>
+
+      <!-- Overflow table bookmarks -->
+      <DropdownMenu v-if="overflowBookmarks.length > 0">
         <DropdownMenuTrigger as-child>
-          <Button variant="ghost" class="h-8 px-3 text-xs gap-1.5 text-muted-foreground">
-            <Bookmark class="w-3.5 h-3.5" />
-            Table-marks
-            <ChevronDown class="w-3.5 h-3.5" />
+          <Button
+            variant="ghost"
+            class="h-8 px-3 text-xs gap-1.5 text-muted-foreground"
+            data-test="bookmark-more"
+          >
+            <MoreHorizontal class="w-3.5 h-3.5" />
+            More
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent class="w-64">
           <DropdownMenuItem
-            v-for="bookmark in tableBookmarks"
+            v-for="bookmark in overflowBookmarks"
             :key="bookmark.entry.id"
             @click="openTableBookmark(bookmark.entry.id)"
           >
             {{ bookmark.label }}
-          </DropdownMenuItem>
-          <DropdownMenuItem v-if="tableBookmarks.length === 0" disabled>
-            No table bookmarks yet
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -270,12 +277,31 @@ async function logout(): Promise<void> {
       <!-- System ▾ -->
       <DropdownMenu>
         <DropdownMenuTrigger as-child>
-          <Button variant="ghost" class="h-8 px-3 text-xs gap-1.5 text-muted-foreground">
+          <Button
+            variant="ghost"
+            class="h-8 px-3 text-xs gap-1.5 text-muted-foreground"
+            data-test="system-menu"
+          >
             System
             <ChevronDown class="w-3.5 h-3.5" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" class="w-56">
+          <template v-if="selectableModules.length > 1">
+            <DropdownMenuLabel>Active module: {{ currentModuleLabel }}</DropdownMenuLabel>
+            <DropdownMenuItem data-module-id="all" @click="selectModule(null)">
+              All modules
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              v-for="mod in selectableModules"
+              :key="mod.id"
+              :data-module-id="mod.id"
+              @click="selectModule(mod.id)"
+            >
+              {{ mod.name }}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </template>
           <PinSystemControl
             v-if="systemStore.currentSystem"
             :system-id="systemStore.currentSystem.id"
