@@ -70,8 +70,8 @@ Component: `frontend/src/components/systems/SystemHeader.vue`
 - Sequence of Play — opens `SopModal`.
 - Tools ▾ — lists tools derived from `gameDataTools()`; opens each in `ToolModal`.
 - Table bookmarks ▾ — lists pinned tables (bookmarks of type `table`); opens the table in `TableBrowserModal`.
-- System ▾ — exit system, manage members, broken links, profile, settings, logout.
-- Right side: Draft/Release tabs (only when `canSwitchView`) and the pin control.
+- System ▾ — "Make available offline" toggle (pins/unpins the system's released content via `PinSystemControl`), exit system, manage members, broken links, profile, settings, logout.
+- Right side: Draft/Release tabs (only when `canSwitchView`).
 
 ### Full-Screen Modals
 

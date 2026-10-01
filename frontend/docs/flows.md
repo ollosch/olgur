@@ -126,7 +126,7 @@ Configured via `vite-plugin-pwa` in `frontend/vite.config.ts` and registered in 
 
 - **Admins / editors** (`content.view_live`) can toggle Draft vs Release via the header (`SystemHeader.vue`); in Draft they read live draft content from the standard REST endpoints, in Release they read the latest released snapshot from the manifest's versioned content URLs.
 - **Players** have no toggle (`canSwitchView` false) and always read the latest released snapshot from the manifest content URLs.
-- `SystemView.vue` resets `viewMode` to `'draft'` on a genuine system switch (via `contentStore.clear()`) and re-fetches content whenever `viewMode` changes. The pin control (`PinSystemControl`, "make available offline") is shown only when `!canSwitchView || viewMode === 'release'` — always for players, and for admins only on the Release view.
+- `SystemView.vue` resets `viewMode` to `'draft'` on a genuine system switch (via `contentStore.clear()`) and re-fetches content whenever `viewMode` changes. The "Make available offline" toggle lives in the System ▾ menu (`PinSystemControl.vue`) and is always available; pinning only caches viewable released content.
 
 ### RetrofixEditor
 

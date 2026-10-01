@@ -229,26 +229,17 @@ describe('SystemHeader — draft/release switch', () => {
     })
   })
 
-  describe('pin control gating', () => {
-    it('hides the pin control in draft view for a live-capable user', () => {
+  describe('pin control in system menu', () => {
+    it('is present regardless of view mode', () => {
       seedSystem({ 'content.view_live': true, 'content.view_released': true })
       const contentStore = useContentStore()
       contentStore.setViewMode('draft')
       const wrapper = mountHeader()
 
-      expect(wrapper.find('[data-test="pin-control"]').exists()).toBe(false)
-    })
-
-    it('shows the pin control in release view for a live-capable user', () => {
-      seedSystem({ 'content.view_live': true, 'content.view_released': true })
-      const contentStore = useContentStore()
-      contentStore.setViewMode('release')
-      const wrapper = mountHeader()
-
       expect(wrapper.find('[data-test="pin-control"]').exists()).toBe(true)
     })
 
-    it('shows the pin control for a player regardless of view mode', () => {
+    it('is present for a player', () => {
       seedSystem({ 'content.view_released': true })
       const wrapper = mountHeader()
 

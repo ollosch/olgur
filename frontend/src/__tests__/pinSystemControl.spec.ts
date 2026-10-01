@@ -30,21 +30,17 @@ vi.mock('@/lib/http', async (importOriginal) => {
 })
 
 // ─── Stub the reka-ui-backed UI primitives ─────────────────────────────────────
-vi.mock('@/components/ui/switch', () => ({
-  Switch: defineComponent({
-    name: 'SwitchStub',
+vi.mock('@/components/ui/dropdown-menu', () => ({
+  DropdownMenuCheckboxItem: defineComponent({
+    name: 'DropdownMenuCheckboxItemStub',
     props: {
       modelValue: { type: Boolean, default: false },
       disabled: { type: Boolean, default: false },
     },
     emits: ['update:modelValue'],
     template:
-      '<button type="button" role="switch" :aria-checked="String(modelValue)" :disabled="disabled" @click="$emit(\'update:modelValue\', !modelValue)" />',
+      '<button type="button" role="menuitemcheckbox" :aria-checked="String(modelValue)" :disabled="disabled" @click="$emit(\'update:modelValue\', !modelValue)"><slot /></button>',
   }),
-}))
-
-vi.mock('@/components/ui/badge', () => ({
-  Badge: defineComponent({ name: 'BadgeStub', template: '<span><slot /></span>' }),
 }))
 
 // ─── Mock the sonner toast used for surfacing pin failures ─────────────────────
@@ -244,47 +240,41 @@ describe('PinSystemControl', () => {
     return mount(PinSystemControl, { props: { systemId: 'sys1' } })
   }
 
-  it('shows the switch unchecked and no badge when the system is not cached', () => {
+  it('renders unchecked and labelled "Make available offline" when not cached', () => {
     const wrapper = mountControl()
 
-    expect(wrapper.find('[role="switch"]').attributes('aria-checked')).toBe('false')
-    expect(wrapper.text()).not.toContain('Cached')
+    expect(wrapper.find('[role="menuitemcheckbox"]').attributes('aria-checked')).toBe('false')
+    expect(wrapper.text()).toContain('Make available offline')
   })
 
-  it('shows the cached badge and footprint when the system is cached', () => {
-    useCacheStore().cachedSystems = [meta({ size: 1536 })]
+  it('renders checked when the system is cached', () => {
+    useCacheStore().cachedSystems = [meta()]
 
     const wrapper = mountControl()
 
-    expect(wrapper.find('[role="switch"]').attributes('aria-checked')).toBe('true')
-    expect(wrapper.text()).toContain('Cached')
-    expect(wrapper.text()).toContain('1.5 KB')
+    expect(wrapper.find('[role="menuitemcheckbox"]').attributes('aria-checked')).toBe('true')
   })
 
-  it('pins the system when the switch is toggled on', async () => {
+  it('pins the system when toggled on', async () => {
     seedApi(makeSystem('sys1'), [makeModule('mod1')], [makeManifestEntry('mod1')])
     const cacheStore = useCacheStore()
 
     const wrapper = mountControl()
-    await wrapper.find('[role="switch"]').trigger('click')
+    await wrapper.find('[role="menuitemcheckbox"]').trigger('click')
     await vi.waitFor(() => {
-      expect(wrapper.text()).toContain('Cached')
+      expect(cacheStore.isCached('sys1')).toBe(true)
     })
-
-    expect(cacheStore.isCached('sys1')).toBe(true)
   })
 
-  it('unpins the system when the switch is toggled off', async () => {
+  it('unpins the system when toggled off', async () => {
     useCacheStore().cachedSystems = [meta()]
     const cacheStore = useCacheStore()
 
     const wrapper = mountControl()
-    await wrapper.find('[role="switch"]').trigger('click')
+    await wrapper.find('[role="menuitemcheckbox"]').trigger('click')
     await vi.waitFor(() => {
-      expect(wrapper.text()).not.toContain('Cached')
+      expect(cacheStore.isCached('sys1')).toBe(false)
     })
-
-    expect(cacheStore.isCached('sys1')).toBe(false)
   })
 
   it('surfaces a pin failure as an error toast and leaves the system uncached', async () => {
@@ -292,13 +282,13 @@ describe('PinSystemControl', () => {
     mockRequest.mockImplementation(() => Promise.resolve(null))
 
     const wrapper = mountControl()
-    await wrapper.find('[role="switch"]').trigger('click')
+    await wrapper.find('[role="menuitemcheckbox"]').trigger('click')
 
     await vi.waitFor(() => {
       expect(mockToastError).toHaveBeenCalled()
     })
     expect(useCacheStore().isCached('sys1')).toBe(false)
-    expect(wrapper.text()).not.toContain('Cached')
+    expect(wrapper.find('[role="menuitemcheckbox"]').attributes('aria-checked')).toBe('false')
   })
 
   it('shows "Update available" when online and the cached version differs from the manifest', () => {

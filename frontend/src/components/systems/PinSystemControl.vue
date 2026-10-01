@@ -4,9 +4,7 @@ import { toast } from 'vue-sonner'
 import { useCacheStore } from '@/stores/cacheStore'
 import { useContentStore } from '@/stores/content'
 import { useOnline } from '@/composables/useOnline'
-import { formatBytes } from '@/lib/utils'
-import { Badge } from '@/components/ui/badge'
-import { Switch } from '@/components/ui/switch'
+import { DropdownMenuCheckboxItem } from '@/components/ui/dropdown-menu'
 
 const props = defineProps<{ systemId: string }>()
 
@@ -53,19 +51,8 @@ async function toggle(checked: boolean): Promise<void> {
 </script>
 
 <template>
-  <div class="flex items-center gap-1.5 shrink-0">
-    <span class="text-xs text-muted-foreground whitespace-nowrap">Offline</span>
-    <Switch :model-value="isCached" :disabled="pinning" @update:model-value="toggle" />
-    <Badge v-if="isCached" variant="secondary" class="text-xs">Cached</Badge>
-    <span v-if="meta" class="text-xs text-muted-foreground whitespace-nowrap">
-      {{ formatBytes(meta.size) }}
-    </span>
-    <Badge
-      v-if="newVersionAvailable"
-      variant="outline"
-      class="text-xs text-amber-600 border-amber-400/50"
-    >
-      Update available
-    </Badge>
-  </div>
+  <DropdownMenuCheckboxItem :model-value="isCached" :disabled="pinning" @update:model-value="toggle">
+    Make available offline
+    <span v-if="newVersionAvailable" class="ml-auto text-xs text-amber-500"> Update available </span>
+  </DropdownMenuCheckboxItem>
 </template>

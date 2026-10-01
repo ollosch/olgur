@@ -87,10 +87,6 @@ function selectModule(moduleId: string | null): void {
   void membershipStore.selectModule(systemId, moduleId)
 }
 
-const showPinControl = computed(
-  () => !contentStore.canSwitchView || contentStore.viewMode === 'release',
-)
-
 const tools = computed(() =>
   gameDataTools(contentStore.allGameData, systemStore.currentSystem?.slug),
 )
@@ -114,7 +110,7 @@ async function logout(): Promise<void> {
 </script>
 
 <template>
-  <header class="border-b border-border px-3 py-2 flex items-center gap-2 shrink-0 h-[53px]">
+  <header class="border-b border-border px-3 py-2 flex items-center gap-2 shrink-0 h-[40px]">
     <!-- Left: mobile toggle + system name -->
     <div class="flex items-center gap-2 shrink-0">
       <Sheet v-model:open="panelStore.mobileOpen">
@@ -142,7 +138,7 @@ async function logout(): Promise<void> {
       </Sheet>
 
       <span class="text-foreground font-semibold text-sm">
-        {{ systemStore.currentSystem?.name }}
+        {{ systemStore.currentSystem?.slug.toLocaleUpperCase() }}
       </span>
     </div>
 
@@ -183,7 +179,7 @@ async function logout(): Promise<void> {
         @click="emit('openTableBrowser')"
       >
         <Table2 class="w-3.5 h-3.5" />
-        Table Browser
+        Tables
       </Button>
 
       <!-- Super-Search -->
@@ -194,7 +190,7 @@ async function logout(): Promise<void> {
         @click="shortcutStore.overlayOpen = true"
       >
         <Search class="w-3.5 h-3.5" />
-        Super-Search
+        Search
       </Button>
 
       <!-- Sequence of Play -->
@@ -204,7 +200,7 @@ async function logout(): Promise<void> {
         @click="emit('openSop')"
       >
         <ListOrdered class="w-3.5 h-3.5" />
-        Sequence of Play
+        SOP
       </Button>
 
       <!-- Tools ▾ -->
@@ -235,7 +231,7 @@ async function logout(): Promise<void> {
         <DropdownMenuTrigger as-child>
           <Button variant="ghost" class="h-8 px-3 text-xs gap-1.5 text-muted-foreground">
             <Bookmark class="w-3.5 h-3.5" />
-            Table bookmarks
+            Table-marks
             <ChevronDown class="w-3.5 h-3.5" />
           </Button>
         </DropdownMenuTrigger>
@@ -261,7 +257,12 @@ async function logout(): Promise<void> {
             <ChevronDown class="w-3.5 h-3.5" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" class="w-48">
+        <DropdownMenuContent align="end" class="w-56">
+          <PinSystemControl
+            v-if="systemStore.currentSystem"
+            :system-id="systemStore.currentSystem.id"
+          />
+          <DropdownMenuSeparator />
           <DropdownMenuItem @click="router.push({ name: 'home' })"> Exit System </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem v-if="canManageMembers" @click="manageMembersOpen = true">
@@ -284,7 +285,7 @@ async function logout(): Promise<void> {
       </DropdownMenu>
     </div>
 
-    <!-- Right: draft/release tabs + pin control -->
+    <!-- Right: draft/release tabs -->
     <Tabs
       v-if="contentStore.canSwitchView && !offline"
       :model-value="contentStore.viewMode"
@@ -296,11 +297,6 @@ async function logout(): Promise<void> {
         <TabsTrigger value="release" class="text-xs px-2 h-6">Release</TabsTrigger>
       </TabsList>
     </Tabs>
-
-    <PinSystemControl
-      v-if="systemStore.currentSystem && showPinControl"
-      :system-id="systemStore.currentSystem.id"
-    />
   </header>
 
   <!-- Manage Members Dialog (lives here so manageMembersOpen state is local) -->
