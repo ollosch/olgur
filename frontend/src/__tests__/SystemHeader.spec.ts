@@ -183,6 +183,7 @@ function buildRouter() {
       { path: '/login', name: 'login', component: { template: '<div />' } },
       { path: '/profile', name: 'profile', component: { template: '<div />' } },
       { path: '/settings', name: 'settings', component: { template: '<div />' } },
+      { path: '/systems/:systemId', name: 'system', component: { template: '<div />' } },
     ],
   })
 }
@@ -384,6 +385,33 @@ describe('SystemHeader — draft/release switch', () => {
         config: { selected_module_id: null },
       })
       expect(contentStore.activeModules.map((m) => m.id)).toEqual(['core', 'exp1', 'exp2'])
+    })
+  })
+
+  describe('system name link', () => {
+    beforeEach(() => {
+      setActivePinia(createPinia())
+      mockGet.mockReset()
+      useOnline().online.value = true
+    })
+
+    it('navigates to the root TOC when clicked', async () => {
+      seedSystem({ 'content.view_released': true })
+      const router = buildRouter()
+      const push = vi.spyOn(router, 'push')
+
+      const wrapper = mount(SystemHeader, {
+        props: {
+          selectedRule: null,
+          getModuleRules: () => [],
+          buildTopLevelRules: () => [],
+        },
+        global: { plugins: [router] },
+      })
+
+      await wrapper.find('button[title="Table of contents"]').trigger('click')
+
+      expect(push).toHaveBeenCalledWith({ name: 'system', params: { systemId: 'sys1' } })
     })
   })
 })

@@ -111,6 +111,12 @@ function onViewModeChange(value: string | number): void {
   contentStore.setViewMode(String(value) as 'draft' | 'release')
 }
 
+function goToRootToc(): void {
+  const systemId = systemStore.currentSystem?.id
+  if (!systemId) return
+  void router.push({ name: 'system', params: { systemId } })
+}
+
 async function logout(): Promise<void> {
   await authStore.logout()
   await router.push({ name: 'login' })
@@ -145,9 +151,13 @@ async function logout(): Promise<void> {
         </SheetContent>
       </Sheet>
 
-      <span class="text-foreground font-semibold text-sm">
+      <button
+        class="text-foreground font-semibold text-sm hover:text-primary transition-colors"
+        title="Table of contents"
+        @click="goToRootToc"
+      >
         {{ systemStore.currentSystem?.slug.toLocaleUpperCase() }}
-      </span>
+      </button>
     </div>
 
     <!-- Center: toolbar controls -->
