@@ -60,6 +60,19 @@ function extractManifestEntries(
   return payload?.modules ?? []
 }
 
+/**
+ * Normalize a comma-joined set of version strings into a canonical signature so
+ * two sets can be compared regardless of member order or empty entries.
+ */
+export function versionSignature(joined: string): string {
+  return joined
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .sort()
+    .join(', ')
+}
+
 interface WriteRecord {
   store: IdbStore
   key: string
@@ -205,6 +218,17 @@ export const useCacheStore = defineStore('cache', () => {
     }
   }
 
+  /**
+   * Re-pin a cached system when its stored version no longer matches the given
+   * current version set. No-ops when the system is not cached or is up to date.
+   */
+  async function refreshIfStale(systemId: string, currentVersionString: string): Promise<void> {
+    const meta = cachedSystems.value.find((entry) => entry.systemId === systemId)
+    if (meta === undefined) return
+    if (versionSignature(meta.versionString) === versionSignature(currentVersionString)) return
+    await pinSystem(systemId)
+  }
+
   async function assertStorageHeadroom(pendingSize: number): Promise<void> {
     const { usage, quota } = await estimateStorage()
     if (quota > 0 && usage + pendingSize > quota) {
@@ -279,6 +303,7 @@ export const useCacheStore = defineStore('cache', () => {
     estimateStorage,
     pinSystem,
     unpinSystem,
+    refreshIfStale,
     getCachedSystem,
     getCachedManifest,
     getCachedContent,

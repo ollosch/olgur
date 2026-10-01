@@ -255,8 +255,7 @@ describe('PinSystemControl', () => {
     expect(wrapper.find('[role="menuitemcheckbox"]').attributes('aria-checked')).toBe('true')
   })
 
-  it('reads "Delete from cache" when offline and cached', () => {
-    useOnline().online.value = false
+  it('reads "Delete from cache" when the system is cached', () => {
     useCacheStore().cachedSystems = [meta()]
 
     const wrapper = mountControl()

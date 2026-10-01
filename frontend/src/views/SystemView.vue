@@ -103,6 +103,9 @@ async function loadSystem(id: string): Promise<void> {
   // fetchIndexEntries / fetchGameData can route players to static file URLs.
   await contentStore.fetchManifest(id)
 
+  // Refresh a stale offline copy in the background (no-op when up to date).
+  void contentStore.autoRefreshPin(id)
+
   const activeModuleList = contentStore.activeModules
 
   await Promise.allSettled([
@@ -135,6 +138,7 @@ async function reconnect(): Promise<void> {
     await systemStore.enterSystem(id)
     await contentStore.fetchManifest(id)
     await contentStore.refreshContent(id)
+    void contentStore.autoRefreshPin(id)
     await fetchProofreadStatus(id)
   } catch {
     // A failed reconnect leaves cached content in place.

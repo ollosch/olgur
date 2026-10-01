@@ -478,6 +478,19 @@ export const useContentStore = defineStore('content', () => {
   }
 
   /**
+   * Re-pin the current system's offline copy in the background when it is
+   * cached but its stored version no longer matches the freshly loaded manifest.
+   * No-ops when offline or not cached.
+   */
+  async function autoRefreshPin(systemId: string): Promise<void> {
+    if (offline.value) return
+    if (!cacheStore.isCached(systemId)) return
+    const versions = Object.values(manifestByModule.value).map((e) => e.version_string)
+    const current = [...new Set(versions)].join(', ')
+    await cacheStore.refreshIfStale(systemId, current)
+  }
+
+  /**
    * Fetch a JSON collection from an absolute URL using the authenticated axios
    * instance.  Cookies and XSRF token are sent automatically.
    * Returns null on any error so callers can skip gracefully.
@@ -813,6 +826,7 @@ export const useContentStore = defineStore('content', () => {
     deleteRule,
     fetchLint,
     refreshContent,
+    autoRefreshPin,
     clear,
   }
 })

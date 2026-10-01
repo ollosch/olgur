@@ -39,7 +39,7 @@ vi.mock('@/lib/idb', async (importOriginal) => {
   return { ...actual, idbPut: mockIdbPut }
 })
 
-import { useCacheStore } from '@/stores/cacheStore'
+import { useCacheStore, versionSignature } from '@/stores/cacheStore'
 import type {
   System,
   Module,
@@ -420,5 +420,50 @@ describe('useCacheStore — offline pinning', () => {
 
     expect(store.isCached('sys1')).toBe(false)
     expect(await store.getCachedSystem('sys1')).toBeUndefined()
+  })
+
+  it('re-pins when the cached version is stale', async () => {
+    const system = makeSystem('sys1')
+    const module = makeModule('mod1')
+    seedApi(system, [module], [{ ...makeManifestEntry('mod1'), version_string: '2.0' }])
+
+    const store = useCacheStore()
+    store.cachedSystems = [
+      { systemId: 'sys1', name: 'System sys1', versionString: '1.0', cachedAt: 0, size: 10 },
+    ]
+
+    await store.refreshIfStale('sys1', '2.0')
+
+    expect(store.cachedSystems[0]?.versionString).toBe('2.0')
+  })
+
+  it('no-ops when the cached version matches', async () => {
+    const store = useCacheStore()
+    store.cachedSystems = [
+      { systemId: 'sys1', name: 'System sys1', versionString: '1.0', cachedAt: 0, size: 10 },
+    ]
+
+    await store.refreshIfStale('sys1', '1.0')
+
+    expect(mockGet).not.toHaveBeenCalled()
+    expect(store.cachedSystems[0]?.versionString).toBe('1.0')
+  })
+
+  it('no-ops when the system is not cached', async () => {
+    const store = useCacheStore()
+
+    await store.refreshIfStale('sys1', '2.0')
+
+    expect(mockGet).not.toHaveBeenCalled()
+    expect(store.cachedSystems).toEqual([])
+  })
+})
+
+describe('versionSignature', () => {
+  it('normalizes version sets regardless of order or empty entries', () => {
+    expect(versionSignature('0.1, 0.2')).toBe('0.1, 0.2')
+    expect(versionSignature('0.2, 0.1')).toBe('0.1, 0.2')
+    expect(versionSignature('0.1, , ')).toBe('0.1')
+    expect(versionSignature('')).toBe('')
   })
 })
