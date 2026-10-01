@@ -10,13 +10,18 @@ const props = defineProps<{ systemId: string }>()
 
 const cacheStore = useCacheStore()
 const contentStore = useContentStore()
-const { online } = useOnline()
+const { online, offline } = useOnline()
 
 const meta = computed(() =>
   cacheStore.cachedSystems.find((entry) => entry.systemId === props.systemId),
 )
 const isCached = computed(() => meta.value !== undefined)
 const pinning = computed(() => cacheStore.pinInProgress.has(props.systemId))
+
+/** Offline with a cache means toggling off deletes the only copy — label it as such. */
+const isDelete = computed(() => offline.value && isCached.value)
+
+const label = computed(() => (isDelete.value ? 'Delete from cache' : 'Make available offline'))
 
 function versionSignature(joined: string): string {
   return joined
@@ -52,7 +57,7 @@ async function toggle(checked: boolean): Promise<void> {
 
 <template>
   <DropdownMenuCheckboxItem :model-value="isCached" :disabled="pinning" @update:model-value="toggle">
-    Make available offline
+    <span :class="isDelete ? 'text-destructive' : undefined">{{ label }}</span>
     <span v-if="newVersionAvailable" class="ml-auto text-xs text-amber-500"> Update available </span>
   </DropdownMenuCheckboxItem>
 </template>

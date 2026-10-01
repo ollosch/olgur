@@ -255,6 +255,16 @@ describe('PinSystemControl', () => {
     expect(wrapper.find('[role="menuitemcheckbox"]').attributes('aria-checked')).toBe('true')
   })
 
+  it('reads "Delete from cache" when offline and cached', () => {
+    useOnline().online.value = false
+    useCacheStore().cachedSystems = [meta()]
+
+    const wrapper = mountControl()
+
+    expect(wrapper.text()).toContain('Delete from cache')
+    expect(wrapper.text()).not.toContain('Make available offline')
+  })
+
   it('pins the system when toggled on', async () => {
     seedApi(makeSystem('sys1'), [makeModule('mod1')], [makeManifestEntry('mod1')])
     const cacheStore = useCacheStore()
