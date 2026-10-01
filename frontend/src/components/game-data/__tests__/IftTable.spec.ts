@@ -57,4 +57,66 @@ describe('IftTable', () => {
     expect(link.exists()).toBe(true)
     expect(link.text()).toBe('A.5.1.2')
   })
+
+  it('renders the FP or DR modifiers section with rule links', () => {
+    const wrapper = mount(IftTable, {
+      props: {
+        content: makeContent({
+          modifiers: [
+            {
+              label: 'Set DC ({{L:A.23.7.1}})',
+              value: '-3',
+              tags: [],
+              markers: [],
+            },
+          ],
+        }),
+      },
+    })
+
+    expect(wrapper.text()).toContain('FP or DR Modifiers')
+    expect(wrapper.text()).toContain('DRM / Cause')
+
+    const link = wrapper.find('a[data-rule-number="A.23.7.1"]')
+    expect(link.exists()).toBe(true)
+    expect(link.text()).toBe('A.23.7.1')
+  })
+
+  it('renders modifier footnotes via renderContent', () => {
+    const wrapper = mount(IftTable, {
+      props: {
+        content: makeContent({
+          modifiers: [
+            {
+              label: 'TPBF vs same Location ({{L:A.7.2.1}})',
+              value: '×3 †',
+              tags: [],
+              markers: ['†'],
+            },
+          ],
+          footnotes: { '†': { text: 'EXC: FT NA', style: 'white' } },
+        }),
+      },
+    })
+
+    expect(wrapper.text()).toContain('[†]')
+    expect(wrapper.text()).toContain('EXC: FT NA')
+  })
+
+  it('highlights the active row and column when hovering a cell', async () => {
+    const wrapper = mount(IftTable, { props: { content: makeContent() } })
+
+    const cell = wrapper.find('td[data-row="le0"][data-col="fp1"]')
+    await cell.trigger('mouseenter')
+
+    expect(cell.classes()).toContain('bg-primary/15')
+
+    const rowHeader = wrapper.findAll('th').find((t) => t.text() === '≤ 0')
+    const colHeader = wrapper.findAll('th').find((t) => t.text() === '1/20')
+    expect(rowHeader?.classes()).toContain('bg-primary/25')
+    expect(colHeader?.classes()).toContain('bg-primary/25')
+
+    await cell.trigger('mouseleave')
+    expect(cell.classes()).not.toContain('bg-primary/15')
+  })
 })
