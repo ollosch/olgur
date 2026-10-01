@@ -20,6 +20,8 @@ import {
 } from '@/components/ui/dialog'
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { useModalShortcutGuard } from '@/composables/useModalShortcutGuard'
+import { useUnsavedChangesGuard } from '@/composables/useUnsavedChangesGuard'
+import DiscardChangesDialog from '@/components/DiscardChangesDialog.vue'
 import RuleSearchInput from './RuleSearchInput.vue'
 
 interface Props {
@@ -46,7 +48,7 @@ const { loading } = storeToRefs(contentStore)
 
 useModalShortcutGuard(() => props.open)
 
-const { defineField, handleSubmit, errors, setErrors, setFieldValue, resetForm } =
+const { defineField, handleSubmit, errors, setErrors, setFieldValue, resetForm, meta } =
   useForm<FormValues>()
 
 const [ruleNumber, ruleNumberAttrs] = defineField('number')
@@ -54,6 +56,26 @@ const [title, titleAttrs] = defineField('title')
 const [content, contentAttrs] = defineField('content')
 const [markdown, markdownAttrs] = defineField('markdown')
 const [parentId] = defineField('parent_id')
+
+// ---------------------------------------------------------------------------
+// Unsaved-changes guard
+// ---------------------------------------------------------------------------
+
+const { confirmOpen, requestClose } = useUnsavedChangesGuard(() => meta.value.dirty)
+
+function onOpenChange(open: boolean): void {
+  if (!open && !requestClose()) return
+  emit('update:open', open)
+}
+
+function onCancel(): void {
+  if (requestClose()) emit('update:open', false)
+}
+
+function onConfirmDiscard(): void {
+  confirmOpen.value = false
+  emit('update:open', false)
+}
 
 // ---------------------------------------------------------------------------
 // Descendant exclusion set
@@ -138,7 +160,7 @@ const onSubmit = handleSubmit(async (values) => {
 </script>
 
 <template>
-  <Dialog :open="props.open" @update:open="emit('update:open', $event)">
+  <Dialog :open="props.open" @update:open="onOpenChange">
     <DialogContent class="overflow-y-auto max-h-[98dvh] sm:max-h-[95dvh]">
       <DialogHeader>
         <DialogTitle>Edit Rule</DialogTitle>
@@ -235,12 +257,12 @@ const onSubmit = handleSubmit(async (values) => {
         </FieldGroup>
 
         <DialogFooter>
-          <Button variant="ghost" type="button" @click="emit('update:open', false)">
-            Cancel
-          </Button>
+          <Button variant="ghost" type="button" @click="onCancel"> Cancel </Button>
           <Button type="submit" :disabled="loading">Save</Button>
         </DialogFooter>
       </form>
     </DialogContent>
   </Dialog>
+
+  <DiscardChangesDialog v-model:open="confirmOpen" @confirm="onConfirmDiscard" />
 </template>

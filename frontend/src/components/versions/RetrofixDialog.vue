@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useSystemStore } from '@/stores/system'
 import { useContentStore } from '@/stores/content'
 import type { Rule } from '@/types/domain'
@@ -12,6 +12,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useModalShortcutGuard } from '@/composables/useModalShortcutGuard'
+import { useUnsavedChangesGuard } from '@/composables/useUnsavedChangesGuard'
+import DiscardChangesDialog from '@/components/DiscardChangesDialog.vue'
 import RetrofixEditor from '@/components/versions/RetrofixEditor.vue'
 
 interface Props {
@@ -29,6 +31,19 @@ const contentStore = useContentStore()
 
 useModalShortcutGuard(() => props.open)
 
+const isDirty = ref(false)
+const { confirmOpen, requestClose } = useUnsavedChangesGuard(() => isDirty.value)
+
+function onOpenChange(open: boolean): void {
+  if (!open && !requestClose()) return
+  emit('update:open', open)
+}
+
+function onConfirmDiscard(): void {
+  confirmOpen.value = false
+  emit('update:open', false)
+}
+
 const systemId = computed(() => systemStore.currentSystem?.id ?? '')
 const moduleId = computed(() => props.rule.module_id)
 const manifestEntry = computed(() => contentStore.manifestByModule[moduleId.value])
@@ -38,7 +53,7 @@ const manifestRulesUrl = computed(() => manifestEntry.value?.content?.rules ?? '
 </script>
 
 <template>
-  <Dialog :open="props.open" @update:open="emit('update:open', $event)">
+  <Dialog :open="props.open" @update:open="onOpenChange">
     <DialogContent class="overflow-y-auto max-h-[98dvh] sm:max-w-3xl">
       <DialogHeader>
         <DialogTitle>Back-edit released version</DialogTitle>
@@ -48,6 +63,7 @@ const manifestRulesUrl = computed(() => manifestEntry.value?.content?.rules ?? '
       </DialogHeader>
 
       <RetrofixEditor
+        v-model:dirty="isDirty"
         :system-id="systemId"
         :module-id="moduleId"
         :version-id="versionId"
@@ -57,4 +73,6 @@ const manifestRulesUrl = computed(() => manifestEntry.value?.content?.rules ?? '
       />
     </DialogContent>
   </Dialog>
+
+  <DiscardChangesDialog v-model:open="confirmOpen" @confirm="onConfirmDiscard" />
 </template>

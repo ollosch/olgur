@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 import { useRetrofix } from '@/composables/useRetrofix'
 import { Button } from '@/components/ui/button'
@@ -20,6 +20,9 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const emit = defineEmits<{
+  'update:dirty': [value: boolean]
+}>()
 
 const {
   releasedContent,
@@ -59,6 +62,9 @@ const singleEditorContent = computed({
 
 const releasedChanged = computed(() => releasedContent.value !== initialReleasedContent.value)
 const draftChanged = computed(() => draftContent.value !== initialDraftContent.value)
+
+const dirty = computed(() => releasedChanged.value || draftChanged.value)
+watch(dirty, (value) => emit('update:dirty', value))
 
 // ── Lifecycle ────────────────────────────────────────────────────────────────
 

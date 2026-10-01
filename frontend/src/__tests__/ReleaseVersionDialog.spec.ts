@@ -32,6 +32,7 @@ vi.mock('@/components/ui/input', () => ({
 }))
 
 import ReleaseVersionDialog from '@/components/systems/ReleaseVersionDialog.vue'
+import DiscardChangesDialog from '@/components/DiscardChangesDialog.vue'
 import { useSystemStore } from '@/stores/system'
 import { dialogStubs } from './helpers/dialogStubs'
 
@@ -57,6 +58,37 @@ describe('ReleaseVersionDialog', () => {
     await flushPromises()
 
     expect(createVersion).toHaveBeenCalledWith('sys1', 'mod1', '0.1')
+    expect(wrapper.emitted('update:open')).toContainEqual([false])
+  })
+
+  it('asks for confirmation instead of closing when Cancel is clicked with unsaved changes', async () => {
+    useSystemStore()
+
+    const wrapper = mount(ReleaseVersionDialog, {
+      props: { systemId: 'sys1', moduleId: 'mod1', moduleName: 'Core', open: true },
+      global: { stubs: dialogStubs() },
+    })
+
+    await wrapper.find('#ver-string').setValue('0.1')
+
+    const cancel = wrapper.findAll('button').find((b) => b.text().trim() === 'Cancel')
+    await cancel!.trigger('click')
+
+    expect(wrapper.emitted('update:open')).toBeUndefined()
+    expect(wrapper.findComponent(DiscardChangesDialog).props('open')).toBe(true)
+  })
+
+  it('closes when Cancel is clicked without unsaved changes', async () => {
+    useSystemStore()
+
+    const wrapper = mount(ReleaseVersionDialog, {
+      props: { systemId: 'sys1', moduleId: 'mod1', moduleName: 'Core', open: true },
+      global: { stubs: dialogStubs() },
+    })
+
+    const cancel = wrapper.findAll('button').find((b) => b.text().trim() === 'Cancel')
+    await cancel!.trigger('click')
+
     expect(wrapper.emitted('update:open')).toContainEqual([false])
   })
 })

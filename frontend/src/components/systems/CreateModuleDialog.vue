@@ -16,6 +16,8 @@ import {
 } from '@/components/ui/dialog'
 import { generateSlug } from '@/lib/utils'
 import { useModalShortcutGuard } from '@/composables/useModalShortcutGuard'
+import { useUnsavedChangesGuard } from '@/composables/useUnsavedChangesGuard'
+import DiscardChangesDialog from '@/components/DiscardChangesDialog.vue'
 
 interface Props {
   systemId: string
@@ -42,11 +44,31 @@ const { createModule } = systemStore
 
 useModalShortcutGuard(() => props.open)
 
-const { defineField, handleSubmit, errors, setErrors, resetForm } = useForm<FormValues>()
+const { defineField, handleSubmit, errors, setErrors, resetForm, meta } = useForm<FormValues>()
 
 const [name] = defineField('name')
 const [slug] = defineField('slug')
 const [isCore] = defineField('is_core')
+
+// ---------------------------------------------------------------------------
+// Unsaved-changes guard
+// ---------------------------------------------------------------------------
+
+const { confirmOpen, requestClose } = useUnsavedChangesGuard(() => meta.value.dirty)
+
+function onOpenChange(open: boolean): void {
+  if (!open && !requestClose()) return
+  emit('update:open', open)
+}
+
+function onCancel(): void {
+  if (requestClose()) emit('update:open', false)
+}
+
+function onConfirmDiscard(): void {
+  confirmOpen.value = false
+  emit('update:open', false)
+}
 
 watch(name, (val) => {
   slug.value = generateSlug(val ?? '')
@@ -80,7 +102,7 @@ const onSubmit = handleSubmit(async (values) => {
 </script>
 
 <template>
-  <Dialog :open="props.open" @update:open="emit('update:open', $event)">
+  <Dialog :open="props.open" @update:open="onOpenChange">
     <DialogContent class="sm:max-w-md">
       <DialogHeader>
         <DialogTitle>New Module</DialogTitle>
@@ -120,12 +142,12 @@ const onSubmit = handleSubmit(async (values) => {
         </p>
 
         <DialogFooter>
-          <Button variant="ghost" type="button" @click="emit('update:open', false)">
-            Cancel
-          </Button>
+          <Button variant="ghost" type="button" @click="onCancel"> Cancel </Button>
           <Button type="submit" :disabled="loading">Create</Button>
         </DialogFooter>
       </form>
     </DialogContent>
   </Dialog>
+
+  <DiscardChangesDialog v-model:open="confirmOpen" @confirm="onConfirmDiscard" />
 </template>
