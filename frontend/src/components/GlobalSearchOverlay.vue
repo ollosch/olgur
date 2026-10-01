@@ -12,6 +12,7 @@ import IndexEntryResult from '@/components/systems/IndexEntryResult.vue'
 import { unitTypeLabel, unitNation } from '@/lib/unitUtils'
 import { useUnitSelectionStore } from '@/stores/unitSelection'
 import { useToolModalStore } from '@/stores/toolModal'
+import { useGameDataModalStore } from '@/stores/gameDataModal'
 
 const DEFAULT_CAP = 10
 const shortcutStore = useShortcutStore()
@@ -20,11 +21,13 @@ const router = useRouter()
 const route = useRoute()
 const unitSelectionStore = useUnitSelectionStore()
 const toolModalStore = useToolModalStore()
+const gameDataModalStore = useGameDataModalStore()
 
 // Persistent state — survives open/close cycles
 const query = ref('')
 const showAllRules = ref(false)
 const showAllEntries = ref(false)
+const showAllTables = ref(false)
 const showAllGameData = ref(false)
 const showAllUnits = ref(false)
 
@@ -110,12 +113,28 @@ const visibleRules = computed((): RuleResult[] =>
 )
 const hiddenRulesCount = computed((): number => Math.max(0, ruleResults.value.length - DEFAULT_CAP))
 
+const tableResults = computed((): GameDataResult[] => {
+  const q = query.value.trim().toLowerCase()
+  if (!q) return []
+  const results: GameDataResult[] = []
+  for (const item of contentStore.allGameData) {
+    if (item.type !== 'table') continue
+    const r = rankMatchLower(item.name.toLowerCase(), q)
+    if (r < 3) results.push({ item, rank: r })
+  }
+  results.sort((a, b) => {
+    if (a.rank !== b.rank) return a.rank - b.rank
+    return a.item.name.localeCompare(b.item.name)
+  })
+  return results
+})
+
 const gameDataResults = computed((): GameDataResult[] => {
   const q = query.value.trim().toLowerCase()
   if (!q) return []
   const results: GameDataResult[] = []
   for (const item of contentStore.allGameData) {
-    if (item.type !== 'sop' && item.type !== 'table') continue
+    if (item.type !== 'sop') continue
     const r = rankMatchLower(item.name.toLowerCase(), q)
     if (r < 3) results.push({ item, rank: r })
   }
@@ -142,6 +161,13 @@ const unitResults = computed((): GameDataResult[] => {
   return results
 })
 
+const visibleTables = computed((): GameDataResult[] =>
+  showAllTables.value ? tableResults.value : tableResults.value.slice(0, DEFAULT_CAP),
+)
+const hiddenTablesCount = computed((): number =>
+  Math.max(0, tableResults.value.length - DEFAULT_CAP),
+)
+
 const visibleGameData = computed((): GameDataResult[] =>
   showAllGameData.value ? gameDataResults.value : gameDataResults.value.slice(0, DEFAULT_CAP),
 )
@@ -158,6 +184,7 @@ const hasResults = computed(
   (): boolean =>
     ruleResults.value.length > 0 ||
     entryResults.value.length > 0 ||
+    tableResults.value.length > 0 ||
     gameDataResults.value.length > 0 ||
     unitResults.value.length > 0,
 )
@@ -165,6 +192,7 @@ const hasResults = computed(
 function onQueryInput(): void {
   showAllRules.value = false
   showAllEntries.value = false
+  showAllTables.value = false
   showAllGameData.value = false
   showAllUnits.value = false
 }
@@ -201,6 +229,11 @@ function selectGameDatum(item: GameDatum): void {
   if (systemId) {
     router.push({ name: 'system-game-datum', params: { systemId, gameDatumId: item.id } })
   }
+  shortcutStore.overlayOpen = false
+}
+
+function selectTable(item: GameDatum): void {
+  gameDataModalStore.selectTable(item.id)
   shortcutStore.overlayOpen = false
 }
 
@@ -246,6 +279,45 @@ function onKeyDown(e: KeyboardEvent): void {
       <div ref="listRef" class="overflow-y-auto max-h-[70vh] py-2">
         <!-- Has results -->
         <template v-if="query.trim() && hasResults">
+          <!-- Tables group -->
+          <template v-if="tableResults.length > 0">
+            <div class="px-3 pt-1 pb-1">
+              <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                Tables
+              </p>
+            </div>
+
+            <div
+              v-for="{ item } in visibleTables"
+              :key="item.id"
+              class="mx-2 px-2 py-1.5 rounded cursor-pointer hover:bg-accent flex items-center gap-2 transition-colors"
+              role="button"
+              tabindex="0"
+              @click="selectTable(item)"
+              @keydown.enter="selectTable(item)"
+            >
+              <span
+                class="text-[10px] font-medium text-muted-foreground bg-muted rounded px-1.5 py-0.5 shrink-0"
+                >{{ item.type }}</span
+              >
+              <span class="text-foreground text-xs truncate">{{ item.name }}</span>
+            </div>
+
+            <button
+              v-if="hiddenTablesCount > 0 && !showAllTables"
+              class="w-full px-4 py-1.5 text-[11px] text-muted-foreground hover:text-foreground text-left transition-colors"
+              @click="showAllTables = true"
+            >
+              {{ hiddenTablesCount }} more…
+            </button>
+          </template>
+
+          <!-- Separator between groups -->
+          <div
+            v-if="tableResults.length > 0 && entryResults.length > 0"
+            class="border-t border-border/50 my-2"
+          />
+
           <!-- Index group -->
           <template v-if="entryResults.length > 0">
             <div class="px-3 pt-1 pb-1">
@@ -327,11 +399,11 @@ function onKeyDown(e: KeyboardEvent): void {
             class="border-t border-border/50 my-2"
           />
 
-          <!-- Game Data group -->
+          <!-- SOP group -->
           <template v-if="gameDataResults.length > 0">
             <div class="px-3 pt-1 pb-1">
               <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-                Game Data
+                SOP
               </p>
             </div>
 
@@ -363,7 +435,10 @@ function onKeyDown(e: KeyboardEvent): void {
           <!-- Separator between groups -->
           <div
             v-if="
-              (gameDataResults.length > 0 || ruleResults.length > 0 || entryResults.length > 0) &&
+              (tableResults.length > 0 ||
+                gameDataResults.length > 0 ||
+                ruleResults.length > 0 ||
+                entryResults.length > 0) &&
               unitResults.length > 0
             "
             class="border-t border-border/50 my-2"
