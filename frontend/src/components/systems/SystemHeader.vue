@@ -185,7 +185,7 @@ async function logout(): Promise<void> {
     </div>
 
     <!-- Center: toolbar button bar -->
-    <div class="flex-1 min-w-0 flex items-center mx-auto gap-1 overflow-hidden">
+    <div class="flex-1 min-w-0 flex items-center gap-1 overflow-hidden">
       <!-- Table Browser -->
       <Button
         variant="ghost"
@@ -226,13 +226,13 @@ async function logout(): Promise<void> {
             :ref="registerTool(tool.id)"
             v-show="visibleToolIds.includes(tool.id)"
             variant="ghost"
-            size="icon"
-            class="w-8 h-8 shrink-0"
+            class="h-8 px-2 text-xs gap-1 shrink-0 text-muted-foreground"
             :title="tool.label"
             data-test="inline-tool"
             @click="emit('openTool', tool.id)"
           >
-            <Wrench class="w-4 h-4" />
+            <Wrench class="w-3.5 h-3.5" />
+            {{ tool.id }}
           </Button>
         </template>
 
