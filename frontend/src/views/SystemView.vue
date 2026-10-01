@@ -403,7 +403,7 @@ function openTool(toolId: string): void {
                     <button
                       v-for="rule in contentStore.flatRootRules"
                       :key="rule.id"
-                      class="w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-muted/40 transition-colors text-left group"
+                      class="w-full flex items-baseline gap-3 py-1 rounded-md hover:bg-muted/40 transition-colors text-left group"
                       @click="selectRule(rule)"
                     >
                       <span
@@ -434,7 +434,7 @@ function openTool(toolId: string): void {
                         <button
                           v-for="rule in buildTopLevelRules(getModuleRules(mod))"
                           :key="rule.id"
-                          class="w-full flex items-baseline gap-3 px-3 py-2.5 rounded-md hover:bg-muted/40 transition-colors text-left group"
+                          class="w-full flex items-baseline gap-3 py-1 rounded-md hover:bg-muted/40 transition-colors text-left group"
                           @click="selectRule(rule)"
                         >
                           <span
