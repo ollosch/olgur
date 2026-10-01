@@ -943,6 +943,100 @@ test('--fresh flag deletes and reimports sop', function () use ($simpleGameRules
     removeGameDir($dir);
 });
 
+test('tables are imported when manifest has a tables key', function () use ($simpleGameRules): void {
+    $tables = [
+        ['slug' => 'ift', 'name' => 'Infantry Fire Table', 'content' => ['kind' => 'ift', 'rows' => []]],
+    ];
+
+    $dir = makeGameDir(
+        [
+            'name' => 'Tables Game',
+            'slug' => 'tables-game',
+            'modules' => [
+                ['type' => 'core', 'name' => 'Core', 'slug' => 'core', 'path' => 'rules.json'],
+            ],
+            'index' => 'idx.json',
+            'tables' => 'tables.json',
+        ],
+        [
+            'rules.json' => $simpleGameRules,
+            'idx.json' => [],
+            'tables.json' => $tables,
+        ]
+    );
+
+    artisan('import:game', ['path' => $dir])
+        ->assertSuccessful()
+        ->expectsOutputToContain('Imported 1 tables');
+
+    expect(GameDatum::query()->where('type', 'table')->count())->toBe(1);
+    expect(GameDatum::query()->where('slug', 'ift')->exists())->toBeTrue();
+
+    $datum = GameDatum::query()->where('slug', 'ift')->first();
+    expect($datum->name)->toBe('Infantry Fire Table');
+    expect($datum->content['kind'])->toBe('ift');
+
+    removeGameDir($dir);
+});
+
+test('--fresh flag deletes and reimports tables', function () use ($simpleGameRules): void {
+    $tables = [
+        ['slug' => 'ift', 'name' => 'Infantry Fire Table', 'content' => ['kind' => 'ift', 'rows' => []]],
+    ];
+
+    $dir = makeGameDir(
+        [
+            'name' => 'Fresh Tables Game',
+            'slug' => 'fresh-tables-game',
+            'modules' => [
+                ['type' => 'core', 'name' => 'Core', 'slug' => 'core', 'path' => 'rules.json'],
+            ],
+            'index' => 'idx.json',
+            'tables' => 'tables.json',
+        ],
+        [
+            'rules.json' => $simpleGameRules,
+            'idx.json' => [],
+            'tables.json' => $tables,
+        ]
+    );
+
+    artisan('import:game', ['path' => $dir])->assertSuccessful();
+    expect(GameDatum::query()->where('type', 'table')->count())->toBe(1);
+
+    artisan('import:game', ['path' => $dir, '--fresh' => true])->assertSuccessful();
+    expect(GameDatum::query()->where('type', 'table')->count())->toBe(1);
+
+    removeGameDir($dir);
+});
+
+test('missing tables file warns and continues without aborting', function () use ($simpleGameRules): void {
+    $dir = makeGameDir(
+        [
+            'name' => 'Missing Tables Game',
+            'slug' => 'missing-tables-game',
+            'modules' => [
+                ['type' => 'core', 'name' => 'Core', 'slug' => 'core', 'path' => 'rules.json'],
+            ],
+            'index' => 'idx.json',
+            'tables' => 'nonexistent.json',
+        ],
+        [
+            'rules.json' => $simpleGameRules,
+            'idx.json' => [],
+        ]
+    );
+
+    artisan('import:game', ['path' => $dir])
+        ->assertSuccessful()
+        ->expectsOutputToContain('skipping');
+
+    expect(GameDatum::query()->where('type', 'table')->count())->toBe(0);
+    expect(Rule::query()->count())->toBe(3);
+
+    removeGameDir($dir);
+});
+
 test('--create-version=1.0 releases every module with snapshots', function () use ($simpleGameRules, $simpleGameIndex): void {
     $user = User::factory()->create(['email' => 'releaser@example.com']);
 
