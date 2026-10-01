@@ -9,12 +9,14 @@ import { useModalShortcutGuard } from '@/composables/useModalShortcutGuard'
 import MatrixTable from '@/components/game-data/MatrixTable.vue'
 import AttributeTable from '@/components/game-data/AttributeTable.vue'
 import ModifierList from '@/components/game-data/ModifierList.vue'
+import IftTable from '@/components/game-data/IftTable.vue'
 import type { MatrixContent } from '@/components/game-data/MatrixTable.vue'
 import type { AttributeTableContent } from '@/components/game-data/AttributeTable.vue'
 import type { ModifierListContent } from '@/components/game-data/ModifierList.vue'
+import type { IftContent } from '@/components/game-data/IftTable.vue'
 import type { GameDatum } from '@/types/domain'
 
-type TableContent = MatrixContent | AttributeTableContent | ModifierListContent
+type TableContent = MatrixContent | AttributeTableContent | ModifierListContent | IftContent
 
 const contentStore = useContentStore()
 const gameDataModalStore = useGameDataModalStore()
@@ -143,6 +145,10 @@ function onOpenChange(open: boolean): void {
                 <ModifierList
                   v-else-if="tableContent(selectedTable)!.kind === 'modifier_list'"
                   :content="tableContent(selectedTable) as ModifierListContent"
+                />
+                <IftTable
+                  v-else-if="tableContent(selectedTable)!.kind === 'ift'"
+                  :content="tableContent(selectedTable) as IftContent"
                 />
               </template>
             </div>
