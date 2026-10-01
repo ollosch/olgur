@@ -10,7 +10,7 @@ interface Props {
   actionLabel?: string
 }
 
-const props = withDefaults(defineProps<Props>(), { actionLabel: 'Mark proofread' })
+const props = withDefaults(defineProps<Props>(), { actionLabel: '' })
 
 const proofreadStore = useProofreadStore()
 
