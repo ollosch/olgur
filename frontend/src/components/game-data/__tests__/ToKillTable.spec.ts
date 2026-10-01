@@ -172,13 +172,13 @@ describe('ToKillTable', () => {
     const cell = wrapper.find('td[data-col="@MG"]')
     await cell.trigger('mouseenter')
 
-    expect(cell.classes()).toContain('bg-primary/15')
+    expect(cell.classes()).toContain('bg-primary/30')
 
     const header = wrapper.findAll('th').find((t) => t.text().includes('@MG'))
-    expect(header?.classes()).toContain('bg-primary/25')
+    expect(header?.classes()).toContain('bg-primary/15')
 
     await cell.trigger('mouseleave')
-    expect(cell.classes()).not.toContain('bg-primary/15')
+    expect(cell.classes()).not.toContain('bg-primary/30')
   })
 
   it('highlights the active row and column in the Case D table', async () => {
@@ -187,11 +187,11 @@ describe('ToKillTable', () => {
     const cell = wrapper.find('td[data-row="le25"][data-col="0_1"]')
     await cell.trigger('mouseenter')
 
-    expect(cell.classes()).toContain('bg-primary/15')
+    expect(cell.classes()).toContain('bg-primary/30')
 
     const rowHeader = wrapper.findAll('th').find((t) => t.text() === '≤ 25mm')
     const colHeader = wrapper.findAll('th').find((t) => t.text() === '0-1')
-    expect(rowHeader?.classes()).toContain('bg-primary/25')
-    expect(colHeader?.classes()).toContain('bg-primary/25')
+    expect(rowHeader?.classes()).toContain('bg-primary/15')
+    expect(colHeader?.classes()).toContain('bg-primary/15')
   })
 })

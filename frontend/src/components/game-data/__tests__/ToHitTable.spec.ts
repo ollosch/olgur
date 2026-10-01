@@ -29,33 +29,35 @@ function makeContent(overrides: Partial<ToHitContent> = {}): ToHitContent {
 }
 
 describe('ToHitTable', () => {
-  it('renders the range-band header row', () => {
+  it('renders the range-band header row without a black/red sub-row', () => {
     const wrapper = mount(ToHitTable, { props: { content: makeContent() } })
 
     expect(wrapper.text()).toContain('Target Type')
     expect(wrapper.text()).toContain('0-6')
     expect(wrapper.text()).toContain('> 54')
-    expect(wrapper.text()).toContain('black')
-    expect(wrapper.text()).toContain('red')
+    expect(wrapper.text()).not.toContain('black')
+    expect(wrapper.text()).not.toContain('red')
   })
 
-  it('renders a vehicle black/red value pair', () => {
+  it('renders a vehicle black/red value pair in a single cell', () => {
     const wrapper = mount(ToHitTable, { props: { content: makeContent() } })
 
-    const redSpans = wrapper.findAll('td.text-red-500')
-    expect(redSpans.length).toBeGreaterThan(0)
-    expect(redSpans.some((td) => td.text() === '10')).toBe(true)
-    expect(wrapper.text()).toContain('Vehicle')
+    const cell = wrapper.find('td[data-row="vehicle"][data-col="0_6"]')
+    expect(cell.exists()).toBe(true)
+
+    const black = cell.find('span.text-foreground')
+    const red = cell.find('span.text-red-500')
+    expect(black.text()).toBe('10')
+    expect(red.text()).toBe('10')
   })
 
-  it('renders an empty black cell for area targets with null black value', () => {
+  it('renders only the red value for area targets with a null black value', () => {
     const wrapper = mount(ToHitTable, { props: { content: makeContent() } })
 
-    expect(wrapper.text()).toContain('Area (Mortar, SMOKE)')
-    const areaRow = wrapper.findAll('tbody tr').find((tr) => tr.text().includes('Area'))
-    expect(areaRow).toBeDefined()
-    const areaRed = areaRow!.findAll('td.text-red-500')
-    expect(areaRed[0]?.text()).toBe('7')
+    const cell = wrapper.find('td[data-row="area"][data-col="0_6"]')
+    expect(cell.exists()).toBe(true)
+    expect(cell.find('span.text-foreground').exists()).toBe(false)
+    expect(cell.find('span.text-red-500').text()).toBe('7')
   })
 
   it('renders the gun & ammo section with a weapon row', () => {
@@ -147,21 +149,54 @@ describe('ToHitTable', () => {
   it('highlights the active row and column when hovering a C3 cell', async () => {
     const wrapper = mount(ToHitTable, { props: { content: makeContent() } })
 
-    const cells = wrapper.findAll('td[data-row="vehicle"][data-col="0_6"]')
-    expect(cells.length).toBe(2)
+    const cell = wrapper.find('td[data-row="vehicle"][data-col="0_6"]')
+    await cell.trigger('mouseenter')
 
-    await cells[0]!.trigger('mouseenter')
-
-    for (const cell of cells) {
-      expect(cell.classes()).toContain('bg-primary/15')
-    }
+    expect(cell.classes()).toContain('bg-primary/30')
 
     const rowHeader = wrapper.findAll('th').find((t) => t.text() === 'Vehicle')
     const colHeader = wrapper.findAll('th').find((t) => t.text() === '0-6')
-    expect(rowHeader?.classes()).toContain('bg-primary/25')
-    expect(colHeader?.classes()).toContain('bg-primary/25')
+    expect(rowHeader?.classes()).toContain('bg-primary/15')
+    expect(colHeader?.classes()).toContain('bg-primary/15')
 
-    await cells[0]!.trigger('mouseleave')
-    expect(cells[0]!.classes()).not.toContain('bg-primary/15')
+    await cell.trigger('mouseleave')
+    expect(cell.classes()).not.toContain('bg-primary/30')
+  })
+
+  it('highlights the active weapon row and range column in the C4 gun & ammo table', async () => {
+    const wrapper = mount(ToHitTable, {
+      props: {
+        content: makeContent({
+          gun_ammo: {
+            columns: [
+              { id: '0_6', label: '0-6', tags: [] },
+              { id: 'gt54', label: '> 54', tags: [] },
+            ],
+            rows: [
+              {
+                id: 'star_weapon',
+                label: '* Weapon',
+                tags: [],
+                cells: { '0_6': { value: '0' }, gt54: { value: '-1' } },
+              },
+            ],
+          },
+        }),
+      },
+    })
+
+    const c4Table = wrapper.findAll('table')[1]!
+    const cell = c4Table.find('td[data-row="star_weapon"][data-col="0_6"]')
+    await cell.trigger('mouseenter')
+
+    expect(cell.classes()).toContain('bg-primary/30')
+
+    const rowHeader = c4Table.findAll('td').find((t) => t.text() === '* Weapon')
+    const colHeader = c4Table.findAll('th').find((t) => t.text() === '0-6')
+    expect(rowHeader?.classes()).toContain('bg-primary/15')
+    expect(colHeader?.classes()).toContain('bg-primary/15')
+
+    await cell.trigger('mouseleave')
+    expect(cell.classes()).not.toContain('bg-primary/30')
   })
 })

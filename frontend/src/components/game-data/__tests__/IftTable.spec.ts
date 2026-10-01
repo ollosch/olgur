@@ -109,14 +109,14 @@ describe('IftTable', () => {
     const cell = wrapper.find('td[data-row="le0"][data-col="fp1"]')
     await cell.trigger('mouseenter')
 
-    expect(cell.classes()).toContain('bg-primary/15')
+    expect(cell.classes()).toContain('bg-primary/30')
 
     const rowHeader = wrapper.findAll('th').find((t) => t.text() === '≤ 0')
     const colHeader = wrapper.findAll('th').find((t) => t.text() === '1/20')
-    expect(rowHeader?.classes()).toContain('bg-primary/25')
-    expect(colHeader?.classes()).toContain('bg-primary/25')
+    expect(rowHeader?.classes()).toContain('bg-primary/15')
+    expect(colHeader?.classes()).toContain('bg-primary/15')
 
     await cell.trigger('mouseleave')
-    expect(cell.classes()).not.toContain('bg-primary/15')
+    expect(cell.classes()).not.toContain('bg-primary/30')
   })
 })

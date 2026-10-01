@@ -149,4 +149,21 @@ describe('useRuleDelegation', () => {
 
     expect(interactionStore.popupState.visible).toBe(true)
   })
+
+  it('shows an annotation popup when hovering a [data-annotation] element', () => {
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: true }))
+    const { interactionStore } = mountDelegation()
+    const el = document.createElement('sup')
+    el.dataset['annotation'] = 'EXC: see {{L:C.1.1}}'
+    document.body.append(el)
+
+    el.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+    vi.advanceTimersByTime(150)
+
+    expect(interactionStore.popupState.visible).toBe(true)
+    expect(interactionStore.popupState.content).toEqual({
+      type: 'annotation',
+      text: 'EXC: see {{L:C.1.1}}',
+    })
+  })
 })

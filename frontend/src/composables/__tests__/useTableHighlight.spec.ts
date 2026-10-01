@@ -73,4 +73,62 @@ describe('useTableHighlight', () => {
     expect(pinned.value).toEqual({ row: null, col: null })
     expect(active.value).toEqual({ row: null, col: null })
   })
+
+  describe('cellState', () => {
+    it('returns "none" when no cell is active', () => {
+      const { cellState } = useTableHighlight()
+      expect(cellState('r', 'c')).toBe('none')
+    })
+
+    it('returns "active" for the active cell', () => {
+      const { onCellEnter, cellState } = useTableHighlight()
+      onCellEnter('r', 'c')
+      expect(cellState('r', 'c')).toBe('active')
+    })
+
+    it('returns "row" for a sibling cell in the active row', () => {
+      const { onCellEnter, cellState } = useTableHighlight()
+      onCellEnter('r', 'c')
+      expect(cellState('r', 'other')).toBe('row')
+    })
+
+    it('returns "col" for a sibling cell in the active column', () => {
+      const { onCellEnter, cellState } = useTableHighlight()
+      onCellEnter('r', 'c')
+      expect(cellState('other', 'c')).toBe('col')
+    })
+  })
+
+  describe('cellClasses', () => {
+    it('returns the active class for the active cell', () => {
+      const { onCellEnter, cellClasses } = useTableHighlight()
+      onCellEnter('r', 'c')
+      expect(cellClasses('r', 'c')).toBe('bg-primary/30')
+    })
+
+    it('returns the attenuated class for row and column siblings', () => {
+      const { onCellEnter, cellClasses } = useTableHighlight()
+      onCellEnter('r', 'c')
+      expect(cellClasses('r', 'other')).toBe('bg-primary/10')
+      expect(cellClasses('other', 'c')).toBe('bg-primary/10')
+    })
+
+    it('returns an empty string for unrelated cells', () => {
+      const { onCellEnter, cellClasses } = useTableHighlight()
+      onCellEnter('r', 'c')
+      expect(cellClasses('x', 'y')).toBe('')
+    })
+  })
+
+  describe('rowHeaderClasses / colHeaderClasses', () => {
+    it('returns the header class only when the header is active', () => {
+      const { onCellEnter, rowHeaderClasses, colHeaderClasses } = useTableHighlight()
+      onCellEnter('r', 'c')
+
+      expect(rowHeaderClasses('r')).toBe('bg-primary/15')
+      expect(rowHeaderClasses('other')).toBe('')
+      expect(colHeaderClasses('c')).toBe('bg-primary/15')
+      expect(colHeaderClasses('other')).toBe('')
+    })
+  })
 })

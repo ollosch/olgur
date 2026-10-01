@@ -147,12 +147,12 @@ describe('DestructionTable', () => {
     const cell = wrapper.find('td[data-row="le_half"][data-col="direct_fire"]')
     await cell.trigger('mouseenter')
 
-    expect(cell.classes()).toContain('bg-primary/15')
+    expect(cell.classes()).toContain('bg-primary/30')
 
     const colHeader = wrapper.findAll('th').find((t) => t.text() === 'Bomb/Ordnance Direct Fire')
-    expect(colHeader?.classes()).toContain('bg-primary/25')
+    expect(colHeader?.classes()).toContain('bg-primary/15')
 
     await cell.trigger('mouseleave')
-    expect(cell.classes()).not.toContain('bg-primary/15')
+    expect(cell.classes()).not.toContain('bg-primary/30')
   })
 })
