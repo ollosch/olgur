@@ -11,6 +11,7 @@ import type { Rule, IndexEntry } from '@/types/domain'
  * - [data-rule-number]  → rule popup on hover, navigate on click
  * - [data-rule-range]   → range popup on hover, navigate to range on click
  * - [data-acronym-term] → acronym popup on hover
+ * - [data-annotation]   → footnote annotation popup on hover
  * - Inside popup overlay → keep open
  * - Anything else       → hide
  *
@@ -71,7 +72,8 @@ export function useRuleDelegation(
     const trigger =
       target.closest<HTMLElement>('[data-rule-number]') ??
       target.closest<HTMLElement>('[data-rule-range]') ??
-      target.closest<HTMLElement>('[data-acronym-term]')
+      target.closest<HTMLElement>('[data-acronym-term]') ??
+      target.closest<HTMLElement>('[data-annotation]')
 
     if (!trigger) {
       if (showTimer) {
@@ -156,6 +158,19 @@ export function useRuleDelegation(
             y,
             above,
           }
+        }
+      }, 150)
+    } else if (trigger.dataset['annotation'] !== undefined) {
+      const text = trigger.dataset['annotation'] ?? ''
+      showTimer = setTimeout(() => {
+        showTimer = null
+        const { y, above } = popupY(rect)
+        state.value = {
+          visible: true,
+          content: { type: 'annotation', text },
+          x: popupX(rect),
+          y,
+          above,
         }
       }, 150)
     }

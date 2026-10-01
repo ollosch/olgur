@@ -162,6 +162,11 @@ function onClick(e: MouseEvent) {
             {{ state.content.entry.relations.see_also.join(', ') }}
           </p>
         </template>
+        <!-- Annotation popup -->
+        <template v-else-if="state.content.type === 'annotation'">
+          <!-- eslint-disable-next-line vue/no-v-html -->
+          <p class="text-foreground/80 leading-relaxed" v-html="renderContent(state.content.text)" />
+        </template>
       </div>
     </Transition>
   </Teleport>
