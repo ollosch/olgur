@@ -301,7 +301,7 @@ describe('SystemHeader — draft/release switch', () => {
       expect(wrapper.find('[data-test="bookmark-more"]').exists()).toBe(false)
     })
 
-    it('lists pinned tables inline', () => {
+    it('renders a pinned table as a short slug button with the full name as tooltip', () => {
       seedSystem({ 'content.view_released': true })
       const contentStore = useContentStore()
       contentStore.rulesByModule['mod1'] = []
@@ -310,8 +310,10 @@ describe('SystemHeader — draft/release switch', () => {
       useMembershipStore().setMembership('sys1', makeMembership({ bookmarks: [{ type: 'table', id: 't1' }] }))
       const wrapper = mountHeader()
 
-      expect(wrapper.find('[data-test="inline-bookmark"]').exists()).toBe(true)
-      expect(wrapper.text()).toContain('Firepower Table')
+      const button = wrapper.find('[data-test="inline-bookmark"]')
+      expect(button.exists()).toBe(true)
+      expect(button.text()).toContain('t1')
+      expect(button.attributes('title')).toBe('Firepower Table')
     })
   })
 
@@ -322,7 +324,7 @@ describe('SystemHeader — draft/release switch', () => {
       useOnline().online.value = true
     })
 
-    it('renders up to 5 bookmarks inline and overflows the rest into a "More" dropdown', () => {
+    it('renders a bookmark button per pinned table', () => {
       seedSystem({ 'content.view_released': true })
       const contentStore = useContentStore()
       contentStore.rulesByModule['mod1'] = []
@@ -338,22 +340,7 @@ describe('SystemHeader — draft/release switch', () => {
       )
       const wrapper = mountHeader()
 
-      expect(wrapper.findAll('[data-test="inline-bookmark"]')).toHaveLength(5)
-      expect(wrapper.find('[data-test="bookmark-more"]').exists()).toBe(true)
-      expect(wrapper.text()).toContain('Table 6')
-    })
-
-    it('renders no "More" dropdown when there are 5 or fewer bookmarks', () => {
-      seedSystem({ 'content.view_released': true })
-      const contentStore = useContentStore()
-      contentStore.rulesByModule['mod1'] = []
-      contentStore.indexEntriesByModule['mod1'] = []
-      contentStore.gameDataByModule['mod1'] = [makeTable('t1', 'mod1', 'Firepower Table')]
-      useMembershipStore().setMembership('sys1', makeMembership({ bookmarks: [{ type: 'table', id: 't1' }] }))
-      const wrapper = mountHeader()
-
-      expect(wrapper.findAll('[data-test="inline-bookmark"]')).toHaveLength(1)
-      expect(wrapper.find('[data-test="bookmark-more"]').exists()).toBe(false)
+      expect(wrapper.findAll('[data-test="inline-bookmark"]')).toHaveLength(6)
     })
   })
 
@@ -364,7 +351,7 @@ describe('SystemHeader — draft/release switch', () => {
       useOnline().online.value = true
     })
 
-    it('renders up to 4 tools inline and overflows the rest into a "More" dropdown', () => {
+    it('renders a button per tool', () => {
       seedSystem({ 'content.view_released': true })
       vi.mocked(gameDataTools).mockReturnValue([
         makeTool('t1', 'Tool One'),
@@ -376,22 +363,7 @@ describe('SystemHeader — draft/release switch', () => {
       ])
       const wrapper = mountHeader()
 
-      expect(wrapper.findAll('[data-test="inline-tool"]')).toHaveLength(4)
-      expect(wrapper.find('[data-test="tool-more"]').exists()).toBe(true)
-      expect(wrapper.text()).toContain('Tool Five')
-      expect(wrapper.text()).toContain('Tool Six')
-    })
-
-    it('renders no "More" dropdown when there are 4 or fewer tools', () => {
-      seedSystem({ 'content.view_released': true })
-      vi.mocked(gameDataTools).mockReturnValue([
-        makeTool('t1', 'Tool One'),
-        makeTool('t2', 'Tool Two'),
-      ])
-      const wrapper = mountHeader()
-
-      expect(wrapper.findAll('[data-test="inline-tool"]')).toHaveLength(2)
-      expect(wrapper.find('[data-test="tool-more"]').exists()).toBe(false)
+      expect(wrapper.findAll('[data-test="inline-tool"]')).toHaveLength(6)
     })
   })
 

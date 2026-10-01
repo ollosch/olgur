@@ -22,13 +22,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Menu, Search, Table2, ListOrdered, TriangleAlert, Wrench, Bookmark, ChevronDown, MoreHorizontal } from '@lucide/vue'
+import { Menu, Search, Table2, ListOrdered, TriangleAlert, Wrench, Bookmark, MoreHorizontal, Settings } from '@lucide/vue'
 import LeftPanelContent from '@/components/systems/LeftPanelContent.vue'
 import ManageMembersDialog from '@/components/systems/ManageMembersDialog.vue'
 import BrokenLinksDialog from '@/components/systems/BrokenLinksDialog.vue'
 import ProofreadDialog from '@/components/systems/ProofreadDialog.vue'
 import PinSystemControl from '@/components/systems/PinSystemControl.vue'
 import { useBrokenLinks } from '@/composables/useBrokenLinks'
+import { useToolbarOverflow } from '@/composables/useToolbarOverflow'
 import { gameDataTools } from '@/lib/gameDataTools'
 import type { Rule, Module } from '@/types/domain'
 import { ref, computed } from 'vue'
@@ -104,11 +105,27 @@ const tableBookmarks = computed(() =>
   bookmarkStore.resolvedBookmarks.filter((b) => b.entry.type === 'table'),
 )
 
-const inlineTools = computed(() => tools.value.slice(0, 4))
-const overflowTools = computed(() => tools.value.slice(4))
+const bookmarkItems = computed(() => tableBookmarks.value.map((b) => ({ id: b.entry.id })))
 
-const inlineBookmarks = computed(() => tableBookmarks.value.slice(0, 5))
-const overflowBookmarks = computed(() => tableBookmarks.value.slice(5))
+const {
+  containerRef,
+  registerTool,
+  registerBookmark,
+  visibleToolIds,
+  hiddenToolIds,
+  visibleBookmarkIds,
+  hiddenBookmarkIds,
+} = useToolbarOverflow(tools, bookmarkItems)
+
+const overflowToolList = computed(() => tools.value.filter((t) => hiddenToolIds.value.includes(t.id)))
+
+const overflowBookmarkList = computed(() =>
+  tableBookmarks.value.filter((b) => hiddenBookmarkIds.value.includes(b.entry.id)),
+)
+
+function bookmarkSlug(tableId: string): string {
+  return contentStore.allGameData.find((d) => d.id === tableId)?.slug ?? tableId
+}
 
 function openTableBookmark(tableId: string): void {
   gameDataModalStore.selectTable(tableId)
@@ -167,123 +184,131 @@ async function logout(): Promise<void> {
       </button>
     </div>
 
-    <!-- Center: toolbar controls -->
-    <div class="flex-1 flex items-center justify-center gap-1">
+    <!-- Center: toolbar button bar -->
+    <div class="flex-1 min-w-0 flex items-center mx-auto gap-1 overflow-hidden">
       <!-- Table Browser -->
       <Button
         variant="ghost"
-        class="h-8 px-3 text-xs gap-1.5 text-muted-foreground"
+        size="icon"
+        class="w-8 h-8 shrink-0"
+        title="Tables"
         @click="emit('openTableBrowser')"
       >
-        <Table2 class="w-3.5 h-3.5" />
-        Tables
+        <Table2 class="w-4 h-4" />
       </Button>
 
       <!-- Super-Search -->
       <Button
         variant="ghost"
-        class="h-8 px-3 text-xs gap-1.5 text-muted-foreground"
+        size="icon"
+        class="w-8 h-8 shrink-0"
         title="Search (⌘K)"
         @click="shortcutStore.overlayOpen = true"
       >
-        <Search class="w-3.5 h-3.5" />
-        Search
+        <Search class="w-4 h-4" />
       </Button>
 
       <!-- Sequence of Play -->
       <Button
         variant="ghost"
-        class="h-8 px-3 text-xs gap-1.5 text-muted-foreground"
+        size="icon"
+        class="w-8 h-8 shrink-0"
+        title="SOP"
         @click="emit('openSop')"
       >
-        <ListOrdered class="w-3.5 h-3.5" />
-        SOP
+        <ListOrdered class="w-4 h-4" />
       </Button>
 
-      <!-- Inline tools -->
-      <template v-for="tool in inlineTools" :key="tool.id">
-        <Button
-          variant="ghost"
-          class="h-8 px-3 text-xs gap-1.5 text-muted-foreground"
-          :title="tool.label"
-          data-test="inline-tool"
-          @click="emit('openTool', tool.id)"
-        >
-          <Wrench class="w-3.5 h-3.5" />
-          {{ tool.label }}
-        </Button>
-      </template>
-
-      <!-- Overflow tools -->
-      <DropdownMenu v-if="overflowTools.length > 0">
-        <DropdownMenuTrigger as-child>
+      <!-- Overflowable region: inline tools + table bookmarks -->
+      <div ref="containerRef" class="flex items-center gap-1 min-w-0 overflow-hidden">
+        <template v-for="tool in tools" :key="tool.id">
           <Button
+            :ref="registerTool(tool.id)"
+            v-show="visibleToolIds.includes(tool.id)"
             variant="ghost"
-            class="h-8 px-3 text-xs gap-1.5 text-muted-foreground"
-            data-test="tool-more"
-          >
-            <MoreHorizontal class="w-3.5 h-3.5" />
-            More
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent class="w-56">
-          <DropdownMenuItem
-            v-for="tool in overflowTools"
-            :key="tool.id"
+            size="icon"
+            class="w-8 h-8 shrink-0"
+            :title="tool.label"
+            data-test="inline-tool"
             @click="emit('openTool', tool.id)"
           >
-            {{ tool.label }}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <!-- Inline table bookmarks -->
-      <template v-for="bookmark in inlineBookmarks" :key="bookmark.entry.id">
-        <Button
-          variant="ghost"
-          class="h-8 px-3 text-xs gap-1.5 text-muted-foreground"
-          :title="bookmark.label"
-          data-test="inline-bookmark"
-          @click="openTableBookmark(bookmark.entry.id)"
-        >
-          <Bookmark class="w-3.5 h-3.5" />
-          {{ bookmark.label }}
-        </Button>
-      </template>
-
-      <!-- Overflow table bookmarks -->
-      <DropdownMenu v-if="overflowBookmarks.length > 0">
-        <DropdownMenuTrigger as-child>
-          <Button
-            variant="ghost"
-            class="h-8 px-3 text-xs gap-1.5 text-muted-foreground"
-            data-test="bookmark-more"
-          >
-            <MoreHorizontal class="w-3.5 h-3.5" />
-            More
+            <Wrench class="w-4 h-4" />
           </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent class="w-64">
-          <DropdownMenuItem
-            v-for="bookmark in overflowBookmarks"
-            :key="bookmark.entry.id"
+        </template>
+
+        <DropdownMenu v-if="overflowToolList.length > 0">
+          <DropdownMenuTrigger as-child>
+            <Button
+              variant="ghost"
+              size="icon"
+              class="w-8 h-8 shrink-0"
+              title="More tools"
+              data-test="tool-more"
+            >
+              <MoreHorizontal class="w-4 h-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent class="w-56">
+            <DropdownMenuItem
+              v-for="tool in overflowToolList"
+              :key="tool.id"
+              @click="emit('openTool', tool.id)"
+            >
+              {{ tool.label }}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <template v-for="bookmark in tableBookmarks" :key="bookmark.entry.id">
+          <Button
+            :ref="registerBookmark(bookmark.entry.id)"
+            v-show="visibleBookmarkIds.includes(bookmark.entry.id)"
+            variant="ghost"
+            class="h-8 px-2 text-xs gap-1 shrink-0 text-muted-foreground"
+            :title="bookmark.label"
+            data-test="inline-bookmark"
             @click="openTableBookmark(bookmark.entry.id)"
           >
-            {{ bookmark.label }}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+            <Bookmark class="w-3.5 h-3.5" />
+            {{ bookmarkSlug(bookmark.entry.id) }}
+          </Button>
+        </template>
+
+        <DropdownMenu v-if="overflowBookmarkList.length > 0">
+          <DropdownMenuTrigger as-child>
+            <Button
+              variant="ghost"
+              size="icon"
+              class="w-8 h-8 shrink-0"
+              title="More bookmarks"
+              data-test="bookmark-more"
+            >
+              <MoreHorizontal class="w-4 h-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent class="w-64">
+            <DropdownMenuItem
+              v-for="bookmark in overflowBookmarkList"
+              :key="bookmark.entry.id"
+              @click="openTableBookmark(bookmark.entry.id)"
+            >
+              {{ bookmark.label }}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
       <!-- System ▾ -->
       <DropdownMenu>
         <DropdownMenuTrigger as-child>
           <Button
             variant="ghost"
-            class="h-8 px-3 text-xs gap-1.5 text-muted-foreground"
+            size="icon"
+            class="w-8 h-8 shrink-0"
+            title="System"
             data-test="system-menu"
           >
-            System
-            <ChevronDown class="w-3.5 h-3.5" />
+            <Settings class="w-4 h-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" class="w-56">
