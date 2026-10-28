@@ -55,6 +55,7 @@ final class MembershipController
 
         Gate::authorize('create', [Membership::class, $system, $member]);
 
+        // TODO: Haven't we checked this already with the exists() query above?
         abort_if($system->isMember($member), 409, 'Already a member.');
 
         $membership = $system->memberships()->create([
@@ -65,6 +66,8 @@ final class MembershipController
         // Every member is always subscribed to the system's core module.
         $coreModule = $system->modules()->where('is_core', true)->first();
 
+        // TODO: What if coreModule IS null? That shouldn't happen, but we might want to handle it explicitly.
+        //       Otherwise, we return a Membership resource without subscribing to the core module.
         if ($coreModule !== null) {
             $coreModule->subscriptions()->firstOrCreate(['user_id' => $member->id]);
         }

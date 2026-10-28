@@ -15,3 +15,5 @@ REFERENCE.md
 opencode.json
 skills-lock.json
 /backend/data
+# Human-only learning guide (temporary; delete when done)
+docs/developer-guide/

@@ -1,20 +1,22 @@
 # Olgur Frontend Reference
 
+> **LLM REFERENCE — terse by design.** Human tutorial: `docs/developer-guide/` (temporary). If the two disagree, the code wins; correct this file.
+
 This file is the entry point into the read-first documentation for `frontend/`. It is designed for LLMs that need the current SPA structure, state flow, and non-obvious UI behavior without scanning every Vue component first.
 
 The documentation is split across this index and four focused maps in `frontend/docs/`. Read the relevant map for the area you are about to change; do not read all of them at once.
 
 ## Snapshot
 
-- Vue 3.5.40 SPA with TypeScript 5.9.3 and Vite 8.
+- Vue 3.5.42 SPA with TypeScript 5.9.3 and Vite 8.2.2.
 - Cookie/session auth against the Laravel API. No bearer tokens.
 - Main logged-in experience is a persistent reading workspace for one system at a time.
 - Primary shell: left navigation panel, center content, and a top toolbar that opens full-screen modals (Sequence of Play, Table Browser, tools). The former right game-data drawer and bottom unit-data panel are gone.
-- Pinia 4.0.2 setup stores hold almost all domain and UI state.
+- Pinia 4.0.3 setup stores hold almost all domain and UI state.
 
 ## Stack
 
-- Framework: `vue@beta`
+- Framework: `vue@^3.5.42`
 - Router: `vue-router@^5`
 - State: `pinia@^4`
 - HTTP: `axios@^1`
@@ -44,7 +46,7 @@ Important environment variables:
 ## Current Non-Obvious Truths
 
 - `authStore.user` is not persisted anywhere; reloads always re-bootstrap from `/me`.
-- The composed "active set" (`activeModules`) drives `allRules`, `allGameData`, search results, and popup lookups; the singular module (`singularModule`) drives `allIndexEntries` and `singularGameData`.
+- The composed "active set" (`activeModules`) drives `allRules`, `allGameData`, rule/table/unit search, and rule popups; the singular module (`singularModule`) drives `allIndexEntries`, index/acronym search and popups, and `singularGameData`.
 - Vehicles and ordnance are searchable game data, but they do not render in `GameDataView`; they open in the full-screen `ToolModal` (Unit Data / Ordnance vs Armor).
 - Tools are derived from `game_data` type (see `frontend/src/lib/gameDataTools.ts`); there is no module tool registry.
 
@@ -54,7 +56,7 @@ Important environment variables:
 - Routing: `frontend/src/router/index.ts`, `frontend/src/router/auth.ts`
 - System session flow: `frontend/src/views/SystemView.vue`, `frontend/src/stores/system.ts`, `frontend/src/stores/content.ts`, `frontend/src/stores/membership.ts`
 - Domain types: `frontend/src/types/domain.ts`
-- Search and popup behavior: `frontend/src/components/GlobalSearchOverlay.vue`, `frontend/src/composables/useRuleDelegation.ts`, `frontend/src/composables/useRulePopup.ts`, `frontend/src/stores/interaction.ts`, `frontend/src/lib/renderContent.ts`
+- Search and popup behavior: `frontend/src/components/GlobalSearchOverlay.vue`, `frontend/src/composables/useRuleDelegation.ts`, `frontend/src/components/RulePopupOverlay.vue`, `frontend/src/stores/interaction.ts`, `frontend/src/lib/renderContent.ts`
 - Bookmarks and history: `frontend/src/stores/bookmarks.ts`, `frontend/src/stores/history.ts`
 - Settings and theming: `frontend/src/stores/appSettings.ts`, `frontend/src/views/AppSettingsView.vue`
 - Offline cache and connectivity: `frontend/src/stores/cacheStore.ts`, `frontend/src/lib/idb.ts`, `frontend/src/composables/useOnline.ts`, `frontend/src/stores/proofread.ts`, `frontend/vite.config.ts`

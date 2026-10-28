@@ -1,5 +1,7 @@
 # Frontend — Routing, Shell, And UI Surfaces
 
+> **LLM REFERENCE — terse by design.** Human tutorial: `docs/developer-guide/` (temporary). If the two disagree, the code wins; correct this file.
+
 This file is the read-first map of routes, the root shell, navigation surfaces, modals, search, and rendering. It complements `stores.md`, `types.md`, and `flows.md`.
 
 ## Route Map
@@ -9,12 +11,13 @@ Router files: `frontend/src/router/index.ts`, `frontend/src/router/auth.ts`
 ### Guest Routes
 
 - `/login`
-- `/register`
+- `/register` — only when `REGISTRATION_ENABLED === 'true'`
 - `/reset-password-request`
 - `/reset-password`
 
 ### Auth Routes
 
+- `/verify-email` -> `VerifyEmailView`
 - `/` -> `HomeView`
 - `/profile` -> `UserProfileView`
 - `/settings` -> `AppSettingsView`
@@ -57,7 +60,7 @@ Primary component: `frontend/src/components/systems/LeftPanelContent.vue`
 
 ### Center Content
 
-- No child route: top-level TOC. Grouped by module, except for `global_rule_numbers` systems (e.g. ASL) where it renders one flat list; each entry shows a release-status dot (green = released, orange = no release, with version + date when released).
+- No child route: top-level TOC. Grouped by module, except for `global_rule_numbers` systems (e.g. ASL) where it renders one flat list. Release-status badges appear on flat (`global_rule_numbers`) TOC rows and left-panel module headers; per-module TOC rows have no badge.
 - `/rule/:ruleId`: `RuleDetailView`.
 - `/game-data/:gameDatumId`: `GameDataView` for tables and SOP content.
 
@@ -65,14 +68,14 @@ Primary component: `frontend/src/components/systems/LeftPanelContent.vue`
 
 Component: `frontend/src/components/systems/SystemHeader.vue`
 
-- Module selector ("currently played") — a dropdown over non-core modules plus "All modules"; persists the choice via `membershipStore.selectModule()`. Only shown when more than one non-core module exists.
+- Module selector ("currently played") lives in the System ▾ menu, shown only when more than one non-core module exists; persists via `membershipStore.selectModule()`.
 - Table Browser — opens `TableBrowserModal`.
 - Super-Search — opens the global search overlay (`shortcutStore.overlayOpen`).
 - Sequence of Play — opens `SopModal`.
-- Tools ▾ — lists tools derived from `gameDataTools()`; opens each in `ToolModal`.
-- Table bookmarks ▾ — lists pinned tables (bookmarks of type `table`); opens the table in `TableBrowserModal`.
-- System ▾ — "Make available offline" toggle (pins/unpins the system's released content via `PinSystemControl`), exit system, manage members, broken links, proofread, profile, settings, logout.
-- Right side: Draft/Release tabs (only when `canSwitchView`).
+- Inline tools (icon + `tool.id`) with a More-tools overflow, derived from `gameDataTools()`.
+- Inline pinned-table bookmarks with a More-bookmarks overflow.
+- System ▾ — active module (when >1 non-core), "Make available offline" toggle (`PinSystemControl`), exit system, manage members, broken links, proofread, profile, settings, logout.
+- Right side: Draft/Release tabs, only when `canSwitchView && !offline`.
 
 ### Full-Screen Modals
 
@@ -102,7 +105,7 @@ Supported inline content tokens:
 Files:
 
 - `frontend/src/composables/useRuleDelegation.ts`
-- `frontend/src/composables/useRulePopup.ts`
+- `frontend/src/stores/interaction.ts`
 - `frontend/src/components/RulePopupOverlay.vue`
 
 Current behavior:
@@ -126,7 +129,8 @@ Searches active content only:
 Selection behavior:
 
 - Rule result -> navigate to `system-rule`
-- Table or SOP result -> navigate to `system-game-datum`
+- SOP result -> navigate to `system-game-datum`
+- Table result -> `gameDataModalStore.selectTable(id)` (opens the Table Browser)
 - Vehicle or ordnance result -> set `unitSelectionStore` pending unit and open the tool modal (`toolModalStore.open(item.type)`)
 
 ## Forms And Validation
@@ -142,9 +146,10 @@ Selection behavior:
 
 - The app is dark-only.
 - Theme color is a single-hue OKLCH palette generated from `appSettings.themeHue`.
-- `AppSettingsView` currently exposes only two user settings:
+- `AppSettingsView` currently exposes three user settings:
   - acronym popups on or off
   - theme hue or preset
+  - Prefer Markdown (only when the current system has markdown rules; stored but not applied by a renderer yet)
 
 ## Key Files
 
@@ -152,7 +157,7 @@ Selection behavior:
 - Root shell: `frontend/src/App.vue`
 - UI shell and guards: `frontend/src/components/systems/SystemHeader.vue`, `frontend/src/components/systems/PinSystemControl.vue`, `frontend/src/composables/useModalShortcutGuard.ts`
 - Left panel: `frontend/src/components/systems/LeftPanelContent.vue`
-- Search and popup behavior: `frontend/src/components/GlobalSearchOverlay.vue`, `frontend/src/composables/useRuleDelegation.ts`, `frontend/src/composables/useRulePopup.ts`, `frontend/src/stores/interaction.ts`, `frontend/src/lib/renderContent.ts`
+- Search and popup behavior: `frontend/src/components/GlobalSearchOverlay.vue`, `frontend/src/composables/useRuleDelegation.ts`, `frontend/src/components/RulePopupOverlay.vue`, `frontend/src/stores/interaction.ts`, `frontend/src/lib/renderContent.ts`
 - Game data surfaces and modals: `frontend/src/views/GameDataView.vue`, `frontend/src/components/game-data/SopModal.vue`, `frontend/src/components/game-data/TableBrowserModal.vue`, `frontend/src/components/ToolModal.vue`, `frontend/src/stores/gameDataModal.ts`, `frontend/src/stores/toolModal.ts`
 - Tools: `frontend/src/lib/gameDataTools.ts`
 - Rule editing and lint: `frontend/src/components/systems/DeleteRuleDialog.vue`, `frontend/src/components/systems/BrokenLinksDialog.vue`, `frontend/src/composables/useBrokenLinks.ts`

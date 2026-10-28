@@ -47,7 +47,7 @@ function onClick(e: MouseEvent) {
       <div
         v-if="state.visible && state.content"
         data-popup-overlay
-        class="fixed z-60 rounded-md border border-border bg-popover text-popover-foreground shadow-md p-3 text-xs pointer-events-auto overflow-y-auto"
+        class="fixed z-60 rounded-md border-2 border-muted-foreground border border-border bg-popover text-popover-foreground shadow-md p-3 text-xs pointer-events-auto overflow-y-auto"
         :style="{ ...style, maxHeight: '60vh' }"
         @click="onClick"
       >

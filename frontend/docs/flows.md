@@ -1,5 +1,7 @@
 # Frontend — Boot, Auth, Data Flow, And Offline
 
+> **LLM REFERENCE — terse by design.** Human tutorial: `docs/developer-guide/` (temporary). If the two disagree, the code wins; correct this file.
+
 This file is the read-first map of how the app boots, how auth and errors flow, how content is loaded and versioned, and how offline caching works. It complements `stores.md`, `types.md`, and `ui-shell.md`.
 
 ## Boot And Auth Flow
@@ -84,7 +86,7 @@ While inside a system:
 
 Content splits into two tiers:
 
-- **Released content** — immutable per module-version, served from versioned manifest URLs (`manifestByModule[moduleId].content.{rules,index,game-data}`), keyed by `version_id` and `revision`. This is what players read and what the offline cache pins.
+- **Released content** — snapshot-based per module-version, served from versioned manifest URLs (`manifestByModule[moduleId].content.{rules,index,game-data}`). The latest snapshot can be back-edited; a back-edit bumps `revision` and changes the manifest `?rev` URL. IndexedDB caches are keyed by system/module/kind and validated by `version_id` only (not `revision`). This is what players read and what the offline cache pins.
 - **Live / personalized / social data** — drafts, bookmarks, memberships, permissions, proofreads, and comments. Always online-only; never cached.
 
 ### Cache Layer
@@ -92,7 +94,7 @@ Content splits into two tiers:
 - Store: `frontend/src/stores/cacheStore.ts`
 - IndexedDB helpers: `frontend/src/lib/idb.ts` — a single database `olgur-offline` with object stores `systems`, `manifests`, `content`, and `meta`. `idb.ts` handles `onblocked` (a version-bump collision with another open connection) and resets its cached connection promise on error so later calls retry a fresh open.
 
-`pinSystem(systemId)` fetches the system, its modules, its manifest, and the versioned content for every viewable module, then writes them to IndexedDB and records a `meta` registry entry. The pin is atomic: it pre-checks storage quota, throws (via `fetchCollection`) if a content kind cannot be downloaded, and rolls back partial writes on failure — the error surfaces as a `vue-sonner` toast in `PinSystemControl.vue`. `unpinSystem(systemId)` removes everything under the `systemId:` key prefix.
+`pinSystem(systemId)` fetches the system, its modules, its manifest, and the versioned content for every viewable module, then writes them to IndexedDB and records a `meta` registry entry. It aborts silently if the initial metadata fetch fails or no module is viewable. Content-download/storage/write failures throw and surface as a `vue-sonner` toast in `PinSystemControl.vue`; write failures roll back records already written. `unpinSystem(systemId)` removes everything under the `systemId:` key prefix.
 
 Rule images (`/rules/images/`) are cached offline via a workbox `runtimeCaching` `CacheFirst` rule in `frontend/vite.config.ts`.
 
@@ -100,7 +102,7 @@ Rule images (`/rules/images/`) are cached offline via a workbox `runtimeCaching`
 
 - `authStore.bootstrap()` detects a `network` failure during CSRF/session fetch and sets `useOnline().online = false` instead of redirecting to login.
 - `systemStore.enterSystem()` and `contentStore.fetchManifest()` / `fetchRules()` / `fetchIndexEntries()` / `fetchGameData()` check `offline` first and read from the cache, falling back to the network only when online.
-- Online, `contentStore` serves live draft content to editors/admins (`content.view_live`) and versioned released content to players (`content.view_released`); offline, it serves whatever is pinned.
+- In draft mode, `contentStore` serves live content to editors/admins for modules with `content.view_live`, and versioned released content to players (`content.view_released`); in release mode, everyone (including editors/admins) gets the latest snapshot. Offline, it serves whatever is pinned.
 
 ### Connectivity Signal
 
@@ -130,7 +132,7 @@ Configured via `vite-plugin-pwa` in `frontend/vite.config.ts` and registered in 
 
 ### RetrofixEditor
 
-Component: `frontend/src/components/RetrofixEditor.vue`
+Component: `frontend/src/components/versions/RetrofixEditor.vue`
 Composable: `frontend/src/composables/useRetrofix.ts`
 
 Used when a designer applies a post-release editorial amendment to the latest released version without publishing a new version.
@@ -145,4 +147,4 @@ Used when a designer applies a post-release editorial amendment to the latest re
 - Boot and auth: `frontend/src/main.ts`, `frontend/src/stores/auth.ts`, `frontend/src/lib/http.ts`, `frontend/src/lib/globalErrorHandler.ts`, `frontend/src/composables/useApi.ts`
 - System session flow: `frontend/src/views/SystemView.vue`, `frontend/src/stores/system.ts`, `frontend/src/stores/content.ts`, `frontend/src/stores/membership.ts`
 - Offline cache and connectivity: `frontend/src/stores/cacheStore.ts`, `frontend/src/lib/idb.ts`, `frontend/src/composables/useOnline.ts`, `frontend/vite.config.ts`
-- Versioning: `frontend/src/components/RetrofixEditor.vue`, `frontend/src/composables/useRetrofix.ts`
+- Versioning: `frontend/src/components/versions/RetrofixEditor.vue`, `frontend/src/composables/useRetrofix.ts`

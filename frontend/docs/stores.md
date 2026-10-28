@@ -1,8 +1,10 @@
 # Frontend — Stores
 
+> **LLM REFERENCE — terse by design.** Human tutorial: `docs/developer-guide/` (temporary). If the two disagree, the code wins; correct this file.
+
 This file is the read-first map of every Pinia store in `frontend/src/stores/`. It complements `types.md`, `flows.md`, and `ui-shell.md`.
 
-Pinia 4.0.2 setup stores hold almost all domain and UI state.
+Pinia 4.0.3 setup stores hold almost all domain and UI state.
 
 ## `authStore`
 
@@ -56,14 +58,14 @@ Owns:
 - `rulesByModule`
 - `indexEntriesByModule`
 - `gameDataByModule`
-- `manifestByModule` — version manifest keyed by module ID, loaded on system entry; contains `version_id`, `version_string`, `released_at`, and versioned content API URLs
+- `manifestByModule` — version manifest keyed by module ID, loaded on system entry; contains `version_id`, `version_string`, `released_at`, `revision`, and versioned content API URLs
 - `viewMode` (`'draft' | 'release'`, default `'draft'`) — whether editable admins/editors read live draft content or the latest released snapshot
 
 Derived state (composition model):
 
 - `selectedModuleId` — the `selected_module_id` from the current membership config, or `null`.
 - `coreModule` — the system's single core module (`is_core`), falling back to the first module.
-- `activeModules` — the composed "active set": core first, then the selected module if `selected_module_id` is set (and isn't core), else every viewable non-core module (`content.view_live` or `content.view_released`) sorted by `sort_order`. Core is always first.
+- `activeModules` — the composed "active set": core first, then the selected module if `selected_module_id` is set (even if unavailable), else every viewable non-core module (`content.view_live` or `content.view_released`) sorted by `sort_order`. Core is always first.
 - `singularModule` — the ONE module whose singular surfaces come from: the selected module if set, else core. Singular surfaces are never merged across modules.
 - `globalRuleNumbers` — the system's `config.global_rule_numbers` flag; drives both link resolution and flat (header-less) tree rendering.
 - `flatRootRules` — top-level rules across the active modules, ordered module-first (core, then non-core by `sort_order`) then by `sort_order`; used only by `global_rule_numbers` systems to render one flat tree.
@@ -97,7 +99,7 @@ Backed by IndexedDB via `frontend/src/lib/idb.ts` (see "Content Tiers And Offlin
 - `pinInProgress`, `bytesUsed`, `quota` — pin state and storage accounting.
 - `isCached(systemId)`, `loadRegistry()`, `estimateStorage()`, `pinSystem(systemId)`, `unpinSystem(systemId)`.
 - `getCachedSystem()`, `getCachedManifest()`, `getCachedContent()` — offline reads.
-- `pinSystem()` fetches the system, its modules, its manifest, and versioned content for every viewable module, then writes them to IndexedDB atomically and records a `meta` entry. It pre-checks storage quota and rolls back partial writes on failure; a failed content download (`fetchCollection`, which throws) aborts the pin and surfaces an error toast in `PinSystemControl`.
+- `pinSystem()` returns silently if the initial metadata fetch fails or no module is viewable. Content-download/storage/write failures throw and toast in `PinSystemControl`; write failures roll back records already written. It pre-checks storage quota and records a `meta` entry only after success.
 
 ## `proofreadStore`
 
