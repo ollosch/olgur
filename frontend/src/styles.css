@@ -129,6 +129,14 @@
     @apply block text-[0.8em] text-foreground/50 leading-relaxed mt-2;
   }
 
+  .example-label {
+    @apply font-semibold;
+  }
+
+  .rule-overline {
+    text-decoration: overline;
+  }
+
   .rule-image {
     @apply inline-block max-w-full my-2;
   }

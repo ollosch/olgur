@@ -178,3 +178,68 @@ describe('renderContent security and markdown', () => {
     expect(html).toContain('data-acronym-term="TERM"')
   })
 })
+
+describe('renderContent extended Markdown', () => {
+  it('renders underscore emphasis', () => {
+    const html = renderContent('This is __bold__ and _italic_.')
+    expect(html).toContain('<strong>bold</strong>')
+    expect(html).toContain('<em>italic</em>')
+  })
+
+  it('renders caret superscript, including escaped spaces', () => {
+    expect(renderContent('^1^')).toContain('<sup>1</sup>')
+    expect(renderContent('^3\\ 4^')).toContain('<sup>3 4</sup>')
+  })
+
+  it('renders [u] as underline', () => {
+    expect(renderContent('[u]75[/u]')).toContain('<u>75</u>')
+  })
+
+  it('renders [o] as overline', () => {
+    const html = renderContent('[o]75[/o]')
+    expect(html).toContain('class="rule-overline"')
+    expect(html).toContain('75')
+  })
+
+  it('renders [ex] as a block example with nested tokens', () => {
+    const html = renderContent('[ex]See [u]this[/u] and __that__.[/ex]', { block: true })
+    expect(html).toContain('class="example-block"')
+    expect(html).toContain('EX:')
+    expect(html).toContain('<u>this</u>')
+    expect(html).toContain('<strong>that</strong>')
+  })
+
+  it('renders block Markdown inside [ex]', () => {
+    const html = renderContent('[ex]\n- one\n- two\n[/ex]', { block: true })
+    expect(html).toContain('class="example-block"')
+    expect(html).toContain('<ul>')
+    expect(html).toContain('<li>one</li>')
+  })
+
+  it('dedents [ex] inside a list item', () => {
+    const content = '- item\n\n  [ex]\n  example block\n  [/ex]'
+    const html = renderContent(content, { block: true })
+    expect(html).toContain('class="example-block"')
+    expect(html).not.toContain('<pre>')
+    expect(html).not.toContain('<code>')
+  })
+
+  it('renders GFM pipe tables', () => {
+    const html = renderContent('| a | b |\n| --- | --- |\n| 1 | 2 |', { block: true })
+    expect(html).toContain('<table>')
+    expect(html).toContain('<th>a</th>')
+    expect(html).toContain('<td>1</td>')
+  })
+
+  it('does not convert escaped [ex] text', () => {
+    const html = renderContent('\\[ex\\]not an example\\[/ex\\]', { block: true })
+    expect(html).not.toContain('example-block')
+    expect(html).toContain('[ex]')
+  })
+
+  it('keeps the legacy <ex> tag working', () => {
+    const html = renderContent('<ex>legacy</ex>')
+    expect(html).toContain('example-block')
+    expect(html).toContain('EX: legacy')
+  })
+})

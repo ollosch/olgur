@@ -12,9 +12,14 @@
  * tags in stored text are escaped and shown literally, so authors can spot
  * leftover markup. Generated token markup is still sanitized with DOMPurify as
  * defence-in-depth.
+ *
+ * Custom non-HTML tokens: `[color:name]…[/color]`, `[u]…[/u]`,
+ * `[o]…[/o]`, and `[ex]…[/ex]`. The legacy `<ex>…</ex>` form is kept for
+ * existing content.
  */
 
 import MarkdownIt from 'markdown-it'
+import sup from 'markdown-it-sup'
 import DOMPurify from 'dompurify'
 
 export interface RenderContentOptions {
@@ -43,7 +48,7 @@ const markdown = new MarkdownIt({
   linkify: false,
   breaks: true,
   typographer: false,
-})
+}).use(sup)
 
 /**
  * Whitelisted `[color:name]…[/color]` values. Each maps to a static Tailwind
@@ -74,6 +79,7 @@ const COLOR_CLASSES: Record<string, string> = {
 const ALLOWED_TAGS = [
   'p',
   'br',
+  'div',
   'strong',
   'em',
   'b',
@@ -171,6 +177,36 @@ function extractTokens(
 
   let source = content
 
+  // [ex]…[/ex] — block examples. May contain lists, tables, and inline tokens.
+  source = source.replace(
+    /(?<!\\)\[ex\]([\s\S]*?)(?<!\\)\[\/ex\]/gi,
+    (match: string, inner: string): string => {
+      if (depth > 5) return match
+      const innerHtml = renderBlockFragment(inner, options, depth + 1)
+      return stash(`<div class="example-block">${prefixExampleLabel(innerHtml)}</div>`)
+    },
+  )
+
+  // [u]…[/u] — underline.
+  source = source.replace(
+    /(?<!\\)\[u\]([\s\S]*?)(?<!\\)\[\/u\]/gi,
+    (match: string, inner: string): string => {
+      if (depth > 5) return match
+      return stash(`<u>${renderInlineFragment(inner, options, depth + 1)}</u>`)
+    },
+  )
+
+  // [o]…[/o] — overline.
+  source = source.replace(
+    /(?<!\\)\[o\]([\s\S]*?)(?<!\\)\[\/o\]/gi,
+    (match: string, inner: string): string => {
+      if (depth > 5) return match
+      return stash(
+        `<span class="rule-overline">${renderInlineFragment(inner, options, depth + 1)}</span>`,
+      )
+    },
+  )
+
   // [color:red]…[/color] — whitelisted colors only.
   source = source.replace(
     /\[color:([a-zA-Z]+)\]([\s\S]*?)\[\/color\]/gi,
@@ -224,6 +260,38 @@ function renderInlineFragment(
 ): string {
   const { source, tokens } = extractTokens(content, options, depth)
   return restoreTokens(markdown.renderInline(source), tokens)
+}
+
+function renderBlockFragment(
+  content: string,
+  options: RenderContentOptions | undefined,
+  depth: number,
+): string {
+  const { source, tokens } = extractTokens(dedent(content).trim(), options, depth)
+  return restoreTokens(markdown.render(source), tokens)
+}
+
+function prefixExampleLabel(html: string): string {
+  const label = '<span class="example-label">EX:</span> '
+  return html.startsWith('<p>') ? html.replace(/^<p>/, `<p>${label}`) : `${label}${html}`
+}
+
+/**
+ * Remove the list-item indentation from a block fragment. `[ex]` blocks are
+ * often indented inside a list item; Markdown would otherwise treat the whole
+ * body as an indented code block.
+ */
+function dedent(content: string): string {
+  const lines = content.replace(/\r\n/g, '\n').split('\n')
+  const indents = lines
+    .filter((line) => line.trim() !== '')
+    .map((line) => line.match(/^[ \t]*/)?.[0].length ?? 0)
+  if (indents.length === 0) return content
+  const min = Math.min(...indents)
+  if (min === 0) return content
+  return lines
+    .map((line) => line.slice(Math.min(min, line.match(/^[ \t]*/)?.[0].length ?? 0)))
+    .join('\n')
 }
 
 function restoreTokens(html: string, tokens: string[]): string {
