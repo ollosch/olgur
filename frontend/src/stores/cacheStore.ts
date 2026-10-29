@@ -17,6 +17,12 @@ import type {
 
 export type ContentKind = 'rules' | 'index' | 'game-data'
 
+/**
+ * Result of a pin attempt. Callers that only care about background refreshes
+ * can ignore this; UI callers use it to avoid reporting a false success.
+ */
+export type PinOutcome = 'pinned' | 'skipped' | 'no-content' | 'request-failed'
+
 export interface CachedSystem {
   system: System
   modules: Module[]
@@ -131,8 +137,8 @@ export const useCacheStore = defineStore('cache', () => {
     return { usage: bytesUsed.value, quota: quota.value }
   }
 
-  async function pinSystem(systemId: string): Promise<void> {
-    if (pinInProgress.value.has(systemId)) return
+  async function pinSystem(systemId: string): Promise<PinOutcome> {
+    if (pinInProgress.value.has(systemId)) return 'skipped'
 
     pinInProgress.value = new Set(pinInProgress.value).add(systemId)
 
@@ -145,7 +151,7 @@ export const useCacheStore = defineStore('cache', () => {
         ),
       ])
 
-      if (!systemResult.ok || !modulesResult.ok || !manifestResult.ok) return
+      if (!systemResult.ok || !modulesResult.ok || !manifestResult.ok) return 'request-failed'
 
       const system = systemResult.data.data
       const modules = modulesResult.data.data
@@ -156,13 +162,16 @@ export const useCacheStore = defineStore('cache', () => {
         manifestByModule.set(entry.module_id, entry)
       }
 
-      const viewable = modules.filter(
-        (module) =>
+      const viewable = modules.filter((module) => {
+        const entry = manifestByModule.get(module.id)
+        return (
           (module.permissions?.['content.view_released'] ?? false) &&
-          manifestByModule.get(module.id)?.content != null,
-      )
+          entry?.content != null &&
+          entry.version_id != null
+        )
+      })
 
-      if (viewable.length === 0) return
+      if (viewable.length === 0) return 'no-content'
 
       let size = jsonSize(system) + jsonSize(modules)
       const records: WriteRecord[] = [
@@ -170,14 +179,17 @@ export const useCacheStore = defineStore('cache', () => {
       ]
 
       for (const module of viewable) {
-        const entry = manifestByModule.get(module.id)!
+        const entry = manifestByModule.get(module.id)
+        const content = entry?.content
+        const versionId = entry?.version_id
+        if (!entry || !content || versionId == null) continue
         size += jsonSize(entry)
         records.push({ store: 'manifests', key: manifestKey(systemId, module.id), value: entry })
 
         const [rules, index, gameData] = await Promise.all([
-          fetchCollection<Rule>(entry.content.rules),
-          fetchCollection<IndexEntry>(entry.content.index),
-          fetchCollection<GameDatum>(entry.content['game-data']),
+          fetchCollection<Rule>(content.rules),
+          fetchCollection<IndexEntry>(content.index),
+          fetchCollection<GameDatum>(content['game-data']),
         ])
 
         const byKind: Record<ContentKind, unknown[]> = {
@@ -192,7 +204,7 @@ export const useCacheStore = defineStore('cache', () => {
           records.push({
             store: 'content',
             key: contentKey(systemId, module.id, kind),
-            value: { version_id: entry.version_id, items },
+            value: { version_id: versionId, items },
           })
         }
       }
@@ -200,9 +212,13 @@ export const useCacheStore = defineStore('cache', () => {
       const meta: CachedSystemMeta = {
         systemId,
         name: system.name,
-        versionString: [...new Set(manifestEntries.map((entry) => entry.version_string))].join(
-          ', ',
-        ),
+        versionString: [
+          ...new Set(
+            manifestEntries
+              .map((entry) => entry.version_string)
+              .filter((value): value is string => value != null),
+          ),
+        ].join(', '),
         cachedAt: Date.now(),
         size,
       }
@@ -213,6 +229,7 @@ export const useCacheStore = defineStore('cache', () => {
 
       cachedSystems.value = [...cachedSystems.value.filter((e) => e.systemId !== systemId), meta]
       bytesUsed.value = cachedSystems.value.reduce((sum, e) => sum + e.size, 0)
+      return 'pinned'
     } finally {
       pinInProgress.value = new Set([...pinInProgress.value].filter((id) => id !== systemId))
     }

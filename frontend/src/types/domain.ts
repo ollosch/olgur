@@ -71,6 +71,7 @@ export interface Module {
   config: Record<string, unknown> | null
   is_core: boolean
   sort_order: number
+  draft_revision: number
   permissions: ModulePermissions
   created_at: string
   updated_at: string
@@ -90,7 +91,6 @@ export interface MembershipConfig {
   bookmarks?: BookmarkEntry[]
   ignored_tags?: string[]
   bold_tags?: string[]
-  preferred_rule_format?: 'content' | 'markdown'
   selected_module_id?: string | null
 }
 
@@ -112,7 +112,6 @@ export interface Rule {
   number: string
   title: string
   content: string
-  markdown: string | null
   sort_order: number
   created_at: string
   updated_at: string
@@ -236,11 +235,11 @@ export interface ManifestContent {
 
 export interface ManifestEntry {
   module_id: string
-  version_id: string
-  version_string: string
-  released_at: string
+  version_id: string | null
+  version_string: string | null
+  released_at: string | null
   revision: number
-  content: ManifestContent
+  content: ManifestContent | null
 }
 
 export interface AmendVersionRequest {
@@ -250,17 +249,35 @@ export interface AmendVersionRequest {
   content: Record<string, unknown>
 }
 
+export type DraftChangeClassification = 'semantic' | 'typo'
+
+export type DraftChangeType = 'create' | 'update' | 'delete'
+
 export interface ModuleDraftChange {
   id: string
   module_id: string
   module_version_id: string | null
   entity_type: 'rule' | 'index_entry' | 'game_datum'
   entity_id: string
-  change_type: 'correction' | 'update'
-  description: string | null
-  content_after: Record<string, unknown>
+  change_type: DraftChangeType
+  classification: DraftChangeClassification
+  content_before: Record<string, unknown> | null
+  content_after: Record<string, unknown> | null
   changed_by: string
   changed_at: string
+}
+
+export interface ReleaseNote {
+  entity_type: 'rule' | 'index_entry' | 'game_datum'
+  entity_id: string
+  note: string
+}
+
+export interface CreateVersionPayload {
+  version_string: string
+  notes: string
+  expected_draft_revision: number
+  release_notes: ReleaseNote[]
 }
 
 // -- API Response Wrappers --
@@ -334,7 +351,6 @@ export interface UpdateRuleRequest {
   number: string
   title: string
   content: string
-  markdown: string | null
   parent_id: string | null
   sort_order: number
 }

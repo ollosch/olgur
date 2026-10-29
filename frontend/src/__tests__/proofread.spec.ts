@@ -58,6 +58,7 @@ function makeModule(id: string, proofread: boolean): Module {
     config: null,
     is_core: true,
     sort_order: 0,
+    draft_revision: 0,
     permissions: {
       'module.update': false,
       'module.delete': false,
@@ -82,7 +83,6 @@ function makeRule(id: string): Rule {
     number: `1.${id}`,
     title: `Rule ${id}`,
     content: '',
-    markdown: null,
     sort_order: 0,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
@@ -340,5 +340,25 @@ describe('RuleDetailChildren proofread gating', () => {
     const wrapper = mountChildren(makeRule('r1'))
 
     expect(wrapper.findComponent(ProofreadToggle).exists()).toBe(false)
+  })
+
+  it('hides the bookmark button while the module serves live content', () => {
+    seedSystem(false)
+    const wrapper = mountChildren(makeRule('r1'))
+
+    expect(wrapper.find('button[title="Bookmark rule"]').exists()).toBe(false)
+  })
+
+  it('shows the bookmark button for released content', () => {
+    const systemStore = useSystemStore()
+    systemStore.currentSystem = makeSystem('sys1')
+    const module = makeModule('mod1', false)
+    module.permissions['content.view_live'] = false
+    module.permissions['content.view_released'] = true
+    systemStore.modulesBySystem['sys1'] = [module]
+
+    const wrapper = mountChildren(makeRule('r1'))
+
+    expect(wrapper.find('button[title="Bookmark rule"]').exists()).toBe(true)
   })
 })

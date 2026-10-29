@@ -66,6 +66,7 @@ function makeCoreModule(id: string): Module {
     config: null,
     is_core: true,
     sort_order: 0,
+    draft_revision: 0,
     permissions: {
       'module.update': false,
       'module.delete': false,

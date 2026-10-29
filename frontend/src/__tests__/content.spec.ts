@@ -57,6 +57,7 @@ function makeModule(id: string, isCore = true): Module {
     config: null,
     is_core: isCore,
     sort_order: 0,
+    draft_revision: 0,
     permissions: {
       'module.update': false,
       'module.delete': false,
@@ -78,7 +79,6 @@ function makeRule(overrides: Partial<Rule> & { id: string; module_id: string }):
     number: overrides.id,
     title: 'Rule',
     content: '',
-    markdown: null,
     sort_order: 0,
     parent_id: null,
     created_at: '2024-01-01T00:00:00Z',
@@ -377,6 +377,141 @@ describe('useContentStore', () => {
 
       expect(contentStore.resolveRuleReference('1.2', { moduleSlug: 'missing' })).toBeNull()
     })
+
+    it('resolves bare numbers from loaded modules outside the active set (global)', () => {
+      const systemStore = useSystemStore()
+      const membershipStore = useMembershipStore()
+      const contentStore = useContentStore()
+
+      seedModules(systemStore, true, [
+        makeModule('core', true),
+        makeModule('exp', false),
+      ])
+      membershipStore.membershipsBySystem['sys1'] = makeMembership('sys1', {
+        selected_module_id: 'core',
+      })
+      contentStore.rulesByModule['core'] = [
+        makeRule({ id: 'r1', module_id: 'core', number: '1.2' }),
+      ]
+      contentStore.rulesByModule['exp'] = [
+        makeRule({ id: 'r2', module_id: 'exp', number: 'O.5.1' }),
+      ]
+
+      expect(contentStore.activeModules.map((m) => m.id)).toEqual(['core'])
+      expect(contentStore.resolveRuleReference('O.5.1')?.id).toBe('r2')
+    })
+
+    it('honours a slug prefix stored on the reference itself (non-global)', () => {
+      const systemStore = useSystemStore()
+      const contentStore = useContentStore()
+
+      seedModules(systemStore, false, [
+        makeModule('core', true),
+        makeModule('o', false),
+      ])
+      contentStore.rulesByModule['core'] = [
+        makeRule({ id: 'rCore', module_id: 'core', number: '1.2' }),
+      ]
+      contentStore.rulesByModule['o'] = [
+        makeRule({ id: 'rO', module_id: 'o', number: 'O.5.1' }),
+      ]
+
+      // The prefix on the reference wins over link-context opts.
+      expect(contentStore.resolveRuleReference('o:O.5.1', { moduleId: 'core' })?.id).toBe('rO')
+      expect(contentStore.resolveRuleReference('o:O.5.1', { moduleSlug: 'core' })?.id).toBe('rO')
+      expect(contentStore.resolveRuleReference('o:O.5.2', { moduleId: 'core' })).toBeNull()
+    })
+  })
+
+  // ── hasRuleReference ─────────────────────────────────────────────────────────
+
+  describe('hasRuleReference', () => {
+    function seedModules(
+      systemStore: ReturnType<typeof useSystemStore>,
+      globalRuleNumbers: boolean,
+      modules: Module[],
+    ): void {
+      const system = makeSystem('sys1')
+      system.config!.global_rule_numbers = globalRuleNumbers
+      systemStore.currentSystem = system
+      systemStore.modulesBySystem['sys1'] = modules
+    }
+
+    it('honours a slug prefix on a single reference', () => {
+      const systemStore = useSystemStore()
+      const contentStore = useContentStore()
+
+      seedModules(systemStore, false, [makeModule('core', true), makeModule('o', false)])
+      contentStore.rulesByModule['core'] = [
+        makeRule({ id: 'rCore', module_id: 'core', number: '1.2' }),
+      ]
+      contentStore.rulesByModule['o'] = [
+        makeRule({ id: 'rO', module_id: 'o', number: 'O.5.1' }),
+      ]
+
+      expect(contentStore.hasRuleReference('1.2', 'core')).toBe(true)
+      expect(contentStore.hasRuleReference('1.2', 'o')).toBe(false)
+      expect(contentStore.hasRuleReference('o:O.5.1', 'core')).toBe(true)
+      expect(contentStore.hasRuleReference('o:O.5.2', 'core')).toBe(false)
+    })
+
+    it('applies a range prefix to both endpoints and checks both', () => {
+      const systemStore = useSystemStore()
+      const contentStore = useContentStore()
+
+      seedModules(systemStore, false, [makeModule('core', true), makeModule('o', false)])
+      contentStore.rulesByModule['o'] = [
+        makeRule({ id: 'rO1', module_id: 'o', number: 'O.5.1' }),
+        makeRule({ id: 'rO3', module_id: 'o', number: 'O.5.3' }),
+      ]
+
+      expect(contentStore.hasRuleReference('o:O.5.1-O.5.3', 'core')).toBe(true)
+      expect(contentStore.hasRuleReference('o:O.5.1-o:O.5.3', 'core')).toBe(true)
+      expect(contentStore.hasRuleReference('o:O.5.1-O.5.4', 'core')).toBe(false)
+    })
+
+    it('matches bare references system-wide when rule numbers are global', () => {
+      const systemStore = useSystemStore()
+      const contentStore = useContentStore()
+
+      seedModules(systemStore, true, [makeModule('core', true), makeModule('exp', false)])
+      contentStore.rulesByModule['exp'] = [
+        makeRule({ id: 'rExp', module_id: 'exp', number: 'O.5.1' }),
+      ]
+
+      expect(contentStore.hasRuleReference('O.5.1', 'core')).toBe(true)
+      expect(contentStore.hasRuleReference('O.9.9', 'core')).toBe(false)
+    })
+  })
+
+  // ── lookups across loaded modules ───────────────────────────────────────────
+
+  describe('loaded-module lookups', () => {
+    it('includes non-active loaded modules in rulesByNumber and module lookups', () => {
+      const systemStore = useSystemStore()
+      const membershipStore = useMembershipStore()
+      const contentStore = useContentStore()
+
+      systemStore.currentSystem = makeSystem('sys1')
+      systemStore.modulesBySystem['sys1'] = [
+        makeModule('core', true),
+        makeModule('exp', false),
+      ]
+      membershipStore.membershipsBySystem['sys1'] = makeMembership('sys1', {
+        selected_module_id: 'core',
+      })
+      contentStore.rulesByModule['core'] = [
+        makeRule({ id: 'r1', module_id: 'core', number: '1.2' }),
+      ]
+      contentStore.rulesByModule['exp'] = [
+        makeRule({ id: 'r2', module_id: 'exp', number: 'O.5.1' }),
+      ]
+
+      expect(contentStore.activeModules.map((m) => m.id)).toEqual(['core'])
+      expect(contentStore.rulesByNumber.get('O.5.1')?.id).toBe('r2')
+      expect(contentStore.rulesByModuleNumber.get('exp')?.get('O.5.1')?.id).toBe('r2')
+      expect(contentStore.moduleBySlug.get('exp')?.id).toBe('exp')
+    })
   })
 
   // ── activeModules / singularModule / allIndexEntries (composition) ──────────
@@ -506,8 +641,8 @@ describe('useContentStore', () => {
     })
   })
 
-  describe('allIndexEntries (singular)', () => {
-    it('sources entries from the singular module only, never a union', () => {
+  describe('allIndexEntries', () => {
+    it('includes the core module plus the singular module, deduped by id', () => {
       const systemStore = useSystemStore()
       const membershipStore = useMembershipStore()
       const contentStore = useContentStore()
@@ -526,7 +661,24 @@ describe('useContentStore', () => {
       expect(contentStore.allIndexEntries.map((e) => e.id)).toEqual(['e-core'])
 
       select(membershipStore, 'm1')
-      expect(contentStore.allIndexEntries.map((e) => e.id)).toEqual(['e-m1'])
+      expect(contentStore.allIndexEntries.map((e) => e.id)).toEqual(['e-core', 'e-m1'])
+    })
+
+    it('does not duplicate the core module when it is also the singular module', () => {
+      const systemStore = useSystemStore()
+      const membershipStore = useMembershipStore()
+      const contentStore = useContentStore()
+
+      seedModules(systemStore, [
+        { ...makeModule('core', true), sort_order: 0 },
+        { ...makeModule('m1', false), sort_order: 1 },
+      ])
+      contentStore.indexEntriesByModule['core'] = [
+        makeIndexEntry({ id: 'e-core', module_id: 'core' }),
+      ]
+
+      select(membershipStore, 'core')
+      expect(contentStore.allIndexEntries.map((e) => e.id)).toEqual(['e-core'])
     })
   })
 })

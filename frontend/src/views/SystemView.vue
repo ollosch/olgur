@@ -119,6 +119,8 @@ async function loadSystem(id: string): Promise<void> {
     ...activeModuleList.map((m) => contentStore.fetchGameData(id, m.id)),
   ])
 
+  void loadGlobalModules(id)
+
   for (const m of activeModuleList) {
     panelStore.expandedModuleIds.add(m.id)
   }
@@ -133,6 +135,16 @@ async function fetchProofreadStatus(id: string): Promise<void> {
   await proofreadStore.fetchStatus(id)
 }
 
+/**
+ * On systems with system-wide rule numbers, stored index refs can point at any
+ * chapter. Load every viewable module's content in the background so bare refs
+ * resolve even when only a subset is part of the active reading set.
+ */
+async function loadGlobalModules(id: string): Promise<void> {
+  if (!contentStore.globalRuleNumbers) return
+  await contentStore.fetchMissingModules(id, systemStore.modules)
+}
+
 // Re-enter the live system on reconnect so permissions and content reflect
 // fresh server data instead of stale cached/snapshot content.
 async function reconnect(): Promise<void> {
@@ -143,6 +155,7 @@ async function reconnect(): Promise<void> {
     await systemStore.enterSystem(id)
     await contentStore.fetchManifest(id)
     await contentStore.refreshContent(id)
+    void loadGlobalModules(id)
     void contentStore.autoRefreshPin(id)
     await fetchProofreadStatus(id)
   } catch {
@@ -170,6 +183,7 @@ watch(
   async () => {
     if (systemStore.currentSystem?.id !== systemId.value) return
     await contentStore.refreshContent(systemId.value)
+    void loadGlobalModules(systemId.value)
   },
 )
 
@@ -184,6 +198,7 @@ watch(
     for (const m of loaded) {
       panelStore.expandedModuleIds.add(m.id)
     }
+    void loadGlobalModules(systemId.value)
   },
 )
 

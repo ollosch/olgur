@@ -80,11 +80,13 @@ final class BrokenLinkLinter
 
             foreach ($module['entries'] as $entry) {
                 foreach ($entry['refs'] as $ref) {
-                    if (self::isIgnoredChapter($ref)) {
+                    $reference = RuleReferenceParser::parseReference($ref);
+
+                    if (self::isIgnoredChapter($reference['number'])) {
                         continue;
                     }
 
-                    $reason = self::resolve(null, $ref, $module['slug'], $globalRuleNumbers, $numbersBySlug, $allNumbers, $slugs);
+                    $reason = self::resolve($reference['slug'], $reference['number'], $module['slug'], $globalRuleNumbers, $numbersBySlug, $allNumbers, $slugs);
 
                     if (! $reason instanceof BrokenReferenceReason) {
                         continue;

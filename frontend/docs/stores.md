@@ -70,9 +70,10 @@ Derived state (composition model):
 - `globalRuleNumbers` — the system's `config.global_rule_numbers` flag; drives both link resolution and flat (header-less) tree rendering.
 - `flatRootRules` — top-level rules across the active modules, ordered module-first (core, then non-core by `sort_order`) then by `sort_order`; used only by `global_rule_numbers` systems to render one flat tree.
 - `allRules`, `allGameData` — flattened over `activeModules`.
-- `allIndexEntries`, `singularGameData` — from `singularModule` only (index and SOP are single-module surfaces).
-- `rulesById`, `rulesByNumber`, `rulesByModuleNumber`, `moduleById`, `moduleBySlug`, `indexEntriesById`, `indexEntriesByTerm` power navigation, popup lookup, and search.
-- `resolveRuleReference(number, { moduleSlug?, moduleId? })` resolves bare links in the owning module (or system-wide when `globalRuleNumbers`) and qualified `{{L:slug:n}}` links in the named module.
+- `allIndexEntries` — core plus the singular module (deduped), so the system index stays visible when an expansion module is selected. `singularGameData` — from `singularModule` only (SOP is a single-module surface).
+- `allLoadedRules`, `rulesById`, `rulesByNumber`, `rulesByModuleNumber`, `moduleById`, `moduleBySlug`, `gameDataById`, `indexEntriesById`, `indexEntriesByTerm` power navigation, popup lookup, and search. Lookups cover every loaded module, not just the active reading set.
+- `resolveRuleReference(number, { moduleSlug?, moduleId? })` resolves bare links in the owning module (or system-wide when `globalRuleNumbers`) and qualified `slug:number` / `{{L:slug:n}}` links in the named module. `hasRuleReference` checks both endpoints of a range.
+- `usesLiveContent(moduleId)`, `hasReleasedContent(moduleId)`, `isRuleAvailable` / `isGameDatumAvailable` / `isBookmarkTargetAvailable` decide whether the current source is live draft or released and whether a bookmark target is resolvable.
 - `childrenMap` / `ruleDepths` compute `rule.depth` client-side; `flattenedRulesByModule` provides depth-first order per module.
 - `visibleIndexEntryIds` hides empty index branches unless they or their descendants still have visible content after filtering rule refs to resolvable rules.
 - `canSwitchView` — true when at least one active module has `content.view_live`; gates the Draft/Release toggle (players never see it). `releaseViewEmpty` — true on the Release view when no active module has manifest content.
@@ -99,7 +100,7 @@ Backed by IndexedDB via `frontend/src/lib/idb.ts` (see "Content Tiers And Offlin
 - `pinInProgress`, `bytesUsed`, `quota` — pin state and storage accounting.
 - `isCached(systemId)`, `loadRegistry()`, `estimateStorage()`, `pinSystem(systemId)`, `unpinSystem(systemId)`.
 - `getCachedSystem()`, `getCachedManifest()`, `getCachedContent()` — offline reads.
-- `pinSystem()` returns silently if the initial metadata fetch fails or no module is viewable. Content-download/storage/write failures throw and toast in `PinSystemControl`; write failures roll back records already written. It pre-checks storage quota and records a `meta` entry only after success.
+- `pinSystem()` returns a `PinOutcome` (`'pinned'`, `'skipped'`, `'request-failed'`, or `'no-content'`) instead of resolving silently. Content-download/storage/write failures throw and toast in `PinSystemControl`; write failures roll back records already written. It pre-checks storage quota and records a `meta` entry only after success.
 
 ## `proofreadStore`
 
@@ -113,7 +114,7 @@ File: `frontend/src/stores/proofread.ts`
 
 ## Smaller Supporting Stores
 
-- `bookmarks.ts`: persists polymorphic bookmarks (`rule` | `table` | `unit`) into membership config via `PATCH /me/memberships/{system}`. `resolvedBookmarks` labels each entry (rule number/title, table name); `isBookmarked` / `addBookmark` / `removeBookmark` are type-aware.
+- `bookmarks.ts`: persists polymorphic bookmarks (`rule` | `table` | `unit`) into membership config via `PATCH /me/memberships/{system}`. `resolvedBookmarks` labels each entry and flags `available` when the target resolves in the currently loaded source; `availableBookmarks` feeds the toolbar. New bookmarks are only allowed on released content (not live drafts). `isBookmarked` / `addBookmark` / `removeBookmark` are type-aware.
 - `history.ts`: in-memory per-system recent rule history, capped at 20 and cleared on system exit.
 - `appSettings.ts`: localStorage-backed acronym popup toggle, theme hue, and sidebar pin state.
 - `leftPanel.ts`, `shortcut.ts`: UI shell state — left-panel tab, module/rule expansion, focus; `shortcut.ts` also owns the Super-Search overlay flag.

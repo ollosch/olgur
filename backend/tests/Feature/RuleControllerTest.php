@@ -21,7 +21,6 @@ beforeEach(function (): void {
         'number' => 'A.1',
         'title' => 'Test Rule',
         'content' => 'Rule content.',
-        'markdown' => '**Bold markdown content.**',
         'sort_order' => 1,
     ];
 });
@@ -210,7 +209,6 @@ test('store accepts valid parent_id within the same module', function (): void {
         'title' => 'Child Rule',
         'parent_id' => $parent->id,
         'content' => 'Child rule content.',
-        'markdown' => null,
         'sort_order' => 1,
     ])
         ->assertCreated()
@@ -262,7 +260,6 @@ test('update modifies a rule', function (): void {
         'number' => $rule->number,
         'title' => 'Updated Title',
         'content' => $rule->content,
-        'markdown' => $rule->markdown,
         'sort_order' => $rule->sort_order,
     ])
         ->assertSuccessful();
@@ -286,7 +283,6 @@ test('update allows cross-module duplicate for core module without global rule n
         'number' => 'A1.1',
         'title' => $coreRule->title,
         'content' => $coreRule->content,
-        'markdown' => $coreRule->markdown,
         'sort_order' => $coreRule->sort_order,
     ])->assertSuccessful();
 });
@@ -321,7 +317,6 @@ test('update allows cross-module duplicate for non-core module when global_rule_
         'number' => 'A1.1',
         'title' => $ruleB->title,
         'content' => $ruleB->content,
-        'markdown' => $ruleB->markdown,
         'sort_order' => $ruleB->sort_order,
     ])
         ->assertOk();
@@ -352,80 +347,6 @@ test('destroy deletes a rule', function (): void {
 
     deleteJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id)
         ->assertNoContent();
-});
-
-// ── markdown field ────────────────────────────────────────────────────────────
-
-test('store saves markdown when provided', function (): void {
-    $user = User::factory()->superAdmin()->create();
-    $system = System::factory()->create();
-    $module = Module::factory()->for($system)->create();
-    actingAs($user);
-
-    $data = [
-        'number' => 'M.1',
-        'title' => 'Markdown Rule',
-        'content' => 'Plain content.',
-        'markdown' => '**Bold markdown content.**',
-        'sort_order' => 1,
-    ];
-
-    postJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules', $data)
-        ->assertCreated();
-
-    assertDatabaseHas('rules', $data);
-});
-
-test('update saves markdown when provided', function (): void {
-    $user = User::factory()->superAdmin()->create();
-    $system = System::factory()->create();
-    $module = Module::factory()->for($system)->create();
-    $rule = Rule::factory()->for($module)->create();
-    actingAs($user);
-
-    $response = patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id, [
-        'parent_id' => $rule->parent_id,
-        'number' => $rule->number,
-        'title' => $rule->title,
-        'content' => $rule->content,
-        'markdown' => '# Updated Markdown',
-        'sort_order' => $rule->sort_order,
-    ])->assertOk();
-
-    $response->assertJsonPath('data.markdown', '# Updated Markdown');
-    assertDatabaseHas('rules', ['id' => $rule->id, 'markdown' => '# Updated Markdown']);
-});
-
-test('update clears markdown when null is provided', function (): void {
-    $user = User::factory()->superAdmin()->create();
-    $system = System::factory()->create();
-    $module = Module::factory()->for($system)->create();
-    $rule = Rule::factory()->for($module)->create(['markdown' => '**Old markdown.**']);
-    actingAs($user);
-
-    $response = patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id, [
-        'parent_id' => $rule->parent_id,
-        'number' => $rule->number,
-        'title' => $rule->title,
-        'content' => $rule->content,
-        'markdown' => null,
-        'sort_order' => $rule->sort_order,
-    ])->assertOk();
-
-    $response->assertJsonPath('data.markdown', null);
-});
-
-test('response always includes markdown field', function (): void {
-    $user = User::factory()->superAdmin()->create();
-    $system = System::factory()->create();
-    $module = Module::factory()->for($system)->create();
-    $rule = Rule::factory()->for($module)->create();
-    actingAs($user);
-
-    $response = getJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/rules/'.$rule->id)
-        ->assertSuccessful();
-
-    expect($response->json('data'))->toHaveKey('markdown');
 });
 
 test('destroy returns 404 for rule belonging to a different module', function (): void {
@@ -477,7 +398,6 @@ test('regular user cannot create a rule', function (): void {
         'number' => 'A.1',
         'title' => 'Test',
         'content' => 'Content.',
-        'markdown' => '**Bold markdown content.**',
         'sort_order' => 1,
     ])->assertForbidden();
 });
@@ -495,7 +415,6 @@ test('regular user cannot update a rule', function (): void {
         'number' => $rule->number,
         'title' => 'Hacked',
         'content' => $rule->content,
-        'markdown' => $rule->markdown,
         'sort_order' => $rule->sort_order,
     ])
         ->assertForbidden();
@@ -552,7 +471,6 @@ test('module subscriber cannot create a rule', function (): void {
         'number' => 'A.1',
         'title' => 'Test',
         'content' => 'Content.',
-        'markdown' => '**Bold markdown content.**',
         'sort_order' => 1,
     ])->assertForbidden();
 });
@@ -571,7 +489,6 @@ test('module subscriber cannot update a rule', function (): void {
         'number' => $rule->number,
         'title' => 'Hacked',
         'content' => $rule->content,
-        'markdown' => $rule->markdown,
         'sort_order' => $rule->sort_order,
     ])
         ->assertForbidden();
@@ -604,7 +521,6 @@ test('module editor can create a rule in their module', function (): void {
         'number' => 'E.1',
         'title' => 'Editor Rule',
         'content' => 'Editor rule content.',
-        'markdown' => '**Bold markdown content.**',
         'sort_order' => 1,
     ])->assertCreated();
 });
@@ -622,7 +538,6 @@ test('module editor of module A cannot create a rule in module B', function (): 
         'number' => 'E.1',
         'title' => 'Editor Rule',
         'content' => 'Editor rule content.',
-        'markdown' => '**Bold markdown content.**',
         'sort_order' => 1,
     ])->assertForbidden();
 });
@@ -641,7 +556,6 @@ test('module editor can update a rule in their module', function (): void {
         'number' => $rule->number,
         'title' => 'Editor Updated',
         'content' => $rule->content,
-        'markdown' => $rule->markdown,
         'sort_order' => $rule->sort_order,
     ])
         ->assertSuccessful();
@@ -662,7 +576,6 @@ test('module editor cannot update a rule in another module', function (): void {
         'number' => $rule->number,
         'title' => 'Hacked',
         'content' => $rule->content,
-        'markdown' => $rule->markdown,
         'sort_order' => $rule->sort_order,
     ])
         ->assertForbidden();
@@ -709,7 +622,6 @@ test('system admin can create a rule', function (): void {
         'number' => 'A.1',
         'title' => 'Admin Rule',
         'content' => 'Admin rule content.',
-        'markdown' => '**Bold markdown content.**',
         'sort_order' => 1,
     ])->assertCreated();
 });
@@ -728,7 +640,6 @@ test('system admin can update a rule', function (): void {
         'number' => $rule->number,
         'title' => 'Admin Updated',
         'content' => $rule->content,
-        'markdown' => $rule->markdown,
         'sort_order' => $rule->sort_order,
     ])
         ->assertSuccessful();

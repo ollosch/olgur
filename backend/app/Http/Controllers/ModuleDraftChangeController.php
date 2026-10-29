@@ -10,6 +10,7 @@ use App\Http\Resources\ModuleDraftChangeResource;
 use App\Models\Module;
 use App\Models\ModuleDraftChange;
 use App\Models\System;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
 
@@ -18,13 +19,18 @@ final class ModuleDraftChangeController
     /**
      * Display a listing of draft changes for the given module.
      */
-    public function index(System $system, Module $module): AnonymousResourceCollection
+    public function index(Request $request, System $system, Module $module): AnonymousResourceCollection
     {
         Gate::authorize('viewAny', [ModuleDraftChange::class, $system, $module]);
 
-        return ModuleDraftChangeResource::collection(
-            $module->draftChanges()->oldest('changed_at')->get()
-        );
+        $changes = $module->draftChanges()->oldest('changed_at');
+
+        if ($request->boolean('pending')) {
+            $changes->whereNull('module_version_id');
+        }
+
+        return ModuleDraftChangeResource::collection($changes->get())
+            ->additional(['draft_revision' => $module->draft_revision]);
     }
 
     /**

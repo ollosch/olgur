@@ -67,6 +67,10 @@ function isPinned(tableId: string): boolean {
   return bookmarkStore.isBookmarked('table', tableId)
 }
 
+function canBookmarkTable(table: GameDatum): boolean {
+  return !contentStore.usesLiveContent(table.module_id)
+}
+
 function togglePin(table: GameDatum): void {
   if (isPinned(table.id)) {
     void bookmarkStore.removeBookmark('table', table.id)
@@ -152,6 +156,7 @@ function onOpenChange(open: boolean): void {
                   <span class="truncate block">{{ table.name }}</span>
                 </button>
                 <button
+                  v-if="canBookmarkTable(table) || isPinned(table.id)"
                   class="shrink-0 p-1.5 rounded hover:bg-muted/50 transition-colors"
                   :title="isPinned(table.id) ? 'Unpin table' : 'Pin table'"
                   :data-pin="table.id"

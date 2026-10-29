@@ -99,6 +99,7 @@ function makeModule(
     config: null,
     is_core: true,
     sort_order: 0,
+    draft_revision: 0,
     permissions,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
@@ -128,7 +129,6 @@ function makeRule(id: string): Rule {
     number: `1.${id}`,
     title: `Rule ${id}`,
     content: 'text',
-    markdown: null,
     sort_order: 0,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
@@ -222,7 +222,7 @@ describe('useCacheStore — offline pinning', () => {
     seedApi(system, [module], [entry])
 
     const store = useCacheStore()
-    await store.pinSystem('sys1')
+    expect(await store.pinSystem('sys1')).toBe('pinned')
 
     const cached = await store.getCachedSystem('sys1')
     expect(cached?.system.id).toBe('sys1')
@@ -316,7 +316,7 @@ describe('useCacheStore — offline pinning', () => {
     seedApi(system, [liveOnly], [makeManifestEntry('mod1')])
 
     const store = useCacheStore()
-    await store.pinSystem('sys1')
+    expect(await store.pinSystem('sys1')).toBe('no-content')
 
     expect(store.isCached('sys1')).toBe(false)
     expect(store.cachedSystems).toEqual([])
@@ -330,7 +330,7 @@ describe('useCacheStore — offline pinning', () => {
     seedApi(system, [module], [nullEntry])
 
     const store = useCacheStore()
-    await expect(store.pinSystem('sys1')).resolves.toBeUndefined()
+    expect(await store.pinSystem('sys1')).toBe('no-content')
 
     expect(store.isCached('sys1')).toBe(false)
     expect(await store.getCachedManifest('sys1', 'mod1')).toBeUndefined()
@@ -343,10 +343,44 @@ describe('useCacheStore — offline pinning', () => {
     seedApi(system, [noPerms], [makeManifestEntry('mod1')])
 
     const store = useCacheStore()
-    await expect(store.pinSystem('sys1')).resolves.toBeUndefined()
+    expect(await store.pinSystem('sys1')).toBe('no-content')
 
     expect(store.isCached('sys1')).toBe(false)
     expect(await store.getCachedManifest('sys1', 'mod1')).toBeUndefined()
+  })
+
+  it('returns request-failed when the initial metadata fetch fails', async () => {
+    mockGet.mockResolvedValue({ ok: false, errors: {} })
+
+    const store = useCacheStore()
+    expect(await store.pinSystem('sys1')).toBe('request-failed')
+
+    expect(store.isCached('sys1')).toBe(false)
+    expect(store.cachedSystems).toEqual([])
+  })
+
+  it('returns no-content when a manifest entry has no version_id', async () => {
+    const system = makeSystem('sys1')
+    const module = makeModule('mod1')
+    seedApi(system, [module], [{ ...makeManifestEntry('mod1'), version_id: null }])
+
+    const store = useCacheStore()
+    expect(await store.pinSystem('sys1')).toBe('no-content')
+
+    expect(store.isCached('sys1')).toBe(false)
+  })
+
+  it('returns skipped when a pin for the same system is already running', async () => {
+    const system = makeSystem('sys1')
+    const module = makeModule('mod1')
+    seedApi(system, [module], [makeManifestEntry('mod1')])
+
+    const store = useCacheStore()
+    const pending = store.pinSystem('sys1')
+
+    expect(await store.pinSystem('sys1')).toBe('skipped')
+
+    expect(await pending).toBe('pinned')
   })
 
   it('marks pinInProgress while pinning and clears it when done', async () => {

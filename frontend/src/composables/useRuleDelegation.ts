@@ -3,6 +3,7 @@ import { storeToRefs } from 'pinia'
 import { useAppSettingsStore } from '@/stores/appSettings'
 import { useInteractionStore } from '@/stores/interaction'
 import type { RuleLinkModifiers } from '@/lib/renderContent'
+import { parseRuleRange } from '@/lib/ruleReferences'
 import { useContentStore } from '@/stores/content'
 import type { Rule, IndexEntry } from '@/types/domain'
 
@@ -120,12 +121,10 @@ export function useRuleDelegation(
       const opts = linkModifiers(trigger)
       showTimer = setTimeout(() => {
         showTimer = null
-        const sep = rangeString.indexOf('-')
-        if (sep === -1) return
-        const fromNumber = rangeString.slice(0, sep)
-        const toNumber = rangeString.slice(sep + 1)
-        const fromRule = contentStore.resolveRuleReference(fromNumber, opts)
-        const toRule = contentStore.resolveRuleReference(toNumber, opts)
+        const range = parseRuleRange(rangeString)
+        if (!range) return
+        const fromRule = contentStore.resolveRuleReference(range.from, opts)
+        const toRule = contentStore.resolveRuleReference(range.to, opts)
         if (!fromRule || !toRule) return
         const flattened = contentStore.flattenedRulesByModule.get(fromRule.module_id) ?? []
         const fromIdx = flattened.findIndex((r) => r.id === fromRule.id)

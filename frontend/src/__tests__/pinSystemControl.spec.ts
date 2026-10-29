@@ -43,11 +43,14 @@ vi.mock('@/components/ui/dropdown-menu', () => ({
   }),
 }))
 
-// ─── Mock the sonner toast used for surfacing pin failures ─────────────────────
-const { mockToastError } = vi.hoisted(() => ({ mockToastError: vi.fn() }))
+// ─── Mock the sonner toast used for pin feedback ───────────────────────────────
+const { mockToastError, mockToastSuccess } = vi.hoisted(() => ({
+  mockToastError: vi.fn(),
+  mockToastSuccess: vi.fn(),
+}))
 
 vi.mock('vue-sonner', () => ({
-  toast: { error: mockToastError, success: vi.fn() },
+  toast: { error: mockToastError, success: mockToastSuccess },
 }))
 
 import PinSystemControl from '@/components/systems/PinSystemControl.vue'
@@ -110,6 +113,7 @@ function makeModule(id: string): Module {
     config: null,
     is_core: true,
     sort_order: 0,
+    draft_revision: 0,
     permissions: makePermissions({ 'content.view_released': true }),
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
@@ -139,7 +143,6 @@ function makeRule(id: string): Rule {
     number: `1.${id}`,
     title: `Rule ${id}`,
     content: 'text',
-    markdown: null,
     sort_order: 0,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
@@ -226,6 +229,7 @@ describe('PinSystemControl', () => {
     mockGet.mockReset()
     mockRequest.mockReset()
     mockToastError.mockReset()
+    mockToastSuccess.mockReset()
     useOnline().online.value = true
     await resetIndexedDb()
   })
@@ -241,10 +245,44 @@ describe('PinSystemControl', () => {
   }
 
   it('renders unchecked and labelled "Make available offline" when not cached', () => {
+    useContentStore().manifestByModule['mod1'] = makeManifestEntry('mod1')
+
     const wrapper = mountControl()
 
     expect(wrapper.find('[role="menuitemcheckbox"]').attributes('aria-checked')).toBe('false')
+    expect(wrapper.find('[role="menuitemcheckbox"]').attributes('disabled')).toBeUndefined()
     expect(wrapper.text()).toContain('Make available offline')
+  })
+
+  it('disables the item and explains when there is no released version to cache', () => {
+    const wrapper = mountControl()
+
+    const item = wrapper.find('[role="menuitemcheckbox"]')
+    expect(item.attributes('disabled')).toBeDefined()
+    expect(wrapper.text()).toContain('No released version to cache')
+    expect(item.attributes('title')).toBe('No released version to cache')
+  })
+
+  it('disables the item when offline and not cached', () => {
+    useOnline().online.value = false
+    useContentStore().manifestByModule['mod1'] = makeManifestEntry('mod1')
+
+    const wrapper = mountControl()
+
+    const item = wrapper.find('[role="menuitemcheckbox"]')
+    expect(item.attributes('disabled')).toBeDefined()
+    expect(wrapper.text()).toContain('Offline — connect to cache')
+  })
+
+  it('keeps unpin enabled when cached even while offline', () => {
+    useOnline().online.value = false
+    useCacheStore().cachedSystems = [meta()]
+
+    const wrapper = mountControl()
+
+    const item = wrapper.find('[role="menuitemcheckbox"]')
+    expect(item.attributes('disabled')).toBeUndefined()
+    expect(wrapper.text()).toContain('Delete from cache')
   })
 
   it('renders checked when the system is cached', () => {
@@ -266,6 +304,7 @@ describe('PinSystemControl', () => {
 
   it('pins the system when toggled on', async () => {
     seedApi(makeSystem('sys1'), [makeModule('mod1')], [makeManifestEntry('mod1')])
+    useContentStore().manifestByModule['mod1'] = makeManifestEntry('mod1')
     const cacheStore = useCacheStore()
 
     const wrapper = mountControl()
@@ -273,6 +312,7 @@ describe('PinSystemControl', () => {
     await vi.waitFor(() => {
       expect(cacheStore.isCached('sys1')).toBe(true)
     })
+    expect(mockToastSuccess).toHaveBeenCalledWith('System is now available offline.')
   })
 
   it('unpins the system when toggled off', async () => {
@@ -284,10 +324,12 @@ describe('PinSystemControl', () => {
     await vi.waitFor(() => {
       expect(cacheStore.isCached('sys1')).toBe(false)
     })
+    expect(mockToastSuccess).toHaveBeenCalledWith('System removed from the offline cache.')
   })
 
   it('surfaces a pin failure as an error toast and leaves the system uncached', async () => {
     seedApi(makeSystem('sys1'), [makeModule('mod1')], [makeManifestEntry('mod1')])
+    useContentStore().manifestByModule['mod1'] = makeManifestEntry('mod1')
     mockRequest.mockImplementation(() => Promise.resolve(null))
 
     const wrapper = mountControl()
@@ -296,8 +338,36 @@ describe('PinSystemControl', () => {
     await vi.waitFor(() => {
       expect(mockToastError).toHaveBeenCalled()
     })
+    expect(mockToastSuccess).not.toHaveBeenCalled()
     expect(useCacheStore().isCached('sys1')).toBe(false)
     expect(wrapper.find('[role="menuitemcheckbox"]').attributes('aria-checked')).toBe('false')
+  })
+
+  it('does not report success when the metadata request fails', async () => {
+    useContentStore().manifestByModule['mod1'] = makeManifestEntry('mod1')
+    mockGet.mockResolvedValue({ ok: false, errors: {} })
+
+    const wrapper = mountControl()
+    await wrapper.find('[role="menuitemcheckbox"]').trigger('click')
+
+    await vi.waitFor(() => {
+      expect(mockToastError).toHaveBeenCalledWith('Could not load this system. Please try again.')
+    })
+    expect(mockToastSuccess).not.toHaveBeenCalled()
+    expect(useCacheStore().isCached('sys1')).toBe(false)
+  })
+
+  it('surfaces an unpin failure as an error toast', async () => {
+    useCacheStore().cachedSystems = [meta()]
+    vi.spyOn(useCacheStore(), 'unpinSystem').mockRejectedValue(new Error('boom'))
+
+    const wrapper = mountControl()
+    await wrapper.find('[role="menuitemcheckbox"]').trigger('click')
+
+    await vi.waitFor(() => {
+      expect(mockToastError).toHaveBeenCalledWith('boom')
+    })
+    expect(mockToastSuccess).not.toHaveBeenCalled()
   })
 
   it('shows "Update available" when online and the cached version differs from the manifest', () => {

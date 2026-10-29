@@ -24,6 +24,7 @@ import { useContentStore } from '@/stores/content'
 import { useSystemStore } from '@/stores/system'
 import { useMembershipStore } from '@/stores/membership'
 import { useBookmarkStore } from '@/stores/bookmarks'
+import { useOnline } from '@/composables/useOnline'
 import TableBrowserModal from '@/components/game-data/TableBrowserModal.vue'
 import type { GameDatum, System, Module, Membership } from '@/types/domain'
 
@@ -48,7 +49,7 @@ function makeSystem(id: string): System {
   }
 }
 
-function makeModule(id: string, isCore: boolean): Module {
+function makeModule(id: string, isCore: boolean, live = false): Module {
   return {
     id,
     system_id: 'sys1',
@@ -58,11 +59,12 @@ function makeModule(id: string, isCore: boolean): Module {
     config: null,
     is_core: isCore,
     sort_order: 0,
+    draft_revision: 0,
     permissions: {
       'module.update': false,
       'module.delete': false,
-      'content.view_live': true,
-      'content.view_released': false,
+      'content.view_live': live,
+      'content.view_released': !live,
       'content.edit': false,
       'content.proofread': false,
       'version.publish': false,
@@ -149,6 +151,7 @@ describe('TableBrowserModal — listing and bookmarks', () => {
     setActivePinia(createPinia())
     mockGet.mockReset()
     mockPatch.mockReset()
+    useOnline().online.value = true
   })
 
   it('lists only table-type game data from the active set', () => {
@@ -237,5 +240,14 @@ describe('TableBrowserModal — listing and bookmarks', () => {
       config: { bookmarks: [] },
     })
     expect(bookmarkStore.isBookmarked('table', 't1')).toBe(false)
+  })
+
+  it('hides the pin button when the table module serves live content', () => {
+    const wrapper = mountBrowser(() => {
+      seedContent()
+      useSystemStore().modulesBySystem['sys1'] = [makeModule('mod1', true, true)]
+    })
+
+    expect(wrapper.find('[data-pin="t1"]').exists()).toBe(false)
   })
 })

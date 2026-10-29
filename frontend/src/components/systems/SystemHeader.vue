@@ -108,7 +108,7 @@ const tools = computed(() =>
 )
 
 const tableBookmarks = computed(() =>
-  bookmarkStore.resolvedBookmarks.filter((b) => b.entry.type === 'table'),
+  bookmarkStore.availableBookmarks.filter((b) => b.entry.type === 'table'),
 )
 
 const bookmarkItems = computed(() => tableBookmarks.value.map((b) => ({ id: b.entry.id })))
@@ -130,7 +130,7 @@ const overflowBookmarkList = computed(() =>
 )
 
 function bookmarkSlug(tableId: string): string {
-  return contentStore.allGameData.find((d) => d.id === tableId)?.slug ?? tableId
+  return contentStore.gameDataById.get(tableId)?.slug ?? ''
 }
 
 function openTableBookmark(tableId: string): void {

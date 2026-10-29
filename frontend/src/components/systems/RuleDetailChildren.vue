@@ -39,6 +39,10 @@ const canProofread = computed(
     (contentStore.permissionsFor(props.rule.module_id)?.['content.proofread'] ?? false),
 )
 
+const canBookmarkRule = computed(
+  (): boolean => !offline.value && !contentStore.usesLiveContent(props.rule.module_id),
+)
+
 const editDialogOpen = ref(false)
 const editingRule = ref<Rule | null>(null)
 
@@ -48,10 +52,14 @@ const deletingRule = ref<Rule | null>(null)
 const retrofixDialogOpen = ref(false)
 const retrofixRule = ref<Rule | null>(null)
 
+const canEditDraft = computed(
+  (): boolean => !!props.canEdit && contentStore.viewMode === 'draft',
+)
+
 const canRetrofix = computed((): boolean => {
   const manifest = contentStore.manifestByModule[props.rule.module_id]
   return (
-    contentStore.viewMode === 'draft' &&
+    !offline.value &&
     !!manifest?.content &&
     (contentStore.permissionsFor(props.rule.module_id)?.['version.amend_latest'] ?? false)
   )
@@ -113,7 +121,7 @@ const childRules = computed((): Rule[] => props.childrenMap.get(props.rule.id) ?
       class="flex items-center gap-1 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
     >
       <button
-        v-if="canEdit"
+        v-if="canEditDraft"
         class="p-1 rounded hover:bg-muted/40 transition-colors"
         title="Edit rule"
         @click="openEditDialog(rule)"
@@ -121,7 +129,7 @@ const childRules = computed((): Rule[] => props.childrenMap.get(props.rule.id) ?
         <Pencil class="w-3.5 h-3.5 text-muted-foreground" />
       </button>
       <button
-        v-if="canEdit"
+        v-if="canEditDraft"
         class="p-1 rounded hover:bg-muted/40 transition-colors"
         title="Delete rule"
         @click="openDeleteDialog(rule)"
@@ -145,6 +153,7 @@ const childRules = computed((): Rule[] => props.childrenMap.get(props.rule.id) ?
       </button>
       <ProofreadToggle v-if="canProofread" entity-type="rule" :entity-id="rule.id" />
       <button
+        v-if="canBookmarkRule || bookmarkStore.isBookmarked('rule', rule.id)"
         class="p-1 rounded hover:bg-muted/40 transition-colors"
         :title="bookmarkStore.isBookmarked('rule', rule.id) ? 'Remove bookmark' : 'Bookmark rule'"
         @click="
@@ -173,6 +182,7 @@ const childRules = computed((): Rule[] => props.childrenMap.get(props.rule.id) ?
     v-html="
       renderContent(rule.content, {
         acronymPopups: appSettings.acronymPopups,
+        block: true,
       })
     "
   />

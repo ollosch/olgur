@@ -25,13 +25,13 @@ final class RuleReferenceParser
     {
         preg_match_all(self::TOKEN_PATTERN, $content, $matches);
 
-        return array_map(self::parseToken(...), $matches[1]);
+        return array_map(self::parseReference(...), $matches[1]);
     }
 
     /**
      * @return array{slug: string|null, number: string, label: string|null}
      */
-    private static function parseToken(string $key): array
+    public static function parseReference(string $key): array
     {
         $label = null;
         $hashPosition = mb_strpos($key, '#');

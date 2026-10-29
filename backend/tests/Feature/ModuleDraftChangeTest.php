@@ -28,7 +28,7 @@ test('updating a rule records a draft change with before and after state', funct
     $user = User::factory()->superAdmin()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
-    $rule = Rule::factory()->for($module)->create(['number' => 'A.1', 'title' => 'Title', 'content' => 'Old content.', 'markdown' => null, 'sort_order' => 1]);
+    $rule = Rule::factory()->for($module)->create(['number' => 'A.1', 'title' => 'Title', 'content' => 'Old content.', 'sort_order' => 1]);
 
     actingAs($user);
 
@@ -36,7 +36,6 @@ test('updating a rule records a draft change with before and after state', funct
         'number' => 'A.1',
         'title' => 'Title',
         'content' => 'New content.',
-        'markdown' => null,
         'sort_order' => 1,
     ])->assertSuccessful();
 
@@ -66,7 +65,6 @@ test('creating a rule records a draft change with null before state', function (
         'number' => 'A.1',
         'title' => 'Title',
         'content' => 'Content.',
-        'markdown' => null,
         'sort_order' => 1,
     ])->assertCreated();
 
@@ -126,7 +124,7 @@ test('a mutation may submit a typo classification', function (): void {
     $user = User::factory()->superAdmin()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
-    $rule = Rule::factory()->for($module)->create(['number' => 'A.1', 'title' => 'Title', 'content' => 'Old.', 'markdown' => null, 'sort_order' => 1]);
+    $rule = Rule::factory()->for($module)->create(['number' => 'A.1', 'title' => 'Title', 'content' => 'Old.', 'sort_order' => 1]);
 
     actingAs($user);
 
@@ -134,7 +132,6 @@ test('a mutation may submit a typo classification', function (): void {
         'number' => 'A.1',
         'title' => 'Title',
         'content' => 'New.',
-        'markdown' => null,
         'sort_order' => 1,
         'classification' => 'typo',
     ])->assertSuccessful();
@@ -205,7 +202,7 @@ test('each live mutation advances the module draft revision', function (): void 
     $user = User::factory()->superAdmin()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
-    $rule = Rule::factory()->for($module)->create(['number' => 'A.1', 'title' => 'Title', 'content' => 'Old.', 'markdown' => null, 'sort_order' => 1]);
+    $rule = Rule::factory()->for($module)->create(['number' => 'A.1', 'title' => 'Title', 'content' => 'Old.', 'sort_order' => 1]);
 
     actingAs($user);
 
@@ -215,7 +212,6 @@ test('each live mutation advances the module draft revision', function (): void 
         'number' => 'A.1',
         'title' => 'Title',
         'content' => 'New.',
-        'markdown' => null,
         'sort_order' => 1,
     ])->assertSuccessful();
 
@@ -285,7 +281,7 @@ test('publishing stores one release note per semantic draft change group', funct
     $user = User::factory()->superAdmin()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
-    $rule = Rule::factory()->for($module)->create(['number' => 'A.1', 'title' => 'Title', 'content' => 'Old.', 'markdown' => null, 'sort_order' => 1]);
+    $rule = Rule::factory()->for($module)->create(['number' => 'A.1', 'title' => 'Title', 'content' => 'Old.', 'sort_order' => 1]);
 
     actingAs($user);
 
@@ -293,7 +289,6 @@ test('publishing stores one release note per semantic draft change group', funct
         'number' => 'A.1',
         'title' => 'Title',
         'content' => 'New.',
-        'markdown' => null,
         'sort_order' => 1,
     ])->assertSuccessful();
 
@@ -321,7 +316,7 @@ test('publishing exposes release notes on the version resource', function (): vo
     $user = User::factory()->superAdmin()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
-    $rule = Rule::factory()->for($module)->create(['number' => 'A.1', 'title' => 'Title', 'content' => 'Old.', 'markdown' => null, 'sort_order' => 1]);
+    $rule = Rule::factory()->for($module)->create(['number' => 'A.1', 'title' => 'Title', 'content' => 'Old.', 'sort_order' => 1]);
 
     actingAs($user);
 
@@ -329,7 +324,6 @@ test('publishing exposes release notes on the version resource', function (): vo
         'number' => 'A.1',
         'title' => 'Title',
         'content' => 'New.',
-        'markdown' => null,
         'sort_order' => 1,
     ])->assertSuccessful();
 
@@ -351,7 +345,7 @@ test('a typo-only publish is valid without release notes', function (): void {
     $user = User::factory()->superAdmin()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
-    $rule = Rule::factory()->for($module)->create(['number' => 'A.1', 'title' => 'Title', 'content' => 'Old.', 'markdown' => null, 'sort_order' => 1]);
+    $rule = Rule::factory()->for($module)->create(['number' => 'A.1', 'title' => 'Title', 'content' => 'Old.', 'sort_order' => 1]);
 
     actingAs($user);
 
@@ -359,7 +353,6 @@ test('a typo-only publish is valid without release notes', function (): void {
         'number' => 'A.1',
         'title' => 'Title',
         'content' => 'New.',
-        'markdown' => null,
         'sort_order' => 1,
         'classification' => 'typo',
     ])->assertSuccessful();
@@ -376,7 +369,7 @@ test('publishing rejects release notes that do not cover every semantic group', 
     $user = User::factory()->superAdmin()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
-    $rule = Rule::factory()->for($module)->create(['number' => 'A.1', 'title' => 'Title', 'content' => 'Old.', 'markdown' => null, 'sort_order' => 1]);
+    $rule = Rule::factory()->for($module)->create(['number' => 'A.1', 'title' => 'Title', 'content' => 'Old.', 'sort_order' => 1]);
 
     actingAs($user);
 
@@ -384,7 +377,6 @@ test('publishing rejects release notes that do not cover every semantic group', 
         'number' => 'A.1',
         'title' => 'Title',
         'content' => 'New.',
-        'markdown' => null,
         'sort_order' => 1,
     ])->assertSuccessful();
 
@@ -400,7 +392,7 @@ test('publishing rejects an outdated draft revision without creating a snapshot'
     $user = User::factory()->superAdmin()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
-    $rule = Rule::factory()->for($module)->create(['number' => 'A.1', 'title' => 'Title', 'content' => 'Old.', 'markdown' => null, 'sort_order' => 1]);
+    $rule = Rule::factory()->for($module)->create(['number' => 'A.1', 'title' => 'Title', 'content' => 'Old.', 'sort_order' => 1]);
 
     actingAs($user);
 
@@ -408,7 +400,6 @@ test('publishing rejects an outdated draft revision without creating a snapshot'
         'number' => 'A.1',
         'title' => 'Title',
         'content' => 'New.',
-        'markdown' => null,
         'sort_order' => 1,
     ])->assertSuccessful();
 
@@ -460,9 +451,52 @@ test('draft changes returns all changes for the module ordered by changed_at', f
     $response = getJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/draft-changes')
         ->assertSuccessful();
 
-    expect($response->json('data'))->toHaveCount(2);
+    expect($response->json('data'))->toHaveCount(2)
+        ->and($response->json('draft_revision'))->toBe($module->draft_revision);
     $first = $response->json('data.0');
     expect($first['content_after']['content'])->toBe('First');
+});
+
+test('draft changes can be filtered to pending changes', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $version = ModuleVersion::factory()->for($module)->released()->create();
+    $rule = Rule::factory()->for($module)->create();
+
+    ModuleDraftChange::factory()->create([
+        'module_id' => $module->id,
+        'module_version_id' => $version->id,
+        'entity_id' => $rule->id,
+        'content_after' => ['content' => 'Published'],
+    ]);
+    ModuleDraftChange::factory()->create([
+        'module_id' => $module->id,
+        'module_version_id' => null,
+        'entity_id' => $rule->id,
+        'content_after' => ['content' => 'Pending'],
+    ]);
+
+    actingAs($user);
+
+    $response = getJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/draft-changes?pending=1')
+        ->assertSuccessful();
+
+    expect($response->json('data'))->toHaveCount(1)
+        ->and($response->json('data.0.content_after.content'))->toBe('Pending');
+});
+
+test('draft changes response includes the module draft revision', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create(['draft_revision' => 7]);
+
+    actingAs($user);
+
+    $response = getJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/draft-changes')
+        ->assertSuccessful();
+
+    expect($response->json('draft_revision'))->toBe(7);
 });
 
 test('draft changes does not return changes from other modules', function (): void {
@@ -748,7 +782,7 @@ test('multiple rule updates each record their own draft change', function (): vo
     $user = User::factory()->superAdmin()->create();
     $system = System::factory()->create();
     $module = Module::factory()->for($system)->create();
-    $rule = Rule::factory()->for($module)->create(['number' => 'B.1', 'title' => 'T', 'content' => 'V0.', 'markdown' => null, 'sort_order' => 1]);
+    $rule = Rule::factory()->for($module)->create(['number' => 'B.1', 'title' => 'T', 'content' => 'V0.', 'sort_order' => 1]);
 
     actingAs($user);
 
@@ -756,7 +790,6 @@ test('multiple rule updates each record their own draft change', function (): vo
         'number' => 'B.1',
         'title' => 'T',
         'content' => 'Version 1.',
-        'markdown' => null,
         'sort_order' => 1,
     ])->assertSuccessful();
 
@@ -764,7 +797,6 @@ test('multiple rule updates each record their own draft change', function (): vo
         'number' => 'B.1',
         'title' => 'T',
         'content' => 'Version 2.',
-        'markdown' => null,
         'sort_order' => 1,
     ])->assertSuccessful();
 

@@ -11,7 +11,10 @@ export interface ResolvedBookmark {
   label: string
   sublabel: string | null
   sortKey: string
+  available: boolean
 }
+
+const UNAVAILABLE_LABEL = 'Unavailable bookmark'
 
 export const useBookmarkStore = defineStore('bookmarks', () => {
   const systemStore = useSystemStore()
@@ -36,34 +39,56 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
       .map((b): ResolvedBookmark => {
         if (b.type === 'rule') {
           const rule = contentStore.rulesById.get(b.id)
+          if (!rule) {
+            return {
+              entry: b,
+              label: UNAVAILABLE_LABEL,
+              sublabel: null,
+              sortKey: UNAVAILABLE_LABEL,
+              available: false,
+            }
+          }
           return {
             entry: b,
-            label: rule ? `${rule.number} ${rule.title}` : b.id,
-            sublabel: rule ? rule.number : null,
-            sortKey: rule ? rule.number : b.id,
+            label: `${rule.number} ${rule.title}`,
+            sublabel: rule.number,
+            sortKey: rule.number,
+            available: true,
           }
         }
-        if (b.type === 'table') {
-          const table = gameDataById.value.get(b.id)
+        const datum = gameDataById.value.get(b.id)
+        if (!datum) {
           return {
             entry: b,
-            label: table?.name ?? b.id,
+            label: UNAVAILABLE_LABEL,
             sublabel: null,
-            sortKey: table?.name ?? b.id,
+            sortKey: UNAVAILABLE_LABEL,
+            available: false,
           }
         }
         return {
           entry: b,
-          label: b.id,
+          label: datum.name,
           sublabel: null,
-          sortKey: b.id,
+          sortKey: datum.name,
+          available: true,
         }
       })
       .sort((a, b) => a.sortKey.localeCompare(b.sortKey))
   })
 
+  /** Bookmarks whose target resolves in the currently loaded content source. */
+  const availableBookmarks = computed((): ResolvedBookmark[] =>
+    resolvedBookmarks.value.filter((b) => b.available),
+  )
+
   function isBookmarked(type: string, id: string): boolean {
     return bookmarks.value.some((b) => b.type === type && b.id === id)
+  }
+
+  function targetModuleId(type: BookmarkEntry['type'], id: string): string | null {
+    if (type === 'rule') return contentStore.rulesById.get(id)?.module_id ?? null
+    return gameDataById.value.get(id)?.module_id ?? null
   }
 
   async function addBookmark(type: BookmarkEntry['type'], id: string): Promise<void> {
@@ -71,7 +96,13 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
     if (!systemId) return
     const existing = bookmarks.value
     if (existing.some((b) => b.type === type && b.id === id)) return
-    const updated: BookmarkEntry[] = [...existing, { type, id }]
+
+    const entry: BookmarkEntry = { type, id }
+    if (!contentStore.isBookmarkTargetAvailable(entry)) return
+    const moduleId = targetModuleId(type, id)
+    if (!moduleId || contentStore.usesLiveContent(moduleId)) return
+
+    const updated: BookmarkEntry[] = [...existing, entry]
     await _patchConfig(systemId, updated)
   }
 
@@ -101,5 +132,12 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
     }
   }
 
-  return { bookmarks, resolvedBookmarks, isBookmarked, addBookmark, removeBookmark }
+  return {
+    bookmarks,
+    resolvedBookmarks,
+    availableBookmarks,
+    isBookmarked,
+    addBookmark,
+    removeBookmark,
+  }
 })

@@ -98,13 +98,16 @@ function makeModule(
     config: null,
     is_core: isCore,
     sort_order: 0,
+    draft_revision: 0,
     permissions,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
   }
 }
 
-function makeManifestEntry(moduleId: string): ManifestEntry {
+function makeManifestEntry(
+  moduleId: string,
+): ManifestEntry & { content: NonNullable<ManifestEntry['content']> } {
   return {
     module_id: moduleId,
     version_id: 'v1',
@@ -127,7 +130,6 @@ function makeRule(id: string): Rule {
     number: `1.${id}`,
     title: `Rule ${id}`,
     content: 'text',
-    markdown: null,
     sort_order: 0,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',

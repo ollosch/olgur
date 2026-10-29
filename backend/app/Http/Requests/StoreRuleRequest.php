@@ -40,7 +40,6 @@ final class StoreRuleRequest extends FormRequest
             'number' => ['required', 'string', Rule::unique('rules', 'number')->where('module_id', $module->id)],
             'title' => ['present', 'string'],
             'content' => ['present', 'string'],
-            'markdown' => ['present', 'string', 'nullable'],
             'sort_order' => ['required', 'integer'],
             'classification' => $this->draftClassificationRule(),
         ];

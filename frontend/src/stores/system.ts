@@ -10,6 +10,7 @@ import type {
   Module,
   CreateSystemRequest,
   CreateModuleRequest,
+  CreateVersionPayload,
   ApiResource,
   ApiCollection,
 } from '@/types/domain'
@@ -166,14 +167,12 @@ export const useSystemStore = defineStore('system', () => {
   async function createVersion(
     systemId: string,
     moduleId: string,
-    versionString: string,
+    payload: CreateVersionPayload,
   ): Promise<ApiResult<void>> {
-    const result = await post<void>(`/systems/${systemId}/modules/${moduleId}/versions`, {
-      version_string: versionString,
-      notes: '',
-      expected_draft_revision: 0,
-      release_notes: [],
-    })
+    const result = await post<void>(
+      `/systems/${systemId}/modules/${moduleId}/versions`,
+      payload,
+    )
     if (result.ok) {
       const { useContentStore } = await import('@/stores/content')
       await useContentStore().fetchManifest(systemId)

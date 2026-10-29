@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { Rule, IndexEntry } from '@/types/domain'
 import type { RuleLinkModifiers } from '@/lib/renderContent'
+import { parseRuleRange } from '@/lib/ruleReferences'
 
 export type PopupContent =
   | { type: 'rule'; rule: Rule }
@@ -85,16 +86,14 @@ export const useInteractionStore = defineStore('interaction', () => {
    * The separator is the first "-" in the string.
    */
   function navigateToRange(rangeString: string, opts?: RuleLinkModifiers): void {
-    const separatorIndex = rangeString.indexOf('-')
-    if (separatorIndex === -1) {
+    const range = parseRuleRange(rangeString)
+    if (!range) {
       navigateToNumber(rangeString, opts)
       return
     }
 
-    const fromNumber = rangeString.slice(0, separatorIndex)
-    const toNumber = rangeString.slice(separatorIndex + 1)
-    const fromRule = resolveRuleRef?.(fromNumber, opts) ?? null
-    const toRule = resolveRuleRef?.(toNumber, opts) ?? null
+    const fromRule = resolveRuleRef?.(range.from, opts) ?? null
+    const toRule = resolveRuleRef?.(range.to, opts) ?? null
 
     if (fromRule && toRule) {
       popupState.value.visible = false

@@ -61,6 +61,7 @@ function makeModule(id: string): Module {
     config: null,
     is_core: true,
     sort_order: 0,
+    draft_revision: 0,
     permissions: {
       'module.update': false,
       'module.delete': false,
@@ -100,7 +101,6 @@ function makeRule(id: string): Rule {
     number: `1.${id}`,
     title: `Rule ${id}`,
     content: 'text',
-    markdown: null,
     sort_order: 0,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',

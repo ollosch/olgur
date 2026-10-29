@@ -48,6 +48,7 @@ function makeModule(permissions: Module['permissions']): Module {
     config: null,
     is_core: true,
     sort_order: 0,
+    draft_revision: 0,
     permissions,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',

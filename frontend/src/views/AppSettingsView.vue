@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useAppSettingsStore, THEME_PRESETS } from '@/stores/appSettings'
-import { useSystemStore } from '@/stores/system'
-import { useContentStore } from '@/stores/content'
-import { useMembershipStore } from '@/stores/membership'
 import { useRouter } from 'vue-router'
 import { cn } from '@/lib/utils'
 
@@ -14,9 +11,6 @@ import { Switch } from '@/components/ui/switch'
 import { ArrowLeft, Check } from '@lucide/vue'
 
 const settings = useAppSettingsStore()
-const systemStore = useSystemStore()
-const contentStore = useContentStore()
-const membershipStore = useMembershipStore()
 const router = useRouter()
 
 const customHue = computed({
@@ -38,20 +32,6 @@ function goBack(): void {
   }
 }
 
-/** Whether the current system has any rules with non-null markdown */
-const hasMarkdownRules = computed(() => contentStore.allRules.some((r) => r.markdown !== null))
-
-const preferredFormat = computed(
-  (): 'content' | 'markdown' =>
-    membershipStore.membership?.config?.preferred_rule_format ?? 'content',
-)
-
-async function toggleFormat(): Promise<void> {
-  const systemId = systemStore.currentSystem?.id
-  if (!systemId) return
-  const next: 'content' | 'markdown' = preferredFormat.value === 'content' ? 'markdown' : 'content'
-  await membershipStore.updateMembership(systemId, { preferred_rule_format: next })
-}
 </script>
 
 <template>
@@ -79,24 +59,6 @@ async function toggleFormat(): Promise<void> {
             @click="settings.acronymPopups = !settings.acronymPopups"
           />
           <Label for="acronym-popups">Acronym Popups</Label>
-        </CardContent>
-      </Card>
-
-      <!-- Rule Format Preference (only shown when current system has markdown rules) -->
-      <Card v-if="systemStore.currentSystem && hasMarkdownRules">
-        <CardHeader>
-          <CardTitle>Rule Format</CardTitle>
-          <CardDescription>
-            Choose whether to display rules in their custom or markdown format (when available).
-          </CardDescription>
-        </CardHeader>
-        <CardContent class="flex items-center space-x-2">
-          <Switch
-            id="prefer-markdown"
-            :model-value="preferredFormat === 'markdown'"
-            @click="toggleFormat"
-          />
-          <Label for="prefer-markdown">Prefer Markdown</Label>
         </CardContent>
       </Card>
 

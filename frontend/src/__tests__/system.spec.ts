@@ -39,24 +39,28 @@ describe('useSystemStore', () => {
   })
 
   describe('createVersion', () => {
-    it('re-fetches the manifest after a successful release', async () => {
+    const payload = {
+      version_string: '1.0.0',
+      notes: 'Release notes',
+      expected_draft_revision: 4,
+      release_notes: [
+        { entity_type: 'rule' as const, entity_id: 'rule1', note: 'Updated rule' },
+      ],
+    }
+
+    it('sends the provided release payload and re-fetches the manifest', async () => {
       mockPost.mockResolvedValue({ ok: true, data: {} })
 
-      await useSystemStore().createVersion('sys1', 'mod1', '1.0.0')
+      await useSystemStore().createVersion('sys1', 'mod1', payload)
 
-      expect(mockPost).toHaveBeenCalledWith('/systems/sys1/modules/mod1/versions', {
-        version_string: '1.0.0',
-        notes: '',
-        expected_draft_revision: 0,
-        release_notes: [],
-      })
+      expect(mockPost).toHaveBeenCalledWith('/systems/sys1/modules/mod1/versions', payload)
       expect(mockFetchManifest).toHaveBeenCalledWith('sys1')
     })
 
     it('does not re-fetch the manifest when the release fails', async () => {
       mockPost.mockResolvedValue({ ok: false, errors: {} })
 
-      await useSystemStore().createVersion('sys1', 'mod1', '1.0.0')
+      await useSystemStore().createVersion('sys1', 'mod1', payload)
 
       expect(mockFetchManifest).not.toHaveBeenCalled()
     })

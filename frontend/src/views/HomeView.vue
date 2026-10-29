@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useSystemStore } from '@/stores/system'
 import { useMembershipStore } from '@/stores/membership'
 import { useCacheStore } from '@/stores/cacheStore'
+import { useOnline } from '@/composables/useOnline'
 
 import { Button } from '@/components/ui/button'
 import SystemCard from '@/components/systems/SystemCard.vue'
@@ -15,6 +16,7 @@ const systemStore = useSystemStore()
 const membershipStore = useMembershipStore()
 const authStore = useAuthStore()
 const cacheStore = useCacheStore()
+const { offline } = useOnline()
 
 const showCreateDialog = ref(false)
 const initialLoading = ref(true)
@@ -45,7 +47,12 @@ async function logout() {
       <div class="flex items-center gap-4">
         <span class="text-muted-foreground text-sm">{{ authStore.user?.name }}</span>
         <Button v-if="authStore.user" variant="ghost" size="sm" @click="logout">Logout</Button>
-        <Button v-else variant="ghost" size="sm" @click="router.push({ name: 'login' })">
+        <Button
+          v-else-if="!offline"
+          variant="ghost"
+          size="sm"
+          @click="router.push({ name: 'login' })"
+        >
           Sign in
         </Button>
       </div>
@@ -59,7 +66,7 @@ async function logout() {
       <div v-else-if="isGuest" class="space-y-6">
         <div class="flex items-center justify-between">
           <h1 class="text-foreground text-xl font-semibold">Cached systems</h1>
-          <Button size="sm" @click="router.push({ name: 'login' })">Sign in</Button>
+          <Button v-if="!offline" size="sm" @click="router.push({ name: 'login' })">Sign in</Button>
         </div>
         <p class="text-muted-foreground text-sm">
           You are offline. Open a cached system to browse it read-only.

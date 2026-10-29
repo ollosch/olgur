@@ -77,21 +77,24 @@ router.beforeEach(async (to) => {
 
   const requiresAuth = to.meta.requiresAuth
   const requiresGuest = to.meta.requiresGuest
+  const isOffline = useOnline().offline.value
 
-  if (requiresAuth && !authStore.user) {
+  // Offline is a whitelist: home plus pinned systems (including their child
+  // routes via inherited meta). Everything else — login, account screens, and
+  // uncached systems — goes back to the cached-systems landing page.
+  if (isOffline) {
+    if (to.name === 'home') return true
+
     const requiresSystemAccess = to.meta.requiresSystemAccess === true
     const systemId = to.params['systemId'] as string | undefined
-    if (
-      requiresSystemAccess &&
-      systemId &&
-      useOnline().offline.value &&
-      useCacheStore().isCached(systemId)
-    ) {
+    if (requiresSystemAccess && systemId && useCacheStore().isCached(systemId)) {
       return true
     }
-    if (useOnline().offline.value && to.name === 'home') {
-      return true
-    }
+
+    return { name: 'home' }
+  }
+
+  if (requiresAuth && !authStore.user) {
     return {
       name: 'login',
       query: { redirect: to.fullPath },

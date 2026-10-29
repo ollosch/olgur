@@ -162,7 +162,6 @@ test('MembershipConfig::toArray serialises to the expected shape', function (): 
         'ignored_tags' => ['tag-a'],
         'bold_tags' => ['tag-b'],
         'acronym_popups' => false,
-        'preferred_rule_format' => 'content',
         'selected_module_id' => null,
     ]);
 });

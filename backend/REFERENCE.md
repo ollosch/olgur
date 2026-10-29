@@ -64,7 +64,7 @@ This file is the read-first map for `backend/`. It is meant to save an LLM from 
 
 - Model: `backend/app/Models/Rule.php`
 - Hierarchical rule tree inside a module.
-- Fields: `number`, `title`, `content`, `markdown` (nullable), `sort_order`, `parent_id`.
+- Fields: `number`, `title`, `content`, `sort_order`, `parent_id`. `title` and `content` are Markdown source.
 - Parent and child rules stay inside the same module.
 - DB uniqueness is module-local; cross-module uniqueness is enforced in request validation when required.
 
@@ -98,10 +98,10 @@ This file is the read-first map for `backend/`. It is meant to save an LLM from 
 
 - Models: `backend/app/Models/ModuleVersion.php`, `RuleVersion.php`, `IndexEntryVersion.php`, `GameDatumVersion.php`
 - `ModuleVersion` is a released snapshot of ONE module. System admins and that module's editors may publish it.
-- Publishing copies live `rules`, `index_entries`, and `game_data` into version tables. It does not create static exports. Rule snapshots copy `number`/`title`/`content`/`sort_order` and remap parents, but **not** `markdown` (there is no `rule_versions.markdown` column).
+- Publishing copies live `rules`, `index_entries`, and `game_data` into version tables. It does not create static exports. Rule snapshots copy `number`/`title`/`content`/`sort_order` and remap parents.
 - Only a module's latest released snapshot may receive constrained back-edits for typo-level corrections; the backend enforces this invariant. System admins and that module's editors may amend it. Each request updates one snapshot record atomically and includes the expected snapshot `revision`; a conflict requires the editor to reload before retrying. Publishing immediately makes the new snapshot the sole back-edit target and all earlier snapshots non-editable. Back-edits may change reader-facing text or content data in existing snapshot records, but never their tree structure, identifiers, or references. They create no amendment history or public changelog for now; each increments the snapshot's opaque `revision` cache revision. The frontend's optional draft port is a separate explicit update.
 - Snapshot records use fresh ULIDs and preserve tree structure through remapped parent IDs.
-- Live editing creates an append-only, editor-only draft change log for rules, index entries, and game data. Each entry captures the affected record, before and after values, author, timestamp, and an editor-selected `semantic` or `typo` classification. Editors may reclassify changes before publishing. Publishing retains the entries as editor-only provenance linked to the resulting version; subsequent live changes form the next draft cycle. Module metadata is outside this workflow for now.
+- Live editing creates an append-only, editor-only draft change log for rules, index entries, and game data. Each entry captures the affected record, before and after values, author, timestamp, and an editor-selected `semantic` or `typo` classification. Editors may reclassify changes before publishing. Publishing retains the entries as editor-only provenance linked to the resulting version; subsequent live changes form the next draft cycle. Module metadata is outside this workflow for now. Modules expose `draft_revision`; `GET .../draft-changes?pending=1` returns only unpublished changes and includes the module's current `draft_revision` as a sibling of `data` for the review UI.
 - Publishing creates the snapshot from all live changes since the prior release. Semantic draft changes are grouped per affected rule, index entry, or game datum. The **client submits** one release note per semantic group; the backend rejects the publish unless the submitted groups exactly cover the pending semantic groups, and stores the notes verbatim. Typo changes are released but excluded from required notes.
 - A publish containing only typo-classified changes may have no public release notes.
 - Publishing uses optimistic concurrency: the publisher submits the draft revision they reviewed, and the backend rejects the publish when later live changes have advanced that revision.
@@ -144,7 +144,6 @@ Current shape in `memberships.config` (typed by `App\Data\MembershipConfig`):
 | `ignored_tags` | `string[]` | SOP topic tags the player has hidden |
 | `bold_tags` | `string[]` | SOP topic tags the player bolds |
 | `acronym_popups` | `boolean` | Whether acronym popups are enabled for this user |
-| `preferred_rule_format` | `'content' \| 'markdown'` | Persisted reader preference; not yet applied by any rule renderer |
 | `selected_module_id` | `string \| null` | The single module currently being played, or `null` when all subscribed modules are active |
 
 Important current behavior:
@@ -209,7 +208,7 @@ Endpoint: `DELETE /api/systems/{system}/modules/{module}/rules/{rule}` (optional
 ### Broken-Link Lint
 
 - Service: `backend/app/Services/BrokenLinkLinter.php` (pure, deterministic, no DB access).
-- Reports dangling references: bare `{{L:n}}`, qualified `{{L:slug:n}}`, ranges, and `index_entries.relations.rule_refs` that do not resolve.
+- Reports dangling references: bare `{{L:n}}`, qualified `{{L:slug:n}}`, ranges, and `index_entries.relations.rule_refs` that do not resolve. Index refs support an optional `slug:` prefix (e.g. `o:O.5.1`) and are parsed with the same helper as rule-content tokens.
 - Exposed via `GET /api/systems/{system}/lint` (authorized for system admin or any module editor) and the `php artisan lint:broken-links {system}` command.
 - Not yet wired as a non-blocking warning into publish.
   

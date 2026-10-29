@@ -240,6 +240,27 @@ test('update modifies an index entry', function (): void {
     assertDatabaseHas('index_entries', ['id' => $entry->id, 'term' => 'Updated Term']);
 });
 
+test('update succeeds when keeping the same term', function (): void {
+    $user = User::factory()->superAdmin()->create();
+    $system = System::factory()->create();
+    $module = Module::factory()->for($system)->create();
+    $entry = IndexEntry::factory()->for($module)->create(['term' => 'Alpha']);
+
+    actingAs($user);
+
+    $response = patchJson('/api/systems/'.$system->id.'/modules/'.$module->id.'/index-entries/'.$entry->id, [
+        'parent_id' => $entry->parent_id,
+        'term' => 'Alpha',
+        'definition' => $entry->definition,
+        'notes' => $entry->notes,
+        'relations' => ['rule_refs' => $entry->relations['rule_refs'] ?? [], 'see_also' => $entry->relations['see_also'] ?? []],
+    ])
+        ->assertSuccessful();
+
+    $response->assertJsonPath('data.term', 'Alpha');
+    assertDatabaseHas('index_entries', ['id' => $entry->id, 'term' => 'Alpha']);
+});
+
 test('update returns 404 for index entry belonging to a different module', function (): void {
     $user = User::factory()->superAdmin()->create();
     $system = System::factory()->create();

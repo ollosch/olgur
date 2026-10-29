@@ -244,7 +244,7 @@ test('store returns 404 for unknown system', function (): void {
 test('show returns a single module', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->create();
-    $module = Module::factory()->for($system)->create();
+    $module = Module::factory()->for($system)->create(['draft_revision' => 4]);
     Membership::factory()->for($user)->for($system)->create();
     actingAs($user);
 
@@ -252,6 +252,7 @@ test('show returns a single module', function (): void {
 
     $response->assertJsonPath('data.id', $module->id);
     $response->assertJsonPath('data.system_id', $system->id);
+    $response->assertJsonPath('data.draft_revision', 4);
 });
 
 test('index is forbidden for non-members', function (): void {

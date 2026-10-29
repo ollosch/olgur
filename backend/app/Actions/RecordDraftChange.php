@@ -56,7 +56,6 @@ final readonly class RecordDraftChange
             'number' => $rule->number,
             'title' => $rule->title,
             'content' => $rule->content,
-            'markdown' => $rule->markdown,
             'parent_id' => $rule->parent_id,
             'sort_order' => $rule->sort_order,
         ];

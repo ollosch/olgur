@@ -145,6 +145,7 @@ function makeModule(id: string, permissions: ModulePermissions, isCore = true): 
     config: null,
     is_core: isCore,
     sort_order: 0,
+    draft_revision: 0,
     permissions,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
@@ -314,6 +315,19 @@ describe('SystemHeader — draft/release switch', () => {
       expect(button.exists()).toBe(true)
       expect(button.text()).toContain('t1')
       expect(button.attributes('title')).toBe('Firepower Table')
+    })
+
+    it('does not render unavailable table bookmarks in the toolbar', () => {
+      seedSystem({ 'content.view_released': true })
+      useMembershipStore().setMembership(
+        'sys1',
+        makeMembership({ bookmarks: [{ type: 'table', id: '01HZ8Q9X7K3M2N1P0R5T6V4W8Y' }] }),
+      )
+      const wrapper = mountHeader()
+
+      expect(wrapper.find('[data-test="inline-bookmark"]').exists()).toBe(false)
+      expect(wrapper.find('[data-test="bookmark-more"]').exists()).toBe(false)
+      expect(wrapper.text()).not.toContain('01HZ8Q9X7K3M2N1P0R5T6V4W8Y')
     })
   })
 

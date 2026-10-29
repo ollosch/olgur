@@ -81,6 +81,7 @@ function onClick(e: MouseEvent) {
             v-html="
               renderContent(state.content.rule.content, {
                 acronymPopups: appSettings.acronymPopups,
+                block: true,
               })
             "
           />
@@ -124,6 +125,7 @@ function onClick(e: MouseEvent) {
               v-html="
                 renderContent(rule.content, {
                   acronymPopups: appSettings.acronymPopups,
+                  block: true,
                 })
               "
             />

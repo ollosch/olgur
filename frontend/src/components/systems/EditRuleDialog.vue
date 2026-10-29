@@ -33,7 +33,6 @@ interface FormValues {
   number: string
   title: string
   content: string
-  markdown: string
   parent_id: string | null
 }
 
@@ -54,7 +53,6 @@ const { defineField, handleSubmit, errors, setErrors, setFieldValue, resetForm, 
 const [ruleNumber, ruleNumberAttrs] = defineField('number')
 const [title, titleAttrs] = defineField('title')
 const [content, contentAttrs] = defineField('content')
-const [markdown, markdownAttrs] = defineField('markdown')
 const [parentId] = defineField('parent_id')
 
 // ---------------------------------------------------------------------------
@@ -127,7 +125,6 @@ watch(
           number: props.rule.number,
           title: props.rule.title,
           content: props.rule.content.replaceAll('<br>', '\n'),
-          markdown: props.rule.markdown ?? '',
           parent_id: props.rule.parent_id,
         },
       })
@@ -145,7 +142,6 @@ const onSubmit = handleSubmit(async (values) => {
     number: values.number,
     title: values.title,
     content: values.content,
-    markdown: values.markdown,
     parent_id: values.parent_id ?? null,
     sort_order: props.rule.sort_order,
   })
@@ -186,6 +182,7 @@ const onSubmit = handleSubmit(async (values) => {
             <FieldLabel for="rule-title">Title</FieldLabel>
             <Input id="rule-title" v-model="title" v-bind="titleAttrs" placeholder="Rule title" />
             <div v-if="errors.title" class="text-destructive text-sm">{{ errors.title }}</div>
+            <p class="text-muted-foreground text-xs">Markdown is supported.</p>
           </Field>
 
           <Field>
@@ -230,7 +227,7 @@ const onSubmit = handleSubmit(async (values) => {
           </Field>
 
           <Field>
-            <FieldLabel for="rule-content">Content</FieldLabel>
+            <FieldLabel for="rule-content">Content (Markdown)</FieldLabel>
             <Textarea
               id="rule-content"
               v-model="content"
@@ -242,18 +239,6 @@ const onSubmit = handleSubmit(async (values) => {
             <div v-if="errors.content" class="text-destructive text-sm">{{ errors.content }}</div>
           </Field>
 
-          <Field>
-            <FieldLabel for="rule-markdown">Markdown</FieldLabel>
-            <Textarea
-              id="rule-markdown"
-              v-model="markdown"
-              v-bind="markdownAttrs"
-              rows="6"
-              placeholder="Rule markdown…"
-              class="min-h-[80px]"
-            />
-            <div v-if="errors.markdown" class="text-destructive text-sm">{{ errors.markdown }}</div>
-          </Field>
         </FieldGroup>
 
         <DialogFooter>

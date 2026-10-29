@@ -26,7 +26,7 @@ export function useRetrofix(
   applyAmendment: () => Promise<void>
   applyDraftFix: () => Promise<void>
 } {
-  const { post } = useApi()
+  const { get, patch } = useApi()
   const contentStore = useContentStore()
 
   const releasedContent: Ref<string> = ref('')
@@ -43,6 +43,13 @@ export function useRetrofix(
   const releasedRuleId: Ref<string> = ref('')
 
   /**
+   * The live draft rule as fetched from the live draft endpoint (or the store
+   * as a fallback). Held here so back-porting a correction updates the live
+   * record rather than a released snapshot from `rulesByModule`.
+   */
+  const liveDraftRule: Ref<Rule | null> = ref(null)
+
+  /**
    * True when the released version text differs from the current draft text
    * (trimmed comparison). Determines whether to render single or dual editor.
    */
@@ -50,11 +57,32 @@ export function useRetrofix(
     () => releasedContent.value.trim() !== draftContent.value.trim(),
   )
 
+  function findStoreDraft(): Rule | null {
+    return (contentStore.rulesByModule[moduleId] ?? []).find((r) => r.id === ruleId) ?? null
+  }
+
+  /**
+   * Loads the live draft rule explicitly. In Release mode `rulesByModule`
+   * contains the released snapshot, so the store is only a fallback when the
+   * live draft request fails; otherwise the comparison would be meaningless.
+   */
+  async function loadLiveDraft(): Promise<Rule | null> {
+    try {
+      const result = await get<ApiCollection<Rule>>(
+        `/systems/${systemId}/modules/${moduleId}/rules`,
+      )
+      if (!result.ok) return findStoreDraft()
+      return result.data.data.find((r) => r.id === ruleId) ?? null
+    } catch {
+      return findStoreDraft()
+    }
+  }
+
   /**
    * Fetches the versioned rules at `manifestRulesUrl`, finds the rule by its
    * stable `rule_id` (matching `ruleId`), and populates `releasedContent` while
-   * capturing the snapshot `id`. Also seeds `draftContent` from the live store
-   * and `expectedRevision` from the manifest so both values are ready for the
+   * capturing the snapshot `id`. Also loads the live draft rule explicitly and
+   * seeds `expectedRevision` from the manifest so both values are ready for the
    * divergence check and the optimistic-concurrency back-edit.
    */
   async function loadReleasedContent(manifestRulesUrl: string): Promise<void> {
@@ -62,21 +90,25 @@ export function useRetrofix(
     errors.value = null
 
     try {
-      // Seed draft content from the live store
-      const storeRules = contentStore.rulesByModule[moduleId] ?? []
-      const draftRule = storeRules.find((r) => r.id === ruleId)
+      const draftRule = await loadLiveDraft()
+      liveDraftRule.value = draftRule
       if (draftRule) {
-        draftContent.value = draftRule.content
+        draftContent.value = draftRule.content.split('<br>').join('\n')
       }
 
       // Seed the expected snapshot revision from the manifest
       expectedRevision.value = contentStore.manifestByModule[moduleId]?.revision ?? 0
 
-      // Fetch and normalise the released version. The released snapshot carries
-      // both a snapshot `id` and a stable `rule_id`; match on `rule_id` and
-      // capture the snapshot `id` for the amend `entity_id`.
-      const json = await request<ApiCollection<Rule>>({ method: 'GET', url: manifestRulesUrl })
-      const releasedRule = json.data.find((r) => r.rule_id === ruleId)
+      // Fetch and normalise the released version. The versioned endpoint returns
+      // a bare JSON array. The released snapshot carries both a snapshot `id`
+      // and a stable `rule_id`; match on `rule_id` and capture the snapshot `id`
+      // for the amend `entity_id`.
+      const json = await request<Rule[] | ApiCollection<Rule>>({
+        method: 'GET',
+        url: manifestRulesUrl,
+      })
+      const items = Array.isArray(json) ? json : json.data
+      const releasedRule = items.find((r) => r.rule_id === ruleId)
       if (releasedRule) {
         releasedRuleId.value = releasedRule.id
         releasedContent.value = releasedRule.content.split('<br>').join('\n')
@@ -95,7 +127,7 @@ export function useRetrofix(
   async function applyAmendment(): Promise<void> {
     errors.value = null
 
-    const result = await post<ApiResource<AmendResponse>, AmendVersionRequest>(
+    const result = await patch<ApiResource<AmendResponse>, AmendVersionRequest>(
       `/systems/${systemId}/modules/${moduleId}/versions/${versionId}/amend`,
       {
         entity_type: 'rule',
@@ -120,21 +152,19 @@ export function useRetrofix(
   }
 
   /**
-   * PATCHes the draft rule via the content store. Preserves all other fields
-   * and only updates the content text.
+   * PATCHes the live draft rule via the content store. Preserves all other
+   * live fields and only updates the content text.
    */
   async function applyDraftFix(): Promise<void> {
     errors.value = null
 
-    const storeRules = contentStore.rulesByModule[moduleId] ?? []
-    const rule = storeRules.find((r) => r.id === ruleId)
+    const rule = liveDraftRule.value ?? findStoreDraft()
     if (!rule) return
 
     const result = await contentStore.updateRule(systemId, rule, {
       number: rule.number,
       title: rule.title,
       content: draftContent.value,
-      markdown: rule.markdown,
       parent_id: rule.parent_id,
       sort_order: rule.sort_order,
     })

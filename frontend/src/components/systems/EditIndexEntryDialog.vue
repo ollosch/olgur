@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia'
 import { useForm } from 'vee-validate'
 import { useContentStore } from '@/stores/content'
 import { useSystemStore } from '@/stores/system'
+import { formatRuleReference } from '@/lib/ruleReferences'
 import type { IndexEntry, Rule } from '@/types/domain'
 
 import { Button } from '@/components/ui/button'
@@ -129,9 +130,14 @@ function clearParent(): void {
 const excludedRuleNumbers = computed(() => new Set(ruleRefs.value ?? []))
 
 function addRuleRef(rule: Rule): void {
+  const ref = formatRuleReference(rule, {
+    globalRuleNumbers: contentStore.globalRuleNumbers,
+    entryModuleId: props.entry.module_id,
+    module: systemStore.modules.find((m) => m.id === rule.module_id),
+  })
   const current = ruleRefs.value ?? []
-  if (!current.includes(rule.number)) {
-    setFieldValue('rule_refs', [...current, rule.number])
+  if (!current.includes(ref)) {
+    setFieldValue('rule_refs', [...current, ref])
   }
 }
 
@@ -157,6 +163,11 @@ watch(
   () => props.open,
   (val) => {
     if (val) {
+      const systemId = systemStore.currentSystem?.id
+      if (systemId) {
+        void contentStore.fetchMissingModules(systemId, systemStore.modules)
+      }
+
       resetForm({
         values: {
           term: props.entry.term,
@@ -279,6 +290,7 @@ const onSubmit = handleSubmit(async (values) => {
             <!-- Search input + floating dropdown -->
             <RuleSearchInput
               :module-id="props.entry.module_id"
+              scope="system"
               :excluded-numbers="excludedRuleNumbers"
               @select="addRuleRef"
             />

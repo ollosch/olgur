@@ -25,7 +25,7 @@ import { useBookmarkStore } from '@/stores/bookmarks'
 import { useSystemStore } from '@/stores/system'
 import { useMembershipStore } from '@/stores/membership'
 import { useContentStore } from '@/stores/content'
-import type { System, Membership, BookmarkEntry, Module, GameDatum } from '@/types/domain'
+import type { System, Membership, BookmarkEntry, Module, GameDatum, Rule } from '@/types/domain'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -64,7 +64,7 @@ function makeMembershipWithBookmarks(systemId: string, bookmarks: BookmarkEntry[
   return { ...makeMembership(systemId), config: { bookmarks } }
 }
 
-function makeModule(id: string): Module {
+function makeModule(id: string, live = false): Module {
   return {
     id,
     system_id: 'sys1',
@@ -74,11 +74,12 @@ function makeModule(id: string): Module {
     config: null,
     is_core: true,
     sort_order: 0,
+    draft_revision: 0,
     permissions: {
       'module.update': false,
       'module.delete': false,
-      'content.view_live': true,
-      'content.view_released': false,
+      'content.view_live': live,
+      'content.view_released': !live,
       'content.edit': false,
       'content.proofread': false,
       'version.publish': false,
@@ -90,11 +91,30 @@ function makeModule(id: string): Module {
   }
 }
 
-function makeTable(id: string, moduleId: string, name: string): GameDatum {
+function makeRule(id: string, moduleId: string): Rule {
   return {
     id,
     module_id: moduleId,
-    type: 'table',
+    parent_id: null,
+    number: '1.1',
+    title: `Rule ${id}`,
+    content: '',
+    sort_order: 0,
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  }
+}
+
+function makeTable(
+  id: string,
+  moduleId: string,
+  name: string,
+  type: GameDatum['type'] = 'table',
+): GameDatum {
+  return {
+    id,
+    module_id: moduleId,
+    type,
     slug: id,
     name,
     content: {},
@@ -124,10 +144,23 @@ describe('useBookmarkStore', () => {
     return { systemStore, membershipStore, bookmarkStore }
   }
 
+  function seedResolvedContent(live = false): void {
+    const systemStore = useSystemStore()
+    systemStore.modulesBySystem['sys1'] = [makeModule('mod1', live)]
+    const contentStore = useContentStore()
+    contentStore.rulesByModule['mod1'] = [makeRule('id-1', 'mod1'), makeRule('r1', 'mod1')]
+    contentStore.indexEntriesByModule['mod1'] = []
+    contentStore.gameDataByModule['mod1'] = [
+      makeTable('id-1', 'mod1', 'Firepower Table'),
+      makeTable('u1', 'mod1', 'Panther', 'vehicle'),
+    ]
+  }
+
   const types: Array<BookmarkEntry['type']> = ['rule', 'table', 'unit']
 
   it.each(types)('round-trips a %s bookmark through the membership config', async (type) => {
     const { membershipStore, bookmarkStore } = setup()
+    seedResolvedContent()
     const updated = makeMembershipWithBookmarks('sys1', [{ type, id: 'id-1' }])
     mockPatch.mockResolvedValue({ ok: true, data: { data: updated } })
 
@@ -176,24 +209,92 @@ describe('useBookmarkStore', () => {
   })
 
   it('resolves table bookmarks to their table names', () => {
-    const { systemStore, bookmarkStore } = setup([{ type: 'table', id: 't1' }])
-    systemStore.modulesBySystem['sys1'] = [makeModule('mod1')]
+    const { bookmarkStore } = setup([{ type: 'table', id: 't1' }])
+    seedResolvedContent()
     const contentStore = useContentStore()
-    contentStore.rulesByModule['mod1'] = []
-    contentStore.indexEntriesByModule['mod1'] = []
     contentStore.gameDataByModule['mod1'] = [makeTable('t1', 'mod1', 'Firepower Table')]
 
     const resolved = bookmarkStore.resolvedBookmarks
     expect(resolved).toHaveLength(1)
     expect(resolved[0]?.label).toBe('Firepower Table')
+    expect(resolved[0]?.available).toBe(true)
     expect(resolved[0]?.entry).toEqual({ type: 'table', id: 't1' })
   })
 
-  it('falls back to the id for a table bookmark with no matching content', () => {
+  it('resolves unit bookmarks from game data instead of the raw id', () => {
+    const { bookmarkStore } = setup([{ type: 'unit', id: 'u1' }])
+    seedResolvedContent()
+
+    const resolved = bookmarkStore.resolvedBookmarks
+    expect(resolved).toHaveLength(1)
+    expect(resolved[0]?.label).toBe('Panther')
+    expect(resolved[0]?.sublabel).toBeNull()
+    expect(resolved[0]?.available).toBe(true)
+  })
+
+  it('marks a released target available and a missing target unavailable', () => {
+    const { bookmarkStore } = setup([
+      { type: 'rule', id: 'r1' },
+      { type: 'rule', id: 'missing' },
+    ])
+    seedResolvedContent()
+
+    const available = bookmarkStore.resolvedBookmarks.find((b) => b.entry.id === 'r1')
+    const missing = bookmarkStore.resolvedBookmarks.find((b) => b.entry.id === 'missing')
+
+    expect(available?.available).toBe(true)
+    expect(available?.label).toBe('1.1 Rule r1')
+    expect(missing?.available).toBe(false)
+    expect(missing?.label).toBe('Unavailable bookmark')
+    expect(missing?.label).not.toBe('missing')
+  })
+
+  it('treats targets present in the live source as available', () => {
+    const { bookmarkStore } = setup([{ type: 'rule', id: 'r1' }])
+    seedResolvedContent(true)
+
+    expect(bookmarkStore.resolvedBookmarks[0]?.available).toBe(true)
+    expect(bookmarkStore.availableBookmarks).toHaveLength(1)
+  })
+
+  it('excludes unavailable targets from availableBookmarks', () => {
+    const { bookmarkStore } = setup([
+      { type: 'table', id: 't1' },
+      { type: 'table', id: 'missing' },
+    ])
+    seedResolvedContent()
+    const contentStore = useContentStore()
+    contentStore.gameDataByModule['mod1'] = [makeTable('t1', 'mod1', 'Firepower Table')]
+
+    expect(bookmarkStore.availableBookmarks.map((b) => b.entry.id)).toEqual(['t1'])
+  })
+
+  it('refuses to add a bookmark whose target is not loaded', async () => {
+    const { bookmarkStore } = setup()
+    seedResolvedContent()
+
+    await bookmarkStore.addBookmark('rule', 'missing')
+
+    expect(mockPatch).not.toHaveBeenCalled()
+    expect(bookmarkStore.bookmarks).toEqual([])
+  })
+
+  it('refuses to add a bookmark while the module serves live content', async () => {
+    const { bookmarkStore } = setup()
+    seedResolvedContent(true)
+
+    await bookmarkStore.addBookmark('rule', 'r1')
+
+    expect(mockPatch).not.toHaveBeenCalled()
+    expect(bookmarkStore.bookmarks).toEqual([])
+  })
+
+  it('falls back to an unavailable label for a table bookmark with no matching content', () => {
     const { bookmarkStore } = setup([{ type: 'table', id: 'missing' }])
 
     const resolved = bookmarkStore.resolvedBookmarks
     expect(resolved).toHaveLength(1)
-    expect(resolved[0]?.label).toBe('missing')
+    expect(resolved[0]?.label).toBe('Unavailable bookmark')
+    expect(resolved[0]?.available).toBe(false)
   })
 })

@@ -94,7 +94,7 @@ Content splits into two tiers:
 - Store: `frontend/src/stores/cacheStore.ts`
 - IndexedDB helpers: `frontend/src/lib/idb.ts` — a single database `olgur-offline` with object stores `systems`, `manifests`, `content`, and `meta`. `idb.ts` handles `onblocked` (a version-bump collision with another open connection) and resets its cached connection promise on error so later calls retry a fresh open.
 
-`pinSystem(systemId)` fetches the system, its modules, its manifest, and the versioned content for every viewable module, then writes them to IndexedDB and records a `meta` registry entry. It aborts silently if the initial metadata fetch fails or no module is viewable. Content-download/storage/write failures throw and surface as a `vue-sonner` toast in `PinSystemControl.vue`; write failures roll back records already written. `unpinSystem(systemId)` removes everything under the `systemId:` key prefix.
+`pinSystem(systemId)` fetches the system, its modules, its manifest, and the versioned content for every viewable module, then writes them to IndexedDB and records a `meta` registry entry. It returns a `PinOutcome`: `'pinned'` on success, `'skipped'` when a pin is already running, `'request-failed'` when the initial metadata fetch fails, and `'no-content'` when no viewable module has released content. Background callers (`refreshIfStale`, `autoRefreshPin`) ignore the outcome. Content-download/storage/write failures throw and surface as a `vue-sonner` toast in `PinSystemControl.vue`; write failures roll back records already written. `unpinSystem(systemId)` removes everything under the `systemId:` key prefix.
 
 Rule images (`/rules/images/`) are cached offline via a workbox `runtimeCaching` `CacheFirst` rule in `frontend/vite.config.ts`.
 
@@ -122,22 +122,26 @@ Configured via `vite-plugin-pwa` in `frontend/vite.config.ts` and registered in 
 
 ## Versioning Workflow
 
+### Draft Review And Release
+
+The Version action on a system card opens `ReleaseVersionDialog`, which loads pending draft changes from `GET .../draft-changes?pending=1`. It shows them grouped per entity, lets the editor reclassify each group as semantic or typo, requires one release note per semantic group, and publishes with the reviewed `draft_revision`. A 409 means the draft changed after review; the dialog reloads the review. A 422 means the submitted notes do not cover exactly the pending semantic groups.
+
 ### Content Loading Strategy
 
 `contentStore` tracks a `viewMode` (`'draft' | 'release'`, default `'draft'`) and a `canSwitchView` flag (true when any active module has `content.view_live`):
 
 - **Admins / editors** (`content.view_live`) can toggle Draft vs Release via the header (`SystemHeader.vue`); in Draft they read live draft content from the standard REST endpoints, in Release they read the latest released snapshot from the manifest's versioned content URLs.
 - **Players** have no toggle (`canSwitchView` false) and always read the latest released snapshot from the manifest content URLs.
-- `SystemView.vue` resets `viewMode` to `'draft'` on a genuine system switch (via `contentStore.clear()`) and re-fetches content whenever `viewMode` changes. The "Make available offline" toggle lives in the System ▾ menu (`PinSystemControl.vue`) and is always available; pinning only caches viewable released content.
+- `SystemView.vue` resets `viewMode` to `'draft'` on a genuine system switch (via `contentStore.clear()`) and re-fetches content whenever `viewMode` changes. The "Make available offline" toggle lives in the System ▾ menu (`PinSystemControl.vue`); it is disabled when offline or when no released version exists, and shows success/failure feedback. Pinning only caches viewable released content.
 
 ### RetrofixEditor
 
 Component: `frontend/src/components/versions/RetrofixEditor.vue`
 Composable: `frontend/src/composables/useRetrofix.ts`
 
-Used when a designer applies a post-release editorial amendment to the latest released version without publishing a new version.
+Used when a designer applies a post-release editorial amendment to the latest released version without publishing a new version. The back-edit action is available from rule detail in both Draft and Release modes; full draft editing is restricted to Draft mode.
 
-- Fetches both the released text (from the versioned API endpoint or `RuleVersion` row) and the current draft text.
+- Fetches both the released text (from the versioned API endpoint or `RuleVersion` row) and the current live draft text.
 - If the relevant reader-facing fields in the released record and draft record are equal before the amendment, the editor is explicitly asked whether to port the correction to the draft. This prevents the correction being overwritten by the next publish.
 - If they have diverged, both are shown side by side so the designer can decide whether to apply the same fix to the draft.
 - The designer's choice is always explicit; no automatic back-propagation occurs.

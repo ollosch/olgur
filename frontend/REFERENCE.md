@@ -49,6 +49,10 @@ Important environment variables:
 - The composed "active set" (`activeModules`) drives `allRules`, `allGameData`, rule/table/unit search, and rule popups; the singular module (`singularModule`) drives `allIndexEntries`, index/acronym search and popups, and `singularGameData`.
 - Vehicles and ordnance are searchable game data, but they do not render in `GameDataView`; they open in the full-screen `ToolModal` (Unit Data / Ordnance vs Armor).
 - Tools are derived from `game_data` type (see `frontend/src/lib/gameDataTools.ts`); there is no module tool registry.
+- All rendered text is treated as Markdown (`markdown-it`) and sanitized with DOMPurify in `renderContent.ts`; raw HTML is allowed for legacy imported content but scripts and event handlers are stripped. Titles/labels use inline mode; rule content and index definitions use block mode.
+- Bookmarks are only creatable from released content; unresolved/draft-only bookmarks are shown as unavailable. The content store exposes `usesLiveContent`, `hasReleasedContent`, and availability helpers for this.
+- Offline routing is a whitelist: only `home` and pinned-system routes are reachable. Guest/auth/account screens are not reachable offline.
+- The Release dialog reviews pending draft changes, requires a note per semantic group, and publishes with the reviewed `draft_revision`. Back-editing the latest released snapshot works in both Draft and Release modes via the wrench action.
 
 ## Read These Files First
 
@@ -56,8 +60,9 @@ Important environment variables:
 - Routing: `frontend/src/router/index.ts`, `frontend/src/router/auth.ts`
 - System session flow: `frontend/src/views/SystemView.vue`, `frontend/src/stores/system.ts`, `frontend/src/stores/content.ts`, `frontend/src/stores/membership.ts`
 - Domain types: `frontend/src/types/domain.ts`
-- Search and popup behavior: `frontend/src/components/GlobalSearchOverlay.vue`, `frontend/src/composables/useRuleDelegation.ts`, `frontend/src/components/RulePopupOverlay.vue`, `frontend/src/stores/interaction.ts`, `frontend/src/lib/renderContent.ts`
+- Search and popup behavior: `frontend/src/components/GlobalSearchOverlay.vue`, `frontend/src/composables/useRuleDelegation.ts`, `frontend/src/components/RulePopupOverlay.vue`, `frontend/src/stores/interaction.ts`, `frontend/src/lib/renderContent.ts`, `frontend/src/lib/ruleReferences.ts`
 - Bookmarks and history: `frontend/src/stores/bookmarks.ts`, `frontend/src/stores/history.ts`
+- Versioning and draft review: `frontend/src/components/systems/ReleaseVersionDialog.vue`, `frontend/src/composables/useDraftReview.ts`, `frontend/src/composables/useRetrofix.ts`, `frontend/src/components/versions/RetrofixDialog.vue`
 - Settings and theming: `frontend/src/stores/appSettings.ts`, `frontend/src/views/AppSettingsView.vue`
 - Offline cache and connectivity: `frontend/src/stores/cacheStore.ts`, `frontend/src/lib/idb.ts`, `frontend/src/composables/useOnline.ts`, `frontend/src/stores/proofread.ts`, `frontend/vite.config.ts`
 - UI shell and guards: `frontend/src/components/systems/SystemHeader.vue`, `frontend/src/components/systems/PinSystemControl.vue`, `frontend/src/composables/useModalShortcutGuard.ts`

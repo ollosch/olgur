@@ -7,6 +7,7 @@ import type { ApiResult } from '@/lib/http'
 import { useSystemStore } from '@/stores/system'
 import { useMembershipStore } from '@/stores/membership'
 import { useCacheStore } from '@/stores/cacheStore'
+import { parseRuleRange, parseRuleReference } from '@/lib/ruleReferences'
 import type {
   Rule,
   IndexEntry,
@@ -14,6 +15,7 @@ import type {
   ModulePermissions,
   GameDatum,
   ManifestEntry,
+  BookmarkEntry,
   ApiCollection,
   ApiResource,
   UpdateRuleRequest,
@@ -172,8 +174,37 @@ export const useContentStore = defineStore('content', () => {
     return permissionsFor(moduleId)?.['content.view_released'] ?? false
   }
 
+  /**
+   * Whether this module's content is currently served from the live draft
+   * source (as opposed to a released snapshot). Mirrors the fetch ladder:
+   * offline always serves pinned released content, never live drafts.
+   */
+  function usesLiveContent(moduleId: string): boolean {
+    return !offline.value && viewMode.value === 'draft' && canViewLive(moduleId)
+  }
+
+  /**
+   * Whether this module has a released snapshot available to read.
+   */
+  function hasReleasedContent(moduleId: string): boolean {
+    const entry = manifestByModule.value[moduleId]
+    return entry?.content != null && entry.version_id != null
+  }
+
   function isUnavailable(moduleId: string): boolean {
     return !canViewLive(moduleId) && !canViewReleased(moduleId)
+  }
+
+  function isRuleAvailable(ruleId: string): boolean {
+    return rulesById.value.has(ruleId)
+  }
+
+  function isGameDatumAvailable(id: string): boolean {
+    return gameDataById.value.has(id)
+  }
+
+  function isBookmarkTargetAvailable(entry: BookmarkEntry): boolean {
+    return entry.type === 'rule' ? isRuleAvailable(entry.id) : isGameDatumAvailable(entry.id)
   }
 
   function setViewMode(mode: 'draft' | 'release'): void {
@@ -203,6 +234,13 @@ export const useContentStore = defineStore('content', () => {
     activeModules.value.flatMap((m) => rulesByModule.value[m.id] ?? []),
   )
 
+  /**
+   * Rules from every module with loaded content, active or not. Used for
+   * system-wide reference lookup; display surfaces still use `allRules` so a
+   * selected expansion does not leak into the reading view.
+   */
+  const allLoadedRules = computed((): Rule[] => Object.values(rulesByModule.value).flat())
+
   /** O(1) lookup by rule.id */
   const rulesById = computed((): Map<string, Rule> => {
     const m = new Map<string, Rule>()
@@ -210,10 +248,10 @@ export const useContentStore = defineStore('content', () => {
     return m
   })
 
-  /** O(1) lookup by rule.number — used by delegation hover/click */
+  /** O(1) lookup by rule.number across all loaded modules — used by delegation hover/click */
   const rulesByNumber = computed((): Map<string, Rule> => {
     const m = new Map<string, Rule>()
-    for (const r of allRules.value) m.set(r.number, r)
+    for (const r of allLoadedRules.value) m.set(r.number, r)
     return m
   })
 
@@ -224,20 +262,20 @@ export const useContentStore = defineStore('content', () => {
     return m
   })
 
-  /** O(1) lookup of active modules by slug — used for `{{L:module-slug:number}}` links. */
+  /** O(1) lookup of system modules by slug — used for `{{L:module-slug:number}}` links. */
   const moduleBySlug = computed((): Map<string, Module> => {
     const m = new Map<string, Module>()
-    for (const mod of activeModules.value) m.set(mod.slug, mod)
+    for (const mod of systemStore.modules) m.set(mod.slug, mod)
     return m
   })
 
-  /** Module-scoped rule lookup: module_id → (rule.number → rule). */
+  /** Module-scoped rule lookup over all loaded modules: module_id → (rule.number → rule). */
   const rulesByModuleNumber = computed((): Map<string, Map<string, Rule>> => {
     const m = new Map<string, Map<string, Rule>>()
-    for (const mod of activeModules.value) {
+    for (const [moduleId, rules] of Object.entries(rulesByModule.value)) {
       const inner = new Map<string, Rule>()
-      for (const r of rulesByModule.value[mod.id] ?? []) inner.set(r.number, r)
-      m.set(mod.id, inner)
+      for (const r of rules) inner.set(r.number, r)
+      m.set(moduleId, inner)
     }
     return m
   })
@@ -249,39 +287,63 @@ export const useContentStore = defineStore('content', () => {
   /**
    * Resolve a rule reference to a rule.
    *
-   * An explicit module-slug link (`{{L:core:3.4}}`) resolves in that module in
-   * every mode. A bare link (`{{L:1.2}}`) resolves system-wide when rule
-   * numbers are system-wide unique (`global_rule_numbers`), otherwise it
-   * resolves in the module that owns the content being rendered.
+   * A reference may carry its own module-slug prefix (`o:O.5.1`, from stored
+   * index refs) or receive one from the rendered link context
+   * (`{{L:core:3.4}}`). Either resolves in that module in every mode. A bare
+   * reference (`{{L:1.2}}`) resolves system-wide when rule numbers are
+   * system-wide unique (`global_rule_numbers`), otherwise it resolves in the
+   * module that owns the content being rendered.
    */
   function resolveRuleReference(
     number: string,
     opts?: { moduleSlug?: string; moduleId?: string },
   ): Rule | null {
-    if (opts?.moduleSlug) {
-      const mod = moduleBySlug.value.get(opts.moduleSlug)
+    const parsed = parseRuleReference(number)
+    const moduleSlug = parsed.moduleSlug ?? opts?.moduleSlug
+
+    if (moduleSlug) {
+      const mod = moduleBySlug.value.get(moduleSlug)
       if (!mod) return null
-      return rulesByModuleNumber.value.get(mod.id)?.get(number) ?? null
+      return rulesByModuleNumber.value.get(mod.id)?.get(parsed.number) ?? null
     }
 
     if (globalRuleNumbers.value) {
-      return rulesByNumber.value.get(number) ?? null
+      return rulesByNumber.value.get(parsed.number) ?? null
     }
 
     const moduleId = opts?.moduleId
     if (!moduleId) return null
-    return rulesByModuleNumber.value.get(moduleId)?.get(number) ?? null
+    return rulesByModuleNumber.value.get(moduleId)?.get(parsed.number) ?? null
+  }
+
+  function hasSingleRuleReference(ref: string, moduleId: string): boolean {
+    const parsed = parseRuleReference(ref)
+
+    if (parsed.moduleSlug) {
+      const mod = moduleBySlug.value.get(parsed.moduleSlug)
+      if (!mod) return false
+      return rulesByModuleNumber.value.get(mod.id)?.has(parsed.number) ?? false
+    }
+
+    if (globalRuleNumbers.value) return rulesByNumber.value.has(parsed.number)
+    return rulesByModuleNumber.value.get(moduleId)?.has(parsed.number) ?? false
   }
 
   /**
    * Whether the given rule reference resolves for the given entry's module.
-   * Ranges are always considered resolvable; a bare number must match a rule in
-   * the entry's module (or system-wide when `global_rule_numbers`).
+   * Module prefixes are honoured on each endpoint of a range. A bare number
+   * must match a rule in the entry's module (or system-wide when
+   * `global_rule_numbers`).
    */
   function hasRuleReference(ref: string, moduleId: string): boolean {
-    if (ref.includes('-')) return true
-    if (globalRuleNumbers.value) return rulesByNumber.value.has(ref)
-    return rulesByModuleNumber.value.get(moduleId)?.has(ref) ?? false
+    const range = parseRuleRange(ref)
+    if (range) {
+      return (
+        hasSingleRuleReference(range.from, moduleId) &&
+        hasSingleRuleReference(range.to, moduleId)
+      )
+    }
+    return hasSingleRuleReference(ref, moduleId)
   }
 
   /** Pre-sorted children lookup: parent_id (or null for roots) → Rule[] */
@@ -348,13 +410,35 @@ export const useContentStore = defineStore('content', () => {
   })
 
   const allIndexEntries = computed((): IndexEntry[] => {
+    const modules: Module[] = []
+    const core = coreModule.value
+    if (core) modules.push(core)
+
     const singular = singularModule.value
-    return singular ? (indexEntriesByModule.value[singular.id] ?? []) : []
+    if (singular && singular.id !== core?.id) modules.push(singular)
+
+    const seen = new Set<string>()
+    const entries: IndexEntry[] = []
+    for (const mod of modules) {
+      for (const entry of indexEntriesByModule.value[mod.id] ?? []) {
+        if (seen.has(entry.id)) continue
+        seen.add(entry.id)
+        entries.push(entry)
+      }
+    }
+    return entries
   })
 
   const allGameData = computed((): GameDatum[] =>
     activeModules.value.flatMap((m) => gameDataByModule.value[m.id] ?? []),
   )
+
+  /** O(1) lookup by game-datum id. */
+  const gameDataById = computed((): Map<string, GameDatum> => {
+    const m = new Map<string, GameDatum>()
+    for (const d of allGameData.value) m.set(d.id, d)
+    return m
+  })
 
   /** Game data from the singular module only — backs the SOP surface (never merged). */
   const singularGameData = computed((): GameDatum[] => {
@@ -485,7 +569,9 @@ export const useContentStore = defineStore('content', () => {
   async function autoRefreshPin(systemId: string): Promise<void> {
     if (offline.value) return
     if (!cacheStore.isCached(systemId)) return
-    const versions = Object.values(manifestByModule.value).map((e) => e.version_string)
+    const versions = Object.values(manifestByModule.value)
+      .map((e) => e.version_string)
+      .filter((value): value is string => value != null)
     const current = [...new Set(versions)].join(', ')
     await cacheStore.refreshIfStale(systemId, current)
   }
@@ -561,9 +647,14 @@ export const useContentStore = defineStore('content', () => {
         ...result.data.data,
         content: result.data.data.content.split('<br>').join('\n'),
       })
-      const list = rulesByModule.value[rule.module_id] ?? []
-      const idx = list.indexOf(rulesById.value.get(rule.id)!)
-      if (idx !== -1) list[idx] = stored
+      // Only replace the displayed rule when this module is currently served
+      // from the live source. In release mode a live edit must not leak into
+      // the released snapshot shown to the reader.
+      if (usesLiveContent(rule.module_id)) {
+        const list = rulesByModule.value[rule.module_id] ?? []
+        const idx = list.indexOf(rulesById.value.get(rule.id)!)
+        if (idx !== -1) list[idx] = stored
+      }
       return { ok: true, data: stored }
     }
 
@@ -793,12 +884,18 @@ export const useContentStore = defineStore('content', () => {
     permissionsFor,
     canViewLive,
     canViewReleased,
+    usesLiveContent,
+    hasReleasedContent,
     isUnavailable,
+    isRuleAvailable,
+    isGameDatumAvailable,
+    isBookmarkTargetAvailable,
     setViewMode,
     canSwitchView,
     releaseViewEmpty,
     canEditModule,
     allRules,
+    allLoadedRules,
     rulesById,
     rulesByNumber,
     moduleById,
@@ -815,6 +912,7 @@ export const useContentStore = defineStore('content', () => {
     indexEntriesByParent,
     visibleIndexEntryIds,
     allGameData,
+    gameDataById,
     singularGameData,
     fetchManifest,
     fetchRules,

@@ -33,8 +33,8 @@ final class UpdateIndexEntryRequest extends FormRequest
         /** @var Module $module */
         $module = $this->route('module');
 
-        /** @var IndexEntry $indexEntry */
-        $indexEntry = $this->route('indexEntry');
+        /** @var IndexEntry|null $indexEntry */
+        $indexEntry = $this->route('index_entry');
 
         return [
             'parent_id' => ['nullable', 'string', Rule::exists('index_entries', 'id')->where('module_id', $module->id)],

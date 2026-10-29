@@ -180,7 +180,10 @@ function unitDates(item: GameDatum): string {
           Caliber
         </p>
         <!-- eslint-disable-next-line vue/no-v-html -->
-        <p class="text-xs text-foreground" v-html="fieldStr(props.unit, 'csize')" />
+        <p
+          class="text-xs text-foreground"
+          v-html="renderContent(fieldStr(props.unit, 'csize'))"
+        />
       </div>
       <div v-if="fieldStr(props.unit, 'special')" class="mb-3">
         <p class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">

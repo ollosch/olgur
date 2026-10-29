@@ -26,7 +26,6 @@ final class RuleFactory extends Factory
             'number' => fake()->unique()->bothify('?.###'),
             'title' => fake()->sentence(4),
             'content' => fake()->paragraph(),
-            'markdown' => null,
             'sort_order' => fake()->numberBetween(0, 100),
         ];
     }

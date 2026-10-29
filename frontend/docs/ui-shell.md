@@ -27,10 +27,10 @@ Router files: `frontend/src/router/index.ts`, `frontend/src/router/auth.ts`
 
 ### Guard Behavior
 
-- `requiresAuth` without `authStore.user` redirects to `login?redirect=<fullPath>`.
-- `requiresGuest` with `authStore.user` redirects to `home`.
-- `requiresSystemAccess` (meta on the `system` route): when unauthenticated AND offline, the guard still admits the route if the target `systemId` is pinned (`cacheStore.isCached(systemId)`), enabling read-only guest access to a cached system. Cached systems are admitted to logged-out users only while offline.
-- When offline, `home` is admitted without auth (`useOnline().offline`), landing on the cached-systems screen.
+- `requiresAuth` without `authStore.user` redirects to `login?redirect=<fullPath>` (online only).
+- `requiresGuest` with `authStore.user` redirects to `home` (online only).
+- When offline, an offline-first whitelist runs regardless of `authStore.user`: only `home` and a route with `meta.requiresSystemAccess === true` whose `systemId` is pinned (`cacheStore.isCached(systemId)`) are admitted. Every other route — guest auth screens, account screens, and uncached systems — redirects to `home`, the cached-systems landing page.
+- Child routes (`system-rule`, `system-game-datum`) inherit `requiresSystemAccess` from the `system` route and read `to.params.systemId`, so cached systems remain browsable offline.
 - Both guards wait for `authStore.initialized` before executing, so deep links opened while the app is still bootstrapping are handled correctly.
 - `LoginView` reads the `redirect` query after a successful login and navigates there; falls back to `home`.
 
@@ -53,7 +53,7 @@ There is no separate public landing shell. The authenticated app is the default 
 
 Primary component: `frontend/src/components/systems/LeftPanelContent.vue`
 
-- Tabs: rules tree, index, bookmarks, history.
+- Tabs: rules tree, index, bookmarks, history. Unavailable bookmarks (target not in the current source) are disabled but can still be removed.
 - Module expansion state lives in store state and local interaction.
 - Width is resizable and persisted in localStorage.
 - For `global_rule_numbers` systems (e.g. ASL), the rules tree renders as one flat list (`flatRootRules`) with no per-module headers; otherwise rules are nested under per-module headers.
@@ -86,9 +86,11 @@ The former right game-data drawer and bottom panel are replaced by full-screen m
 
 ## Search, Popups, And Content Rendering
 
-### Content Tokens
+### Content Tokens And Markdown
 
 Renderer: `frontend/src/lib/renderContent.ts`
+
+Text is Markdown (`markdown-it`) with legacy raw HTML allowed, then sanitized by DOMPurify. Scripts, event handlers, `javascript:` URLs, SVG/MathML, and `style` attributes are stripped. `renderContent` defaults to inline mode (titles, labels, table cells); pass `{ block: true }` for rule content, index definitions/notes, and other block text.
 
 Supported inline content tokens:
 
@@ -99,6 +101,7 @@ Supported inline content tokens:
 - `{{A:TERM}}` -> acronym popup term
 - `{{I:image-key}}` -> rule image from `/api/rules/images/{filename}`
 - `<ex>...</ex>` -> example block markup
+- `[color:red]...</color]` -> whitelisted color span (invalid names stay plain text)
 
 ### Rule Popup System
 
@@ -146,10 +149,9 @@ Selection behavior:
 
 - The app is dark-only.
 - Theme color is a single-hue OKLCH palette generated from `appSettings.themeHue`.
-- `AppSettingsView` currently exposes three user settings:
+- `AppSettingsView` currently exposes two user settings:
   - acronym popups on or off
   - theme hue or preset
-  - Prefer Markdown (only when the current system has markdown rules; stored but not applied by a renderer yet)
 
 ## Key Files
 

@@ -216,6 +216,65 @@ it('flags an index entry rule ref in another module without global numbers', fun
         ->and($broken[0]->reason)->toBe(BrokenReferenceReason::UnknownNumber);
 });
 
+it('resolves a qualified index entry rule ref in the named module', function (): void {
+    $modules = [
+        module('core', ['1.1'], [], [['term' => 'Alpha', 'refs' => ['core:1.1']]]),
+    ];
+
+    expect(BrokenLinkLinter::lint(false, $modules))->toBe([]);
+});
+
+it('flags a qualified index entry rule ref whose number is missing from the named module', function (): void {
+    $modules = [
+        module('core', ['1.1'], [], [['term' => 'Alpha', 'refs' => ['core:9.9']]]),
+    ];
+
+    $broken = BrokenLinkLinter::lint(false, $modules);
+
+    expect($broken)->toHaveCount(1)
+        ->and($broken[0]->module)->toBe('core')
+        ->and($broken[0]->location)->toBe('Alpha')
+        ->and($broken[0]->kind)->toBe(BrokenReferenceKind::Index)
+        ->and($broken[0]->reference)->toBe('core:9.9')
+        ->and($broken[0]->reason)->toBe(BrokenReferenceReason::UnknownNumber);
+});
+
+it('flags a qualified index entry rule ref whose module is unknown', function (): void {
+    $modules = [
+        module('core', ['1.1'], [], [['term' => 'Alpha', 'refs' => ['missing:1.1']]]),
+    ];
+
+    $broken = BrokenLinkLinter::lint(false, $modules);
+
+    expect($broken)->toHaveCount(1)
+        ->and($broken[0]->reference)->toBe('missing:1.1')
+        ->and($broken[0]->reason)->toBe(BrokenReferenceReason::UnknownSlug);
+});
+
+it('resolves a qualified index entry range ref when both endpoints exist', function (): void {
+    $modules = [
+        module('core', ['C.3.3.2', 'C.3.3.3'], [], [['term' => 'TH vs Multi-Levels', 'refs' => ['core:C.3.3.2-C.3.3.3']]]),
+    ];
+
+    expect(BrokenLinkLinter::lint(false, $modules))->toBe([]);
+});
+
+it('applies the qualified prefix to both index entry range endpoints', function (): void {
+    $modules = [
+        module('o', ['O.1', '2'], [], [['term' => 'Alpha', 'refs' => ['o:O.1-2']]]),
+    ];
+
+    expect(BrokenLinkLinter::lint(false, $modules))->toBe([]);
+});
+
+it('ignores a qualified index entry rule ref into an ignored chapter', function (): void {
+    $modules = [
+        module('core', ['1.1'], [], [['term' => 'Alpha', 'refs' => ['core:O.1.2']]]),
+    ];
+
+    expect(BrokenLinkLinter::lint(false, $modules))->toBe([]);
+});
+
 it('reports every broken reference across rules and entries', function (): void {
     $modules = [
         module('core', ['1.1'], [

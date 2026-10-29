@@ -30,8 +30,6 @@ final readonly class MembershipConfig implements Castable
         public array $boldTags,
         /** Whether acronym popups are enabled for this user. */
         public bool $acronymPopups,
-        /** The preferred rule format for this user. */
-        public string $preferredRuleFormat,
         /** The single module currently selected, or null when all subscribed modules are active. */
         public ?string $selectedModuleId = null,
     ) {}
@@ -61,10 +59,6 @@ final readonly class MembershipConfig implements Castable
             ? array_values(array_filter($data['bold_tags'], is_string(...)))
             : [];
 
-        $preferredRuleFormat = is_string($data['preferred_rule_format'] ?? null)
-            ? $data['preferred_rule_format']
-            : 'content';
-
         $selectedModuleId = is_string($data['selected_module_id'] ?? null)
             ? $data['selected_module_id']
             : null;
@@ -74,7 +68,6 @@ final readonly class MembershipConfig implements Castable
             ignoredTags: $ignoredTags,
             boldTags: $boldTags,
             acronymPopups: (bool) ($data['acronym_popups'] ?? false),
-            preferredRuleFormat: $preferredRuleFormat,
             selectedModuleId: $selectedModuleId,
         );
     }
@@ -125,7 +118,6 @@ final readonly class MembershipConfig implements Castable
             'ignored_tags' => $this->ignoredTags,
             'bold_tags' => $this->boldTags,
             'acronym_popups' => $this->acronymPopups,
-            'preferred_rule_format' => $this->preferredRuleFormat,
             'selected_module_id' => $this->selectedModuleId,
         ];
     }

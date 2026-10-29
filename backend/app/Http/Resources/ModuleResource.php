@@ -29,6 +29,7 @@ final class ModuleResource extends JsonResource
             'config' => $this->config->toArray(),
             'is_core' => $this->is_core,
             'sort_order' => $this->sort_order,
+            'draft_revision' => $this->draft_revision,
             'permissions' => $this->permissions($request),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

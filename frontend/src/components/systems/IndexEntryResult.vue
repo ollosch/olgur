@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import type { IndexEntry } from '@/types/domain'
 import { ChevronDown, ChevronRight, Pencil } from '@lucide/vue'
 import { renderContent } from '@/lib/renderContent'
+import { displayRuleReference, isRuleRangeReference } from '@/lib/ruleReferences'
 import { useAppSettingsStore } from '@/stores/appSettings'
 import { useContentStore } from '@/stores/content'
 import { useAuthorization } from '@/composables/useAuthorization'
@@ -64,7 +65,7 @@ function activeRuleRefs(entry: IndexEntry): string[] {
         </span>
         <span :data-rule-context="entry.module_id" v-html="renderContent(entry.term)"></span>
         <button
-          v-if="canEdit(entry.module_id)"
+          v-if="canEdit(entry.module_id) && contentStore.viewMode === 'draft'"
           type="button"
           class="p-1 rounded hover:bg-muted/40 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
           title="Edit entry"
@@ -93,6 +94,7 @@ function activeRuleRefs(entry: IndexEntry): string[] {
       v-html="
         renderContent(entry.definition, {
           acronymPopups: appSettings.acronymPopups,
+          block: true,
         })
       "
     />
@@ -104,6 +106,7 @@ function activeRuleRefs(entry: IndexEntry): string[] {
       v-html="
         renderContent(entry.notes, {
           acronymPopups: appSettings.acronymPopups,
+          block: true,
         })
       "
     />
@@ -114,16 +117,16 @@ function activeRuleRefs(entry: IndexEntry): string[] {
     >
       <template v-for="ref in activeRuleRefs(entry)" :key="ref">
         <a
-          v-if="ref.includes('-')"
+          v-if="isRuleRangeReference(ref)"
           :data-rule-range="ref"
           class="ml-2 font-mono text-xs text-primary underline decoration-dotted hover:text-primary/80 transition-colors cursor-pointer"
-          >{{ ref }}</a
+          >{{ displayRuleReference(ref) }}</a
         >
         <a
           v-else
           :data-rule-number="ref"
           class="ml-2 font-mono text-xs text-primary underline decoration-dotted hover:text-primary/80 transition-colors cursor-pointer"
-          >{{ ref }}</a
+          >{{ displayRuleReference(ref) }}</a
         >
       </template>
     </div>

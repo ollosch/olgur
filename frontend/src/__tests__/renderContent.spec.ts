@@ -110,3 +110,70 @@ describe('renderContent', () => {
     expect(html).toContain(' about ')
   })
 })
+
+describe('renderContent security and markdown', () => {
+  it('strips script tags from plain text', () => {
+    const html = renderContent('<script>alert(1)</script>')
+    expect(html).not.toContain('<script')
+    expect(html).not.toContain('alert(1)')
+  })
+
+  it('strips event handlers from raw HTML', () => {
+    const html = renderContent('<img src="x" onerror="alert(1)">')
+    expect(html).toContain('<img')
+    expect(html).not.toContain('onerror')
+  })
+
+  it('strips svg payloads', () => {
+    const html = renderContent('<svg onload="alert(1)"><circle /></svg>')
+    expect(html).not.toContain('<svg')
+    expect(html).not.toContain('onload')
+  })
+
+  it('does not produce a javascript: link from markdown', () => {
+    const html = renderContent('[click](javascript:alert(1))')
+    expect(html).not.toMatch(/<a[^>]+href=/)
+  })
+
+  it('strips payloads nested inside example blocks', () => {
+    const html = renderContent('<ex><img src="x" onerror="alert(1)"></ex>')
+    expect(html).toContain('example-block')
+    expect(html).not.toContain('onerror')
+  })
+
+  it('renders inline markdown emphasis', () => {
+    const html = renderContent('This is **bold** and *italic*.')
+    expect(html).toContain('<strong>bold</strong>')
+    expect(html).toContain('<em>italic</em>')
+  })
+
+  it('renders block markdown only when block mode is requested', () => {
+    expect(renderContent('## Heading')).not.toContain('<h2>')
+    expect(renderContent('## Heading', { block: true })).toContain('<h2>Heading</h2>')
+  })
+
+  it('renders whitelisted color tags without allowing arbitrary styles', () => {
+    const html = renderContent('[color:red]red text[/color]')
+    expect(html).toContain('class="text-red-400"')
+    expect(html).toContain('red text')
+    expect(html).not.toContain('style=')
+  })
+
+  it('leaves unknown color names as plain text', () => {
+    const html = renderContent('[color:url(javascript:alert(1))]x[/color]')
+    expect(html).not.toContain('style=')
+    expect(html).not.toContain('<span')
+  })
+
+  it('escapes HTML in token labels', () => {
+    const html = renderContent('{{L:1.2#<img src=x onerror=alert(1)>}}')
+    expect(html).not.toContain('<img')
+    expect(html).not.toMatch(/<[^>]+onerror/i)
+  })
+
+  it('preserves delegation data attributes through sanitization', () => {
+    const html = renderContent('{{L:1.2}} {{A:TERM}}')
+    expect(html).toContain('data-rule-number="1.2"')
+    expect(html).toContain('data-acronym-term="TERM"')
+  })
+})
