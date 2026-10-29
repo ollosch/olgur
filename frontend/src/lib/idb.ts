@@ -1,21 +1,38 @@
 /**
  * Promise-wrapped native IndexedDB helpers for the offline cache layer.
  *
- * The single database `olgur-offline` holds four object stores, all keyed
+ * The single database `olgur-offline` holds six object stores, all keyed
  * out-of-line:
  *   - `systems`  — keyed by system id, value `{ system, modules }`
  *   - `manifests` — keyed by `${systemId}:${moduleId}`
  *   - `content`  — keyed by `${systemId}:${moduleId}:${kind}`, value carries
  *     the `version_id` it was cached from
  *   - `meta`     — keyed by system id, value is the registry entry
+ *   - `scenarios` — keyed by scenario id, value is a saved Formation Manager
+ *     scenario
+ *   - `scenarioMeta` — Formation Manager tool metadata (last-opened scenario),
+ *     kept separate from `meta` so cache-registry reads never see it
  */
 
 const DB_NAME = 'olgur-offline'
-const DB_VERSION = 1
+const DB_VERSION = 3
 
-export type IdbStore = 'systems' | 'manifests' | 'content' | 'meta'
+export type IdbStore =
+  | 'systems'
+  | 'manifests'
+  | 'content'
+  | 'meta'
+  | 'scenarios'
+  | 'scenarioMeta'
 
-const STORES: IdbStore[] = ['systems', 'manifests', 'content', 'meta']
+const STORES: IdbStore[] = [
+  'systems',
+  'manifests',
+  'content',
+  'meta',
+  'scenarios',
+  'scenarioMeta',
+]
 
 let dbPromise: Promise<IDBDatabase> | null = null
 

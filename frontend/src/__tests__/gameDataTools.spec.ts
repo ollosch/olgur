@@ -59,15 +59,27 @@ describe('game data tools', () => {
 
   it('lists a bespoke system tool first when the system slug matches', () => {
     const bespoke = {} as Component
-    SYSTEM_TOOL_COMPONENTS.bcs = bespoke
+    SYSTEM_TOOL_COMPONENTS['test-system'] = {
+      label: 'Test Tool',
+      shortLabel: 'Test',
+      component: bespoke,
+    }
 
     try {
-      const tools = gameDataTools([makeGameDatum('v1', 'vehicle')], 'bcs')
-      expect(tools.map((t) => t.id)).toEqual(['system:bcs', 'vehicle'])
+      const tools = gameDataTools([makeGameDatum('v1', 'vehicle')], 'test-system')
+      expect(tools.map((t) => t.id)).toEqual(['system:test-system', 'vehicle'])
       expect(tools[0]?.component).toBe(bespoke)
+      expect(tools[0]?.label).toBe('Test Tool')
+      expect(tools[0]?.shortLabel).toBe('Test')
     } finally {
-      delete SYSTEM_TOOL_COMPONENTS.bcs
+      delete SYSTEM_TOOL_COMPONENTS['test-system']
     }
+  })
+
+  it('ships the BCS Formation Manager as a bespoke system tool', () => {
+    const tools = gameDataTools([], 'bcs')
+    expect(tools.map((t) => t.id)).toEqual(['system:bcs'])
+    expect(tools[0]?.label).toBe('Formation Manager')
   })
 
   it('omits the bespoke system tool when no system slug matches', () => {

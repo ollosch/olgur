@@ -48,7 +48,7 @@ Important environment variables:
 - `authStore.user` is not persisted anywhere; reloads always re-bootstrap from `/me`.
 - The composed "active set" (`activeModules`) drives `allRules`, `allGameData`, rule/table/unit search, and rule popups; the singular module (`singularModule`) drives `allIndexEntries`, index/acronym search and popups, and `singularGameData`.
 - Vehicles and ordnance are searchable game data, but they do not render in `GameDataView`; they open in the full-screen `ToolModal` (Unit Data / Ordnance vs Armor).
-- Tools are derived from `game_data` type (see `frontend/src/lib/gameDataTools.ts`); there is no module tool registry.
+- Tools are derived from `game_data` type (see `frontend/src/lib/gameDataTools.ts`); there is no module tool registry. Bespoke system tools live in `SYSTEM_TOOL_COMPONENTS`; BCS ships the local-first Formation Manager there.
 - All rendered text is strict Markdown (`markdown-it` with `html: false`) and sanitized with DOMPurify in `renderContent.ts`; raw HTML tags are escaped and displayed as literal text. Titles/labels use inline mode; rule content and index definitions use block mode.
 - Bookmarks are only creatable from released content; unresolved/draft-only bookmarks are shown as unavailable. The content store exposes `usesLiveContent`, `hasReleasedContent`, and availability helpers for this.
 - Offline routing is a whitelist: only `home` and pinned-system routes are reachable. Guest/auth/account screens are not reachable offline.
@@ -67,5 +67,6 @@ Important environment variables:
 - Offline cache and connectivity: `frontend/src/stores/cacheStore.ts`, `frontend/src/lib/idb.ts`, `frontend/src/composables/useOnline.ts`, `frontend/src/stores/proofread.ts`, `frontend/vite.config.ts`
 - UI shell and guards: `frontend/src/components/systems/SystemHeader.vue`, `frontend/src/components/systems/PinSystemControl.vue`, `frontend/src/composables/useModalShortcutGuard.ts`
 - Game data surfaces and modals: `frontend/src/views/GameDataView.vue`, `frontend/src/components/game-data/SopModal.vue`, `frontend/src/components/game-data/TableBrowserModal.vue`, `frontend/src/components/ToolModal.vue`, `frontend/src/stores/gameDataModal.ts`, `frontend/src/stores/toolModal.ts`
+- BCS Formation Manager: `frontend/src/components/tools/FormationManagerTool.vue`, `frontend/src/stores/formationManager.ts`, `frontend/src/lib/formations.ts`, `frontend/src/types/formation.ts`
 - Tools: `frontend/src/lib/gameDataTools.ts`
 - Rule editing and lint: `frontend/src/components/systems/DeleteRuleDialog.vue`, `frontend/src/components/systems/BrokenLinksDialog.vue`, `frontend/src/composables/useBrokenLinks.ts`

@@ -1,0 +1,223 @@
+{
+  "2 Cav Grp": [
+    {
+      "unit": "2 Arm Cav Bn",
+      "steps": 4
+    },
+    {
+      "unit": "A/42 Arm Cav Co",
+      "steps": 1
+    },
+    {
+      "unit": "B/42 Arm Cav Co",
+      "steps": 1
+    },
+    {
+      "unit": "C/42 Arm Cav Co",
+      "steps": 1
+    },
+    {
+      "unit": "E,F/42 LT Arm Co",
+      "steps": 1
+    }
+  ],
+  "CCA/4 Arm Bde": [
+    {
+      "unit": "10 Arm Inf Bn",
+      "steps": 4
+    },
+    {
+      "unit": "25 Arm Cav Bn",
+      "steps": 4
+    },
+    {
+      "unit": "37 Arm Bn",
+      "steps": 3
+    },
+    {
+      "unit": "53 Arm Inf Bn",
+      "steps": 4
+    },
+    {
+      "unit": "166 Eng Bn",
+      "steps": 4
+    },
+    {
+      "unit": "A/37 Arm Co",
+      "steps": 2
+    },
+    {
+      "unit": "B/37 Arm Co",
+      "steps": 2
+    },
+    {
+      "unit": "B/53 Arm Inf Co",
+      "steps": 2
+    },
+    {
+      "unit": "C/704 TD Co",
+      "steps": 1
+    }
+  ],
+  "35 Inf Div": [
+    {
+      "unit": "1/137 Inf Bn",
+      "steps": 6
+    },
+    {
+      "unit": "2/137 Inf Bn",
+      "steps": 6
+    },
+    {
+      "unit": "3/137 Inf Bn",
+      "steps": 6
+    },
+    {
+      "unit": "1/320 Inf Bn",
+      "steps": 6
+    },
+    {
+      "unit": "3/134 Inf Bn",
+      "steps": 6
+    },
+    {
+      "unit": "654 TD Bn",
+      "steps": 2
+    },
+    {
+      "unit": "737 Arm Bn",
+      "steps": 3
+    }
+  ],
+  "CCB/4 Arm Bde": [
+    {
+      "unit": "B/25 Arm Cav Co",
+      "steps": 1
+    },
+    {
+      "unit": "Conley Arm TF",
+      "steps": 6
+    },
+    {
+      "unit": "Withers Arm Inf TF",
+      "steps": 6
+    }
+  ],
+  "79 Inf Div": [
+    {
+      "unit": "1/313 Inf Bn",
+      "steps": 6
+    },
+    {
+      "unit": "2/313 Inf Bn",
+      "steps": 6
+    },
+    {
+      "unit": "3/313 Inf Bn",
+      "steps": 6
+    },
+    {
+      "unit": "1/314 Inf Bn",
+      "steps": 6
+    },
+    {
+      "unit": "2/314 Inf Bn",
+      "steps": 6
+    },
+    {
+      "unit": "3/314 Inf Bn",
+      "steps": 6
+    },
+    {
+      "unit": "1/315 Inf Bn",
+      "steps": 6
+    },
+    {
+      "unit": "2/315 Inf Bn",
+      "steps": 6
+    },
+    {
+      "unit": "3/315 Inf Bn",
+      "steps": 6
+    },
+    {
+      "unit": "749 Arm Bn",
+      "steps": 6
+    },
+    {
+      "unit": "773 TD Bn",
+      "steps": 3
+    }
+  ],
+  "CCR/4 Arm Bde": [
+    {
+      "unit": "35 Arm Bn",
+      "steps": 6
+    },
+    {
+      "unit": "B/166 Eng Co",
+      "steps": 2
+    },
+    {
+      "unit": "B/704 TD Co",
+      "steps": 1
+    },
+    {
+      "unit": "C/10 Arm Inf Co",
+      "steps": 2
+    }
+  ],
+  "106 Cav Grp": [
+    {
+      "unit": "106 Arm Cav Bn",
+      "steps": 4
+    },
+    {
+      "unit": "121 Arm Cav Bn",
+      "steps": 4
+    }
+  ],
+  "CCB/6 Arm Bde": [
+    {
+      "unit": "44 Arm Inf TF",
+      "steps": 6
+    },
+    {
+      "unit": "69 Arm TF",
+      "steps": 6
+    }
+  ],
+  "Dio/2 French Arm Bde": [
+    {
+      "unit": "Noiret Fr Arm SG",
+      "steps": 4
+    },
+    {
+      "unit": "Rouvlls Fr Arm SG",
+      "steps": 4
+    },
+    {
+      "unit": "Quilchni Fr Arm Inf SG",
+      "steps": 4
+    }
+  ],
+  "Independent": [
+    {
+      "unit": "2/320 Inf Bn",
+      "steps": 6
+    },
+    {
+      "unit": "3/320 Inf Bn",
+      "steps": 6
+    },
+    {
+      "unit": "602 TD Bn",
+      "steps": 3
+    },
+    {
+      "unit": "691 TD Bn",
+      "steps": 2
+    }
+  ]
+}
+

@@ -112,6 +112,17 @@ File: `frontend/src/stores/proofread.ts`
 - `countFor()`, `isDone()`, `hasMarked()`, `needsProofreading` — derive the per-entity proofread state and the "needs proofreading" list.
 - UI: `frontend/src/components/systems/ProofreadToggle.vue` (per-entity mark/remove button) and `frontend/src/components/systems/ProofreadDialog.vue` (needs-proofreading list opened from the System ▾ menu).
 
+## `formationManagerStore`
+
+File: `frontend/src/stores/formationManager.ts`
+
+Local-first state for the BCS Formation Manager. Scenarios are persisted in IndexedDB (`scenarios` + the `scenarioMeta` last-opened key), so the tool works fully offline and supports JSON export/import. It holds the saved scenario library, the open scenario, the active side, and expanded formation ids.
+
+- `createNewScenario(name, activeIds)` snapshots the bundled Arracourt formation charts; selected formations start `in_game`, all others start `reserve`.
+- Mutations cover unit steps (0 minimum, no maximum), Prepared Defense, free-text support, artillery points, fatigue (Fresh/0–4), and formation status transitions between `reserve`, `in_game`, and `dead_pool`.
+- Every mutation debounces an IndexedDB write; `flushSave()` forces it immediately. Dead Pool rebuilds keep current unit steps and state.
+- `exportScenario(id)` and `importScenario(contents)` move scenarios as `.formation.json` files; an import whose id already exists receives a new id.
+
 ## Smaller Supporting Stores
 
 - `bookmarks.ts`: persists polymorphic bookmarks (`rule` | `table` | `unit`) into membership config via `PATCH /me/memberships/{system}`. `resolvedBookmarks` labels each entry and flags `available` when the target resolves in the currently loaded source; `availableBookmarks` feeds the toolbar. New bookmarks are only allowed on released content (not live drafts). `isBookmarked` / `addBookmark` / `removeBookmark` are type-aware.

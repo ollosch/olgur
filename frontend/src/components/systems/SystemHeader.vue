@@ -238,7 +238,7 @@ async function logout(): Promise<void> {
             @click="emit('openTool', tool.id)"
           >
             <Wrench class="w-3.5 h-3.5" />
-            {{ tool.id }}
+            {{ tool.shortLabel ?? tool.id }}
           </Button>
         </template>
 

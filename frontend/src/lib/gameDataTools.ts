@@ -2,11 +2,20 @@ import { markRaw, type Component } from 'vue'
 import type { GameDatum } from '@/types/domain'
 import UnitDataTab from '@/components/layout/UnitDataTab.vue'
 import OrdnanceVersusArmorTool from '@/components/tools/OrdnanceVersusArmorTool.vue'
+import FormationManagerTool from '@/components/tools/FormationManagerTool.vue'
 
 /** A bottom-panel tool, keyed by the game-data type (or system slug) that triggers it. */
 export interface GameDataTool {
   id: string
   label: string
+  /** Compact label for the inline toolbar; falls back to `id`. */
+  shortLabel?: string
+  component: Component
+}
+
+export interface SystemTool {
+  label: string
+  shortLabel?: string
   component: Component
 }
 
@@ -33,9 +42,15 @@ export const GAME_DATA_TOOL_COMPONENTS: Partial<Record<GameDatum['type'], Compon
 
 /**
  * Bespoke tools that have no backing `game_data` type, keyed by system slug.
- * Empty today — reserved for systems such as BCS that ship a formation tool.
+ * The BCS Formation Manager is bundled with its own offline formation data.
  */
-export const SYSTEM_TOOL_COMPONENTS: Record<string, Component> = {}
+export const SYSTEM_TOOL_COMPONENTS: Record<string, SystemTool> = {
+  bcs: {
+    label: 'Formation Manager',
+    shortLabel: 'Formations',
+    component: markRaw(FormationManagerTool),
+  },
+}
 
 /**
  * Derive the bottom-panel tools from the modules' game data.
@@ -50,7 +65,12 @@ export function gameDataTools(gameData: GameDatum[], systemSlug?: string): GameD
   if (systemSlug) {
     const bespoke = SYSTEM_TOOL_COMPONENTS[systemSlug]
     if (bespoke) {
-      tools.push({ id: `system:${systemSlug}`, label: systemSlug, component: bespoke })
+      tools.push({
+        id: `system:${systemSlug}`,
+        label: bespoke.label,
+        shortLabel: bespoke.shortLabel ?? bespoke.label,
+        component: bespoke.component,
+      })
     }
   }
 

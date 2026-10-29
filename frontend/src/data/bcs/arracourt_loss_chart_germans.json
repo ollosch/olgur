@@ -1,0 +1,248 @@
+{
+  "11 Pz Div": [
+    {
+      "unit": "I/15 Pz Bn",
+      "steps": 2
+    },
+    {
+      "unit": "II/15 Pz Bn",
+      "steps": 2
+    },
+    {
+      "unit": "I/110 Inf Bn",
+      "steps": 3
+    },
+    {
+      "unit": "II/110 Inf Bn",
+      "steps": 4
+    },
+    {
+      "unit": "I/111 Inf Bn",
+      "steps": 4
+    },
+    {
+      "unit": "II/111 Inf Bn",
+      "steps": 4
+    },
+    {
+      "unit": "11 Pz Recon Bn",
+      "steps": 4
+    },
+    {
+      "unit": "115 Pz Erz Bn",
+      "steps": 3
+    },
+    {
+      "unit": "209 Pz Pio Bn",
+      "steps": 3
+    }
+  ],
+  "111 Pz Bde": [
+    {
+      "unit": "I/16 Pz Bn",
+      "steps": 4
+    },
+    {
+      "unit": "I/2111 Inf Bn",
+      "steps": 6
+    },
+    {
+      "unit": "II/2111 Inf Bn",
+      "steps": 6
+    },
+    {
+      "unit": "2111 Pz Bn",
+      "steps": 4
+    },
+    {
+      "unit": "2111 Pz Pio Co",
+      "steps": 2
+    },
+    {
+      "unit": "2111 StG Co",
+      "steps": 1
+    }
+  ],
+  "15 PG Div": [
+    {
+      "unit": "I/104 Inf Bn",
+      "steps": 5
+    },
+    {
+      "unit": "II/104 Inf Bn",
+      "steps": 5
+    },
+    {
+      "unit": "III/104 Inf Bn",
+      "steps": 5
+    },
+    {
+      "unit": "III/115 Inf Bn",
+      "steps": 5
+    },
+    {
+      "unit": "5/Bkhf Sec Co",
+      "steps": 2
+    },
+    {
+      "unit": "33 JgPz Bn",
+      "steps": 2
+    },
+    {
+      "unit": "33 Pz Pio Bn",
+      "steps": 3
+    },
+    {
+      "unit": "115 Pz Recon Bn",
+      "steps": 4
+    },
+    {
+      "unit": "835 Sec Bn",
+      "steps": 4
+    },
+    {
+      "unit": "16/Bkhf LW Bic Bn",
+      "steps": 4
+    },
+    {
+      "unit": "16/Bkhf LW Pio Bn",
+      "steps": 4
+    },
+    {
+      "unit": "Lngemeir LW FJ Bn",
+      "steps": 3
+    }
+  ],
+  "113 Pz Bde": [
+    {
+      "unit": "I/130 Pz Bn",
+      "steps": 4
+    },
+    {
+      "unit": "I/2113 Inf Bn",
+      "steps": 6
+    },
+    {
+      "unit": "II/2113 Inf Bn",
+      "steps": 6
+    },
+    {
+      "unit": "2113 Pz Bn",
+      "steps": 4
+    },
+    {
+      "unit": "2113 Pz Pio Co",
+      "steps": 2
+    },
+    {
+      "unit": "2113 StG Co",
+      "steps": 1
+    }
+  ],
+  "21 Pz Div": [
+    {
+      "unit": "I/29 Pz Bn",
+      "steps": 1
+    },
+    {
+      "unit": "I/125 Inf Bn",
+      "steps": 4
+    },
+    {
+      "unit": "II/125 Inf Bn",
+      "steps": 4
+    },
+    {
+      "unit": "I/192 Inf Bn",
+      "steps": 4
+    },
+    {
+      "unit": "II/192 Inf Bn",
+      "steps": 4
+    },
+    {
+      "unit": "I/2112 Inf Bn",
+      "steps": 3
+    },
+    {
+      "unit": "II/2112 Inf Bn",
+      "steps": 3
+    },
+    {
+      "unit": "21 Pz Recon Bn",
+      "steps": 2
+    },
+    {
+      "unit": "200 ‘88’ Co",
+      "steps": 1
+    },
+    {
+      "unit": "220 Pz Pio Bn",
+      "steps": 2
+    },
+    {
+      "unit": "2112 Pz Bn",
+      "steps": 2
+    }
+  ],
+  "559 Gren Div": [
+    {
+      "unit": "I/73 Inf Bn",
+      "steps": 5
+    },
+    {
+      "unit": "II/73 Inf Bn",
+      "steps": 5
+    },
+    {
+      "unit": "I/1125 Inf Bn",
+      "steps": 5
+    },
+    {
+      "unit": "II/1125 Inf Bn",
+      "steps": 5
+    },
+    {
+      "unit": "I/1126 Inf Bn",
+      "steps": 5
+    },
+    {
+      "unit": "II/1126 Inf Bn",
+      "steps": 5
+    },
+    {
+      "unit": "I/1127 Inf Bn",
+      "steps": 5
+    },
+    {
+      "unit": "II/1127 Inf Bn",
+      "steps": 5
+    },
+    {
+      "unit": "1/106 PG KG",
+      "steps": 6
+    },
+    {
+      "unit": "2/106 Pz KG",
+      "steps": 3
+    },
+    {
+      "unit": "115 Fus Bn",
+      "steps": 5
+    },
+    {
+      "unit": "1559 PJ Co",
+      "steps": 1
+    },
+    {
+      "unit": "1559 Fus Bic Bn",
+      "steps": 5
+    }
+  ],
+  "Independent": [
+    {
+      "unit": "959 Sec Static Bn",
+      "steps": 3
+    }
+  ]
+}

@@ -82,7 +82,7 @@ Component: `frontend/src/components/systems/SystemHeader.vue`
 The former right game-data drawer and bottom panel are replaced by full-screen modals (open/close state in the `gameDataModal` / `toolModal` stores):
 
 - `SopModal.vue` (Sequence of Play) and `TableBrowserModal.vue` (tables) — backed by `gameDataModalStore`. The table browser lists all tables in the active set; each row can pin/unpin a `table` bookmark, and the toolbar "Table bookmarks ▾" lists pinned tables.
-- `ToolModal.vue` — hosts unit data (`UnitDataTab`) and Ordnance vs Armor (`OrdnanceVersusArmorTool`), plus any bespoke system tools, in a full-screen dialog. Active tool + its internal store-backed state survive open → close → open.
+- `ToolModal.vue` — hosts unit data (`UnitDataTab`), Ordnance vs Armor (`OrdnanceVersusArmorTool`), and bespoke system tools in a full-screen dialog. Active tool + its internal store-backed state survive open → close → open. For the `bcs` system the bespoke tool is the Formation Manager.
 
 ## Search, Popups, And Content Rendering
 
