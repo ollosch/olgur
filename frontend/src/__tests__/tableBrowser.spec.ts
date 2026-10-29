@@ -8,6 +8,12 @@ import { dialogStubs } from './helpers/dialogStubs'
 const mockGet = vi.fn()
 const mockPatch = vi.fn()
 const mockLoading = ref(false)
+const featureState = vi.hoisted(() => ({ aslTables: true, afvVsAfv: true }))
+
+vi.mock('@/lib/features', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/features')>()
+  return { ...actual, FEATURES: featureState }
+})
 
 vi.mock('@/composables/useApi', () => ({
   useApi: vi.fn(() => ({
@@ -24,6 +30,7 @@ import { useContentStore } from '@/stores/content'
 import { useSystemStore } from '@/stores/system'
 import { useMembershipStore } from '@/stores/membership'
 import { useBookmarkStore } from '@/stores/bookmarks'
+import { useGameDataModalStore } from '@/stores/gameDataModal'
 import { useOnline } from '@/composables/useOnline'
 import TableBrowserModal from '@/components/game-data/TableBrowserModal.vue'
 import type { GameDatum, System, Module, Membership } from '@/types/domain'
@@ -151,6 +158,8 @@ describe('TableBrowserModal — listing and bookmarks', () => {
     setActivePinia(createPinia())
     mockGet.mockReset()
     mockPatch.mockReset()
+    featureState.aslTables = true
+    featureState.afvVsAfv = true
     useOnline().online.value = true
   })
 
@@ -161,6 +170,48 @@ describe('TableBrowserModal — listing and bookmarks', () => {
     expect(rows.map((r) => r.attributes('data-table-id'))).toEqual(['t1', 't2'])
     expect(wrapper.text()).not.toContain('sop sop1')
     expect(wrapper.text()).not.toContain('vehicle v1')
+  })
+
+  it('hides ASL-kind tables while keeping generic tables when the flag is off', () => {
+    featureState.aslTables = false
+
+    const wrapper = mountBrowser(() => {
+      const systemStore = useSystemStore()
+      const contentStore = useContentStore()
+      systemStore.currentSystem = makeSystem('sys1')
+      systemStore.modulesBySystem['sys1'] = [makeModule('mod1', true)]
+      contentStore.rulesByModule['mod1'] = []
+      contentStore.indexEntriesByModule['mod1'] = []
+      contentStore.gameDataByModule['mod1'] = [
+        makeDatum('asl1', 'table', 'mod1', { kind: 'ift' }),
+        makeDatum('matrix1', 'table', 'mod1', { kind: 'matrix', rows: [], columns: [] }),
+      ]
+    })
+
+    const rows = wrapper.findAll('[data-table-id]')
+    expect(rows.map((r) => r.attributes('data-table-id'))).toEqual(['matrix1'])
+    expect(wrapper.text()).not.toContain('table asl1')
+  })
+
+  it('does not render a stale ASL-kind selection when the flag is off', () => {
+    featureState.aslTables = false
+
+    const wrapper = mountBrowser(() => {
+      const systemStore = useSystemStore()
+      const contentStore = useContentStore()
+      systemStore.currentSystem = makeSystem('sys1')
+      systemStore.modulesBySystem['sys1'] = [makeModule('mod1', true)]
+      contentStore.rulesByModule['mod1'] = []
+      contentStore.indexEntriesByModule['mod1'] = []
+      contentStore.gameDataByModule['mod1'] = [
+        makeDatum('asl1', 'table', 'mod1', { kind: 'ift' }),
+        makeDatum('matrix1', 'table', 'mod1', { kind: 'matrix', rows: [], columns: [] }),
+      ]
+      useGameDataModalStore().selectTable('asl1')
+    })
+
+    expect(wrapper.find('[data-test="table-render-area"]').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('table asl1')
   })
 
   it('shows an empty state when no tables exist', () => {

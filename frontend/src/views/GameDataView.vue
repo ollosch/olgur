@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useContentStore } from '@/stores/content'
 import { useOnline } from '@/composables/useOnline'
+import { FEATURES, isTableVisible } from '@/lib/features'
 import MatrixTable from '@/components/game-data/MatrixTable.vue'
 import AttributeTable from '@/components/game-data/AttributeTable.vue'
 import ModifierList from '@/components/game-data/ModifierList.vue'
@@ -22,7 +23,10 @@ const { offline } = useOnline()
 const gameDatumId = computed(() => route.params['gameDatumId'] as string)
 
 const gameDatum = computed(
-  () => contentStore.allGameData.find((d) => d.id === gameDatumId.value) ?? null,
+  () =>
+    contentStore.allGameData.find(
+      (d) => d.id === gameDatumId.value && isTableVisible(d, FEATURES.aslTables),
+    ) ?? null,
 )
 
 const canProofread = computed(

@@ -7,6 +7,7 @@ import { useContentStore } from '@/stores/content'
 import { useGameDataModalStore } from '@/stores/gameDataModal'
 import { useUnitSelectionStore } from '@/stores/unitSelection'
 import { useToolModalStore } from '@/stores/toolModal'
+import { FEATURES, resolveToolType } from '@/lib/features'
 import { X } from '@lucide/vue'
 import type { ResolvedBookmark } from '@/stores/bookmarks'
 
@@ -38,7 +39,7 @@ function navigate(bookmark: ResolvedBookmark): void {
   const unit = contentStore.gameDataById.get(bookmark.entry.id)
   if (unit) {
     unitSelectionStore.selectUnit(unit)
-    toolModalStore.open(unit.type)
+    toolModalStore.open(resolveToolType(unit.type, FEATURES.afvVsAfv))
     panelStore.mobileOpen = false
   }
 }

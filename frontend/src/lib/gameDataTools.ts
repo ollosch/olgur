@@ -1,5 +1,6 @@
 import { markRaw, type Component } from 'vue'
 import type { GameDatum } from '@/types/domain'
+import { FEATURES, resolveToolType } from '@/lib/features'
 import UnitDataTab from '@/components/layout/UnitDataTab.vue'
 import OrdnanceVersusArmorTool from '@/components/tools/OrdnanceVersusArmorTool.vue'
 import FormationManagerTool from '@/components/tools/FormationManagerTool.vue'
@@ -76,10 +77,11 @@ export function gameDataTools(gameData: GameDatum[], systemSlug?: string): GameD
 
   const seen = new Set<GameDatum['type']>()
   for (const datum of gameData) {
-    const component = GAME_DATA_TOOL_COMPONENTS[datum.type]
-    if (component && !seen.has(datum.type)) {
-      seen.add(datum.type)
-      tools.push({ id: datum.type, label: TOOL_LABELS[datum.type], component })
+    const type = resolveToolType(datum.type, FEATURES.afvVsAfv)
+    const component = GAME_DATA_TOOL_COMPONENTS[type]
+    if (component && !seen.has(type)) {
+      seen.add(type)
+      tools.push({ id: type, label: TOOL_LABELS[type], component })
     }
   }
 

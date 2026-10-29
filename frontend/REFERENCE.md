@@ -33,6 +33,8 @@ Important environment variables:
 | `VITE_API_BASE_URL` | Axios base URL, defaults to `http://localhost/api` in `src/lib/http.ts` |
 | `VITE_COOKIE_URL` | CSRF cookie endpoint used before auth mutations |
 | `VITE_APP_DEBUG` | Enables extra `console.error` output in the global error handler |
+| `VITE_FEATURE_ASL_TABLES` | `'true'` / `'false'` override for the unfinished ASL table kinds (`ift`, `cct`, `leader_creation`, `to_hit`, `to_kill`, `destruction`); defaults on in dev/test, off in production builds |
+| `VITE_FEATURE_AFV_VS_AFV` | `'true'` / `'false'` override for the Ordnance vs Armor tool; defaults on in dev/test, off in production builds |
 
 ## Document Map
 
@@ -49,6 +51,7 @@ Important environment variables:
 - The composed "active set" (`activeModules`) drives `allRules`, `allGameData`, rule/table/unit search, and rule popups; the singular module (`singularModule`) drives `allIndexEntries`, index/acronym search and popups, and `singularGameData`.
 - Vehicles and ordnance are searchable game data, but they do not render in `GameDataView`; they open in the full-screen `ToolModal` (Unit Data / Ordnance vs Armor).
 - Tools are derived from `game_data` type (see `frontend/src/lib/gameDataTools.ts`); there is no module tool registry. Bespoke system tools live in `SYSTEM_TOOL_COMPONENTS`; BCS ships the local-first Formation Manager there.
+- Two frontend-only features are behind Vite build-time flags in `frontend/src/lib/features.ts` with production-safe defaults: ASL table kinds (`VITE_FEATURE_ASL_TABLES`) and the Ordnance vs Armor tool (`VITE_FEATURE_AFV_VS_AFV`). When AFV vs AFV is off, ordnance results/bookmarks open Unit Data, which still lists ordnance. The backend has no tool knowledge.
 - All rendered text is strict Markdown (`markdown-it` with `html: false`) and sanitized with DOMPurify in `renderContent.ts`; raw HTML tags are escaped and displayed as literal text. Titles/labels use inline mode; rule content and index definitions use block mode.
 - Bookmarks are only creatable from released content; unresolved/draft-only bookmarks are shown as unavailable. The content store exposes `usesLiveContent`, `hasReleasedContent`, and availability helpers for this.
 - Offline routing is a whitelist: only `home` and pinned-system routes are reachable. Guest/auth/account screens are not reachable offline.

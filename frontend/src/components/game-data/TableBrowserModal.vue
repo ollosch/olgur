@@ -6,6 +6,7 @@ import { useContentStore } from '@/stores/content'
 import { useGameDataModalStore } from '@/stores/gameDataModal'
 import { useBookmarkStore } from '@/stores/bookmarks'
 import { useModalShortcutGuard } from '@/composables/useModalShortcutGuard'
+import { FEATURES, isTableVisible } from '@/lib/features'
 import MatrixTable from '@/components/game-data/MatrixTable.vue'
 import AttributeTable from '@/components/game-data/AttributeTable.vue'
 import ModifierList from '@/components/game-data/ModifierList.vue'
@@ -44,7 +45,9 @@ const bookmarkStore = useBookmarkStore()
 useModalShortcutGuard(() => gameDataModalStore.tableBrowserOpen)
 
 // Tables are a union over the active set.
-const tables = computed(() => contentStore.allGameData.filter((d) => d.type === 'table'))
+const tables = computed(() =>
+  contentStore.allGameData.filter((d) => d.type === 'table' && isTableVisible(d, FEATURES.aslTables)),
+)
 
 const searchQuery = ref('')
 

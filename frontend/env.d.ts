@@ -3,6 +3,8 @@
 
 interface ImportMetaEnv {
   readonly VITEST?: boolean
+  readonly VITE_FEATURE_ASL_TABLES?: string
+  readonly VITE_FEATURE_AFV_VS_AFV?: string
 }
 
 declare module 'markdown-it-sup' {

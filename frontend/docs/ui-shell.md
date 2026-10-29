@@ -81,7 +81,7 @@ Component: `frontend/src/components/systems/SystemHeader.vue`
 
 The former right game-data drawer and bottom panel are replaced by full-screen modals (open/close state in the `gameDataModal` / `toolModal` stores):
 
-- `SopModal.vue` (Sequence of Play) and `TableBrowserModal.vue` (tables) — backed by `gameDataModalStore`. The table browser lists all tables in the active set; each row can pin/unpin a `table` bookmark, and the toolbar "Table bookmarks ▾" lists pinned tables.
+- `SopModal.vue` (Sequence of Play) and `TableBrowserModal.vue` (tables) — backed by `gameDataModalStore`. The table browser lists all visible tables in the active set; each row can pin/unpin a `table` bookmark, and the toolbar "Table bookmarks ▾" lists pinned tables. While `VITE_FEATURE_ASL_TABLES` is off, ASL-kind tables are omitted from the list, stale selections render no table, pinned ASL bookmarks stay hidden, and ASL deep links report not found; the stored bookmarks are retained.
 - `ToolModal.vue` — hosts unit data (`UnitDataTab`), Ordnance vs Armor (`OrdnanceVersusArmorTool`), and bespoke system tools in a full-screen dialog. Active tool + its internal store-backed state survive open → close → open. For the `bcs` system the bespoke tool is the Formation Manager.
 
 ## Search, Popups, And Content Rendering
@@ -133,8 +133,8 @@ Selection behavior:
 
 - Rule result -> navigate to `system-rule`
 - SOP result -> navigate to `system-game-datum`
-- Table result -> `gameDataModalStore.selectTable(id)` (opens the Table Browser)
-- Vehicle or ordnance result -> set `unitSelectionStore` pending unit and open the tool modal (`toolModalStore.open(item.type)`)
+- Table result -> `gameDataModalStore.selectTable(id)` (opens the Table Browser); ASL-kind table results are hidden while `VITE_FEATURE_ASL_TABLES` is off
+- Vehicle or ordnance result -> set `unitSelectionStore` pending unit and open the tool modal. While `VITE_FEATURE_AFV_VS_AFV` is off, ordnance opens Unit Data (`vehicle`) instead of the hidden Ordnance vs Armor tool; Unit Data still lists ordnance.
 
 ## Forms And Validation
 

@@ -9,6 +9,12 @@ const mockDel = vi.fn()
 const mockPatch = vi.fn()
 const mockPut = vi.fn()
 const mockLoading = ref(false)
+const featureState = vi.hoisted(() => ({ aslTables: true, afvVsAfv: true }))
+
+vi.mock('@/lib/features', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/features')>()
+  return { ...actual, FEATURES: featureState }
+})
 
 vi.mock('@/composables/useApi', () => ({
   useApi: vi.fn(() => ({
@@ -133,6 +139,8 @@ describe('useBookmarkStore', () => {
     mockDel.mockReset()
     mockPatch.mockReset()
     mockPut.mockReset()
+    featureState.aslTables = true
+    featureState.afvVsAfv = true
   })
 
   function setup(bookmarks: BookmarkEntry[] = []) {
@@ -287,6 +295,24 @@ describe('useBookmarkStore', () => {
 
     expect(mockPatch).not.toHaveBeenCalled()
     expect(bookmarkStore.bookmarks).toEqual([])
+  })
+
+  it('hides ASL table bookmarks while retaining the stored entry when the flag is off', () => {
+    featureState.aslTables = false
+    const { bookmarkStore } = setup([
+      { type: 'table', id: 'asl1' },
+      { type: 'table', id: 'matrix1' },
+    ])
+    seedResolvedContent()
+    const contentStore = useContentStore()
+    contentStore.gameDataByModule['mod1'] = [
+      { ...makeTable('asl1', 'mod1', 'IFT'), content: { kind: 'ift' } },
+      { ...makeTable('matrix1', 'mod1', 'Firepower Table'), content: { kind: 'matrix' } },
+    ]
+
+    expect(bookmarkStore.resolvedBookmarks.map((b) => b.entry.id)).toEqual(['matrix1'])
+    expect(bookmarkStore.availableBookmarks.map((b) => b.entry.id)).toEqual(['matrix1'])
+    expect(bookmarkStore.bookmarks.map((b) => b.id)).toEqual(['asl1', 'matrix1'])
   })
 
   it('falls back to an unavailable label for a table bookmark with no matching content', () => {

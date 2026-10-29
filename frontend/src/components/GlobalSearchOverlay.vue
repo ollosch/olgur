@@ -7,6 +7,7 @@ import { useShortcutStore } from '@/stores/shortcut'
 import { useContentStore } from '@/stores/content'
 import { rankMatchLower, compareIndexEntries, rankRule } from '@/lib/utils'
 import { renderContent } from '@/lib/renderContent'
+import { FEATURES, isTableVisible, resolveToolType } from '@/lib/features'
 import type { Rule, IndexEntry, GameDatum } from '@/types/domain'
 import IndexEntryResult from '@/components/systems/IndexEntryResult.vue'
 import { unitTypeLabel, unitNation } from '@/lib/unitUtils'
@@ -118,7 +119,7 @@ const tableResults = computed((): GameDataResult[] => {
   if (!q) return []
   const results: GameDataResult[] = []
   for (const item of contentStore.allGameData) {
-    if (item.type !== 'table') continue
+    if (item.type !== 'table' || !isTableVisible(item, FEATURES.aslTables)) continue
     const r = rankMatchLower(item.name.toLowerCase(), q)
     if (r < 3) results.push({ item, rank: r })
   }
@@ -239,7 +240,7 @@ function selectTable(item: GameDatum): void {
 
 function selectUnit(item: GameDatum): void {
   unitSelectionStore.selectUnit(item)
-  toolModalStore.open(item.type)
+  toolModalStore.open(resolveToolType(item.type, FEATURES.afvVsAfv))
   shortcutStore.overlayOpen = false
 }
 

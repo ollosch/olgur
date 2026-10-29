@@ -4,6 +4,7 @@ import { useSystemStore } from '@/stores/system'
 import { useMembershipStore } from '@/stores/membership'
 import { useContentStore } from '@/stores/content'
 import { useApi } from '@/composables/useApi'
+import { FEATURES, isTableVisible } from '@/lib/features'
 import type { BookmarkEntry, GameDatum, Membership, ApiResource } from '@/types/domain'
 
 export interface ResolvedBookmark {
@@ -73,6 +74,11 @@ export const useBookmarkStore = defineStore('bookmarks', () => {
           sortKey: datum.name,
           available: true,
         }
+      })
+      .filter((b) => {
+        if (b.entry.type !== 'table') return true
+        const datum = gameDataById.value.get(b.entry.id)
+        return !datum || isTableVisible(datum, FEATURES.aslTables)
       })
       .sort((a, b) => a.sortKey.localeCompare(b.sortKey))
   })
