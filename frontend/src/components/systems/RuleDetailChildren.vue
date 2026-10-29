@@ -109,118 +109,67 @@ const childRules = computed((): Rule[] => props.childrenMap.get(props.rule.id) ?
   <!-- Rule header -->
   <div class="flex items-baseline gap-3 group">
     <component :is="headingTag(depth)" :class="[headingClass(depth), 'flex-1 min-w-0']">
-      <span
-        class="font-mono text-primary pr-1 cursor-pointer hover:underline"
-        @click="emit('selectRule', rule)"
-        >{{ rule.number }}</span
-      >
+      <span class="font-mono text-primary pr-1 cursor-pointer hover:underline" @click="emit('selectRule', rule)">{{
+        rule.number }}</span>
       <!-- eslint-disable-next-line vue/no-v-html -->
       <span :data-rule-context="rule.module_id" v-html="renderContent(rule.title)" />
     </component>
     <div
-      class="flex items-center gap-1 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
-    >
-      <button
-        v-if="canEditDraft"
-        class="p-1 rounded hover:bg-muted/40 transition-colors"
-        title="Edit rule"
-        @click="openEditDialog(rule)"
-      >
+      class="flex items-center gap-1 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+      <button v-if="canEditDraft" class="p-1 rounded hover:bg-muted/40 transition-colors" title="Edit rule"
+        @click="openEditDialog(rule)">
         <Pencil class="w-3.5 h-3.5 text-muted-foreground" />
       </button>
-      <button
-        v-if="canEditDraft"
-        class="p-1 rounded hover:bg-muted/40 transition-colors"
-        title="Delete rule"
-        @click="openDeleteDialog(rule)"
-      >
+      <button v-if="canEditDraft" class="p-1 rounded hover:bg-muted/40 transition-colors" title="Delete rule"
+        @click="openDeleteDialog(rule)">
         <Trash2 class="w-3.5 h-3.5 text-muted-foreground" />
       </button>
-      <button
-        v-if="canRetrofix"
-        class="p-1 rounded hover:bg-muted/40 transition-colors"
-        title="Back-edit released version"
-        @click="openRetrofixDialog(rule)"
-      >
+      <button v-if="canRetrofix" class="p-1 rounded hover:bg-muted/40 transition-colors"
+        title="Back-edit released version" @click="openRetrofixDialog(rule)">
         <Wrench class="w-3.5 h-3.5 text-muted-foreground" />
       </button>
-      <button
-        class="p-1 rounded hover:bg-muted/40 transition-colors"
-        title="Show in tree"
-        @click="showInTree(rule)"
-      >
+      <button class="p-1 rounded hover:bg-muted/40 transition-colors" title="Show in tree" @click="showInTree(rule)">
         <Crosshair class="w-3.5 h-3.5 text-muted-foreground" />
       </button>
       <ProofreadToggle v-if="canProofread" entity-type="rule" :entity-id="rule.id" />
-      <button
-        v-if="canBookmarkRule || bookmarkStore.isBookmarked('rule', rule.id)"
+      <button v-if="canBookmarkRule || bookmarkStore.isBookmarked('rule', rule.id)"
         class="p-1 rounded hover:bg-muted/40 transition-colors"
-        :title="bookmarkStore.isBookmarked('rule', rule.id) ? 'Remove bookmark' : 'Bookmark rule'"
-        @click="
+        :title="bookmarkStore.isBookmarked('rule', rule.id) ? 'Remove bookmark' : 'Bookmark rule'" @click="
           bookmarkStore.isBookmarked('rule', rule.id)
             ? bookmarkStore.removeBookmark('rule', rule.id)
             : bookmarkStore.addBookmark('rule', rule.id)
-        "
-      >
-        <Star
-          class="w-3.5 h-3.5 transition-colors"
-          :class="
-            bookmarkStore.isBookmarked('rule', rule.id)
-              ? 'text-yellow-400 fill-yellow-400'
-              : 'text-muted-foreground'
-          "
-        />
+          ">
+        <Star class="w-3.5 h-3.5 transition-colors" :class="bookmarkStore.isBookmarked('rule', rule.id)
+            ? 'text-yellow-400 fill-yellow-400'
+            : 'text-muted-foreground'
+          " />
       </button>
     </div>
   </div>
 
   <!-- Rule content -->
   <!-- eslint-disable-next-line vue/no-v-html -->
-  <p
-    class="text-foreground/80 text-sm leading-relaxed mb-4 whitespace-pre-wrap"
-    :data-rule-context="rule.module_id"
-    v-html="
-      renderContent(rule.content, {
-        acronymPopups: appSettings.acronymPopups,
-        block: true,
-      })
-    "
-  />
+  <p class="text-foreground/80 text-sm leading-relaxed mb-4 whitespace-pre-wrap" :data-rule-context="rule.module_id"
+    v-html="renderContent(rule.content, {
+      acronymPopups: appSettings.acronymPopups,
+      block: true,
+    })
+      " />
 
   <!-- Children -->
   <template v-if="!standalone">
-    <div v-for="child in childRules" :key="child.id" class="mt-4">
-      <RuleDetailChildren
-        :rule="child"
-        :children-map="childrenMap"
-        :depth="depth + 1"
-        :toc-depth="tocDepth"
-        :can-edit="canEdit"
-        @select-rule="emit('selectRule', $event)"
-        @rule-deleted="emit('ruleDeleted')"
-      />
+    <div v-for="child in childRules" :key="child.id" class="mt-4 prose">
+      <RuleDetailChildren :rule="child" :children-map="childrenMap" :depth="depth + 1" :toc-depth="tocDepth"
+        :can-edit="canEdit" @select-rule="emit('selectRule', $event)" @rule-deleted="emit('ruleDeleted')" />
     </div>
   </template>
 
-  <EditRuleDialog
-    v-if="editingRule"
-    :open="editDialogOpen"
-    :rule="editingRule"
-    @update:open="editDialogOpen = $event"
-  />
+  <EditRuleDialog v-if="editingRule" :open="editDialogOpen" :rule="editingRule"
+    @update:open="editDialogOpen = $event" />
 
-  <DeleteRuleDialog
-    v-if="deletingRule"
-    :open="deleteDialogOpen"
-    :rule="deletingRule"
-    @update:open="deleteDialogOpen = $event"
-    @deleted="emit('ruleDeleted')"
-  />
+  <DeleteRuleDialog v-if="deletingRule" :open="deleteDialogOpen" :rule="deletingRule"
+    @update:open="deleteDialogOpen = $event" @deleted="emit('ruleDeleted')" />
 
-  <RetrofixDialog
-    v-if="retrofixRule"
-    :open="retrofixDialogOpen"
-    :rule="retrofixRule"
-    @update:open="retrofixDialogOpen = $event"
-  />
+  <RetrofixDialog v-if="retrofixRule" :open="retrofixDialogOpen" :rule="retrofixRule"
+    @update:open="retrofixDialogOpen = $event" />
 </template>

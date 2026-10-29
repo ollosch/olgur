@@ -161,10 +161,7 @@ function back(): void {
   <div class="flex flex-col h-full">
     <!-- detail-only mode: always render the detail view for detailUnit -->
     <template v-if="props.mode === 'detail-only'">
-      <div
-        v-if="!props.detailUnit"
-        class="flex-1 flex items-center justify-center text-xs text-muted-foreground"
-      >
+      <div v-if="!props.detailUnit" class="flex-1 flex items-center justify-center text-xs text-muted-foreground">
         Select a unit from the list.
       </div>
       <template v-else>
@@ -184,20 +181,15 @@ function back(): void {
       <template v-if="selectedUnit && props.mode === 'full'">
         <!-- Detail toolbar -->
         <div class="shrink-0 flex items-center gap-2 px-3 pt-2 pb-1.5 border-b border-border/50">
-          <button
-            class="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            @click="back"
-          >
+          <button class="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            @click="back">
             <ArrowLeft class="w-3 h-3" />
             Back
           </button>
           <div class="flex-1" />
-          <button
-            v-if="showCompareButton"
+          <button v-if="showCompareButton"
             class="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary border border-border rounded px-2 py-0.5 transition-colors hover:border-primary/50"
-            title="Compare with another unit"
-            @click="emit('compare', selectedUnit)"
-          >
+            title="Compare with another unit" @click="emit('compare', selectedUnit)">
             <GitCompare class="w-3 h-3" />
             Compare
           </button>
@@ -217,21 +209,16 @@ function back(): void {
         <!-- Filter row -->
         <div class="px-3 pb-2 shrink-0 flex flex-wrap items-center gap-2">
           <div class="flex gap-0.5 bg-muted/50 rounded p-0.5">
-            <button
-              v-for="opt in [
-                { value: 'all', label: 'All' },
-                { value: 'vehicle', label: 'Vehicles' },
-                { value: 'ordnance', label: 'Ordnance' },
-              ] as const"
-              :key="opt.value"
-              :class="[
-                'px-2 py-0.5 text-[11px] rounded transition-colors',
-                typeFilter === opt.value
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground',
-              ]"
-              @click="typeFilter = opt.value"
-            >
+            <button v-for="opt in [
+              { value: 'all', label: 'All' },
+              { value: 'vehicle', label: 'Vehicles' },
+              { value: 'ordnance', label: 'Ordnance' },
+            ] as const" :key="opt.value" :class="[
+              'px-2 py-0.5 text-[11px] rounded transition-colors',
+              typeFilter === opt.value
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground',
+            ]" @click="typeFilter = opt.value">
               {{ opt.label }}
             </button>
           </div>
@@ -248,17 +235,12 @@ function back(): void {
 
         <!-- Letter chips (when not searching/filtering) -->
         <div v-if="!isFiltering" class="px-3 pb-2 flex flex-wrap gap-1 shrink-0">
-          <button
-            v-for="letter in availableLetters"
-            :key="letter"
-            :class="[
-              'w-6 h-6 text-xs rounded font-mono transition-colors',
-              activeLetter === letter
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted/50 hover:bg-muted text-foreground/70',
-            ]"
-            @click="toggleLetter(letter)"
-          >
+          <button v-for="letter in availableLetters" :key="letter" :class="[
+            'w-6 h-6 text-xs rounded font-mono transition-colors',
+            activeLetter === letter
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-muted/50 hover:bg-muted text-foreground/70',
+          ]" @click="toggleLetter(letter)">
             {{ letter }}
           </button>
         </div>
@@ -268,35 +250,22 @@ function back(): void {
           <div v-if="!showList" class="text-xs text-muted-foreground py-4 text-center">
             Select a letter or search above.
           </div>
-          <div
-            v-else-if="filteredUnits.length === 0"
-            class="text-xs text-muted-foreground py-4 text-center"
-          >
+          <div v-else-if="filteredUnits.length === 0" class="text-xs text-muted-foreground py-4 text-center">
             No units found.
           </div>
-          <div
-            v-for="unit in filteredUnits"
-            v-else
-            :key="unit.id"
+          <div v-for="unit in filteredUnits" v-else :key="unit.id"
             class="flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer hover:bg-accent transition-colors"
-            role="button"
-            tabindex="0"
-            @click="selectUnit(unit)"
-            @keydown.enter="selectUnit(unit)"
-          >
+            role="button" tabindex="0" @click="selectUnit(unit)" @keydown.enter="selectUnit(unit)">
             <span class="text-xs text-foreground flex-1 truncate">{{ unit.name }}</span>
             <span v-if="unitNation(unit)" class="text-[10px] text-muted-foreground shrink-0">{{
               unitNation(unit)
             }}</span>
-            <span
-              :class="[
-                'text-[10px] font-medium rounded px-1.5 py-0.5 shrink-0',
-                unit.type === 'vehicle'
-                  ? 'bg-green-500/15 text-green-700 dark:text-green-400'
-                  : 'bg-purple-500/15 text-purple-700 dark:text-purple-400',
-              ]"
-              >{{ unitTypeLabel(unit) }}</span
-            >
+            <span :class="[
+              'text-[10px] font-medium rounded px-1.5 py-0.5 shrink-0',
+              unit.type === 'vehicle'
+                ? 'bg-green-500/15 text-green-700 dark:text-green-400'
+                : 'bg-purple-500/15 text-purple-700 dark:text-purple-400',
+            ]">{{ unitTypeLabel(unit) }}</span>
           </div>
         </div>
       </template>
