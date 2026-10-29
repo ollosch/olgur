@@ -1,16 +1,16 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import FormationCard from '@/components/tools/formation/FormationCard.vue'
+import FormationDetail from '@/components/tools/formation/FormationDetail.vue'
 import { createScenario } from '@/lib/formations'
 import { useFormationManagerStore } from '@/stores/formationManager'
 
-describe('FormationCard', () => {
+describe('FormationDetail', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
   })
 
-  function mountCard(): ReturnType<typeof mount> {
+  function mountDetail(): ReturnType<typeof mount> {
     const store = useFormationManagerStore()
     const scenario = createScenario('Test', ['allies:2 Cav Grp'])
     store.current = scenario
@@ -18,13 +18,13 @@ describe('FormationCard', () => {
     const formation = scenario.formations.find((entry) => entry.name === '2 Cav Grp')
     if (!formation) throw new Error('missing formation')
 
-    return mount(FormationCard, {
-      props: { formation, expanded: true },
+    return mount(FormationDetail, {
+      props: { formation },
     })
   }
 
   it('shows unit steps and adjusts them with touch-sized buttons', async () => {
-    const wrapper = mountCard()
+    const wrapper = mountDetail()
     const firstUnit = wrapper.find('[data-formation-id="allies:2 Cav Grp"]')
 
     expect(firstUnit.text()).toContain('2 Arm Cav Bn')
@@ -37,7 +37,7 @@ describe('FormationCard', () => {
   })
 
   it('sets fatigue, support, artillery, and prepared defense', async () => {
-    const wrapper = mountCard()
+    const wrapper = mountDetail()
     const store = useFormationManagerStore()
 
     await wrapper.get('[aria-label="Fatigue 3"]').trigger('click')
@@ -57,7 +57,7 @@ describe('FormationCard', () => {
   })
 
   it('sends a formation to the Dead Pool and warns when it has no steps', async () => {
-    const wrapper = mountCard()
+    const wrapper = mountDetail()
     const store = useFormationManagerStore()
     const formation = store.current?.formations[0]
     if (!formation) throw new Error('missing formation')
@@ -67,7 +67,7 @@ describe('FormationCard', () => {
     }
     await wrapper.vm.$nextTick()
 
-    expect(wrapper.text()).toContain('No steps')
+    expect(wrapper.text()).toContain('no steps left')
     expect(wrapper.text()).toContain('Send it to the Dead Pool')
 
     const send = wrapper.findAll('button').find((button) =>
@@ -77,9 +77,10 @@ describe('FormationCard', () => {
     expect(formation.status).toBe('dead_pool')
   })
 
-  it('emits toggle when the summary is tapped', async () => {
-    const wrapper = mountCard()
-    await wrapper.get('[aria-expanded="true"]').trigger('click')
-    expect(wrapper.emitted('toggle')).toHaveLength(1)
+  it('emits close from the header button', async () => {
+    const wrapper = mountDetail()
+    await wrapper.get('[aria-label="Close details"]').trigger('click')
+
+    expect(wrapper.emitted('close')).toHaveLength(1)
   })
 })

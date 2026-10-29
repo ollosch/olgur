@@ -41,7 +41,7 @@ export const useFormationManagerStore = defineStore('formationManager', () => {
   const scenarios = ref<Scenario[]>([])
   const current = ref<Scenario | null>(null)
   const activeSide = ref<FormationSide>('allies')
-  const expandedFormationIds = ref<string[]>([])
+  const selectedFormationId = ref<string | null>(null)
   const lastSavedAt = ref<string | null>(null)
   const saving = ref(false)
   const saveError = ref<string | null>(null)
@@ -86,6 +86,14 @@ export const useFormationManagerStore = defineStore('formationManager', () => {
   })
 
   const activeSideData = computed(() => sides.value[activeSide.value])
+
+  const selectedFormation = computed((): Formation | null => {
+    if (selectedFormationId.value === null) return null
+    return (
+      currentFormations.value.find((formation) => formation.id === selectedFormationId.value) ??
+      null
+    )
+  })
 
   function upsertInList(scenario: Scenario): void {
     const copy = cloneScenario(scenario)
@@ -187,7 +195,7 @@ export const useFormationManagerStore = defineStore('formationManager', () => {
     if (!found) return false
 
     current.value = cloneScenario(found)
-    expandedFormationIds.value = []
+    selectedFormationId.value = null
     lastSavedAt.value = found.updatedAt
     saveError.value = null
     await idbPut('scenarioMeta', LAST_SCENARIO_KEY, id)
@@ -197,7 +205,7 @@ export const useFormationManagerStore = defineStore('formationManager', () => {
   async function closeScenario(): Promise<void> {
     await flushSave()
     current.value = null
-    expandedFormationIds.value = []
+    selectedFormationId.value = null
     await idbDelete('scenarioMeta', LAST_SCENARIO_KEY)
   }
 
@@ -209,7 +217,7 @@ export const useFormationManagerStore = defineStore('formationManager', () => {
     const scenario = createScenario(name, activeFormationIds)
     scenarios.value = sortScenarios([...scenarios.value, scenario])
     current.value = cloneScenario(scenario)
-    expandedFormationIds.value = []
+    selectedFormationId.value = null
     await idbPut('scenarios', scenario.id, scenario)
     await idbPut('scenarioMeta', LAST_SCENARIO_KEY, scenario.id)
     lastSavedAt.value = scenario.updatedAt
@@ -224,7 +232,7 @@ export const useFormationManagerStore = defineStore('formationManager', () => {
       // stops new edits from scheduling further writes that could resurrect
       // the row after it is deleted.
       current.value = null
-      expandedFormationIds.value = []
+      selectedFormationId.value = null
       if (pendingPersist) await pendingPersist
       await idbDelete('scenarioMeta', LAST_SCENARIO_KEY)
     }
@@ -243,7 +251,7 @@ export const useFormationManagerStore = defineStore('formationManager', () => {
     await idbPut('scenarios', parsed.id, cloneScenario(parsed))
     scenarios.value = sortScenarios([...scenarios.value, parsed])
     current.value = cloneScenario(parsed)
-    expandedFormationIds.value = []
+    selectedFormationId.value = null
     await idbPut('scenarioMeta', LAST_SCENARIO_KEY, parsed.id)
     lastSavedAt.value = parsed.updatedAt
     saveError.value = null
@@ -268,6 +276,9 @@ export const useFormationManagerStore = defineStore('formationManager', () => {
     const formation = findFormation(id)
     if (!formation || formation.status === status) return
     formation.status = status
+    if (status !== 'in_game' && selectedFormationId.value === id) {
+      selectedFormationId.value = null
+    }
     touch()
   }
 
@@ -351,16 +362,20 @@ export const useFormationManagerStore = defineStore('formationManager', () => {
 
   function setActiveSide(side: FormationSide): void {
     activeSide.value = side
+    const selected = selectedFormation.value
+    if (selected && selected.side !== side) {
+      selectedFormationId.value = null
+    }
   }
 
-  function toggleExpanded(id: string): void {
-    expandedFormationIds.value = expandedFormationIds.value.includes(id)
-      ? expandedFormationIds.value.filter((entry) => entry !== id)
-      : [...expandedFormationIds.value, id]
+  function selectFormation(id: string): void {
+    const formation = findFormation(id)
+    if (!formation || formation.status !== 'in_game') return
+    selectedFormationId.value = id
   }
 
-  function isExpanded(id: string): boolean {
-    return expandedFormationIds.value.includes(id)
+  function clearSelectedFormation(): void {
+    selectedFormationId.value = null
   }
 
   function totalsForFormation(formation: Formation): StepTotals {
@@ -373,7 +388,7 @@ export const useFormationManagerStore = defineStore('formationManager', () => {
     scenarios,
     current,
     activeSide,
-    expandedFormationIds,
+    selectedFormationId,
     lastSavedAt,
     saving,
     saveError,
@@ -384,6 +399,7 @@ export const useFormationManagerStore = defineStore('formationManager', () => {
     deadPool,
     sides,
     activeSideData,
+    selectedFormation,
     // lifecycle
     loadScenarios,
     openScenario,
@@ -409,8 +425,8 @@ export const useFormationManagerStore = defineStore('formationManager', () => {
     togglePreparedDefense,
     // ui
     setActiveSide,
-    toggleExpanded,
-    isExpanded,
+    selectFormation,
+    clearSelectedFormation,
     totalsForFormation,
   }
 })

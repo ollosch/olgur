@@ -116,7 +116,7 @@ File: `frontend/src/stores/proofread.ts`
 
 File: `frontend/src/stores/formationManager.ts`
 
-Local-first state for the BCS Formation Manager. Scenarios are persisted in IndexedDB (`scenarios` + the `scenarioMeta` last-opened key), so the tool works fully offline and supports JSON export/import. It holds the saved scenario library, the open scenario, the active side, and expanded formation ids.
+Local-first state for the BCS Formation Manager. Scenarios are persisted in IndexedDB (`scenarios` + the `scenarioMeta` last-opened key), so the tool works fully offline and supports JSON export/import. It holds the saved scenario library, the open scenario, the active side, and the selected formation shown in the detail panel.
 
 - `createNewScenario(name, activeIds)` snapshots the bundled Arracourt formation charts; selected formations start `in_game`, all others start `reserve`.
 - Mutations cover unit steps (0 minimum, no maximum), Prepared Defense, free-text support, artillery points, fatigue (Fresh/0–4), and formation status transitions between `reserve`, `in_game`, and `dead_pool`.

@@ -162,4 +162,65 @@ describe('formation manager store', () => {
 
     expect(store.scenarios[0]?.id).toBe(firstId)
   })
+
+  it('selects only formations that are in play and can clear the selection', async () => {
+    const store = await freshStore()
+    await store.createNewScenario('Selection', ['allies:2 Cav Grp'])
+    const inPlay = store.current?.formations.find((entry) => entry.id === 'allies:2 Cav Grp')
+    const reserve = store.current?.formations.find((entry) => entry.status === 'reserve')
+    if (!inPlay || !reserve) throw new Error('missing formation')
+
+    store.selectFormation(inPlay.id)
+    expect(store.selectedFormationId).toBe(inPlay.id)
+    expect(store.selectedFormation?.id).toBe(inPlay.id)
+
+    store.selectFormation(reserve.id)
+    expect(store.selectedFormationId).toBe(inPlay.id)
+
+    store.clearSelectedFormation()
+    expect(store.selectedFormationId).toBeNull()
+    expect(store.selectedFormation).toBeNull()
+  })
+
+  it('clears the selection when switching to a side without the selected formation', async () => {
+    const store = await freshStore()
+    await store.createNewScenario('Sides', ['allies:2 Cav Grp'])
+    const formation = store.current?.formations.find((entry) => entry.id === 'allies:2 Cav Grp')
+    if (!formation) throw new Error('missing formation')
+
+    store.selectFormation(formation.id)
+    store.setActiveSide('allies')
+    expect(store.selectedFormationId).toBe(formation.id)
+
+    store.setActiveSide('germans')
+    expect(store.selectedFormationId).toBeNull()
+  })
+
+  it('clears the selection when the selected formation leaves play', async () => {
+    const store = await freshStore()
+    await store.createNewScenario('Leaving play', ['allies:2 Cav Grp'])
+    const formation = store.current?.formations.find((entry) => entry.id === 'allies:2 Cav Grp')
+    if (!formation) throw new Error('missing formation')
+
+    store.selectFormation(formation.id)
+    store.sendToDeadPool(formation.id)
+    expect(store.selectedFormationId).toBeNull()
+
+    store.rebuild(formation.id)
+    store.selectFormation(formation.id)
+    store.returnToReserve(formation.id)
+    expect(store.selectedFormationId).toBeNull()
+  })
+
+  it('clears the selection when the scenario is closed', async () => {
+    const store = await freshStore()
+    await store.createNewScenario('Closing', ['allies:2 Cav Grp'])
+    const formation = store.current?.formations.find((entry) => entry.id === 'allies:2 Cav Grp')
+    if (!formation) throw new Error('missing formation')
+
+    store.selectFormation(formation.id)
+    await store.closeScenario()
+
+    expect(store.selectedFormationId).toBeNull()
+  })
 })
