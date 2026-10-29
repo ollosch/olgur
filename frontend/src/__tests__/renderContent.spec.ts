@@ -112,22 +112,22 @@ describe('renderContent', () => {
 })
 
 describe('renderContent security and markdown', () => {
-  it('strips script tags from plain text', () => {
+  it('escapes script tags into visible text', () => {
     const html = renderContent('<script>alert(1)</script>')
     expect(html).not.toContain('<script')
-    expect(html).not.toContain('alert(1)')
+    expect(html).toContain('&lt;script&gt;')
   })
 
-  it('strips event handlers from raw HTML', () => {
+  it('escapes raw HTML so event handlers are inert', () => {
     const html = renderContent('<img src="x" onerror="alert(1)">')
-    expect(html).toContain('<img')
-    expect(html).not.toContain('onerror')
+    expect(html).not.toContain('<img')
+    expect(html).toContain('&lt;img')
   })
 
-  it('strips svg payloads', () => {
+  it('escapes svg payloads into visible text', () => {
     const html = renderContent('<svg onload="alert(1)"><circle /></svg>')
     expect(html).not.toContain('<svg')
-    expect(html).not.toContain('onload')
+    expect(html).toContain('&lt;svg')
   })
 
   it('does not produce a javascript: link from markdown', () => {
@@ -135,10 +135,11 @@ describe('renderContent security and markdown', () => {
     expect(html).not.toMatch(/<a[^>]+href=/)
   })
 
-  it('strips payloads nested inside example blocks', () => {
+  it('escapes payloads nested inside example blocks', () => {
     const html = renderContent('<ex><img src="x" onerror="alert(1)"></ex>')
     expect(html).toContain('example-block')
-    expect(html).not.toContain('onerror')
+    expect(html).not.toContain('<img')
+    expect(html).toContain('&lt;img')
   })
 
   it('renders inline markdown emphasis', () => {

@@ -90,7 +90,7 @@ The former right game-data drawer and bottom panel are replaced by full-screen m
 
 Renderer: `frontend/src/lib/renderContent.ts`
 
-Text is Markdown (`markdown-it`) with legacy raw HTML allowed, then sanitized by DOMPurify. Scripts, event handlers, `javascript:` URLs, SVG/MathML, and `style` attributes are stripped. `renderContent` defaults to inline mode (titles, labels, table cells); pass `{ block: true }` for rule content, index definitions/notes, and other block text.
+Text is strict Markdown (`markdown-it` with `html: false`). Raw HTML tags are escaped and shown as literal text; markdown-it validates link schemes, and the result is still sanitized by DOMPurify as defence-in-depth. `renderContent` defaults to inline mode (titles, labels, table cells); pass `{ block: true }` for rule content, index definitions/notes, and other block text.
 
 Supported inline content tokens:
 

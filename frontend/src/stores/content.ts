@@ -639,7 +639,7 @@ export const useContentStore = defineStore('content', () => {
   ): Promise<ApiResult<Rule>> {
     const result = await put<ApiResource<Rule>, UpdateRuleRequest>(
       `/systems/${systemId}/modules/${rule.module_id}/rules/${rule.id}`,
-      { ...data, content: data.content.split('\n').join('<br>') },
+      data,
     )
 
     if (result.ok) {

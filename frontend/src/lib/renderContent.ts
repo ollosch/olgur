@@ -8,9 +8,10 @@
  * on the rendered container as a `data-rule-context` attribute, so the document-level
  * delegation resolves bare links against the content's own module.
  *
- * Text is interpreted as Markdown. Raw HTML is allowed through the Markdown
- * renderer for legacy imported content, then the whole result is sanitized with
- * DOMPurify so stored content can never execute script.
+ * Text is interpreted strictly as Markdown. Raw HTML is not enabled: any HTML
+ * tags in stored text are escaped and shown literally, so authors can spot
+ * leftover markup. Generated token markup is still sanitized with DOMPurify as
+ * defence-in-depth.
  */
 
 import MarkdownIt from 'markdown-it'
@@ -38,7 +39,7 @@ const RULE_LINK_CLASS =
   'underline decoration-dotted cursor-pointer text-primary font-medium hover:text-primary/80 transition-colors'
 
 const markdown = new MarkdownIt({
-  html: true,
+  html: false,
   linkify: false,
   breaks: true,
   typographer: false,

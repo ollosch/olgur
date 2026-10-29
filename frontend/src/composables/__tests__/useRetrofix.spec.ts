@@ -318,7 +318,7 @@ describe('useRetrofix', () => {
       )
     })
 
-    it('converts newlines to <br> in the posted content', async () => {
+    it('sends markdown newlines unchanged in the posted content', async () => {
       mockPatch.mockResolvedValue({ ok: true, data: { data: { revision: 1 } } })
 
       const { releasedContent, applyAmendment } = useRetrofix('sys1', 'mod1', 'v1', 'rule1')
@@ -328,7 +328,7 @@ describe('useRetrofix', () => {
 
       expect(mockPatch).toHaveBeenCalledWith(
         expect.any(String),
-        expect.objectContaining({ content: { content: 'line1<br>line2' } }),
+        expect.objectContaining({ content: { content: 'line1\nline2' } }),
       )
     })
 

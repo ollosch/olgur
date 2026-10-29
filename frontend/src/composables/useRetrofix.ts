@@ -133,8 +133,7 @@ export function useRetrofix(
         entity_type: 'rule',
         entity_id: releasedRuleId.value,
         expected_revision: expectedRevision.value,
-        // Re-normalise newlines to <br> for the backend storage format
-        content: { content: releasedContent.value.split('\n').join('<br>') },
+        content: { content: releasedContent.value },
       },
     )
 
