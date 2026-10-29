@@ -8,6 +8,12 @@ const mockGet = vi.fn()
 const mockPost = vi.fn()
 const mockDel = vi.fn()
 const mockLoading = ref(false)
+const featureState = vi.hoisted(() => ({ aslTables: true, afvVsAfv: true }))
+
+vi.mock('@/lib/features', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/features')>()
+  return { ...actual, FEATURES: featureState }
+})
 
 vi.mock('@/composables/useApi', () => ({
   useApi: vi.fn(() => ({
@@ -103,14 +109,14 @@ function makeIndexEntry(id: string): IndexEntry {
   }
 }
 
-function makeGameDatum(id: string): GameDatum {
+function makeGameDatum(id: string, content: Record<string, unknown> = {}): GameDatum {
   return {
     id,
     module_id: 'mod1',
     type: 'table',
     slug: id,
     name: `Table ${id}`,
-    content: {},
+    content,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
   }
@@ -127,6 +133,8 @@ function seedSystem(proofread = true): void {
 describe('useProofreadStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    featureState.aslTables = true
+    featureState.afvVsAfv = true
     mockGet.mockReset()
     mockPost.mockReset()
     mockDel.mockReset()
@@ -195,6 +203,23 @@ describe('useProofreadStore', () => {
         'rule:r1',
         'game_datum:gd1',
         'index_entry:e1',
+      ])
+    })
+
+    it('excludes hidden ASL tables while keeping other tables', () => {
+      seedSystem()
+      featureState.aslTables = false
+      const proofreadStore = useProofreadStore()
+      const contentStore = useContentStore()
+
+      proofreadStore.threshold = 3
+      contentStore.gameDataByModule['mod1'] = [
+        makeGameDatum('ift1', { kind: 'ift' }),
+        makeGameDatum('matrix1', { kind: 'matrix' }),
+      ]
+
+      expect(proofreadStore.needsProofreading.map((e) => `${e.type}:${e.id}`)).toEqual([
+        'game_datum:matrix1',
       ])
     })
 

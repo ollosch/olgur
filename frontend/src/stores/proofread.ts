@@ -4,6 +4,7 @@ import { useApi } from '@/composables/useApi'
 import { useOnline } from '@/composables/useOnline'
 import { useSystemStore } from '@/stores/system'
 import { useContentStore } from '@/stores/content'
+import { FEATURES, isTableVisible } from '@/lib/features'
 import type {
   ApiResource,
   ProofreadEntityType,
@@ -118,6 +119,7 @@ export const useProofreadStore = defineStore('proofread', () => {
     }
 
     for (const datum of contentStore.allGameData) {
+      if (!isTableVisible(datum, FEATURES.aslTables)) continue
       const count = countFor(datum.id)
       if (count >= t) continue
       entries.push({

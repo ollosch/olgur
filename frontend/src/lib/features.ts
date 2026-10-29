@@ -17,7 +17,8 @@ export function parseFeatureFlag(value: unknown, fallback: boolean): boolean {
   return fallback
 }
 
-const DEV_DEFAULT = Boolean(import.meta.env.DEV)
+const DEV_DEFAULT =
+  Boolean(import.meta.env.VITEST) || import.meta.env.MODE === 'development'
 
 export const FEATURES = {
   aslTables: parseFeatureFlag(import.meta.env.VITE_FEATURE_ASL_TABLES, DEV_DEFAULT),

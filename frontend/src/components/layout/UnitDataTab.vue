@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useUnitSelectionStore } from '@/stores/unitSelection'
 import { useUnitBrowserStore } from '@/stores/unitBrowser'
@@ -15,12 +15,19 @@ const { selectedUnit } = storeToRefs(useUnitBrowserStore())
 
 // ── Consume pending unit from GlobalSearch ────────────────────────────────────
 
-onMounted(() => {
+function consumePending(): void {
   const pending = unitSelectionStore.consumePendingUnit()
   if (pending) {
     selectedUnit.value = pending
   }
-})
+}
+
+onMounted(consumePending)
+
+// The tool modal keeps tools mounted, so later GlobalSearch/bookmark selections
+// only surface as pendingUnit changes (consume resets it to null; the guard in
+// consumePending prevents a feedback loop).
+watch(() => unitSelectionStore.pendingUnit, consumePending)
 </script>
 
 <template>
