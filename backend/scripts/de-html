@@ -1,0 +1,1039 @@
+#!/usr/bin/env python3
+"""Convert HTML fragments embedded in JSON strings to Markdown.
+
+Usage:
+    de-html filea.json [fileb.json ...]
+
+By default sibling files are written as ``<name>.md.json``.  Pass
+``--in-place`` to overwrite the input (a ``.bak`` copy is made on every run).
+
+The converter walks every JSON value recursively and rewrites every string that
+contains known HTML tags.  Strings without known tags are left byte-identical,
+so ids, slugs, URLs, and tokens are safe.
+
+Supported HTML:
+    br i b u sup sub ex span table tr td th caption ul ol li p h1-h6 dl dt dd a hr
+
+Deferred (left as raw HTML, reported in the summary):
+    a, dl, dt, dd, h1-h6
+
+The script is best-effort: malformed HTML is parsed tolerantly, and warnings are
+printed.  Fixing the source data is still recommended.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import shutil
+import sys
+from collections import Counter
+from html.parser import HTMLParser
+from typing import Any
+
+
+# ---------------------------------------------------------------------------
+# Tag sets
+# ---------------------------------------------------------------------------
+
+VOID_TAGS = {
+    "area",
+    "base",
+    "br",
+    "col",
+    "embed",
+    "hr",
+    "img",
+    "input",
+    "link",
+    "meta",
+    "source",
+    "track",
+    "wbr",
+}
+
+DEFERRED_TAGS = {"a", "dl", "dt", "dd", "h1", "h2", "h3", "h4", "h5", "h6"}
+
+BLOCK_TAGS = {
+    "blockquote",
+    "div",
+    "dl",
+    "ex",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "hr",
+    "ol",
+    "p",
+    "table",
+    "ul",
+}
+
+KNOWN_TAGS = {
+    "a",
+    "b",
+    "blockquote",
+    "br",
+    "caption",
+    "dd",
+    "div",
+    "dl",
+    "dt",
+    "ex",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "hr",
+    "i",
+    "img",
+    "li",
+    "ol",
+    "p",
+    "span",
+    "sub",
+    "sup",
+    "table",
+    "tbody",
+    "td",
+    "tfoot",
+    "th",
+    "thead",
+    "tr",
+    "u",
+    "ul",
+}
+
+TAG_DETECT_RE = re.compile(
+    r"</?(?:" + "|".join(sorted(KNOWN_TAGS)) + r")\b", re.IGNORECASE
+)
+SUSPICIOUS_RE = re.compile(r"<[a-zA-Z][a-zA-Z0-9]*<")
+BAD_END_TAG_RE = re.compile(r"</[a-zA-Z][a-zA-Z0-9]*\s+[^>]*>")
+TOKEN_RE = re.compile(r"\{\{[^{}]*\}\}")
+
+PLACEHOLDER_PREFIX = "\uE000DEHTML"
+PLACEHOLDER_SUFFIX = "\uE001"
+
+COLOR_NAMES = {
+    "red",
+    "orange",
+    "amber",
+    "yellow",
+    "lime",
+    "green",
+    "emerald",
+    "teal",
+    "cyan",
+    "sky",
+    "blue",
+    "indigo",
+    "violet",
+    "purple",
+    "fuchsia",
+    "pink",
+    "rose",
+    "gray",
+    "muted",
+}
+
+COLOR_MAP = {
+    "#ff0000": "red",
+    "#00c832": "green",
+    "#b400dc": "purple",
+    "#ff9933": "orange",
+    "#1e64ff": "blue",
+}
+
+SUP_MAP = {
+    "0": "⁰",
+    "1": "¹",
+    "2": "²",
+    "3": "³",
+    "4": "⁴",
+    "5": "⁵",
+    "6": "⁶",
+    "7": "⁷",
+    "8": "⁸",
+    "9": "⁹",
+    "+": "⁺",
+    "-": "⁻",
+    "=": "⁼",
+    "(": "⁽",
+    ")": "⁾",
+    "A": "ᴬ",
+    "B": "ᴮ",
+    "C": "ᶜ",
+    "D": "ᴰ",
+    "E": "ᴱ",
+    "F": "ᶠ",
+    "G": "ᴳ",
+    "H": "ᴴ",
+    "I": "ᴵ",
+    "J": "ᴶ",
+    "K": "ᴷ",
+    "L": "ᴸ",
+    "M": "ᴹ",
+    "N": "ᴺ",
+    "O": "ᴼ",
+    "P": "ᴾ",
+    "Q": "Q",
+    "R": "ᴿ",
+    "S": "ˢ",
+    "T": "ᵀ",
+    "U": "ᵁ",
+    "V": "ⱽ",
+    "W": "ᵂ",
+    "X": "ˣ",
+    "Y": "ʸ",
+    "Z": "ᶻ",
+    "a": "ᵃ",
+    "b": "ᵇ",
+    "c": "ᶜ",
+    "d": "ᵈ",
+    "e": "ᵉ",
+    "f": "ᶠ",
+    "g": "ᵍ",
+    "h": "ʰ",
+    "i": "ⁱ",
+    "j": "ʲ",
+    "k": "ᵏ",
+    "l": "ˡ",
+    "m": "ᵐ",
+    "n": "ⁿ",
+    "o": "ᵒ",
+    "p": "ᵖ",
+    "r": "ʳ",
+    "s": "ˢ",
+    "t": "ᵗ",
+    "u": "ᵘ",
+    "v": "ᵛ",
+    "w": "ʷ",
+    "x": "ˣ",
+    "y": "ʸ",
+    "z": "ᶻ",
+}
+
+SUB_MAP = {
+    "0": "₀",
+    "1": "₁",
+    "2": "₂",
+    "3": "₃",
+    "4": "₄",
+    "5": "₅",
+    "6": "₆",
+    "7": "₇",
+    "8": "₈",
+    "9": "₉",
+    "+": "₊",
+    "-": "₋",
+    "=": "₌",
+    "(": "₍",
+    ")": "₎",
+    "a": "ₐ",
+    "e": "ₑ",
+    "h": "ₕ",
+    "i": "ᵢ",
+    "j": "ⱼ",
+    "k": "ₖ",
+    "l": "ₗ",
+    "m": "ₘ",
+    "n": "ₙ",
+    "o": "ₒ",
+    "p": "ₚ",
+    "r": "ᵣ",
+    "s": "ₛ",
+    "t": "ₜ",
+    "u": "ᵤ",
+    "v": "ᵥ",
+    "x": "ₓ",
+}
+
+
+# ---------------------------------------------------------------------------
+# Stats
+# ---------------------------------------------------------------------------
+
+
+class Stats:
+    def __init__(self) -> None:
+        self.strings_seen = 0
+        self.strings_changed = 0
+        self.converted: Counter[str] = Counter()
+        self.deferred: Counter[str] = Counter()
+        self.warnings: Counter[str] = Counter()
+        self.remaining: Counter[str] = Counter()
+
+
+# ---------------------------------------------------------------------------
+# JSON loading (tolerant of comments / trailing commas)
+# ---------------------------------------------------------------------------
+
+
+def sanitize_json(text: str) -> str:
+    """Strip // and /* */ comments and trailing commas outside strings."""
+    out: list[str] = []
+    i = 0
+    n = len(text)
+    in_str = False
+    while i < n:
+        char = text[i]
+        if in_str:
+            out.append(char)
+            if char == "\\":
+                if i + 1 < n:
+                    out.append(text[i + 1])
+                i += 2
+                continue
+            if char == '"':
+                in_str = False
+            i += 1
+            continue
+        if char == '"':
+            in_str = True
+            out.append(char)
+            i += 1
+            continue
+        if char == "/" and i + 1 < n and text[i + 1] == "/":
+            while i < n and text[i] != "\n":
+                i += 1
+            continue
+        if char == "/" and i + 1 < n and text[i + 1] == "*":
+            end = text.find("*/", i + 2)
+            i = n if end == -1 else end + 2
+            continue
+        out.append(char)
+        i += 1
+    return re.sub(r",\s*([}\]])", r"\1", "".join(out))
+
+
+def load_json(path: str) -> tuple[Any, bool]:
+    with open(path, encoding="utf-8") as handle:
+        raw = handle.read()
+    try:
+        return json.loads(raw), False
+    except json.JSONDecodeError:
+        return json.loads(sanitize_json(raw)), True
+
+
+# ---------------------------------------------------------------------------
+# HTML tree
+# ---------------------------------------------------------------------------
+
+
+class Node:
+    __slots__ = ("tag", "attrs", "children", "raw_start")
+
+    def __init__(self, tag: str, attrs: dict[str, str | None], raw_start: str) -> None:
+        self.tag = tag
+        self.attrs = attrs
+        self.children: list[Node | str] = []
+        self.raw_start = raw_start
+
+
+class TreeBuilder(HTMLParser):
+    """Tolerant HTML parser: unknown tags stay as text, optional tags auto-close."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.root = Node("#root", {}, "")
+        self.stack: list[Node] = [self.root]
+        self.warnings: Counter[str] = Counter()
+
+    # -- parser callbacks --------------------------------------------------
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        tag = tag.lower()
+        raw = self.get_starttag_text() or f"<{tag}>"
+        if tag not in KNOWN_TAGS:
+            self._append_text(raw)
+            self.warnings[f"unknown tag <{tag}>"] += 1
+            return
+        self._auto_close_on_start(tag)
+        node = Node(tag, dict(attrs), raw)
+        self.stack[-1].children.append(node)
+        if tag not in VOID_TAGS:
+            self.stack.append(node)
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        tag = tag.lower()
+        raw = self.get_starttag_text() or f"<{tag}/>"
+        if tag not in KNOWN_TAGS:
+            self._append_text(raw)
+            self.warnings[f"unknown tag <{tag}>"] += 1
+            return
+        self.stack[-1].children.append(Node(tag, dict(attrs), raw))
+
+    def handle_endtag(self, tag: str) -> None:
+        tag = tag.lower()
+        if tag not in KNOWN_TAGS:
+            self._append_text(f"</{tag}>")
+            self.warnings[f"unknown tag </{tag}>"] += 1
+            return
+        if tag in VOID_TAGS:
+            return
+        for index in range(len(self.stack) - 1, 0, -1):
+            if self.stack[index].tag == tag:
+                del self.stack[index:]
+                return
+        self.warnings[f"stray </{tag}>"] += 1
+
+    def handle_data(self, data: str) -> None:
+        if data:
+            self._append_text(data)
+
+    # -- helpers -----------------------------------------------------------
+
+    def _append_text(self, text: str) -> None:
+        children = self.stack[-1].children
+        if children and isinstance(children[-1], str):
+            children[-1] += text
+        else:
+            children.append(text)
+
+    def _auto_close_on_start(self, tag: str) -> None:
+        stack = self.stack
+
+        if tag == "li":
+            for index in range(len(stack) - 1, 0, -1):
+                if stack[index].tag == "li":
+                    del stack[index:]
+                    return
+                if stack[index].tag in {"ul", "ol"}:
+                    return
+
+        if tag in {"td", "th"}:
+            for index in range(len(stack) - 1, 0, -1):
+                if stack[index].tag in {"td", "th"}:
+                    del stack[index:]
+                    return
+                if stack[index].tag in {"tr", "table", "thead", "tbody", "tfoot"}:
+                    return
+
+        if tag == "tr":
+            for index in range(len(stack) - 1, 0, -1):
+                if stack[index].tag == "tr":
+                    del stack[index:]
+                    return
+                if stack[index].tag in {"table", "thead", "tbody", "tfoot"}:
+                    return
+
+        if tag in {"dt", "dd"}:
+            for index in range(len(stack) - 1, 0, -1):
+                if stack[index].tag in {"dt", "dd"}:
+                    del stack[index:]
+                    return
+                if stack[index].tag == "dl":
+                    return
+
+        if tag == "p":
+            for index in range(len(stack) - 1, 0, -1):
+                if stack[index].tag == "p":
+                    del stack[index:]
+                    return
+                if stack[index].tag in {"table", "ul", "ol", "dl"}:
+                    return
+
+        if tag in {"thead", "tbody", "tfoot"}:
+            for index in range(len(stack) - 1, 0, -1):
+                if stack[index].tag in {"thead", "tbody", "tfoot"}:
+                    del stack[index:]
+                    return
+                if stack[index].tag == "table":
+                    return
+
+
+# ---------------------------------------------------------------------------
+# Markdown rendering
+# ---------------------------------------------------------------------------
+
+
+def normalize_token(token: str) -> str:
+    """Make tokens safe for a renderer that escapes token labels as text."""
+
+    def superscript(match: re.Match[str]) -> str:
+        return "".join(SUP_MAP.get(char, char) for char in match.group(1))
+
+    token = re.sub(r"<sup>(.*?)</sup>", superscript, token, flags=re.IGNORECASE | re.DOTALL)
+    return re.sub(r"<[^>]+>", "", token)
+
+
+def protect_tokens(text: str) -> tuple[str, list[str]]:
+    tokens: list[str] = []
+
+    def replace(match: re.Match[str]) -> str:
+        tokens.append(normalize_token(match.group(0)))
+        return f"{PLACEHOLDER_PREFIX}{len(tokens) - 1}{PLACEHOLDER_SUFFIX}"
+
+    return TOKEN_RE.sub(replace, text), tokens
+
+
+def restore_tokens(text: str, tokens: list[str]) -> str:
+    for index, token in enumerate(tokens):
+        text = text.replace(f"{PLACEHOLDER_PREFIX}{index}{PLACEHOLDER_SUFFIX}", token)
+    return text
+
+
+def escape_text(text: str, options: "Options") -> str:
+    text = text.replace("\r\n", "\n").replace("\r", "\n").replace("\xa0", " ")
+    text = re.sub(r"[ \t\f\v]+", " ", text)
+    text = text.replace("\\", "\\\\")
+
+    special = "`*_[]~#|>"
+    if options.sup == "caret":
+        special += "^"
+    text = re.sub(r"([" + re.escape(special) + r"])", r"\\\1", text)
+
+    lines: list[str] = []
+    for line in text.split("\n"):
+        line = re.sub(r"^(\s*)([-+])(?=\s)", r"\1\\\2", line)
+        line = re.sub(r"^(\s*)(\d+)(\.)(?=\s)", r"\1\2\\.\3", line)
+        lines.append(line)
+    return "\n".join(lines)
+
+
+def wrap_pair(open_marker: str, close_marker: str, inner: str) -> str:
+    match = re.match(r"^(\s*)(.*?)(\s*)$", inner, re.S)
+    if not match:
+        return inner
+    lead, core, trail = match.groups()
+    if not core:
+        return inner
+    return f"{lead}{open_marker}{core}{close_marker}{trail}"
+
+
+def style_value(attrs: dict[str, str | None], name: str) -> str | None:
+    style = attrs.get("style") or ""
+    for declaration in style.split(";"):
+        if ":" not in declaration:
+            continue
+        key, value = declaration.split(":", 1)
+        if key.strip().lower() == name:
+            return value.strip().lower()
+    return None
+
+
+class Renderer:
+    def __init__(self, options: "Options") -> None:
+        self.options = options
+        self.converted: Counter[str] = Counter()
+        self.deferred: Counter[str] = Counter()
+        self.warnings: Counter[str] = Counter()
+
+    # -- entry points ------------------------------------------------------
+
+    def render_root(self, root: Node) -> str:
+        text = self.render_flow(root.children)
+        return normalize_output(text)
+
+    def render_flow(self, children: list[Node | str]) -> str:
+        parts: list[str] = []
+        buffer: list[str] = []
+
+        def flush() -> None:
+            raw = "".join(buffer)
+            if raw.strip():
+                parts.append(raw.strip())
+            buffer.clear()
+
+        for child in children:
+            if isinstance(child, str):
+                buffer.append(escape_text(child, self.options))
+                continue
+
+            tag = child.tag
+            if tag in BLOCK_TAGS:
+                flush()
+                block = self.render_block(child)
+                if block.strip():
+                    parts.append(block.strip("\n"))
+            elif tag in DEFERRED_TAGS and tag == "dl":
+                flush()
+                block = self.render_deferred_block(child)
+                if block.strip():
+                    parts.append(block.strip("\n"))
+            elif tag in DEFERRED_TAGS:
+                buffer.append(self.render_deferred_inline(child))
+            else:
+                buffer.append(self.render_inline(child))
+
+        flush()
+        return "\n\n".join(parts)
+
+    def render_inline_children(self, children: list[Node | str]) -> str:
+        output: list[str] = []
+        for child in children:
+            if isinstance(child, str):
+                output.append(escape_text(child, self.options))
+            elif child.tag in BLOCK_TAGS:
+                output.append(self.render_block(child))
+            elif child.tag in DEFERRED_TAGS and child.tag == "dl":
+                output.append(self.render_deferred_block(child))
+            elif child.tag in DEFERRED_TAGS:
+                output.append(self.render_deferred_inline(child))
+            else:
+                output.append(self.render_inline(child))
+        return "".join(output)
+
+    # -- blocks ------------------------------------------------------------
+
+    def render_block(self, node: Node) -> str:
+        tag = node.tag
+        if tag == "p":
+            return self.render_flow(node.children)
+        if tag in {"h1", "h2", "h3", "h4", "h5", "h6"}:
+            return self.render_deferred_block(node)
+        if tag == "hr":
+            return "---"
+        if tag in {"ul", "ol"}:
+            return self.render_list(node)
+        if tag == "table":
+            if self.options.tables == "keep":
+                self.warnings["table kept as HTML"] += 1
+                return self.render_raw_html(node)
+            return self.render_table(node)
+        if tag == "dl":
+            return self.render_deferred_block(node)
+        if tag == "ex":
+            return self.render_example(node)
+        if tag == "blockquote":
+            inner = self.render_flow(node.children).strip("\n")
+            return "\n".join(f"> {line}" if line else ">" for line in inner.split("\n"))
+        if tag == "div":
+            return self.render_flow(node.children)
+        return self.render_flow(node.children)
+
+    def render_deferred_block(self, node: Node) -> str:
+        self.deferred[node.tag] += 1
+        inner = self.render_flow(node.children)
+        closing = f"</{node.tag}>"
+        return f"{node.raw_start}{inner}{closing}"
+
+    def render_deferred_inline(self, node: Node) -> str:
+        self.deferred[node.tag] += 1
+        inner = self.render_inline_children(node.children)
+        closing = f"</{node.tag}>"
+        return f"{node.raw_start}{inner}{closing}"
+
+    def render_example(self, node: Node) -> str:
+        self.converted["ex"] += 1
+        inner = self.render_flow(node.children).strip("\n")
+        if "[ex]" in inner:
+            self.warnings["nested [ex]"] += 1
+        if self.options.ex == "tag":
+            self.warnings["<ex> kept as tag"] += 1
+            return f"<ex>{inner}</ex>"
+        if not inner:
+            return "[ex][/ex]"
+        return f"[ex]\n{inner}\n[/ex]"
+
+    def render_list(self, node: Node) -> str:
+        ordered = node.tag == "ol"
+        try:
+            start = int(node.attrs.get("start") or 1)
+        except (TypeError, ValueError):
+            start = 1
+        items = [child for child in node.children if isinstance(child, Node) and child.tag == "li"]
+        lines: list[str] = []
+        for offset, item in enumerate(items):
+            marker = f"{start + offset}. " if ordered else "- "
+            inner = self.render_flow(item.children).strip("\n")
+            if not inner:
+                lines.append(marker.rstrip())
+                continue
+            item_lines = inner.split("\n")
+            first = marker + item_lines[0]
+            continuation = " " * len(marker)
+            rest = [continuation + line if line else "" for line in item_lines[1:]]
+            lines.append("\n".join([first, *rest]))
+        return "\n".join(lines)
+
+    # -- tables ------------------------------------------------------------
+
+    def render_table(self, node: Node) -> str:
+        caption = ""
+        rows: list[Node] = []
+
+        for child in node.children:
+            if not isinstance(child, Node):
+                continue
+            if child.tag == "caption":
+                caption = self._cell_text(child)
+            elif child.tag == "tr":
+                rows.append(child)
+            elif child.tag in {"thead", "tbody", "tfoot"}:
+                for inner in child.children:
+                    if isinstance(inner, Node) and inner.tag == "tr":
+                        rows.append(inner)
+
+        if not rows:
+            return ""
+
+        table_rows: list[tuple[list[str], list[Node]]] = []
+        for row in rows:
+            cells = [
+                cell
+                for cell in row.children
+                if isinstance(cell, Node) and cell.tag in {"td", "th"}
+            ]
+            values: list[str] = []
+            for cell in cells:
+                values.append(self._cell_text(cell))
+                try:
+                    span = int(cell.attrs.get("colspan") or 1)
+                except (TypeError, ValueError):
+                    span = 1
+                values.extend([""] * max(0, span - 1))
+            table_rows.append((values, cells))
+
+        width = max((len(values) for values, _ in table_rows), default=0)
+        if width == 0:
+            return ""
+
+        first_values, first_cells = table_rows[0]
+        header = any(cell.tag == "th" for cell in first_cells) or any(
+            self._has_emphasis(cell) for cell in first_cells
+        )
+        if header:
+            header_values = first_values
+            data_rows = table_rows[1:]
+        else:
+            header_values = [""] * width
+            data_rows = table_rows
+
+        alignments = self._alignments(table_rows, width)
+        separator = []
+        for align in alignments:
+            if align == "center":
+                separator.append(":---:")
+            elif align == "right":
+                separator.append("---:")
+            else:
+                separator.append("---")
+
+        lines = [
+            self._table_line(header_values, width),
+            self._table_line(separator, width),
+        ]
+        for values, _ in data_rows:
+            lines.append(self._table_line(values, width))
+
+        table = "\n".join(lines)
+        if caption:
+            return f"**{caption}**\n\n{table}"
+        return table
+
+    def _cell_text(self, node: Node) -> str:
+        text = self.render_flow(node.children)
+        text = re.sub(r"\s*\n+\s*", " ", text)
+        return " ".join(text.split())
+
+    def _has_emphasis(self, node: Node) -> bool:
+        for child in node.children:
+            if isinstance(child, Node):
+                if child.tag in {"b", "u"}:
+                    return True
+                if self._has_emphasis(child):
+                    return True
+        return False
+
+    def _cell_align(self, cell: Node) -> str:
+        align = (cell.attrs.get("align") or "").strip().lower()
+        if not align:
+            align = (style_value(cell.attrs, "text-align") or "").strip().lower()
+        return align if align in {"center", "right"} else ""
+
+    def _alignments(self, table_rows: list[tuple[list[str], list[Node]]], width: int) -> list[str]:
+        output: list[str] = []
+        for column in range(width):
+            values: list[str] = []
+            for _, cells in table_rows:
+                if column >= len(cells):
+                    continue
+                align = self._cell_align(cells[column])
+                if align:
+                    values.append(align)
+            if not values:
+                output.append("")
+            elif values.count("center") > len(values) / 2:
+                output.append("center")
+            elif values.count("right") > len(values) / 2:
+                output.append("right")
+            else:
+                output.append("")
+        return output
+
+    def _table_line(self, values: list[str], width: int) -> str:
+        padded = list(values) + [""] * (width - len(values))
+        return "| " + " | ".join(padded) + " |"
+
+    # -- raw HTML fallback -------------------------------------------------
+
+    def render_raw_html(self, node: Node) -> str:
+        attrs = "".join(
+            f' {key}="{value}"' for key, value in node.attrs.items() if value is not None
+        )
+        if node.tag in VOID_TAGS:
+            return f"<{node.tag}{attrs}>"
+        inner = "".join(
+            escape_text(child, self.options)
+            if isinstance(child, str)
+            else self.render_raw_html(child)
+            for child in node.children
+        )
+        return f"<{node.tag}{attrs}>{inner}</{node.tag}>"
+
+    # -- inline ------------------------------------------------------------
+
+    def render_inline(self, node: Node) -> str:
+        tag = node.tag
+        if tag == "br":
+            return "\n"
+        if tag == "i":
+            return wrap_pair("_", "_", self.render_inline_children(node.children))
+        if tag == "b":
+            return wrap_pair("__", "__", self.render_inline_children(node.children))
+        if tag == "u":
+            self.converted["u"] += 1
+            return wrap_pair("[u]", "[/u]", self.render_inline_children(node.children))
+        if tag == "sup":
+            self.converted["sup"] += 1
+            return self._format_sup(self.plain_text(node.children))
+        if tag == "sub":
+            self.converted["sub"] += 1
+            text = self.plain_text(node.children)
+            return "".join(SUB_MAP.get(char, char) for char in text)
+        if tag == "span":
+            return self.render_span(node)
+        if tag == "a":
+            return self.render_deferred_inline(node)
+        if tag in {"dl"}:
+            return self.render_deferred_block(node)
+        if tag in DEFERRED_TAGS:
+            return self.render_deferred_inline(node)
+        if tag == "img":
+            return node.raw_start
+        if tag in BLOCK_TAGS:
+            return self.render_block(node)
+        return self.render_inline_children(node.children)
+
+    def render_span(self, node: Node) -> str:
+        inner = self.render_inline_children(node.children)
+        style = node.attrs.get("style") or ""
+
+        if "overline" in style.lower():
+            self.converted["overline"] += 1
+            return wrap_pair("[o]", "[/o]", inner)
+        if "line-through" in style.lower():
+            self.converted["line-through"] += 1
+            return wrap_pair("~~", "~~", inner)
+
+        color = style_value(node.attrs, "color")
+        if color:
+            name = color if color in COLOR_NAMES else COLOR_MAP.get(color)
+            if name:
+                self.converted["color"] += 1
+                return wrap_pair(f"[color:{name}]", "[/color]", inner)
+            if color not in {"#000000", "#00000"}:
+                self.warnings[f"unmapped color {color}"] += 1
+        return inner
+
+    def _format_sup(self, text: str) -> str:
+        text = text.strip()
+        if not text:
+            return ""
+        if self.options.sup == "unicode":
+            return "".join(SUP_MAP.get(char, char) for char in text)
+        if self.options.sup == "keep":
+            self.warnings["<sup> kept as tag"] += 1
+            return f"<sup>{text}</sup>"
+        escaped = text.replace("\\", "\\\\").replace("^", "\\^")
+        escaped = re.sub(r"([ \t\n])", r"\\\1", escaped)
+        return f"^{escaped}^"
+
+    def plain_text(self, children: list[Node | str]) -> str:
+        parts: list[str] = []
+        for child in children:
+            if isinstance(child, str):
+                parts.append(child)
+            elif child.tag == "br":
+                parts.append(" ")
+            else:
+                parts.append(self.plain_text(child.children))
+        return "".join(parts)
+
+
+def normalize_output(text: str) -> str:
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    lines = [line.rstrip() for line in text.split("\n")]
+    text = "\n".join(lines)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip("\n")
+
+
+# ---------------------------------------------------------------------------
+# JSON walking
+# ---------------------------------------------------------------------------
+
+
+class Options:
+    def __init__(self, sup: str, ex: str, tables: str) -> None:
+        self.sup = sup
+        self.ex = ex
+        self.tables = tables
+
+
+def convert_string(text: str, options: Options, stats: Stats) -> str:
+    stats.strings_seen += 1
+
+    if SUSPICIOUS_RE.search(text):
+        stats.warnings["suspicious <tag<"] += 1
+    if BAD_END_TAG_RE.search(text):
+        stats.warnings["end tag with attributes"] += 1
+    if not TAG_DETECT_RE.search(text):
+        return text
+
+    token_html = sum(
+        1 for match in TOKEN_RE.finditer(text) if re.search(r"<[^>]+>", match.group(0))
+    )
+    if token_html:
+        stats.warnings["html inside token normalized"] += token_html
+
+    protected, tokens = protect_tokens(text)
+    builder = TreeBuilder()
+    builder.feed(protected)
+    builder.close()
+    renderer = Renderer(options)
+    output = renderer.render_root(builder.root)
+    output = restore_tokens(output, tokens)
+
+    stats.converted.update(renderer.converted)
+    stats.deferred.update(renderer.deferred)
+    stats.warnings.update(builder.warnings)
+    stats.warnings.update(renderer.warnings)
+    if output != text:
+        stats.strings_changed += 1
+        for match in TAG_DETECT_RE.finditer(output):
+            name = re.match(r"</?\s*([a-zA-Z][a-zA-Z0-9]*)", match.group(0))
+            if name:
+                stats.remaining[name.group(1).lower()] += 1
+    return output
+
+
+def convert_value(value: Any, options: Options, stats: Stats) -> Any:
+    if isinstance(value, str):
+        return convert_string(value, options, stats)
+    if isinstance(value, list):
+        return [convert_value(item, options, stats) for item in value]
+    if isinstance(value, dict):
+        return {key: convert_value(item, options, stats) for key, item in value.items()}
+    return value
+
+
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+
+
+def output_path(path: str) -> str:
+    lower = path.lower()
+    if lower.endswith(".json"):
+        return path[:-5] + ".md.json"
+    return path + ".md.json"
+
+
+def format_counter(counter: Counter[str]) -> str:
+    return ", ".join(f"{key}={value}" for key, value in sorted(counter.items()))
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="de-html",
+        description="Convert HTML fragments inside JSON strings to Markdown.",
+    )
+    parser.add_argument("files", nargs="+", help="JSON files to convert")
+    parser.add_argument(
+        "--sup",
+        choices=("caret", "unicode", "keep"),
+        default="caret",
+        help="superscript style (default: caret, i.e. ^1^)",
+    )
+    parser.add_argument(
+        "--ex",
+        choices=("token", "tag"),
+        default="token",
+        help="example style (default: token, i.e. [ex]...[/ex])",
+    )
+    parser.add_argument(
+        "--tables",
+        choices=("pipe", "keep"),
+        default="pipe",
+        help="table style (default: pipe, i.e. GFM tables)",
+    )
+    parser.add_argument(
+        "--in-place",
+        action="store_true",
+        help="overwrite input files; a .bak copy is made on every run",
+    )
+    args = parser.parse_args(argv)
+
+    options = Options(sup=args.sup, ex=args.ex, tables=args.tables)
+    failed = False
+
+    for path in args.files:
+        if not os.path.isfile(path):
+            print(f"{path}: not a file", file=sys.stderr)
+            failed = True
+            continue
+
+        try:
+            data, sanitized = load_json(path)
+        except (OSError, json.JSONDecodeError) as error:
+            print(f"{path}: {error}", file=sys.stderr)
+            failed = True
+            continue
+
+        stats = Stats()
+        converted = convert_value(data, options, stats)
+
+        if args.in_place:
+            backup = path + ".bak"
+            shutil.copy2(path, backup)
+            destination = path
+        else:
+            destination = output_path(path)
+            if os.path.abspath(destination) == os.path.abspath(path):
+                print(f"{path}: refusing to overwrite input; use --in-place", file=sys.stderr)
+                failed = True
+                continue
+
+        with open(destination, "w", encoding="utf-8") as handle:
+            json.dump(converted, handle, ensure_ascii=False, indent=2)
+            handle.write("\n")
+
+        print(f"{path} -> {destination}")
+        if args.in_place:
+            print(f"  backup: {path}.bak")
+        if sanitized:
+            print("  note: input needed comment/trailing-comma sanitization")
+        print(f"  strings: {stats.strings_changed} changed / {stats.strings_seen} seen")
+        if stats.converted:
+            print(f"  converted: {format_counter(stats.converted)}")
+        if stats.deferred:
+            print(f"  deferred: {format_counter(stats.deferred)}")
+        if stats.remaining:
+            print(f"  remaining tags: {format_counter(stats.remaining)}")
+        if stats.warnings:
+            print(f"  warnings: {format_counter(stats.warnings)}")
+
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
