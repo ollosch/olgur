@@ -30,6 +30,7 @@ const isSpent = computed(() => totals.value.steps === 0)
           : 'border-border/80 bg-card/70 active:bg-muted/40'
     "
     :aria-pressed="selected"
+    :title="formation.name"
     :data-formation-id="formation.id"
     @click="emit('select')"
   >

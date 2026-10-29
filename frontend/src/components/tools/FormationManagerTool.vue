@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import {
   Download,
   FolderOpen,
@@ -24,6 +24,7 @@ const store = useFormationManagerStore()
 
 const newScenarioOpen = ref(false)
 const addFormationOpen = ref(false)
+const boardRef = ref<HTMLElement | null>(null)
 
 const sides: FormationSide[] = ['allies', 'germans']
 
@@ -58,6 +59,18 @@ async function exportCurrent(): Promise<void> {
 
 function selectSide(side: FormationSide): void {
   store.setActiveSide(side)
+}
+
+function closeDetail(): void {
+  const formationId = store.selectedFormationId
+  store.clearSelectedFormation()
+  if (!formationId) return
+  void nextTick(() => {
+    const tile = Array.from(
+      boardRef.value?.querySelectorAll<HTMLButtonElement>('button[data-formation-id]') ?? [],
+    ).find((element) => element.dataset.formationId === formationId)
+    tile?.focus()
+  })
 }
 
 function onVisibilityChange(): void {
@@ -205,6 +218,7 @@ onBeforeUnmount(() => {
 
           <div
             v-else
+            ref="boardRef"
             class="grid grid-cols-[repeat(auto-fill,minmax(148px,1fr))] gap-2"
           >
             <FormationTile
@@ -259,7 +273,7 @@ onBeforeUnmount(() => {
             :key="store.selectedFormation.id"
             :formation="store.selectedFormation"
             class="min-h-0 flex-1 overflow-y-auto"
-            @close="store.clearSelectedFormation()"
+            @close="closeDetail"
           />
         </div>
       </div>

@@ -62,11 +62,11 @@ function close(): void {
           Every {{ SIDE_LABELS[store.activeSide] }} formation is already in play.
         </p>
 
-        <div v-else class="space-y-1.5">
+        <div v-else class="grid gap-1.5 sm:grid-cols-2">
           <div
             v-for="formation in reserve"
             :key="formation.id"
-            class="flex items-center gap-3 rounded-md border border-border/60 bg-background/40 px-3 py-2"
+            class="flex min-h-16 items-center gap-3 rounded-md border border-border/60 bg-background/40 px-3 py-2"
           >
             <div class="min-w-0 flex-1">
               <div class="truncate text-sm font-medium text-foreground">{{ formation.name }}</div>
@@ -77,7 +77,7 @@ function close(): void {
             </div>
             <button
               type="button"
-              class="inline-flex h-11 items-center gap-1.5 rounded-md border border-primary/50 bg-primary/10 px-3 text-xs font-semibold text-primary transition-colors active:bg-primary/20"
+              class="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-md border border-primary/50 bg-primary/10 px-3 text-xs font-semibold text-primary transition-colors active:bg-primary/20"
               @click="add(formation.id)"
             >
               <Plus class="h-4 w-4" />
