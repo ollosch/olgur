@@ -9,10 +9,11 @@ import {
 } from '@/components/ui/dialog'
 import { formationTotals } from '@/lib/formations'
 import { useFormationManagerStore } from '@/stores/formationManager'
-import { SIDE_LABELS } from '@/types/formation'
+import { SIDE_LABELS, type FormationSide } from '@/types/formation'
 
-defineProps<{
+const props = defineProps<{
   open: boolean
+  side: FormationSide
 }>()
 
 const emit = defineEmits<{
@@ -21,7 +22,7 @@ const emit = defineEmits<{
 
 const store = useFormationManagerStore()
 
-const reserve = computed(() => store.sides[store.activeSide].reserve)
+const reserve = computed(() => store.sides[props.side].reserve)
 
 function add(id: string): void {
   store.addToPlay(id)
@@ -44,7 +45,7 @@ function close(): void {
             Add formations
           </DialogTitle>
           <DialogDescription class="text-xs text-muted-foreground">
-            Commit reserve formations to play. {{ SIDE_LABELS[store.activeSide] }}.
+            Commit reserve formations to play. {{ SIDE_LABELS[side] }}.
           </DialogDescription>
         </div>
         <button
@@ -59,7 +60,7 @@ function close(): void {
 
       <div class="min-h-0 flex-1 overflow-y-auto px-4 py-3">
         <p v-if="reserve.length === 0" class="py-8 text-center text-sm text-muted-foreground">
-          Every {{ SIDE_LABELS[store.activeSide] }} formation is already in play.
+          Every {{ SIDE_LABELS[side] }} formation is already in play.
         </p>
 
         <div v-else class="grid gap-1.5 sm:grid-cols-2">
