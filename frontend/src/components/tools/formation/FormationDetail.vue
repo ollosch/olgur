@@ -1,6 +1,17 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Crosshair, Minus, Plus, RotateCcw, Route, ShieldCheck, Skull, X } from '@lucide/vue'
+import {
+  ChevronRight,
+  Crosshair,
+  Link2,
+  Minus,
+  Plus,
+  RotateCcw,
+  Route,
+  ShieldCheck,
+  Skull,
+  X,
+} from '@lucide/vue'
 import SupportPickerDialog from '@/components/tools/formation/SupportPickerDialog.vue'
 import UnitStepRow from '@/components/tools/formation/UnitStepRow.vue'
 import ValuePickerDialog from '@/components/tools/formation/ValuePickerDialog.vue'
@@ -40,15 +51,20 @@ const artilleryOptions = Array.from({ length: ARTILLERY_MAX + 1 }, (_, value) =>
 }))
 
 const supportGroups = computed(() => {
-  const sameSide = (store.current?.formations ?? []).filter(
-    (formation) => formation.side === props.formation.side,
+  const aliveUnits = (formation: Formation): string[] =>
+    formation.units.filter((unit) => unit.steps > 0).map((unit) => unit.name)
+
+  const groups = [{ label: props.formation.name, units: aliveUnits(props.formation) }]
+  const independent = store.current?.formations.find(
+    (formation) =>
+      formation.side === props.formation.side &&
+      formation.name === 'Independent' &&
+      formation.id !== props.formation.id,
   )
-  return sameSide
-    .map((formation) => ({
-      label: formation.name,
-      units: formation.units.filter((unit) => !unit.dead).map((unit) => unit.name),
-    }))
-    .filter((group) => group.units.length > 0)
+  if (independent) {
+    groups.push({ label: independent.name, units: aliveUnits(independent) })
+  }
+  return groups.filter((group) => group.units.length > 0)
 })
 
 const fatigueIndex = computed(() => FATIGUE_LEVELS.indexOf(props.formation.fatigue))
@@ -84,21 +100,21 @@ function chooseArtillery(value: string): void {
     <header
       class="sticky top-0 z-10 shrink-0 border-b border-t-2 border-border/70 bg-gradient-to-b from-card/60 to-background/95 px-2 py-1.5 backdrop-blur"
     >
-      <div class="flex items-center gap-1.5 overflow-x-auto">
-        <div class="min-w-0 flex-1">
-          <h3 class="truncate text-[13px] font-bold leading-tight text-foreground">
-            {{ formation.name }}
-          </h3>
-          <p class="text-[9px] uppercase tracking-wide text-muted-foreground">
-            {{ STATUS_LABELS[formation.status] }} ·
-            <span class="tabular-nums">{{ totals.steps }} / {{ totals.startingSteps }}</span>
-            steps · HQ · Train
-          </p>
-        </div>
+      <div class="min-w-0">
+        <h3 class="truncate text-[13px] font-bold leading-tight text-foreground">
+          {{ formation.name }}
+        </h3>
+        <p class="text-[9px] uppercase tracking-wide text-muted-foreground">
+          {{ STATUS_LABELS[formation.status] }} ·
+          <span class="tabular-nums">{{ totals.steps }} / {{ totals.startingSteps }}</span>
+          steps
+        </p>
+      </div>
 
+      <div class="mt-1 flex items-center gap-1 overflow-x-auto">
         <button
           type="button"
-          class="flex h-8 shrink-0 items-center justify-center gap-1 rounded border px-1.5 text-[10px] font-bold uppercase tracking-wide transition-colors"
+          class="flex h-7 shrink-0 items-center justify-center gap-1 rounded border px-1.5 text-[10px] font-bold uppercase tracking-wide transition-colors"
           :class="
             formation.preparedDefense
               ? 'border-primary/60 bg-primary/20 text-primary'
@@ -109,13 +125,13 @@ function chooseArtillery(value: string): void {
           title="Prepared Defense"
           @click="store.togglePreparedDefense(formation.id)"
         >
-          <ShieldCheck class="h-3.5 w-3.5" />
+          <ShieldCheck class="h-3 w-3" />
           PD
         </button>
 
         <button
           type="button"
-          class="flex h-8 shrink-0 items-center justify-center gap-1 rounded border px-1.5 text-[10px] font-bold uppercase tracking-wide transition-colors"
+          class="flex h-7 shrink-0 items-center justify-center gap-1 rounded border px-1.5 text-[10px] font-bold uppercase tracking-wide transition-colors"
           :class="
             formation.completeMsr
               ? 'border-emerald-500/60 bg-emerald-500/15 text-emerald-400'
@@ -126,26 +142,26 @@ function chooseArtillery(value: string): void {
           title="Complete MSR"
           @click="store.toggleCompleteMsr(formation.id)"
         >
-          <Route class="h-3.5 w-3.5" />
+          <Route class="h-3 w-3" />
           MSR
         </button>
 
         <div
-          class="flex h-8 shrink-0 items-center rounded border border-border bg-secondary"
+          class="flex h-7 shrink-0 items-center rounded border border-border bg-secondary"
           title="Fatigue"
         >
           <button
             type="button"
-            class="flex h-full w-6 items-center justify-center text-muted-foreground transition-colors active:bg-muted disabled:opacity-30"
+            class="flex h-full w-5 items-center justify-center text-muted-foreground transition-colors active:bg-muted disabled:opacity-30"
             :disabled="!canDecreaseFatigue"
             aria-label="Reduce fatigue"
             @click="stepFatigue(-1)"
           >
-            <Minus class="h-3.5 w-3.5" />
+            <Minus class="h-3 w-3" />
           </button>
           <button
             type="button"
-            class="min-w-8 border-x border-border/70 px-1 text-center text-[11px] font-bold tabular-nums text-foreground transition-colors active:bg-muted"
+            class="min-w-7 border-x border-border/70 px-1 text-center text-[11px] font-bold tabular-nums text-foreground transition-colors active:bg-muted"
             aria-label="Choose fatigue"
             :title="fatigueLabel(formation.fatigue)"
             @click="fatiguePickerOpen = true"
@@ -154,31 +170,31 @@ function chooseArtillery(value: string): void {
           </button>
           <button
             type="button"
-            class="flex h-full w-6 items-center justify-center text-muted-foreground transition-colors active:bg-muted disabled:opacity-30"
+            class="flex h-full w-5 items-center justify-center text-muted-foreground transition-colors active:bg-muted disabled:opacity-30"
             :disabled="!canIncreaseFatigue"
             aria-label="Increase fatigue"
             @click="stepFatigue(1)"
           >
-            <Plus class="h-3.5 w-3.5" />
+            <Plus class="h-3 w-3" />
           </button>
         </div>
 
         <div
-          class="flex h-8 shrink-0 items-center rounded border border-border bg-secondary"
+          class="flex h-7 shrink-0 items-center rounded border border-border bg-secondary"
           title="Artillery points"
         >
           <button
             type="button"
-            class="flex h-full w-6 items-center justify-center text-muted-foreground transition-colors active:bg-muted disabled:opacity-30"
+            class="flex h-full w-5 items-center justify-center text-muted-foreground transition-colors active:bg-muted disabled:opacity-30"
             :disabled="formation.artilleryPoints <= 0"
             aria-label="Remove one artillery point"
             @click="store.adjustArtilleryPoints(formation.id, -1)"
           >
-            <Minus class="h-3.5 w-3.5" />
+            <Minus class="h-3 w-3" />
           </button>
           <button
             type="button"
-            class="flex min-w-8 items-center justify-center gap-0.5 border-x border-border/70 px-1 text-[11px] font-bold tabular-nums text-foreground transition-colors active:bg-muted"
+            class="flex min-w-7 items-center justify-center gap-0.5 border-x border-border/70 px-1 text-[11px] font-bold tabular-nums text-foreground transition-colors active:bg-muted"
             aria-label="Choose artillery points"
             :title="`Artillery points: ${formation.artilleryPoints}`"
             @click="artilleryPickerOpen = true"
@@ -188,22 +204,22 @@ function chooseArtillery(value: string): void {
           </button>
           <button
             type="button"
-            class="flex h-full w-6 items-center justify-center text-muted-foreground transition-colors active:bg-muted disabled:opacity-30"
+            class="flex h-full w-5 items-center justify-center text-muted-foreground transition-colors active:bg-muted disabled:opacity-30"
             :disabled="formation.artilleryPoints >= ARTILLERY_MAX"
             aria-label="Add one artillery point"
             @click="store.adjustArtilleryPoints(formation.id, 1)"
           >
-            <Plus class="h-3.5 w-3.5" />
+            <Plus class="h-3 w-3" />
           </button>
         </div>
 
         <button
           type="button"
-          class="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-border bg-secondary text-muted-foreground transition-colors active:bg-muted"
+          class="flex h-7 w-7 shrink-0 items-center justify-center rounded border border-border bg-secondary text-muted-foreground transition-colors active:bg-muted"
           aria-label="Close details"
           @click="emit('close')"
         >
-          <X class="h-4 w-4" />
+          <X class="h-3.5 w-3.5" />
         </button>
       </div>
     </header>
@@ -215,13 +231,17 @@ function chooseArtillery(value: string): void {
         </span>
         <button
           type="button"
-          class="min-w-0 flex-1 truncate rounded border border-border/70 bg-secondary px-2 py-1 text-left text-[11px] font-medium transition-colors active:bg-muted"
+          class="flex min-w-0 flex-1 items-center gap-1 rounded border border-border/70 bg-secondary px-2 py-1 text-left text-[11px] font-medium transition-colors active:bg-muted"
           :class="formation.support.trim() === '' ? 'text-muted-foreground' : 'text-foreground'"
           aria-label="Assigned support"
-          :title="formation.support || 'No support assigned'"
+          :title="formation.support || 'Assign support'"
           @click="supportPickerOpen = true"
         >
-          {{ formation.support.trim() === '' ? 'No support assigned' : formation.support }}
+          <Link2 class="h-3 w-3 shrink-0" />
+          <span class="truncate">
+            {{ formation.support.trim() === '' ? 'Assign support' : formation.support }}
+          </span>
+          <ChevronRight class="ml-auto h-3 w-3 shrink-0" />
         </button>
       </div>
 

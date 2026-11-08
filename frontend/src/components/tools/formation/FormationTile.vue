@@ -59,7 +59,7 @@ const isSpent = computed(() => totals.value.steps === 0)
         class="inline-flex items-center gap-0.5 rounded bg-primary/15 px-1 py-0.5 text-[9px] font-semibold text-primary"
       >
         <ShieldCheck class="h-2.5 w-2.5" />
-        Prep
+        PD
       </span>
       <span
         v-if="formation.completeMsr"
@@ -85,11 +85,6 @@ const isSpent = computed(() => totals.value.steps === 0)
         class="max-w-full truncate rounded bg-muted px-1 py-0.5 text-[9px] text-muted-foreground"
       >
         {{ formation.support }}
-      </span>
-      <span
-        class="ml-auto shrink-0 rounded bg-muted/40 px-1 py-0.5 text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/70"
-      >
-        HQ · Train
       </span>
     </span>
   </button>

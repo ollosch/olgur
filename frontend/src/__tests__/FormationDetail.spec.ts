@@ -82,23 +82,6 @@ describe('FormationDetail', () => {
     expect(formation.status).toBe('dead_pool')
   })
 
-  it('sends a single unit to the dead pool and rebuilds it', async () => {
-    const wrapper = mountDetail()
-    const store = useFormationManagerStore()
-    const formation = store.current?.formations[0]
-    const unit = formation?.units[0]
-    if (!formation || !unit) throw new Error('missing unit')
-
-    await wrapper.get('[aria-label="Send 2 Arm Cav Bn to Dead Pool"]').trigger('click')
-    expect(unit.dead).toBe(true)
-    expect(unit.steps).toBe(0)
-    expect(wrapper.text()).toContain('Dead')
-
-    await wrapper.get('[aria-label="Rebuild 2 Arm Cav Bn"]').trigger('click')
-    expect(unit.dead).toBe(false)
-    expect(unit.steps).toBe(4)
-  })
-
   it('assigns an independent unit as support and clears it', async () => {
     const wrapper = mountDetail()
     const store = useFormationManagerStore()

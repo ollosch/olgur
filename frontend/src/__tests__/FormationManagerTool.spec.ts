@@ -32,7 +32,7 @@ describe('FormationManagerTool', () => {
 
     wrapper.unmount()
   })
-  it('moves a formation with no living units into the dead pool', async () => {
+  it('moves a formation with no steps left into the dead pool', async () => {
     const store = useFormationManagerStore()
     const scenario = createScenario('Test', ['allies:2 Cav Grp'])
     store.current = scenario
@@ -41,14 +41,15 @@ describe('FormationManagerTool', () => {
     const formation = scenario.formations.find((entry) => entry.name === '2 Cav Grp')
     if (!formation) throw new Error('missing formation')
     for (const unit of formation.units) {
-      store.sendUnitToDeadPool(formation.id, unit.id)
+      store.setUnitSteps(formation.id, unit.id, 0)
     }
 
     const wrapper = mount(FormationManagerTool, { attachTo: document.body })
     await flushPromises()
 
     expect(wrapper.find(`button[data-formation-id="${formation.id}"]`).exists()).toBe(false)
-    expect(wrapper.text()).toContain('HQ + Train removed')
+    expect(wrapper.text()).toContain('2 Cav Grp')
+    expect(wrapper.text()).toContain('Dead Pool')
 
     wrapper.unmount()
   })

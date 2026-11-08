@@ -24,7 +24,7 @@ describe('FormationTile', () => {
 
     expect(wrapper.text()).toContain('2 Cav Grp')
     expect(wrapper.get('button').attributes('title')).toBe('2 Cav Grp')
-    expect(wrapper.text()).toContain('Prep')
+    expect(wrapper.text()).toContain('PD')
     expect(wrapper.text()).toContain('MSR')
     expect(wrapper.text()).toContain('Fat 2')
     expect(wrapper.text()).toContain('3')

@@ -305,10 +305,7 @@ export const useFormationManagerStore = defineStore('formationManager', () => {
     const formation = findFormation(id)
     if (formation && formationIsDestroyed(formation)) {
       for (const unit of formation.units) {
-        if (unit.dead) {
-          unit.dead = false
-          unit.steps = unit.startingSteps
-        }
+        unit.steps = unit.startingSteps
       }
     }
     setStatus(id, 'in_game')
@@ -317,10 +314,14 @@ export const useFormationManagerStore = defineStore('formationManager', () => {
   function setUnitSteps(formationId: string, unitId: string, value: number): void {
     const formation = findFormation(formationId)
     const unit = formation?.units.find((entry) => entry.id === unitId)
-    if (!unit || unit.dead) return
+    if (!formation || !unit) return
     const next = clampSteps(value)
     if (next === unit.steps) return
     unit.steps = next
+    if (formationIsDestroyed(formation)) {
+      setStatus(formation.id, 'dead_pool')
+      return
+    }
     touch()
   }
 
@@ -329,28 +330,6 @@ export const useFormationManagerStore = defineStore('formationManager', () => {
     const unit = formation?.units.find((entry) => entry.id === unitId)
     if (!unit) return
     setUnitSteps(formationId, unitId, unit.steps + delta)
-  }
-
-  function sendUnitToDeadPool(formationId: string, unitId: string): void {
-    const formation = findFormation(formationId)
-    const unit = formation?.units.find((entry) => entry.id === unitId)
-    if (!formation || !unit || unit.dead) return
-    unit.dead = true
-    unit.steps = 0
-    if (formationIsDestroyed(formation)) {
-      setStatus(formation.id, 'dead_pool')
-      return
-    }
-    touch()
-  }
-
-  function rebuildUnit(formationId: string, unitId: string): void {
-    const formation = findFormation(formationId)
-    const unit = formation?.units.find((entry) => entry.id === unitId)
-    if (!unit || !unit.dead) return
-    unit.dead = false
-    unit.steps = unit.startingSteps
-    touch()
   }
 
   function setPreparedDefense(id: string, value: boolean): void {
@@ -465,8 +444,6 @@ export const useFormationManagerStore = defineStore('formationManager', () => {
     rebuild,
     setUnitSteps,
     adjustUnitSteps,
-    sendUnitToDeadPool,
-    rebuildUnit,
     setPreparedDefense,
     setCompleteMsr,
     setSupport,

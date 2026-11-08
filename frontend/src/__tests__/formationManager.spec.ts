@@ -123,7 +123,7 @@ describe('formation manager store', () => {
     expect(formation.status).toBe('reserve')
   })
 
-  it('will not return a formation with no steps left to reserve', async () => {
+  it('keeps a spent formation in the dead pool', async () => {
     const store = await freshStore()
     await store.createNewScenario('Spent', ['allies:2 Cav Grp'])
     const formation = store.current?.formations.find((entry) => entry.name === '2 Cav Grp')
@@ -132,12 +132,13 @@ describe('formation manager store', () => {
     for (const unit of formation.units) {
       store.setUnitSteps(formation.id, unit.id, 0)
     }
+    expect(formation.status).toBe('dead_pool')
 
     store.returnToReserve(formation.id)
-    expect(formation.status).toBe('in_game')
+    expect(formation.status).toBe('dead_pool')
   })
 
-  it('sends single units to the dead pool and removes a destroyed formation', async () => {
+  it('moves a formation to the dead pool when every unit loses its steps', async () => {
     const store = await freshStore()
     await store.createNewScenario('Unit losses', ['allies:2 Cav Grp'])
     const formation = store.current?.formations.find((entry) => entry.name === '2 Cav Grp')
@@ -146,24 +147,19 @@ describe('formation manager store', () => {
     if (!firstUnit) throw new Error('missing unit')
 
     store.selectFormation(formation.id)
-    store.sendUnitToDeadPool(formation.id, firstUnit.id)
-    expect(firstUnit.dead).toBe(true)
+    store.setUnitSteps(formation.id, firstUnit.id, 0)
     expect(firstUnit.steps).toBe(0)
     expect(formation.status).toBe('in_game')
 
-    store.rebuildUnit(formation.id, firstUnit.id)
-    expect(firstUnit.dead).toBe(false)
-    expect(firstUnit.steps).toBe(firstUnit.startingSteps)
-
-    for (const unit of formation.units) {
-      store.sendUnitToDeadPool(formation.id, unit.id)
+    for (const unit of formation.units.slice(1)) {
+      store.setUnitSteps(formation.id, unit.id, 0)
     }
     expect(formation.status).toBe('dead_pool')
     expect(store.selectedFormationId).toBeNull()
 
     store.rebuild(formation.id)
     expect(formation.status).toBe('in_game')
-    expect(formation.units.every((unit) => !unit.dead)).toBe(true)
+    expect(formation.units.every((unit) => unit.steps === unit.startingSteps)).toBe(true)
   })
 
   it('exports, imports (with a new id on collision), and deletes scenarios', async () => {

@@ -62,7 +62,6 @@ describe('scenario files', () => {
     const formation = scenario.formations[0]
     if (!formation) throw new Error('missing formation')
     formation.units[0]!.steps = 0
-    formation.units[1]!.dead = true
     formation.units[1]!.steps = 0
     formation.fatigue = 3
     formation.support = '2/37 Arm Bn'

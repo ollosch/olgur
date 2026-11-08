@@ -63,7 +63,6 @@ function makeFormation(blueprint: FormationBlueprint, status: FormationStatus): 
       name: unit.name,
       startingSteps: unit.steps,
       steps: unit.steps,
-      dead: false,
     })),
     preparedDefense: false,
     completeMsr: false,
@@ -124,7 +123,7 @@ export function formationTotals(formation: Formation): StepTotals {
 }
 
 export function formationIsDestroyed(formation: Formation): boolean {
-  return formation.units.length > 0 && formation.units.every((unit) => unit.dead)
+  return formation.units.length > 0 && formation.units.every((unit) => unit.steps === 0)
 }
 
 export function totalsFor(formations: Formation[]): StepTotals {
@@ -207,7 +206,6 @@ function normalizeUnit(raw: unknown, formationIdValue: string, index: number): F
 
   const steps = nonNegativeInt(raw['steps'], 0)
   const startingSteps = nonNegativeInt(raw['startingSteps'], steps)
-  const dead = raw['dead'] === true
 
   return {
     id:
@@ -215,8 +213,7 @@ function normalizeUnit(raw: unknown, formationIdValue: string, index: number): F
       unitId(formationIdValue, index),
     name,
     startingSteps,
-    steps: dead ? 0 : clampSteps(steps),
-    dead,
+    steps: clampSteps(steps),
   }
 }
 
