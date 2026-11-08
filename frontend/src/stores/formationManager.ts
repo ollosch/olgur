@@ -8,6 +8,7 @@ import {
   formationIsDestroyed,
   formationTotals,
   formationsFor,
+  migrateScenarioSupport,
   newScenarioId,
   nowIso,
   parseScenarioFile,
@@ -168,7 +169,7 @@ export const useFormationManagerStore = defineStore('formationManager', () => {
     if (ready.value) return
     try {
       const stored = await idbGetAll<Scenario>('scenarios')
-      scenarios.value = sortScenarios(stored)
+      scenarios.value = sortScenarios(stored.map((scenario) => migrateScenarioSupport(scenario)))
       const lastId = await idbGet<string>('scenarioMeta', LAST_SCENARIO_KEY)
       if (lastId) {
         const found = scenarios.value.find((scenario) => scenario.id === lastId)
@@ -346,11 +347,31 @@ export const useFormationManagerStore = defineStore('formationManager', () => {
     touch()
   }
 
-  function setSupport(id: string, value: string): void {
+  function setSupport(id: string, value: string[]): void {
     const formation = findFormation(id)
-    if (!formation || formation.support === value) return
-    formation.support = value
+    if (!formation) return
+    const next = [...new Set(value.map((unit) => unit.trim()).filter((unit) => unit !== ''))]
+    if (
+      next.length === formation.support.length &&
+      next.every((unit, index) => unit === formation.support[index])
+    ) {
+      return
+    }
+    formation.support = next
     touch()
+  }
+
+  function toggleSupport(id: string, unit: string): void {
+    const formation = findFormation(id)
+    if (!formation) return
+    const next = formation.support.includes(unit)
+      ? formation.support.filter((entry) => entry !== unit)
+      : [...formation.support, unit]
+    setSupport(id, next)
+  }
+
+  function clearSupport(id: string): void {
+    setSupport(id, [])
   }
 
   function setArtilleryPoints(id: string, value: number): void {
@@ -447,6 +468,8 @@ export const useFormationManagerStore = defineStore('formationManager', () => {
     setPreparedDefense,
     setCompleteMsr,
     setSupport,
+    toggleSupport,
+    clearSupport,
     setArtilleryPoints,
     adjustArtilleryPoints,
     setFatigue,

@@ -50,9 +50,14 @@ describe('FormationDetail', () => {
 
     await wrapper.get('[aria-label="Assigned support"]').trigger('click')
     await flushPromises()
-    document.querySelector<HTMLButtonElement>('[aria-label="Select support 2 Arm Cav Bn"]')?.click()
+    document.querySelector<HTMLButtonElement>('[aria-label="Toggle support 2 Arm Cav Bn"]')?.click()
     await flushPromises()
-    expect(store.current?.formations[0]?.support).toBe('2 Arm Cav Bn')
+    document.querySelector<HTMLButtonElement>('[aria-label="Toggle support 2/320 Inf Bn"]')?.click()
+    await flushPromises()
+    document.querySelector<HTMLButtonElement>('[aria-label="Done assigning support"]')?.click()
+    await flushPromises()
+    expect(store.current?.formations[0]?.support).toEqual(['2 Arm Cav Bn', '2/320 Inf Bn'])
+    expect(wrapper.findAll('[data-support-dots]')).toHaveLength(2)
 
     await wrapper.get('[aria-label="Prepared Defense"]').trigger('click')
     expect(store.current?.formations[0]?.preparedDefense).toBe(true)
@@ -88,15 +93,17 @@ describe('FormationDetail', () => {
 
     await wrapper.get('[aria-label="Assigned support"]').trigger('click')
     await flushPromises()
-    document.querySelector<HTMLButtonElement>('[aria-label="Select support 2/320 Inf Bn"]')?.click()
+    document.querySelector<HTMLButtonElement>('[aria-label="Toggle support 2/320 Inf Bn"]')?.click()
     await flushPromises()
-    expect(store.current?.formations[0]?.support).toBe('2/320 Inf Bn')
+    document.querySelector<HTMLButtonElement>('[aria-label="Done assigning support"]')?.click()
+    await flushPromises()
+    expect(store.current?.formations[0]?.support).toEqual(['2/320 Inf Bn'])
 
     await wrapper.get('[aria-label="Assigned support"]').trigger('click')
     await flushPromises()
     document.querySelector<HTMLButtonElement>('[aria-label="Clear support"]')?.click()
     await flushPromises()
-    expect(store.current?.formations[0]?.support).toBe('')
+    expect(store.current?.formations[0]?.support).toEqual([])
   })
 
   it('chooses fatigue and artillery points from popup pickers', async () => {

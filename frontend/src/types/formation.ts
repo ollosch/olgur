@@ -28,7 +28,7 @@ export interface Formation {
   units: FormationUnit[]
   preparedDefense: boolean
   completeMsr: boolean
-  support: string
+  support: string[]
   artilleryPoints: number
   fatigue: FatigueLevel
 }

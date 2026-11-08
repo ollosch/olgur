@@ -2,7 +2,8 @@
 import { computed } from 'vue'
 import { Crosshair, ShieldCheck } from '@lucide/vue'
 import StepBar from '@/components/tools/formation/StepBar.vue'
-import { formationTotals } from '@/lib/formations'
+import { formationTotals, resolveSupportUnits } from '@/lib/formations'
+import { useFormationManagerStore } from '@/stores/formationManager'
 import type { Formation } from '@/types/formation'
 
 const props = defineProps<{
@@ -14,8 +15,18 @@ const emit = defineEmits<{
   select: []
 }>()
 
+const store = useFormationManagerStore()
 const totals = computed(() => formationTotals(props.formation))
 const isSpent = computed(() => totals.value.steps === 0)
+const unitSegments = computed(() =>
+  props.formation.units.map((unit) => ({
+    steps: unit.steps,
+    startingSteps: unit.startingSteps,
+  })),
+)
+const supportUnits = computed(() =>
+  resolveSupportUnits(props.formation, store.current?.formations ?? []),
+)
 </script>
 
 <template>
@@ -51,7 +62,12 @@ const isSpent = computed(() => totals.value.steps === 0)
       </span>
     </span>
 
-    <StepBar :steps="totals.steps" :starting-steps="totals.startingSteps" compact />
+    <StepBar
+      :steps="totals.steps"
+      :starting-steps="totals.startingSteps"
+      :segments="unitSegments"
+      compact
+    />
 
     <span class="flex min-h-3.5 flex-wrap items-center gap-1 overflow-hidden">
       <span
@@ -68,10 +84,14 @@ const isSpent = computed(() => totals.value.steps === 0)
         MSR
       </span>
       <span
-        v-if="formation.fatigue !== 'fresh'"
-        class="inline-flex items-center rounded bg-amber-500/15 px-1 py-0.5 text-[9px] font-semibold text-amber-400"
+        class="inline-flex items-center rounded px-1 py-0.5 text-[9px] font-semibold"
+        :class="
+          formation.fatigue === 'fresh'
+            ? 'bg-emerald-500/15 text-emerald-400'
+            : 'bg-amber-500/15 text-amber-400'
+        "
       >
-        Fat {{ formation.fatigue }}
+        {{ formation.fatigue === 'fresh' ? 'Fresh' : `Fat ${formation.fatigue}` }}
       </span>
       <span
         v-if="formation.artilleryPoints > 0"
@@ -81,10 +101,14 @@ const isSpent = computed(() => totals.value.steps === 0)
         {{ formation.artilleryPoints }}
       </span>
       <span
-        v-if="formation.support.trim() !== ''"
-        class="max-w-full truncate rounded bg-muted px-1 py-0.5 text-[9px] text-muted-foreground"
+        v-for="unit in supportUnits"
+        :key="unit.name"
+        class="flex w-full min-w-0 items-center gap-1 rounded bg-muted px-1 py-0.5 text-[9px] text-muted-foreground"
       >
-        {{ formation.support }}
+        <span class="truncate">{{ unit.name }}</span>
+        <span v-if="unit.steps !== null" class="ml-auto w-10 shrink-0" data-support-dots>
+          <StepBar :steps="unit.steps" :starting-steps="unit.startingSteps ?? unit.steps" compact />
+        </span>
       </span>
     </span>
   </button>

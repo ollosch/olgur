@@ -45,7 +45,7 @@ describe('formation manager store', () => {
 
     store.adjustUnitSteps(formation.id, unit.id, -2)
     store.setFatigue(formation.id, 2)
-    store.setSupport(formation.id, '2/37 Arm Bn')
+    store.setSupport(formation.id, ['2/37 Arm Bn', '2/320 Inf Bn'])
     store.setArtilleryPoints(formation.id, 3)
     store.togglePreparedDefense(formation.id)
     store.toggleCompleteMsr(formation.id)
@@ -56,7 +56,7 @@ describe('formation manager store', () => {
     const restored = reloaded.current?.formations.find((entry) => entry.name === '2 Cav Grp')
     expect(restored?.units[0]?.steps).toBe(2)
     expect(restored?.fatigue).toBe(2)
-    expect(restored?.support).toBe('2/37 Arm Bn')
+    expect(restored?.support).toEqual(['2/37 Arm Bn', '2/320 Inf Bn'])
     expect(restored?.artilleryPoints).toBe(3)
     expect(restored?.preparedDefense).toBe(true)
     expect(restored?.completeMsr).toBe(true)
@@ -196,7 +196,7 @@ describe('formation manager store', () => {
     await store.openScenario(firstId)
     const formation = store.current?.formations[0]
     if (!formation) throw new Error('missing formation')
-    store.setSupport(formation.id, 'changed')
+    store.setSupport(formation.id, ['changed'])
     await store.flushSave()
 
     expect(store.scenarios[0]?.id).toBe(firstId)

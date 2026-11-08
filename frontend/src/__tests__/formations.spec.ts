@@ -5,6 +5,7 @@ import {
   cloneScenario,
   createScenario,
   formationId,
+  migrateScenarioSupport,
   formationsForSide,
   parseScenarioFile,
   serializeScenario,
@@ -64,7 +65,7 @@ describe('scenario files', () => {
     formation.units[0]!.steps = 0
     formation.units[1]!.steps = 0
     formation.fatigue = 3
-    formation.support = '2/37 Arm Bn'
+    formation.support = ['2/37 Arm Bn', '2/320 Inf Bn']
     formation.artilleryPoints = 4
     formation.preparedDefense = true
     formation.completeMsr = true
@@ -151,6 +152,16 @@ describe('scenario files', () => {
     expect(formation.fatigue).toBe('fresh')
     expect(formation.units[0]?.steps).toBe(0)
     expect(formation.units[0]?.startingSteps).toBe(4)
+  })
+
+  it('upgrades a legacy single-string support value to a list', () => {
+    const scenario = createScenario('Legacy', ['allies:2 Cav Grp'], NOW)
+    const formation = scenario.formations[0]
+    if (!formation) throw new Error('missing formation')
+    ;(formation as unknown as { support: string }).support = '2/37 Arm Bn'
+
+    const migrated = migrateScenarioSupport(scenario)
+    expect(migrated.formations[0]?.support).toEqual(['2/37 Arm Bn'])
   })
 
   it('clones without sharing nested state', () => {

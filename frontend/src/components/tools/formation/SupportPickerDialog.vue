@@ -7,19 +7,24 @@ export interface SupportGroup {
   units: string[]
 }
 
-defineProps<{
+const props = defineProps<{
   open: boolean
   groups: SupportGroup[]
-  selected: string
+  selected: string[]
 }>()
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
-  select: [value: string]
+  toggle: [value: string]
+  clear: []
 }>()
 
-function choose(value: string): void {
-  emit('select', value)
+function isSelected(unit: string): boolean {
+  return props.selected.includes(unit)
+}
+
+function clear(): void {
+  emit('clear')
   emit('update:open', false)
 }
 </script>
@@ -36,7 +41,7 @@ function choose(value: string): void {
             Assign support
           </DialogTitle>
           <DialogDescription class="text-[10px] text-muted-foreground">
-            Pick a unit from this side or an independent unit.
+            Pick one or more of this formation's units or independent units.
           </DialogDescription>
         </div>
         <button
@@ -61,14 +66,14 @@ function choose(value: string): void {
               type="button"
               class="truncate rounded border px-2 py-1.5 text-left text-[11px] font-medium transition-colors"
               :class="
-                selected === unit
+                isSelected(unit)
                   ? 'border-primary/70 bg-primary/20 text-primary'
                   : 'border-border bg-secondary text-foreground active:bg-muted'
               "
-              :aria-pressed="selected === unit"
-              :aria-label="`Select support ${unit}`"
+              :aria-pressed="isSelected(unit)"
+              :aria-label="`Toggle support ${unit}`"
               :title="unit"
-              @click="choose(unit)"
+              @click="emit('toggle', unit)"
             >
               {{ unit }}
             </button>
@@ -76,14 +81,22 @@ function choose(value: string): void {
         </section>
       </div>
 
-      <div class="shrink-0 border-t border-border/70 px-3 py-2">
+      <div class="flex shrink-0 items-center gap-2 border-t border-border/70 px-3 py-2">
         <button
           type="button"
-          class="inline-flex h-8 w-full items-center justify-center rounded border border-border bg-secondary text-[10px] font-semibold text-muted-foreground transition-colors active:bg-muted"
+          class="inline-flex h-8 flex-1 items-center justify-center rounded border border-border bg-secondary text-[10px] font-semibold text-muted-foreground transition-colors active:bg-muted"
           aria-label="Clear support"
-          @click="choose('')"
+          @click="clear"
         >
           Clear support
+        </button>
+        <button
+          type="button"
+          class="inline-flex h-8 flex-1 items-center justify-center rounded bg-primary text-[10px] font-semibold text-primary-foreground transition-opacity"
+          aria-label="Done assigning support"
+          @click="emit('update:open', false)"
+        >
+          Done
         </button>
       </div>
     </DialogContent>

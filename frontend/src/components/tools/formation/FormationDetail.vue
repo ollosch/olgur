@@ -12,9 +12,11 @@ import {
   Skull,
   X,
 } from '@lucide/vue'
+import StepBar from '@/components/tools/formation/StepBar.vue'
 import SupportPickerDialog from '@/components/tools/formation/SupportPickerDialog.vue'
 import UnitStepRow from '@/components/tools/formation/UnitStepRow.vue'
 import ValuePickerDialog from '@/components/tools/formation/ValuePickerDialog.vue'
+import { resolveSupportUnits } from '@/lib/formations'
 import { useFormationManagerStore } from '@/stores/formationManager'
 import {
   ARTILLERY_MAX,
@@ -49,6 +51,10 @@ const artilleryOptions = Array.from({ length: ARTILLERY_MAX + 1 }, (_, value) =>
   value: String(value),
   label: String(value),
 }))
+
+const supportUnits = computed(() =>
+  resolveSupportUnits(props.formation, store.current?.formations ?? []),
+)
 
 const supportGroups = computed(() => {
   const aliveUnits = (formation: Formation): string[] =>
@@ -225,24 +231,40 @@ function chooseArtillery(value: string): void {
     </header>
 
     <div class="min-h-0 flex-1 overflow-y-auto px-2.5 pb-3">
-      <div class="flex items-center gap-2 border-b border-border/60 py-1.5">
-        <span class="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
-          Support
-        </span>
-        <button
-          type="button"
-          class="flex min-w-0 flex-1 items-center gap-1 rounded border border-border/70 bg-secondary px-2 py-1 text-left text-[11px] font-medium transition-colors active:bg-muted"
-          :class="formation.support.trim() === '' ? 'text-muted-foreground' : 'text-foreground'"
-          aria-label="Assigned support"
-          :title="formation.support || 'Assign support'"
-          @click="supportPickerOpen = true"
-        >
-          <Link2 class="h-3 w-3 shrink-0" />
-          <span class="truncate">
-            {{ formation.support.trim() === '' ? 'Assign support' : formation.support }}
+      <div class="border-b border-border/60 py-1.5">
+        <div class="flex items-center gap-2">
+          <span class="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Support
           </span>
-          <ChevronRight class="ml-auto h-3 w-3 shrink-0" />
-        </button>
+          <button
+            type="button"
+            class="ml-auto inline-flex items-center gap-1 rounded px-1 py-0.5 text-[10px] font-semibold text-primary transition-colors active:bg-muted"
+            aria-label="Assigned support"
+            :title="formation.support.length > 0 ? 'Edit support' : 'Assign support'"
+            @click="supportPickerOpen = true"
+          >
+            <Link2 class="h-3 w-3 shrink-0" />
+            {{ formation.support.length > 0 ? 'Edit' : 'Assign support' }}
+            <ChevronRight class="h-3 w-3 shrink-0" />
+          </button>
+        </div>
+        <div v-if="supportUnits.length > 0" class="mt-1 space-y-1">
+          <div
+            v-for="unit in supportUnits"
+            :key="unit.name"
+            class="flex items-center gap-2 rounded bg-muted/60 px-1.5 py-0.5"
+          >
+            <span class="truncate text-[10px] font-medium text-foreground">{{ unit.name }}</span>
+            <span v-if="unit.steps !== null" class="ml-auto w-12 shrink-0" data-support-dots>
+              <StepBar
+                :steps="unit.steps"
+                :starting-steps="unit.startingSteps ?? unit.steps"
+                compact
+              />
+            </span>
+          </div>
+        </div>
+        <p v-else class="mt-0.5 text-[10px] text-muted-foreground">No support assigned</p>
       </div>
 
       <div class="mt-2">
@@ -291,7 +313,8 @@ function chooseArtillery(value: string): void {
       v-model:open="supportPickerOpen"
       :groups="supportGroups"
       :selected="formation.support"
-      @select="store.setSupport(formation.id, $event)"
+      @toggle="store.toggleSupport(formation.id, $event)"
+      @clear="store.clearSupport(formation.id)"
     />
     <ValuePickerDialog
       v-model:open="fatiguePickerOpen"

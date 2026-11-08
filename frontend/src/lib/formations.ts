@@ -66,7 +66,7 @@ function makeFormation(blueprint: FormationBlueprint, status: FormationStatus): 
     })),
     preparedDefense: false,
     completeMsr: false,
-    support: '',
+    support: [],
     artilleryPoints: 0,
     fatigue: 'fresh',
   }
@@ -112,6 +112,15 @@ export function cloneScenario(scenario: Scenario): Scenario {
   return JSON.parse(JSON.stringify(scenario)) as Scenario
 }
 
+/** Repair scenarios saved by earlier builds that stored a single support string. */
+export function migrateScenarioSupport(scenario: Scenario): Scenario {
+  const copy = cloneScenario(scenario)
+  for (const formation of copy.formations) {
+    formation.support = normalizeSupportValue(formation.support as unknown)
+  }
+  return copy
+}
+
 export function formationTotals(formation: Formation): StepTotals {
   return formation.units.reduce(
     (totals, unit) => ({
@@ -120,6 +129,29 @@ export function formationTotals(formation: Formation): StepTotals {
     }),
     { steps: 0, startingSteps: 0 },
   )
+}
+
+export interface SupportUnitView {
+  name: string
+  steps: number | null
+  startingSteps: number | null
+}
+
+export function resolveSupportUnits(
+  formation: Formation,
+  allFormations: Formation[],
+): SupportUnitView[] {
+  const independent = allFormations.find(
+    (entry) =>
+      entry.side === formation.side && entry.name === 'Independent' && entry.id !== formation.id,
+  )
+
+  return formation.support.map((name) => {
+    const unit =
+      formation.units.find((entry) => entry.name === name) ??
+      independent?.units.find((entry) => entry.name === name)
+    return { name, steps: unit?.steps ?? null, startingSteps: unit?.startingSteps ?? null }
+  })
 }
 
 export function formationIsDestroyed(formation: Formation): boolean {
@@ -217,6 +249,20 @@ function normalizeUnit(raw: unknown, formationIdValue: string, index: number): F
   }
 }
 
+export function normalizeSupportValue(value: unknown): string[] {
+  const values = Array.isArray(value) ? value : typeof value === 'string' ? [value] : []
+  const seen = new Set<string>()
+  const support: string[] = []
+  for (const entry of values) {
+    if (typeof entry !== 'string') continue
+    const unit = entry.trim()
+    if (unit === '' || seen.has(unit)) continue
+    seen.add(unit)
+    support.push(unit)
+  }
+  return support
+}
+
 function normalizeFormation(raw: unknown, index: number): Formation {
   if (!isRecord(raw)) {
     throw new ScenarioImportError(`Formation ${index + 1} is invalid.`)
@@ -246,7 +292,7 @@ function normalizeFormation(raw: unknown, index: number): Formation {
     units: unitsRaw.map((unit, unitIndex) => normalizeUnit(unit, id, unitIndex)),
     preparedDefense: raw['preparedDefense'] === true,
     completeMsr: raw['completeMsr'] === true,
-    support: stringOr(raw['support'], ''),
+    support: normalizeSupportValue(raw['support']),
     artilleryPoints: Math.min(nonNegativeInt(raw['artilleryPoints'], 0), ARTILLERY_MAX),
     fatigue: isFatigue(raw['fatigue']) ? raw['fatigue'] : 'fresh',
   }

@@ -1,22 +1,30 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import FormationTile from '@/components/tools/formation/FormationTile.vue'
 import { createScenario } from '@/lib/formations'
+import { useFormationManagerStore } from '@/stores/formationManager'
 import type { Formation } from '@/types/formation'
 
 function makeFormation(): Formation {
   const scenario = createScenario('Test', ['allies:2 Cav Grp'])
+  const store = useFormationManagerStore()
+  store.current = scenario
   const formation = scenario.formations.find((entry) => entry.name === '2 Cav Grp')
   if (!formation) throw new Error('missing formation')
   formation.preparedDefense = true
   formation.completeMsr = true
   formation.fatigue = 2
   formation.artilleryPoints = 3
-  formation.support = '2/37 Arm Bn'
+  formation.support = ['2 Arm Cav Bn', '2/320 Inf Bn']
   return formation
 }
 
 describe('FormationTile', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('shows the compact summary and status chips', () => {
     const wrapper = mount(FormationTile, {
       props: { formation: makeFormation(), selected: false },
@@ -28,7 +36,9 @@ describe('FormationTile', () => {
     expect(wrapper.text()).toContain('MSR')
     expect(wrapper.text()).toContain('Fat 2')
     expect(wrapper.text()).toContain('3')
-    expect(wrapper.text()).toContain('2/37 Arm Bn')
+    expect(wrapper.text()).toContain('2 Arm Cav Bn')
+    expect(wrapper.text()).toContain('2/320 Inf Bn')
+    expect(wrapper.findAll('[data-support-dots]')).toHaveLength(2)
     expect(wrapper.get('[role="img"]').attributes('aria-label')).toContain('8 of 8')
   })
 
@@ -52,18 +62,18 @@ describe('FormationTile', () => {
     expect(wrapper.emitted('select')).toHaveLength(1)
   })
 
-  it('hides the fatigue chip when fresh and the no-steps badge while healthy', () => {
+  it('shows a Fresh pill and the no-steps badge while healthy', () => {
     const formation = makeFormation()
     formation.fatigue = 'fresh'
     formation.preparedDefense = false
     formation.artilleryPoints = 0
-    formation.support = ''
+    formation.support = []
 
     const wrapper = mount(FormationTile, {
       props: { formation, selected: false },
     })
 
-    expect(wrapper.text()).not.toContain('Fat')
+    expect(wrapper.text()).toContain('Fresh')
     expect(wrapper.text()).not.toContain('No steps')
   })
 })
