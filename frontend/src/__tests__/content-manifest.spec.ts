@@ -566,6 +566,82 @@ describe('useContentStore — manifest & content routing', () => {
       await contentStore.refreshContent('sys1')
       expect(liveRuleCalls()).toBe(2)
     })
+
+    it('caches released content across a Release/Draft toggle', async () => {
+      seedModules({ mod1: { 'content.view_live': true, 'content.view_released': true } })
+      useOnline().online.value = true
+      const contentStore = useContentStore()
+      const entry = makeManifestEntry('mod1')
+      contentStore.manifestByModule['mod1'] = entry
+
+      mockGet.mockResolvedValue({ ok: true, data: { data: [makeRule('live-1')] } })
+      mockRequest.mockResolvedValue([makeRule('release-1')])
+
+      const releaseRuleCalls = (): number =>
+        mockRequest.mock.calls.filter(([request]) => request?.url === entry.content.rules).length
+
+      await contentStore.fetchRules('sys1', 'mod1')
+      await contentStore.switchViewMode('release')
+      expect(releaseRuleCalls()).toBe(1)
+      expect(contentStore.rulesByModule['mod1']?.[0]?.id).toBe('release-1')
+
+      await contentStore.switchViewMode('draft')
+      await contentStore.switchViewMode('release')
+
+      expect(releaseRuleCalls()).toBe(1)
+      expect(contentStore.rulesByModule['mod1']?.[0]?.id).toBe('release-1')
+    })
+
+    it('refetches released content when the manifest version changes', async () => {
+      seedModules({ mod1: { 'content.view_live': true, 'content.view_released': true } })
+      useOnline().online.value = true
+      const contentStore = useContentStore()
+      const entry = makeManifestEntry('mod1')
+      contentStore.manifestByModule['mod1'] = entry
+
+      mockGet.mockResolvedValue({ ok: true, data: { data: [makeRule('live-1')] } })
+      mockRequest.mockResolvedValue([makeRule('release-1')])
+
+      const releaseRuleCalls = (): number =>
+        mockRequest.mock.calls.filter(([request]) => request?.url === entry.content.rules).length
+
+      await contentStore.fetchRules('sys1', 'mod1')
+      await contentStore.switchViewMode('release')
+      await contentStore.switchViewMode('draft')
+      expect(releaseRuleCalls()).toBe(1)
+
+      contentStore.manifestByModule['mod1'] = { ...entry, version_id: 'v2', revision: 1 }
+      await contentStore.switchViewMode('release')
+
+      expect(releaseRuleCalls()).toBe(2)
+    })
+
+    it('re-resolves an open rule by number when source ids differ', async () => {
+      seedModules({ mod1: { 'content.view_live': true, 'content.view_released': true } })
+      useOnline().online.value = true
+      const contentStore = useContentStore()
+      contentStore.manifestByModule['mod1'] = makeManifestEntry('mod1')
+
+      mockGet.mockResolvedValue({
+        ok: true,
+        data: { data: [{ ...makeRule('live-1'), number: '1.1' }] },
+      })
+      mockRequest.mockResolvedValue([{ ...makeRule('snap-1'), number: '1.1' }])
+
+      await contentStore.fetchRules('sys1', 'mod1')
+      const openRule = contentStore.rulesById.get('live-1')
+      expect(openRule).toBeDefined()
+
+      await contentStore.switchViewMode('release')
+
+      expect(contentStore.rulesById.has('live-1')).toBe(false)
+      expect(contentStore.rulesById.has('snap-1')).toBe(true)
+      expect(
+        contentStore.resolveRuleReference(openRule!.number, {
+          moduleId: openRule!.module_id,
+        })?.id,
+      ).toBe('snap-1')
+    })
   })
 
   // ── releaseViewEmpty ─────────────────────────────────────────────────────────

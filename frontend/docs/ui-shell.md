@@ -75,7 +75,7 @@ Component: `frontend/src/components/systems/SystemHeader.vue`
 - Inline tools (icon + `tool.id`) with a More-tools overflow, derived from `gameDataTools()`.
 - Inline pinned-table bookmarks with a More-bookmarks overflow.
 - System ▾ — active module (when >1 non-core), "Make available offline" toggle (`PinSystemControl`), exit system, manage members, broken links, proofread, profile, settings, logout.
-- Right side: Draft/Release tabs, only when `canSwitchView && !offline`.
+- Right side: Draft/Release tabs, only when `canSwitchView && !offline`. Switching sources keeps the open rule by re-resolving its number when snapshot and live ids differ.
 
 ### Full-Screen Modals
 

@@ -80,7 +80,7 @@ When a system is opened:
 While inside a system:
 
 - Opening a rule records it in `historyStore`, tagged with the content source (`draft` or `release`) it was read from.
-- Live draft content is fetched once per system session and cached in the content store, so toggling Draft/Release does not re-request it. Reconnect or leaving the system clears the cache.
+- Live draft and released content are cached per system session, so toggling Draft/Release does not re-request them. Released entries are invalidated when the manifest version/revision changes; reconnect or leaving the system clears both caches.
 - The selected rule drives left-panel highlighting and focus behavior.
 
 ## Content Tiers And Offline Caching

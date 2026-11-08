@@ -278,6 +278,9 @@ watch(ruleId, () => {
     </div>
 
     <!-- Rule not found -->
+    <div v-else-if="contentStore.viewSwitching" class="text-muted-foreground text-sm">
+      Loading rule…
+    </div>
     <div v-else class="text-muted-foreground text-sm">Rule not found.</div>
   </div>
 </template>

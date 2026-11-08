@@ -50,7 +50,7 @@ interface Props {
   buildTopLevelRules: (rules: Rule[]) => Rule[]
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 const emit = defineEmits<{
   select: [rule: Rule]
   toggleModule: [id: string]
@@ -149,8 +149,32 @@ function openTableBookmark(tableId: string): void {
   gameDataModalStore.selectTable(tableId)
 }
 
-function onViewModeChange(value: string | number): void {
-  void contentStore.switchViewMode(String(value) as 'draft' | 'release')
+async function onViewModeChange(value: string | number): Promise<void> {
+  const previousRule = props.selectedRule
+  const mode = String(value) as 'draft' | 'release'
+  if (contentStore.viewMode === mode) return
+
+  await contentStore.switchViewMode(mode)
+
+  // A newer toggle may have superseded this one while it was loading.
+  if (contentStore.viewMode !== mode) return
+
+  // Released snapshots may not carry the live rule id (older data), so the
+  // same rule can have a different ULID in the other source. Re-resolve the
+  // open rule by its stable rule number and update the route.
+  if (!previousRule || contentStore.rulesById.has(previousRule.id)) return
+
+  const match = contentStore.resolveRuleReference(previousRule.number, {
+    moduleId: previousRule.module_id,
+  })
+  const systemId = systemStore.currentSystem?.id
+  if (!match || !systemId) return
+
+  void router.replace({
+    name: 'system-rule',
+    params: { systemId, ruleId: match.id },
+    query: router.currentRoute.value.query,
+  })
 }
 
 function goToRootToc(): void {

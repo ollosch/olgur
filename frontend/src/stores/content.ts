@@ -87,11 +87,19 @@ export const useContentStore = defineStore('content', () => {
   const manifestByModule = ref<Record<string, ManifestEntry>>({})
   const viewMode = ref<ContentMode>('draft')
 
-  // Session-scoped live-draft cache. Live content is mutable and only editors
-  // see it; re-fetching it on every Draft/Release toggle is unnecessary.
+  // Session-scoped source caches. Both live draft and released snapshots are
+  // kept in memory so toggling Draft/Release does not re-download them.
   const draftRulesByModule = ref<Record<string, Rule[]>>({})
   const draftIndexEntriesByModule = ref<Record<string, IndexEntry[]>>({})
   const draftGameDataByModule = ref<Record<string, GameDatum[]>>({})
+  const releaseRulesByModule = ref<Record<string, Rule[]>>({})
+  const releaseIndexEntriesByModule = ref<Record<string, IndexEntry[]>>({})
+  const releaseGameDataByModule = ref<Record<string, GameDatum[]>>({})
+  const releaseCacheMeta = ref<
+    Record<string, { versionId: string | null; revision: number | null }>
+  >({})
+  const viewSwitching = ref(false)
+  let viewSwitchSeq = 0
 
   // Monotonic token bumped on every refresh/system-switch. Each fetch captures
   // it at start and discards its writes if a newer refresh has since started.
@@ -233,17 +241,31 @@ export const useContentStore = defineStore('content', () => {
     if (mode === 'draft' && (offline.value || !canSwitchView.value)) return
 
     const systemId = systemStore.currentSystem?.id
-    if (viewMode.value === 'draft' && !offline.value) stashDraftContent()
+    const switchSeq = ++viewSwitchSeq
+    viewSwitching.value = true
 
-    viewMode.value = mode
-    if (!systemId) return
+    try {
+      if (!offline.value) {
+        if (viewMode.value === 'draft') stashDraftContent()
+        else stashReleaseContent()
+      }
 
-    clearPerModuleContent()
-    if (mode === 'draft') restoreDraftContent()
+      viewMode.value = mode
+      if (!systemId) return
 
-    await hydrateActiveContent(systemId)
-    if (globalRuleNumbers.value) {
-      await fetchMissingModules(systemId, systemStore.modules)
+      // Invalidate any in-flight fetch from the previous source before the
+      // active maps are swapped.
+      refreshSeq++
+      clearPerModuleContent()
+      if (mode === 'draft') restoreDraftContent()
+      else restoreReleaseContent()
+
+      await hydrateActiveContent(systemId)
+      if (globalRuleNumbers.value) {
+        await fetchMissingModules(systemId, systemStore.modules)
+      }
+    } finally {
+      if (switchSeq === viewSwitchSeq) viewSwitching.value = false
     }
   }
 
@@ -892,7 +914,7 @@ export const useContentStore = defineStore('content', () => {
   async function refreshContent(systemId: string): Promise<void> {
     refreshSeq++
     clearPerModuleContent()
-    clearDraftCache()
+    clearSourceCaches()
     const modules = activeModules.value
     await Promise.allSettled([
       ...modules.map((m) => fetchRules(systemId, m.id)),
@@ -949,16 +971,78 @@ export const useContentStore = defineStore('content', () => {
     }
   }
 
-  function clearDraftCache(): void {
+  /** Preserve released content before showing live drafts. */
+  function stashReleaseContent(): void {
+    for (const [moduleId, rules] of Object.entries(rulesByModule.value)) {
+      if (!canViewReleased(moduleId)) continue
+      releaseRulesByModule.value[moduleId] = rules
+      releaseCacheMeta.value[moduleId] = manifestMeta(moduleId)
+    }
+    for (const [moduleId, entries] of Object.entries(indexEntriesByModule.value)) {
+      if (!canViewReleased(moduleId)) continue
+      releaseIndexEntriesByModule.value[moduleId] = entries
+      releaseCacheMeta.value[moduleId] = manifestMeta(moduleId)
+    }
+    for (const [moduleId, data] of Object.entries(gameDataByModule.value)) {
+      if (!canViewReleased(moduleId)) continue
+      releaseGameDataByModule.value[moduleId] = data
+      releaseCacheMeta.value[moduleId] = manifestMeta(moduleId)
+    }
+  }
+
+  /** Restore released content whose snapshot still matches the manifest. */
+  function restoreReleaseContent(): void {
+    for (const moduleId of Object.keys(releaseCacheMeta.value)) {
+      if (!canViewReleased(moduleId) || !releaseCacheIsCurrent(moduleId)) {
+        clearReleaseCacheFor(moduleId)
+        continue
+      }
+
+      const rules = releaseRulesByModule.value[moduleId]
+      if (rules) rulesByModule.value[moduleId] = rules
+      const entries = releaseIndexEntriesByModule.value[moduleId]
+      if (entries) indexEntriesByModule.value[moduleId] = entries
+      const data = releaseGameDataByModule.value[moduleId]
+      if (data) gameDataByModule.value[moduleId] = data
+    }
+  }
+
+  function manifestMeta(moduleId: string): { versionId: string | null; revision: number | null } {
+    const entry = manifestByModule.value[moduleId]
+    return {
+      versionId: entry?.version_id ?? null,
+      revision: entry?.revision ?? null,
+    }
+  }
+
+  function releaseCacheIsCurrent(moduleId: string): boolean {
+    const cached = releaseCacheMeta.value[moduleId]
+    if (!cached) return false
+    const current = manifestMeta(moduleId)
+    return cached.versionId === current.versionId && cached.revision === current.revision
+  }
+
+  function clearReleaseCacheFor(moduleId: string): void {
+    delete releaseRulesByModule.value[moduleId]
+    delete releaseIndexEntriesByModule.value[moduleId]
+    delete releaseGameDataByModule.value[moduleId]
+    delete releaseCacheMeta.value[moduleId]
+  }
+
+  function clearSourceCaches(): void {
     draftRulesByModule.value = {}
     draftIndexEntriesByModule.value = {}
     draftGameDataByModule.value = {}
+    releaseRulesByModule.value = {}
+    releaseIndexEntriesByModule.value = {}
+    releaseGameDataByModule.value = {}
+    releaseCacheMeta.value = {}
   }
 
   function clear(): void {
     refreshSeq++
     clearPerModuleContent()
-    clearDraftCache()
+    clearSourceCaches()
     manifestByModule.value = {}
     viewMode.value = 'draft'
   }
@@ -989,6 +1073,7 @@ export const useContentStore = defineStore('content', () => {
     isBookmarkTargetAvailable,
     setViewMode,
     switchViewMode,
+    viewSwitching,
     canSwitchView,
     releaseViewEmpty,
     canEditModule,
