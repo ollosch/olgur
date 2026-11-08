@@ -13,6 +13,7 @@ export const useUnitBrowserStore = defineStore('unitBrowser', () => {
   const typeFilter = ref<'all' | 'vehicle' | 'ordnance'>('all')
   const nationFilter = ref<string>('all')
   const selectedUnit = ref<GameDatum | null>(null)
+  const detailView = ref<'detail' | 'counter'>('detail')
 
-  return { search, activeLetter, typeFilter, nationFilter, selectedUnit }
+  return { search, activeLetter, typeFilter, nationFilter, selectedUnit, detailView }
 })

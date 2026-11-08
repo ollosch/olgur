@@ -49,7 +49,8 @@ Important environment variables:
 
 - `authStore.user` is not persisted anywhere; reloads always re-bootstrap from `/me`.
 - The composed "active set" (`activeModules`) drives `allRules`, `allGameData`, rule/table/unit search, and rule popups; the singular module (`singularModule`) drives `allIndexEntries`, index/acronym search and popups, and `singularGameData`.
-- Vehicles and ordnance are searchable game data, but they do not render in `GameDataView`; they open in the full-screen `ToolModal` (Unit Data / Ordnance vs Armor).
+- Vehicles and ordnance are searchable game data, but they do not render in `GameDataView`; they open in the full-screen `ToolModal` (Unit Data / Ordnance vs Armor). Unit Data has a Details/Counter toggle; Counter is an alternate ASL-style counter preview and Details remains the canonical layout.
+- Selecting a table in the Table Browser hides the list/search panel and gives the table the full width. Top-bar table bookmarks open the same full-width view; the table header carries a Back-to-list control and a pin toggle.
 - Tools are derived from `game_data` type (see `frontend/src/lib/gameDataTools.ts`); there is no module tool registry. Bespoke system tools live in `SYSTEM_TOOL_COMPONENTS`; BCS ships the local-first Formation Manager there.
 - Two frontend-only features are behind Vite build-time flags in `frontend/src/lib/features.ts` with production-safe defaults: ASL table kinds (`VITE_FEATURE_ASL_TABLES`) and the Ordnance vs Armor tool (`VITE_FEATURE_AFV_VS_AFV`). When AFV vs AFV is off, ordnance results/bookmarks open Unit Data, which still lists ordnance. The backend has no tool knowledge.
 - All rendered text is strict Markdown (`markdown-it` with `html: false`) and sanitized with DOMPurify in `renderContent.ts`; raw HTML tags are escaped and displayed as literal text. Titles/labels use inline mode; rule content and index definitions use block mode.
