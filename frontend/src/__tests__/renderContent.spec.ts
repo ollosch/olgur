@@ -111,6 +111,53 @@ describe('renderContent', () => {
   })
 })
 
+// ── Directive lists ::: ──────────────────────────────────────────────────────
+
+describe('directive lists', () => {
+  it('renders a diamond list directive', () => {
+    const html = renderContent('::: list marker=diamond\n- First\n- Second\n:::', {
+      block: true,
+    })
+
+    expect(html).toContain('class="rule-list rule-list--diamond"')
+    expect(html).toContain('<li>First</li>')
+    expect(html).toContain('<li>Second</li>')
+    expect(html).not.toContain(':::')
+  })
+
+  it('renders a check list directive', () => {
+    const html = renderContent('::: list marker=check\n- Must do this\n:::', {
+      block: true,
+    })
+
+    expect(html).toContain('class="rule-list rule-list--check"')
+    expect(html).toContain('<li>Must do this</li>')
+  })
+
+  it('defaults to diamonds and keeps nested markdown', () => {
+    const html = renderContent('::: list\n- **Bold** item\n  - Nested\n:::', {
+      block: true,
+    })
+
+    expect(html).toContain('rule-list--diamond')
+    expect(html).toContain('<strong>Bold</strong>')
+    expect(html).toContain('Nested')
+  })
+
+  it('leaves unknown directives as literal text', () => {
+    const html = renderContent('::: unknown\n- Item\n:::', { block: true })
+
+    expect(html).not.toContain('directive')
+    expect(html).toContain('::: unknown')
+  })
+
+  it('is ignored in inline mode', () => {
+    const html = renderContent('::: list marker=diamond\n- Item\n:::')
+
+    expect(html).not.toContain('rule-list')
+  })
+})
+
 describe('renderContent security and markdown', () => {
   it('escapes script tags into visible text', () => {
     const html = renderContent('<script>alert(1)</script>')

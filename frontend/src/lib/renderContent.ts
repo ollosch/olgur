@@ -15,12 +15,14 @@
  *
  * Custom non-HTML tokens: `[color:name]…[/color]`, `[u]…[/u]`,
  * `[o]…[/o]`, and `[ex]…[/ex]`. The legacy `<ex>…</ex>` form is kept for
- * existing content.
+ * existing content. Block directives use `:::` containers, e.g.
+ * `::: list marker=diamond` or `::: list marker=check`.
  */
 
 import MarkdownIt from 'markdown-it'
 import sup from 'markdown-it-sup'
 import DOMPurify from 'dompurify'
+import { markdownDirectives } from '@/lib/markdownDirectives'
 
 export interface RenderContentOptions {
   acronymPopups?: boolean
@@ -48,7 +50,9 @@ const markdown = new MarkdownIt({
   linkify: false,
   breaks: true,
   typographer: false,
-}).use(sup)
+})
+  .use(sup)
+  .use(markdownDirectives)
 
 /**
  * Whitelisted `[color:name]…[/color]` values. Each maps to a static Tailwind
@@ -138,15 +142,7 @@ const SANITIZE_CONFIG = {
   ALLOWED_ATTR,
   ALLOW_DATA_ATTR: false,
   FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form', 'svg', 'math'],
-  FORBID_ATTR: [
-    'style',
-    'onerror',
-    'onload',
-    'onclick',
-    'onmouseover',
-    'onfocus',
-    'onmouseenter',
-  ],
+  FORBID_ATTR: ['style', 'onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onmouseenter'],
 }
 
 export function renderContent(content: string, options?: RenderContentOptions): string {
@@ -219,12 +215,10 @@ function extractTokens(
   )
 
   // <ex>…</ex> — example blocks.
-  source = source.replace(
-    /<ex>([\s\S]*?)<\/ex>/gi,
-    (_match: string, inner: string): string =>
-      stash(
-        `<span class="example-block">EX: ${renderInlineFragment(inner.trim(), options, depth + 1)}</span>`,
-      ),
+  source = source.replace(/<ex>([\s\S]*?)<\/ex>/gi, (_match: string, inner: string): string =>
+    stash(
+      `<span class="example-block">EX: ${renderInlineFragment(inner.trim(), options, depth + 1)}</span>`,
+    ),
   )
 
   // {{I:key}} — rule images.

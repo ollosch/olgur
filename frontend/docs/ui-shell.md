@@ -103,6 +103,11 @@ Supported inline content tokens:
 - `<ex>...</ex>` -> example block markup
 - `[color:red]...</color]` -> whitelisted color span (invalid names stay plain text)
 
+Block directives use fenced `::: ...` containers and must be rendered in block mode:
+
+- `::: list marker=diamond` / `::: list marker=check` -> list with the corresponding CSS marker; `marker` defaults to `diamond`.
+- Unknown directives or marker names are left as literal text so typos remain visible.
+
 ### Rule Popup System
 
 Files:
