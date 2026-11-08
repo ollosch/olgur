@@ -61,6 +61,8 @@ export interface StepTotals {
 
 export const FATIGUE_LEVELS: FatigueLevel[] = ['fresh', 0, 1, 2, 3, 4]
 
+export const ARTILLERY_MAX = 5
+
 export const SIDE_LABELS: Record<FormationSide, string> = {
   allies: 'Allies',
   germans: 'Germans',

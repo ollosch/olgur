@@ -75,6 +75,18 @@ describe('formation manager store', () => {
     expect(formation.units[0]?.startingSteps).toBe(4)
   })
 
+  it('caps artillery points at five', async () => {
+    const store = await freshStore()
+    await store.createNewScenario('Artillery', ['allies:2 Cav Grp'])
+    const formation = store.current?.formations.find((entry) => entry.name === '2 Cav Grp')
+    if (!formation) throw new Error('missing formation')
+
+    store.setArtilleryPoints(formation.id, 99)
+    expect(formation.artilleryPoints).toBe(5)
+    store.adjustArtilleryPoints(formation.id, 1)
+    expect(formation.artilleryPoints).toBe(5)
+  })
+
   it('keeps last-opened metadata out of the offline cache registry', async () => {
     const store = await freshStore()
     await store.createNewScenario('Metadata', ['allies:2 Cav Grp'])

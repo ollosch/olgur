@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import UnitStepRow from '@/components/tools/formation/UnitStepRow.vue'
 import { useFormationManagerStore } from '@/stores/formationManager'
 import {
+  ARTILLERY_MAX,
   FATIGUE_LEVELS,
   fatigueLabel,
   STATUS_LABELS,
@@ -33,126 +34,148 @@ const totals = computed(() => store.totalsForFormation(props.formation))
 const isSpent = computed(() => totals.value.steps === 0)
 const canReturnToReserve = computed(() => totals.value.steps > 0)
 
+const fatigueIndex = computed(() => FATIGUE_LEVELS.indexOf(props.formation.fatigue))
+const canDecreaseFatigue = computed(() => fatigueIndex.value > 0)
+const canIncreaseFatigue = computed(
+  () => fatigueIndex.value < FATIGUE_LEVELS.length - 1,
+)
+
 function fatigueShort(fatigue: FatigueLevel): string {
   return fatigue === 'fresh' ? 'Fresh' : String(fatigue)
+}
+
+function stepFatigue(delta: number): void {
+  const next = FATIGUE_LEVELS[fatigueIndex.value + delta]
+  if (next !== undefined) store.setFatigue(props.formation.id, next)
 }
 </script>
 
 <template>
-  <article :data-formation-id="formation.id">
-    <header class="sticky top-0 z-10 flex items-center gap-2 border-b border-border/60 bg-background/95 px-3 py-2 backdrop-blur">
-      <div class="min-w-0 flex-1">
-        <h3 class="truncate text-sm font-bold text-foreground">{{ formation.name }}</h3>
-        <p class="text-[10px] text-muted-foreground">
-          {{ STATUS_LABELS[formation.status] }} ·
-          <span class="tabular-nums">{{ totals.steps }} / {{ totals.startingSteps }}</span> steps
-        </p>
-      </div>
-      <button
-        type="button"
-        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-border bg-secondary text-muted-foreground transition-colors active:bg-muted"
-        aria-label="Close details"
-        @click="emit('close')"
-      >
-        <X class="h-5 w-5" />
-      </button>
-    </header>
+  <article :data-formation-id="formation.id" class="flex min-h-0 flex-col bg-card/20">
+    <header
+      class="sticky top-0 z-10 shrink-0 border-b border-border/70 bg-background/95 px-2 py-1.5 backdrop-blur"
+    >
+      <div class="flex items-center gap-1.5">
+        <div class="min-w-0 flex-1">
+          <h3 class="truncate text-[13px] font-bold leading-tight text-foreground">
+            {{ formation.name }}
+          </h3>
+          <p class="text-[9px] uppercase tracking-wide text-muted-foreground">
+            {{ STATUS_LABELS[formation.status] }} ·
+            <span class="tabular-nums">{{ totals.steps }} / {{ totals.startingSteps }}</span>
+            steps
+          </p>
+        </div>
 
-    <div class="px-3 pb-3">
-      <div class="grid gap-2.5 pt-3 sm:grid-cols-2">
-        <div class="rounded-md border border-border/60 bg-background/40 p-2.5">
-          <div class="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Posture
-          </div>
+        <button
+          type="button"
+          class="flex h-8 shrink-0 items-center justify-center gap-1 rounded border px-1.5 text-[10px] font-bold uppercase tracking-wide transition-colors"
+          :class="
+            formation.preparedDefense
+              ? 'border-primary/60 bg-primary/20 text-primary'
+              : 'border-border bg-secondary text-muted-foreground'
+          "
+          :aria-pressed="formation.preparedDefense"
+          aria-label="Prepared Defense"
+          title="Prepared Defense"
+          @click="store.togglePreparedDefense(formation.id)"
+        >
+          <ShieldCheck class="h-3.5 w-3.5" />
+          PD
+        </button>
+
+        <div
+          class="flex h-8 shrink-0 items-center rounded border border-border bg-secondary"
+          title="Fatigue"
+        >
           <button
             type="button"
-            class="flex h-11 w-full items-center justify-center gap-2 rounded-md border text-sm font-semibold transition-colors"
-            :class="
-              formation.preparedDefense
-                ? 'border-primary/60 bg-primary/20 text-primary'
-                : 'border-border bg-secondary text-muted-foreground'
-            "
-            :aria-pressed="formation.preparedDefense"
-            @click="store.togglePreparedDefense(formation.id)"
+            class="flex h-full w-6 items-center justify-center text-muted-foreground transition-colors active:bg-muted disabled:opacity-30"
+            :disabled="!canDecreaseFatigue"
+            aria-label="Reduce fatigue"
+            @click="stepFatigue(-1)"
           >
-            <ShieldCheck class="h-4 w-4" />
-            Prepared Defense
+            <Minus class="h-3.5 w-3.5" />
+          </button>
+          <span
+            class="min-w-8 border-x border-border/70 px-1 text-center text-[11px] font-bold tabular-nums text-foreground"
+            :aria-label="fatigueLabel(formation.fatigue)"
+          >
+            {{ fatigueShort(formation.fatigue) }}
+          </span>
+          <button
+            type="button"
+            class="flex h-full w-6 items-center justify-center text-muted-foreground transition-colors active:bg-muted disabled:opacity-30"
+            :disabled="!canIncreaseFatigue"
+            aria-label="Increase fatigue"
+            @click="stepFatigue(1)"
+          >
+            <Plus class="h-3.5 w-3.5" />
           </button>
         </div>
 
-        <div class="rounded-md border border-border/60 bg-background/40 p-2.5">
-          <div class="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Fatigue
-          </div>
-          <div class="flex gap-1">
-            <button
-              v-for="level in FATIGUE_LEVELS"
-              :key="String(level)"
-              type="button"
-              class="h-11 min-w-0 flex-1 rounded-md border text-xs font-semibold transition-colors"
-              :class="
-                formation.fatigue === level
-                  ? 'border-primary/60 bg-primary/20 text-primary'
-                  : 'border-border bg-secondary text-muted-foreground'
-              "
-              :aria-pressed="formation.fatigue === level"
-              :aria-label="fatigueLabel(level)"
-              @click="store.setFatigue(formation.id, level)"
-            >
-              {{ fatigueShort(level) }}
-            </button>
-          </div>
+        <div
+          class="flex h-8 shrink-0 items-center rounded border border-border bg-secondary"
+          title="Artillery points"
+        >
+          <button
+            type="button"
+            class="flex h-full w-6 items-center justify-center text-muted-foreground transition-colors active:bg-muted disabled:opacity-30"
+            :disabled="formation.artilleryPoints <= 0"
+            aria-label="Remove one artillery point"
+            @click="store.adjustArtilleryPoints(formation.id, -1)"
+          >
+            <Minus class="h-3.5 w-3.5" />
+          </button>
+          <span
+            class="flex min-w-8 items-center justify-center gap-0.5 border-x border-border/70 px-1 text-[11px] font-bold tabular-nums text-foreground"
+            :aria-label="`Artillery points: ${formation.artilleryPoints}`"
+          >
+            <Crosshair class="h-3 w-3 text-sky-400" />
+            {{ formation.artilleryPoints }}
+          </span>
+          <button
+            type="button"
+            class="flex h-full w-6 items-center justify-center text-muted-foreground transition-colors active:bg-muted disabled:opacity-30"
+            :disabled="formation.artilleryPoints >= ARTILLERY_MAX"
+            aria-label="Add one artillery point"
+            @click="store.adjustArtilleryPoints(formation.id, 1)"
+          >
+            <Plus class="h-3.5 w-3.5" />
+          </button>
         </div>
 
-        <div class="rounded-md border border-border/60 bg-background/40 p-2.5">
-          <div class="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Support
-          </div>
-          <Input
-            :model-value="formation.support"
-            class="h-11"
-            placeholder="Placeholder support unit"
-            aria-label="Assigned support"
-            @update:model-value="store.setSupport(formation.id, String($event))"
-          />
-        </div>
+        <button
+          type="button"
+          class="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-border bg-secondary text-muted-foreground transition-colors active:bg-muted"
+          aria-label="Close details"
+          @click="emit('close')"
+        >
+          <X class="h-4 w-4" />
+        </button>
+      </div>
+    </header>
 
-        <div class="rounded-md border border-border/60 bg-background/40 p-2.5">
-          <div class="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Artillery points
-          </div>
-          <div class="flex items-center gap-2">
-            <button
-              type="button"
-              class="flex h-11 w-11 items-center justify-center rounded-md border border-border bg-secondary text-foreground transition-colors active:bg-muted disabled:opacity-40"
-              :disabled="formation.artilleryPoints <= 0"
-              aria-label="Remove one artillery point"
-              @click="store.adjustArtilleryPoints(formation.id, -1)"
-            >
-              <Minus class="h-5 w-5" />
-            </button>
-            <div class="flex min-w-0 flex-1 items-center justify-center gap-1 text-xl font-bold tabular-nums text-foreground">
-              <Crosshair class="h-4 w-4 text-sky-400" />
-              {{ formation.artilleryPoints }}
-            </div>
-            <button
-              type="button"
-              class="flex h-11 w-11 items-center justify-center rounded-md border border-border bg-secondary text-foreground transition-colors active:bg-muted"
-              aria-label="Add one artillery point"
-              @click="store.adjustArtilleryPoints(formation.id, 1)"
-            >
-              <Plus class="h-5 w-5" />
-            </button>
-          </div>
-        </div>
+    <div class="min-h-0 flex-1 overflow-y-auto px-2.5 pb-3">
+      <div class="flex items-center gap-2 border-b border-border/60 py-1.5">
+        <span class="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
+          Support
+        </span>
+        <Input
+          :model-value="formation.support"
+          class="h-7 min-w-0 flex-1 rounded border-border/70 text-xs"
+          placeholder="No support assigned"
+          aria-label="Assigned support"
+          @update:model-value="store.setSupport(formation.id, String($event))"
+        />
       </div>
 
-      <div class="mt-3">
-        <div class="mb-1 flex items-center justify-between">
-          <span class="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <div class="mt-2">
+        <div class="mb-0.5 flex items-center justify-between">
+          <span class="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
             Units
           </span>
-          <span class="text-[10px] text-muted-foreground">{{ formation.units.length }} units</span>
+          <span class="text-[9px] text-muted-foreground">{{ formation.units.length }} units</span>
         </div>
         <div class="divide-y divide-border/50">
           <UnitStepRow
@@ -164,26 +187,26 @@ function fatigueShort(fatigue: FatigueLevel): string {
         </div>
       </div>
 
-      <p v-if="isSpent" class="mt-2 rounded-md bg-red-500/10 px-2.5 py-2 text-xs text-red-400">
+      <p v-if="isSpent" class="mt-2 rounded bg-red-500/10 px-2 py-1.5 text-[11px] text-red-400">
         This formation has no steps left. Send it to the Dead Pool when it is destroyed.
       </p>
 
-      <div class="mt-3 flex flex-wrap gap-2">
+      <div class="mt-2 flex flex-wrap gap-1.5">
         <button
           type="button"
-          class="inline-flex h-11 items-center gap-2 rounded-md border border-border bg-secondary px-3 text-xs font-semibold text-muted-foreground transition-colors active:bg-muted disabled:opacity-40"
+          class="inline-flex h-8 items-center gap-1.5 rounded border border-border bg-secondary px-2 text-[10px] font-semibold text-muted-foreground transition-colors active:bg-muted disabled:opacity-40"
           :disabled="!canReturnToReserve"
           @click="store.returnToReserve(formation.id)"
         >
-          <RotateCcw class="h-4 w-4" />
+          <RotateCcw class="h-3.5 w-3.5" />
           Return to reserve
         </button>
         <button
           type="button"
-          class="inline-flex h-11 items-center gap-2 rounded-md border border-red-500/40 bg-red-500/10 px-3 text-xs font-semibold text-red-400 transition-colors active:bg-red-500/20"
+          class="inline-flex h-8 items-center gap-1.5 rounded border border-red-500/40 bg-red-500/10 px-2 text-[10px] font-semibold text-red-400 transition-colors active:bg-red-500/20"
           @click="store.sendToDeadPool(formation.id)"
         >
-          <Skull class="h-4 w-4" />
+          <Skull class="h-3.5 w-3.5" />
           Send to Dead Pool
         </button>
       </div>

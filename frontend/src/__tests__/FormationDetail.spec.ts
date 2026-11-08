@@ -40,7 +40,9 @@ describe('FormationDetail', () => {
     const wrapper = mountDetail()
     const store = useFormationManagerStore()
 
-    await wrapper.get('[aria-label="Fatigue 3"]').trigger('click')
+    for (let step = 0; step < 4; step++) {
+      await wrapper.get('[aria-label="Increase fatigue"]').trigger('click')
+    }
     expect(store.current?.formations[0]?.fatigue).toBe(3)
 
     await wrapper.get('[aria-label="Add one artillery point"]').trigger('click')
@@ -49,10 +51,7 @@ describe('FormationDetail', () => {
     await wrapper.get('input[aria-label="Assigned support"]').setValue('2/37 Arm Bn')
     expect(store.current?.formations[0]?.support).toBe('2/37 Arm Bn')
 
-    const prepared = wrapper.findAll('button').find((button) =>
-      button.text().includes('Prepared Defense'),
-    )
-    await prepared?.trigger('click')
+    await wrapper.get('[aria-label="Prepared Defense"]').trigger('click')
     expect(store.current?.formations[0]?.preparedDefense).toBe(true)
   })
 

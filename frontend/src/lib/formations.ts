@@ -11,7 +11,7 @@ import type {
   ScenarioExport,
   StepTotals,
 } from '@/types/formation'
-import { FATIGUE_LEVELS } from '@/types/formation'
+import { ARTILLERY_MAX, FATIGUE_LEVELS } from '@/types/formation'
 
 type RawChart = Record<string, Array<{ unit: string; steps: number }>>
 
@@ -237,7 +237,7 @@ function normalizeFormation(raw: unknown, index: number): Formation {
     units: unitsRaw.map((unit, unitIndex) => normalizeUnit(unit, id, unitIndex)),
     preparedDefense: raw['preparedDefense'] === true,
     support: stringOr(raw['support'], ''),
-    artilleryPoints: nonNegativeInt(raw['artilleryPoints'], 0),
+    artilleryPoints: Math.min(nonNegativeInt(raw['artilleryPoints'], 0), ARTILLERY_MAX),
     fatigue: isFatigue(raw['fatigue']) ? raw['fatigue'] : 'fresh',
   }
 }

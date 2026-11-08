@@ -13,6 +13,7 @@ import {
   serializeScenario,
   totalsFor,
 } from '@/lib/formations'
+import { ARTILLERY_MAX } from '@/types/formation'
 import type {
   FatigueLevel,
   Formation,
@@ -335,7 +336,7 @@ export const useFormationManagerStore = defineStore('formationManager', () => {
   function setArtilleryPoints(id: string, value: number): void {
     const formation = findFormation(id)
     if (!formation) return
-    const next = clampSteps(value)
+    const next = Math.min(clampSteps(value), ARTILLERY_MAX)
     if (next === formation.artilleryPoints) return
     formation.artilleryPoints = next
     touch()

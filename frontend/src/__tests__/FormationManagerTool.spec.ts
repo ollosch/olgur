@@ -48,7 +48,7 @@ describe('FormationManagerTool', () => {
     await wrapper.get('button[data-formation-id="allies:2 Cav Grp"]').trigger('click')
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Prepared Defense')
+    expect(wrapper.find('[aria-label="Prepared Defense"]').exists()).toBe(true)
     expect(wrapper.text()).not.toContain('11 Pz Div')
 
     await wrapper.get('[aria-label="Close details"]').trigger('click')
