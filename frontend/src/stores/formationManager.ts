@@ -354,6 +354,18 @@ export const useFormationManagerStore = defineStore('formationManager', () => {
     touch()
   }
 
+  function clearDone(): void {
+    const scenario = current.value
+    if (!scenario) return
+    let changed = false
+    for (const formation of scenario.formations) {
+      if (!formation.done) continue
+      formation.done = false
+      changed = true
+    }
+    if (changed) touch()
+  }
+
   function adjustSupportUnitSteps(formationId: string, unitName: string, delta: number): void {
     const formation = findFormation(formationId)
     if (!formation) return
@@ -512,6 +524,7 @@ export const useFormationManagerStore = defineStore('formationManager', () => {
     setPreparedDefense,
     setCompleteMsr,
     setDone,
+    clearDone,
     setSupport,
     toggleSupport,
     clearSupport,

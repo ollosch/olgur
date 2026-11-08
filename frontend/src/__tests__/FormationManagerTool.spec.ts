@@ -54,6 +54,24 @@ describe('FormationManagerTool', () => {
     wrapper.unmount()
   })
 
+  it('clears every Done flag from the toolbar', async () => {
+    const store = useFormationManagerStore()
+    const scenario = createScenario('Test', ['allies:2 Cav Grp'])
+    const formation = scenario.formations.find((entry) => entry.name === '2 Cav Grp')
+    if (!formation) throw new Error('missing formation')
+    formation.done = true
+    store.current = scenario
+    store.ready = true
+
+    const wrapper = mount(FormationManagerTool, { attachTo: document.body })
+    await flushPromises()
+
+    await wrapper.get('[aria-label="Clear Done"]').trigger('click')
+    expect(formation.done).toBe(false)
+
+    wrapper.unmount()
+  })
+
   it('shows both side lists and swaps the opposite side to the detail view', async () => {
     const store = useFormationManagerStore()
     const scenario = createScenario('Test', ['allies:2 Cav Grp', 'germans:11 Pz Div'])

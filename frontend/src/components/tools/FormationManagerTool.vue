@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
-import { Download, FolderOpen, Plus, X } from '@lucide/vue'
+import { Download, FolderOpen, Plus, Undo2, X } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import FormationSidePanel from '@/components/tools/formation/FormationSidePanel.vue'
 import FormationDetail from '@/components/tools/formation/FormationDetail.vue'
@@ -24,6 +24,10 @@ const panes = computed((): Array<{ side: FormationSide; showDetail: boolean }> =
   { side: 'allies', showDetail: store.selectedFormation?.side === 'germans' },
   { side: 'germans', showDetail: store.selectedFormation?.side === 'allies' },
 ])
+
+const hasDoneFormations = computed(() =>
+  store.currentFormations.some((formation) => formation.done),
+)
 
 const saveLabel = computed(() => {
   if (store.saveError) return 'Save failed'
@@ -124,6 +128,16 @@ onBeforeUnmount(() => {
           </p>
         </div>
 
+        <button
+          type="button"
+          class="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-secondary px-3 text-xs font-semibold text-muted-foreground transition-colors active:bg-muted disabled:opacity-40"
+          :disabled="!hasDoneFormations"
+          aria-label="Clear Done"
+          @click="store.clearDone()"
+        >
+          <Undo2 class="h-4 w-4" />
+          Clear Done
+        </button>
         <button
           type="button"
           class="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-secondary px-3 text-xs font-semibold text-muted-foreground transition-colors active:bg-muted"

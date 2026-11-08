@@ -200,6 +200,22 @@ describe('formation manager store', () => {
     expect(second.support).toEqual([])
   })
 
+  it('clears every Done flag', async () => {
+    const store = await freshStore()
+    await store.createNewScenario('Done flags', ['allies:2 Cav Grp'])
+    const formations = store.current?.formations ?? []
+    const first = formations[0]
+    const second = formations[1]
+    if (!first || !second) throw new Error('missing formations')
+
+    store.setDone(first.id, true)
+    store.setDone(second.id, true)
+    expect(store.currentFormations.some((formation) => formation.done)).toBe(true)
+
+    store.clearDone()
+    expect(store.currentFormations.every((formation) => !formation.done)).toBe(true)
+  })
+
   it('exports, imports (with a new id on collision), and deletes scenarios', async () => {
     const store = await freshStore()
     await store.createNewScenario('Original', ['allies:2 Cav Grp'])
