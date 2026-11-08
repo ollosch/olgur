@@ -37,7 +37,7 @@ const supportUnits = computed(() =>
       selected
         ? 'border-primary/70 from-primary/15 to-primary/5 ring-1 ring-primary/30'
         : formation.done
-          ? 'border-transparent from-card/80 to-card/40 brightness-90 active:bg-muted/40'
+          ? 'border-transparent from-card/80 to-card/40 brightness-75 active:bg-muted/40'
           : isSpent
             ? 'border-red-500/40 from-card/80 to-card/40 active:bg-muted/40'
             : 'border-muted-foreground/70 from-card/80 to-card/40 active:bg-muted/40'
