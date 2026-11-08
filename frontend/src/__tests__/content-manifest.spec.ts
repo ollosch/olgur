@@ -38,6 +38,7 @@ vi.mock('@/stores/cacheStore', () => ({
 
 import { useContentStore } from '@/stores/content'
 import { useSystemStore } from '@/stores/system'
+import { useOnline } from '@/composables/useOnline'
 import type {
   System,
   Module,
@@ -503,6 +504,68 @@ describe('useContentStore — manifest & content routing', () => {
       expect(mockRequest).toHaveBeenCalledWith({ method: 'GET', url: entry.content.rules })
       expect(mockGet).not.toHaveBeenCalled()
     })
+
+    it('caches live draft content across a Draft/Release toggle', async () => {
+      seedModules({ mod1: { 'content.view_live': true, 'content.view_released': true } })
+      useOnline().online.value = true
+      const contentStore = useContentStore()
+      contentStore.manifestByModule['mod1'] = makeManifestEntry('mod1')
+
+      mockGet.mockResolvedValue({ ok: true, data: { data: [makeRule('r1')] } })
+      mockRequest.mockResolvedValue([makeRule('r2')])
+
+      const liveRuleCalls = (): number =>
+        mockGet.mock.calls.filter(([url]) => url === '/systems/sys1/modules/mod1/rules').length
+
+      await contentStore.fetchRules('sys1', 'mod1')
+      expect(liveRuleCalls()).toBe(1)
+
+      await contentStore.switchViewMode('release')
+      expect(contentStore.rulesByModule['mod1']?.[0]?.id).toBe('r2')
+
+      await contentStore.switchViewMode('draft')
+      expect(contentStore.rulesByModule['mod1']?.[0]?.id).toBe('r1')
+      expect(liveRuleCalls()).toBe(1)
+    })
+
+    it('keeps live edits in the draft cache across a toggle', async () => {
+      seedModules({ mod1: { 'content.view_live': true, 'content.view_released': true } })
+      useOnline().online.value = true
+      const contentStore = useContentStore()
+      contentStore.manifestByModule['mod1'] = makeManifestEntry('mod1')
+
+      mockGet.mockResolvedValue({ ok: true, data: { data: [makeRule('r1')] } })
+      mockRequest.mockResolvedValue([makeRule('r2')])
+
+      await contentStore.fetchRules('sys1', 'mod1')
+      contentStore.rulesByModule['mod1']![0]!.title = 'Edited draft'
+
+      await contentStore.switchViewMode('release')
+      await contentStore.switchViewMode('draft')
+
+      expect(contentStore.rulesByModule['mod1']?.[0]?.title).toBe('Edited draft')
+    })
+
+    it('drops the draft cache on an explicit refresh', async () => {
+      seedModules({ mod1: { 'content.view_live': true, 'content.view_released': true } })
+      useOnline().online.value = true
+      const contentStore = useContentStore()
+      contentStore.manifestByModule['mod1'] = makeManifestEntry('mod1')
+
+      mockGet.mockResolvedValue({ ok: true, data: { data: [makeRule('r1')] } })
+      mockRequest.mockResolvedValue([makeRule('r2')])
+
+      const liveRuleCalls = (): number =>
+        mockGet.mock.calls.filter(([url]) => url === '/systems/sys1/modules/mod1/rules').length
+
+      await contentStore.fetchRules('sys1', 'mod1')
+      await contentStore.switchViewMode('release')
+      await contentStore.switchViewMode('draft')
+      expect(liveRuleCalls()).toBe(1)
+
+      await contentStore.refreshContent('sys1')
+      expect(liveRuleCalls()).toBe(2)
+    })
   })
 
   // ── releaseViewEmpty ─────────────────────────────────────────────────────────
@@ -600,9 +663,7 @@ describe('useContentStore — manifest & content routing', () => {
       contentStore.rulesByModule['mod1'] = [makeRule('stale')]
 
       const pending: Array<(value: unknown) => void> = []
-      mockGet.mockImplementation(
-        () => new Promise((resolve) => pending.push(resolve)),
-      )
+      mockGet.mockImplementation(() => new Promise((resolve) => pending.push(resolve)))
 
       const first = contentStore.refreshContent('sys1')
       const second = contentStore.refreshContent('sys1')

@@ -87,6 +87,12 @@ export const useContentStore = defineStore('content', () => {
   const manifestByModule = ref<Record<string, ManifestEntry>>({})
   const viewMode = ref<ContentMode>('draft')
 
+  // Session-scoped live-draft cache. Live content is mutable and only editors
+  // see it; re-fetching it on every Draft/Release toggle is unnecessary.
+  const draftRulesByModule = ref<Record<string, Rule[]>>({})
+  const draftIndexEntriesByModule = ref<Record<string, IndexEntry[]>>({})
+  const draftGameDataByModule = ref<Record<string, GameDatum[]>>({})
+
   // Monotonic token bumped on every refresh/system-switch. Each fetch captures
   // it at start and discards its writes if a newer refresh has since started.
   let refreshSeq = 0
@@ -224,11 +230,18 @@ export const useContentStore = defineStore('content', () => {
    */
   async function switchViewMode(mode: ContentMode): Promise<void> {
     if (viewMode.value === mode) return
+    if (mode === 'draft' && (offline.value || !canSwitchView.value)) return
+
     const systemId = systemStore.currentSystem?.id
+    if (viewMode.value === 'draft' && !offline.value) stashDraftContent()
+
     viewMode.value = mode
     if (!systemId) return
 
-    await refreshContent(systemId)
+    clearPerModuleContent()
+    if (mode === 'draft') restoreDraftContent()
+
+    await hydrateActiveContent(systemId)
     if (globalRuleNumbers.value) {
       await fetchMissingModules(systemId, systemStore.modules)
     }
@@ -808,6 +821,22 @@ export const useContentStore = defineStore('content', () => {
     return toLoad
   }
 
+  /** Fetch any content kind that is not yet loaded for the active modules. */
+  async function hydrateActiveContent(systemId: string): Promise<void> {
+    const modules = activeModules.value
+    await Promise.allSettled([
+      ...modules
+        .filter((m) => !(m.id in rulesByModule.value))
+        .map((m) => fetchRules(systemId, m.id)),
+      ...modules
+        .filter((m) => !(m.id in indexEntriesByModule.value))
+        .map((m) => fetchIndexEntries(systemId, m.id)),
+      ...modules
+        .filter((m) => !(m.id in gameDataByModule.value))
+        .map((m) => fetchGameData(systemId, m.id)),
+    ])
+  }
+
   // ---------------------------------------------------------------------------
   // Delete / lint
   // ---------------------------------------------------------------------------
@@ -863,6 +892,7 @@ export const useContentStore = defineStore('content', () => {
   async function refreshContent(systemId: string): Promise<void> {
     refreshSeq++
     clearPerModuleContent()
+    clearDraftCache()
     const modules = activeModules.value
     await Promise.allSettled([
       ...modules.map((m) => fetchRules(systemId, m.id)),
@@ -893,9 +923,42 @@ export const useContentStore = defineStore('content', () => {
     gameDataByModule.value = {}
   }
 
+  /** Preserve live-draft content before showing the released snapshot. */
+  function stashDraftContent(): void {
+    for (const [moduleId, rules] of Object.entries(rulesByModule.value)) {
+      if (canViewLive(moduleId)) draftRulesByModule.value[moduleId] = rules
+    }
+    for (const [moduleId, entries] of Object.entries(indexEntriesByModule.value)) {
+      if (canViewLive(moduleId)) draftIndexEntriesByModule.value[moduleId] = entries
+    }
+    for (const [moduleId, data] of Object.entries(gameDataByModule.value)) {
+      if (canViewLive(moduleId)) draftGameDataByModule.value[moduleId] = data
+    }
+  }
+
+  /** Restore cached live-draft content when returning to Draft view. */
+  function restoreDraftContent(): void {
+    for (const [moduleId, rules] of Object.entries(draftRulesByModule.value)) {
+      if (canViewLive(moduleId)) rulesByModule.value[moduleId] = rules
+    }
+    for (const [moduleId, entries] of Object.entries(draftIndexEntriesByModule.value)) {
+      if (canViewLive(moduleId)) indexEntriesByModule.value[moduleId] = entries
+    }
+    for (const [moduleId, data] of Object.entries(draftGameDataByModule.value)) {
+      if (canViewLive(moduleId)) gameDataByModule.value[moduleId] = data
+    }
+  }
+
+  function clearDraftCache(): void {
+    draftRulesByModule.value = {}
+    draftIndexEntriesByModule.value = {}
+    draftGameDataByModule.value = {}
+  }
+
   function clear(): void {
     refreshSeq++
     clearPerModuleContent()
+    clearDraftCache()
     manifestByModule.value = {}
     viewMode.value = 'draft'
   }
