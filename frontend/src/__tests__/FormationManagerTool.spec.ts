@@ -67,7 +67,31 @@ describe('FormationManagerTool', () => {
     await flushPromises()
 
     await wrapper.get('[aria-label="Clear Done"]').trigger('click')
+    await flushPromises()
+    document.querySelector<HTMLButtonElement>('[aria-label="Confirm Clear Done"]')?.click()
+    await flushPromises()
     expect(formation.done).toBe(false)
+
+    wrapper.unmount()
+  })
+
+  it('leaves Done markers alone when clearing is cancelled', async () => {
+    const store = useFormationManagerStore()
+    const scenario = createScenario('Test', ['allies:2 Cav Grp'])
+    const formation = scenario.formations.find((entry) => entry.name === '2 Cav Grp')
+    if (!formation) throw new Error('missing formation')
+    formation.done = true
+    store.current = scenario
+    store.ready = true
+
+    const wrapper = mount(FormationManagerTool, { attachTo: document.body })
+    await flushPromises()
+
+    await wrapper.get('[aria-label="Clear Done"]').trigger('click')
+    await flushPromises()
+    document.querySelector<HTMLButtonElement>('[aria-label="Cancel Clear Done"]')?.click()
+    await flushPromises()
+    expect(formation.done).toBe(true)
 
     wrapper.unmount()
   })

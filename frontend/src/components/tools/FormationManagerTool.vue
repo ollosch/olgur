@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { Download, FolderOpen, Plus, Undo2, X } from '@lucide/vue'
 import { toast } from 'vue-sonner'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import FormationSidePanel from '@/components/tools/formation/FormationSidePanel.vue'
 import FormationDetail from '@/components/tools/formation/FormationDetail.vue'
 import AddFormationDialog from '@/components/tools/formation/AddFormationDialog.vue'
@@ -17,6 +18,7 @@ const toolModal = useToolModalStore()
 
 const newScenarioOpen = ref(false)
 const addFormationOpen = ref(false)
+const clearDoneOpen = ref(false)
 const addSide = ref<FormationSide>('allies')
 const rootRef = ref<HTMLElement | null>(null)
 
@@ -57,6 +59,11 @@ async function exportCurrent(): Promise<void> {
 function openAdd(side: FormationSide): void {
   addSide.value = side
   addFormationOpen.value = true
+}
+
+function confirmClearDone(): void {
+  store.clearDone()
+  clearDoneOpen.value = false
 }
 
 function closeDetail(): void {
@@ -133,7 +140,7 @@ onBeforeUnmount(() => {
           class="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-secondary px-3 text-xs font-semibold text-muted-foreground transition-colors active:bg-muted disabled:opacity-40"
           :disabled="!hasDoneFormations"
           aria-label="Clear Done"
-          @click="store.clearDone()"
+          @click="clearDoneOpen = true"
         >
           <Undo2 class="h-4 w-4" />
           Clear Done
@@ -192,5 +199,34 @@ onBeforeUnmount(() => {
 
     <NewScenarioDialog v-model:open="newScenarioOpen" />
     <AddFormationDialog v-model:open="addFormationOpen" :side="addSide" />
+
+    <Dialog v-model:open="clearDoneOpen">
+      <DialogContent>
+        <DialogTitle class="text-sm font-semibold text-foreground"
+          >Clear all Done markers?</DialogTitle
+        >
+        <DialogDescription class="text-xs text-muted-foreground">
+          Every formation in this scenario will be marked as not done.
+        </DialogDescription>
+        <div class="flex justify-end gap-2">
+          <button
+            type="button"
+            class="inline-flex h-9 items-center rounded-md border border-border bg-secondary px-3 text-xs font-semibold text-muted-foreground"
+            aria-label="Cancel Clear Done"
+            @click="clearDoneOpen = false"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="inline-flex h-9 items-center rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground"
+            aria-label="Confirm Clear Done"
+            @click="confirmClearDone"
+          >
+            Clear Done
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
