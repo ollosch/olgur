@@ -9,7 +9,7 @@ import {
   Skull,
   X,
 } from '@lucide/vue'
-import { Input } from '@/components/ui/input'
+import SupportPickerDialog from '@/components/tools/formation/SupportPickerDialog.vue'
 import UnitStepRow from '@/components/tools/formation/UnitStepRow.vue'
 import ValuePickerDialog from '@/components/tools/formation/ValuePickerDialog.vue'
 import { useFormationManagerStore } from '@/stores/formationManager'
@@ -33,6 +33,7 @@ const emit = defineEmits<{
 const store = useFormationManagerStore()
 const fatiguePickerOpen = ref(false)
 const artilleryPickerOpen = ref(false)
+const supportPickerOpen = ref(false)
 const totals = computed(() => store.totalsForFormation(props.formation))
 const isSpent = computed(() => totals.value.steps === 0)
 const canReturnToReserve = computed(() => totals.value.steps > 0)
@@ -42,6 +43,18 @@ const artilleryOptions = Array.from({ length: ARTILLERY_MAX + 1 }, (_, value) =>
   value: String(value),
   label: String(value),
 }))
+
+const supportGroups = computed(() => {
+  const sameSide = (store.current?.formations ?? []).filter(
+    (formation) => formation.side === props.formation.side,
+  )
+  return sameSide
+    .filter((formation) => formation.units.length > 0)
+    .map((formation) => ({
+      label: formation.name,
+      units: formation.units.map((unit) => unit.name),
+    }))
+})
 
 const fatigueIndex = computed(() => FATIGUE_LEVELS.indexOf(props.formation.fatigue))
 const canDecreaseFatigue = computed(() => fatigueIndex.value > 0)
@@ -187,13 +200,16 @@ function chooseArtillery(value: string): void {
         <span class="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
           Support
         </span>
-        <Input
-          :model-value="formation.support"
-          class="h-7 min-w-0 flex-1 rounded border-border/70 text-xs"
-          placeholder="No support assigned"
+        <button
+          type="button"
+          class="min-w-0 flex-1 truncate rounded border border-border/70 bg-secondary px-2 py-1 text-left text-[11px] font-medium transition-colors active:bg-muted"
+          :class="formation.support.trim() === '' ? 'text-muted-foreground' : 'text-foreground'"
           aria-label="Assigned support"
-          @update:model-value="store.setSupport(formation.id, String($event))"
-        />
+          :title="formation.support || 'No support assigned'"
+          @click="supportPickerOpen = true"
+        >
+          {{ formation.support.trim() === '' ? 'No support assigned' : formation.support }}
+        </button>
       </div>
 
       <div class="mt-2">
@@ -238,6 +254,12 @@ function chooseArtillery(value: string): void {
       </div>
     </div>
 
+    <SupportPickerDialog
+      v-model:open="supportPickerOpen"
+      :groups="supportGroups"
+      :selected="formation.support"
+      @select="store.setSupport(formation.id, $event)"
+    />
     <ValuePickerDialog
       v-model:open="fatiguePickerOpen"
       title="Fatigue"

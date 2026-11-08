@@ -48,8 +48,11 @@ describe('FormationDetail', () => {
     await wrapper.get('[aria-label="Add one artillery point"]').trigger('click')
     expect(store.current?.formations[0]?.artilleryPoints).toBe(1)
 
-    await wrapper.get('input[aria-label="Assigned support"]').setValue('2/37 Arm Bn')
-    expect(store.current?.formations[0]?.support).toBe('2/37 Arm Bn')
+    await wrapper.get('[aria-label="Assigned support"]').trigger('click')
+    await flushPromises()
+    document.querySelector<HTMLButtonElement>('[aria-label="Select support 2 Arm Cav Bn"]')?.click()
+    await flushPromises()
+    expect(store.current?.formations[0]?.support).toBe('2 Arm Cav Bn')
 
     await wrapper.get('[aria-label="Prepared Defense"]').trigger('click')
     expect(store.current?.formations[0]?.preparedDefense).toBe(true)
@@ -74,6 +77,23 @@ describe('FormationDetail', () => {
     )
     await send?.trigger('click')
     expect(formation.status).toBe('dead_pool')
+  })
+
+  it('assigns an independent unit as support and clears it', async () => {
+    const wrapper = mountDetail()
+    const store = useFormationManagerStore()
+
+    await wrapper.get('[aria-label="Assigned support"]').trigger('click')
+    await flushPromises()
+    document.querySelector<HTMLButtonElement>('[aria-label="Select support 2/320 Inf Bn"]')?.click()
+    await flushPromises()
+    expect(store.current?.formations[0]?.support).toBe('2/320 Inf Bn')
+
+    await wrapper.get('[aria-label="Assigned support"]').trigger('click')
+    await flushPromises()
+    document.querySelector<HTMLButtonElement>('[aria-label="Clear support"]')?.click()
+    await flushPromises()
+    expect(store.current?.formations[0]?.support).toBe('')
   })
 
   it('chooses fatigue and artillery points from popup pickers', async () => {
