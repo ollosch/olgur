@@ -44,11 +44,11 @@ const supportGroups = computed(() => {
     (formation) => formation.side === props.formation.side,
   )
   return sameSide
-    .filter((formation) => formation.units.length > 0)
     .map((formation) => ({
       label: formation.name,
-      units: formation.units.map((unit) => unit.name),
+      units: formation.units.filter((unit) => !unit.dead).map((unit) => unit.name),
     }))
+    .filter((group) => group.units.length > 0)
 })
 
 const fatigueIndex = computed(() => FATIGUE_LEVELS.indexOf(props.formation.fatigue))
@@ -84,7 +84,7 @@ function chooseArtillery(value: string): void {
     <header
       class="sticky top-0 z-10 shrink-0 border-b border-t-2 border-border/70 bg-gradient-to-b from-card/60 to-background/95 px-2 py-1.5 backdrop-blur"
     >
-      <div class="flex items-center gap-1.5">
+      <div class="flex items-center gap-1.5 overflow-x-auto">
         <div class="min-w-0 flex-1">
           <h3 class="truncate text-[13px] font-bold leading-tight text-foreground">
             {{ formation.name }}

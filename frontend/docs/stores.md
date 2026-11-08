@@ -116,10 +116,11 @@ File: `frontend/src/stores/proofread.ts`
 
 File: `frontend/src/stores/formationManager.ts`
 
-Local-first state for the BCS Formation Manager. Scenarios are persisted in IndexedDB (`scenarios` + the `scenarioMeta` last-opened key), so the tool works fully offline and supports JSON export/import. It holds the saved scenario library, the open scenario, the active side, and the selected formation shown in the detail panel.
+Local-first state for the BCS Formation Manager. Scenarios are persisted in IndexedDB (`scenarios` + the `scenarioMeta` last-opened key), so the tool works fully offline and supports JSON export/import. It holds the saved scenario library, the open scenario, and the selected formation shown in the detail panel.
 
 - `createNewScenario(name, activeIds)` snapshots the bundled Arracourt formation charts; selected formations start `in_game`, all others start `reserve`.
-- Mutations cover unit steps (0 minimum, no maximum), Prepared Defense, free-text support, artillery points, fatigue (Fresh/0–4), and formation status transitions between `reserve`, `in_game`, and `dead_pool`.
+- Mutations cover unit steps (0 minimum, no maximum), Prepared Defense, complete MSR, support picked from a side's units or Independent units, artillery points (0–5), fatigue (Fresh/0–4), formation status transitions between `reserve`, `in_game`, and `dead_pool`, and per-unit losses.
+- Sending a formation's last living unit to the Dead Pool also sends the formation there, removing its HQ and Combat Train from the map. Rebuilding a destroyed formation restores its dead units; rebuilding a unit restores its starting steps.
 - Every mutation debounces an IndexedDB write; `flushSave()` forces it immediately. Dead Pool rebuilds keep current unit steps and state.
 - `exportScenario(id)` and `importScenario(contents)` move scenarios as `.formation.json` files; an import whose id already exists receives a new id.
 
