@@ -275,6 +275,19 @@ describe('formation manager store', () => {
     expect(store.selectedFormation).toBeNull()
   })
 
+  it('toggles the selected formation off when it is clicked again', async () => {
+    const store = await freshStore()
+    await store.createNewScenario('Toggle', ['allies:2 Cav Grp'])
+    const formation = store.current?.formations.find((entry) => entry.id === 'allies:2 Cav Grp')
+    if (!formation) throw new Error('missing formation')
+
+    store.selectFormation(formation.id)
+    expect(store.selectedFormationId).toBe(formation.id)
+
+    store.selectFormation(formation.id)
+    expect(store.selectedFormationId).toBeNull()
+  })
+
   it('clears the selection when switching to a side without the selected formation', async () => {
     const store = await freshStore()
     await store.createNewScenario('Sides', ['allies:2 Cav Grp'])

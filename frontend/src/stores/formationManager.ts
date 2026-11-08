@@ -475,7 +475,7 @@ export const useFormationManagerStore = defineStore('formationManager', () => {
   function selectFormation(id: string): void {
     const formation = findFormation(id)
     if (!formation || formation.status !== 'in_game') return
-    selectedFormationId.value = id
+    selectedFormationId.value = selectedFormationId.value === id ? null : id
   }
 
   function clearSelectedFormation(): void {
