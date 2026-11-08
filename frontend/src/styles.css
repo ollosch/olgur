@@ -151,7 +151,7 @@
     color: var(--primary);
   }
 
-  .prose :where(ul > li)::marker {
+  .prose ul > li::marker {
     color: inherit;
   }
 }
