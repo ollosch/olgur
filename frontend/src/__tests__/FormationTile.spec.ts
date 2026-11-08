@@ -52,6 +52,7 @@ describe('FormationTile', () => {
 
     expect(wrapper.text()).not.toContain('Done')
     expect(wrapper.get('button').classes()).toContain('border-transparent')
+    expect(wrapper.get('button').classes()).toContain('brightness-90')
   })
 
   it('keeps a border while the formation is not done', () => {
