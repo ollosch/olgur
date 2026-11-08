@@ -151,6 +151,9 @@
     color: var(--primary);
   }
 
+}
+
+@layer utilities {
   .prose ul > li::marker {
     color: inherit;
   }
