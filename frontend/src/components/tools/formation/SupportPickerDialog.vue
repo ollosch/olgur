@@ -11,6 +11,7 @@ const props = defineProps<{
   open: boolean
   groups: SupportGroup[]
   selected: string[]
+  disabled?: string[]
 }>()
 
 const emit = defineEmits<{
@@ -21,6 +22,10 @@ const emit = defineEmits<{
 
 function isSelected(unit: string): boolean {
   return props.selected.includes(unit)
+}
+
+function isDisabled(unit: string): boolean {
+  return (props.disabled ?? []).includes(unit)
 }
 
 function clear(): void {
@@ -64,15 +69,16 @@ function clear(): void {
               v-for="unit in group.units"
               :key="`${group.label}:${unit}`"
               type="button"
-              class="truncate rounded border px-2 py-1.5 text-left text-[11px] font-medium transition-colors"
+              class="truncate rounded border px-2 py-1.5 text-left text-[11px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
               :class="
                 isSelected(unit)
                   ? 'border-primary/70 bg-primary/20 text-primary'
                   : 'border-border bg-secondary text-foreground active:bg-muted'
               "
+              :disabled="isDisabled(unit)"
               :aria-pressed="isSelected(unit)"
               :aria-label="`Toggle support ${unit}`"
-              :title="unit"
+              :title="isDisabled(unit) ? `${unit} is already assigned as support` : unit"
               @click="emit('toggle', unit)"
             >
               {{ unit }}

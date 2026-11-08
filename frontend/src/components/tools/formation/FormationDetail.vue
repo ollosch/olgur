@@ -57,11 +57,20 @@ const supportUnits = computed(() =>
   resolveSupportUnits(props.formation, store.current?.formations ?? []),
 )
 
+const usedSupportNames = computed(() => {
+  const used = new Set<string>()
+  for (const formation of store.current?.formations ?? []) {
+    if (formation.id === props.formation.id || formation.side !== props.formation.side) continue
+    for (const unit of formation.support) used.add(unit)
+  }
+  return [...used]
+})
+
 const supportGroups = computed(() => {
   const aliveUnits = (formation: Formation): string[] =>
     formation.units.filter((unit) => unit.steps > 0).map((unit) => unit.name)
 
-  const groups = [{ label: props.formation.name, units: aliveUnits(props.formation) }]
+  const groups: Array<{ label: string; units: string[] }> = []
   const independent = store.current?.formations.find(
     (formation) =>
       formation.side === props.formation.side &&
@@ -71,6 +80,7 @@ const supportGroups = computed(() => {
   if (independent) {
     groups.push({ label: independent.name, units: aliveUnits(independent) })
   }
+  groups.push({ label: props.formation.name, units: aliveUnits(props.formation) })
   return groups.filter((group) => group.units.length > 0)
 })
 
@@ -119,57 +129,6 @@ function chooseArtillery(value: string): void {
       </div>
 
       <div class="mt-1 flex items-center gap-1 overflow-x-auto">
-        <button
-          type="button"
-          class="flex h-7 min-w-0 flex-1 items-center justify-center gap-1 rounded border px-1.5 text-[10px] font-bold uppercase tracking-wide transition-colors"
-          :class="
-            formation.preparedDefense
-              ? 'border-primary/60 bg-primary/20 text-primary'
-              : 'border-border bg-secondary text-muted-foreground'
-          "
-          :aria-pressed="formation.preparedDefense"
-          aria-label="Prepared Defense"
-          title="Prepared Defense"
-          @click="store.togglePreparedDefense(formation.id)"
-        >
-          <ShieldCheck class="h-3 w-3" />
-          PD
-        </button>
-
-        <button
-          type="button"
-          class="flex h-7 min-w-0 flex-1 items-center justify-center gap-1 rounded border px-1.5 text-[10px] font-bold uppercase tracking-wide transition-colors"
-          :class="
-            formation.completeMsr
-              ? 'border-red-500/60 bg-red-500/15 text-red-400'
-              : 'border-border bg-secondary text-muted-foreground'
-          "
-          :aria-pressed="formation.completeMsr"
-          aria-label="Complete MSR"
-          title="Complete MSR"
-          @click="store.toggleCompleteMsr(formation.id)"
-        >
-          <Route class="h-3 w-3" />
-          MSR
-        </button>
-
-        <button
-          type="button"
-          class="flex h-7 min-w-0 flex-1 items-center justify-center gap-1 rounded border px-1.5 text-[10px] font-bold uppercase tracking-wide transition-colors"
-          :class="
-            formation.done
-              ? 'border-emerald-500/60 bg-emerald-500/15 text-emerald-400'
-              : 'border-border bg-secondary text-muted-foreground'
-          "
-          :aria-pressed="formation.done"
-          aria-label="Done"
-          title="Done"
-          @click="store.toggleDone(formation.id)"
-        >
-          <Check class="h-3 w-3" />
-          Done
-        </button>
-
         <div
           class="flex h-7 min-w-0 flex-1 items-center rounded border border-border bg-secondary"
           title="Fatigue"
@@ -202,6 +161,23 @@ function chooseArtillery(value: string): void {
             <Plus class="h-3 w-3" />
           </button>
         </div>
+
+        <button
+          type="button"
+          class="flex h-7 min-w-0 flex-1 items-center justify-center gap-1 rounded border px-1.5 text-[10px] font-bold uppercase tracking-wide transition-colors"
+          :class="
+            formation.preparedDefense
+              ? 'border-primary/60 bg-primary/20 text-primary'
+              : 'border-border bg-secondary text-muted-foreground'
+          "
+          :aria-pressed="formation.preparedDefense"
+          aria-label="Prepared Defense"
+          title="Prepared Defense"
+          @click="store.togglePreparedDefense(formation.id)"
+        >
+          <ShieldCheck class="h-3 w-3" />
+          PD
+        </button>
 
         <div
           class="flex h-7 min-w-0 flex-1 items-center rounded border border-border bg-secondary"
@@ -236,6 +212,40 @@ function chooseArtillery(value: string): void {
             <Plus class="h-3 w-3" />
           </button>
         </div>
+
+        <button
+          type="button"
+          class="flex h-7 min-w-0 flex-1 items-center justify-center gap-1 rounded border px-1.5 text-[10px] font-bold uppercase tracking-wide transition-colors"
+          :class="
+            formation.completeMsr
+              ? 'border-red-500/60 bg-red-500/15 text-red-400'
+              : 'border-border bg-secondary text-muted-foreground'
+          "
+          :aria-pressed="formation.completeMsr"
+          aria-label="Complete MSR"
+          title="Complete MSR"
+          @click="store.toggleCompleteMsr(formation.id)"
+        >
+          <Route class="h-3 w-3" />
+          MSR
+        </button>
+
+        <button
+          type="button"
+          class="flex h-7 min-w-0 flex-1 items-center justify-center gap-1 rounded border px-1.5 text-[10px] font-bold uppercase tracking-wide transition-colors"
+          :class="
+            formation.done
+              ? 'border-emerald-500/60 bg-emerald-500/15 text-emerald-400'
+              : 'border-border bg-secondary text-muted-foreground'
+          "
+          :aria-pressed="formation.done"
+          aria-label="Done"
+          title="Done"
+          @click="store.toggleDone(formation.id)"
+        >
+          <Check class="h-3 w-3" />
+          Done
+        </button>
 
         <button
           type="button"
@@ -355,6 +365,7 @@ function chooseArtillery(value: string): void {
       v-model:open="supportPickerOpen"
       :groups="supportGroups"
       :selected="formation.support"
+      :disabled="usedSupportNames"
       @toggle="store.toggleSupport(formation.id, $event)"
       @clear="store.clearSupport(formation.id)"
     />

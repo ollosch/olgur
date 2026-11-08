@@ -132,6 +132,26 @@ describe('FormationDetail', () => {
     expect(independentUnit.steps).toBe(6)
   })
 
+  it('disables support units already assigned to another formation and lists Independents first', async () => {
+    const wrapper = mountDetail()
+    const store = useFormationManagerStore()
+    const other = store.current?.formations.find((entry) => entry.name === 'CCA/4 Arm Bde')
+    if (!other) throw new Error('missing formation')
+
+    store.setSupport(other.id, ['2/320 Inf Bn'])
+    await wrapper.get('[aria-label="Assigned support"]').trigger('click')
+    await flushPromises()
+
+    const headings = Array.from(document.querySelectorAll('h4')).map((heading) =>
+      heading.textContent?.trim(),
+    )
+    expect(headings[0]).toBe('Independent')
+    expect(
+      document.querySelector<HTMLButtonElement>('[aria-label="Toggle support 2/320 Inf Bn"]')
+        ?.disabled,
+    ).toBe(true)
+  })
+
   it('chooses fatigue and artillery points from popup pickers', async () => {
     const wrapper = mountDetail()
     const store = useFormationManagerStore()

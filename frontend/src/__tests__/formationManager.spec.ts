@@ -183,6 +183,23 @@ describe('formation manager store', () => {
     expect(independentUnit.steps).toBe(4)
   })
 
+  it('does not assign the same support unit to two formations', async () => {
+    const store = await freshStore()
+    await store.createNewScenario('Support ownership', ['allies:2 Cav Grp', 'allies:CCA/4 Arm Bde'])
+    const first = store.current?.formations.find((entry) => entry.name === '2 Cav Grp')
+    const second = store.current?.formations.find((entry) => entry.name === 'CCA/4 Arm Bde')
+    if (!first || !second) throw new Error('missing formations')
+
+    store.setSupport(first.id, ['2/320 Inf Bn'])
+    expect(first.support).toEqual(['2/320 Inf Bn'])
+
+    store.setSupport(second.id, ['2/320 Inf Bn'])
+    expect(second.support).toEqual([])
+
+    store.toggleSupport(second.id, '2/320 Inf Bn')
+    expect(second.support).toEqual([])
+  })
+
   it('exports, imports (with a new id on collision), and deletes scenarios', async () => {
     const store = await freshStore()
     await store.createNewScenario('Original', ['allies:2 Cav Grp'])

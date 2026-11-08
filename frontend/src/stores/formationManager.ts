@@ -373,10 +373,22 @@ export const useFormationManagerStore = defineStore('formationManager', () => {
     setUnitSteps(independent.id, independentUnit.id, independentUnit.steps + delta)
   }
 
+  function supportNamesInUse(formationId: string, side: FormationSide): Set<string> {
+    const used = new Set<string>()
+    for (const formation of currentFormations.value) {
+      if (formation.id === formationId || formation.side !== side) continue
+      for (const unit of formation.support) used.add(unit)
+    }
+    return used
+  }
+
   function setSupport(id: string, value: string[]): void {
     const formation = findFormation(id)
     if (!formation) return
-    const next = [...new Set(value.map((unit) => unit.trim()).filter((unit) => unit !== ''))]
+    const used = supportNamesInUse(formation.id, formation.side)
+    const next = [
+      ...new Set(value.map((unit) => unit.trim()).filter((unit) => unit !== '' && !used.has(unit))),
+    ]
     if (
       next.length === formation.support.length &&
       next.every((unit, index) => unit === formation.support[index])
