@@ -150,4 +150,8 @@
     content: '✔  ';
     color: var(--primary);
   }
+
+  .prose :where(ul > li)::marker {
+    color: inherit;
+  }
 }
