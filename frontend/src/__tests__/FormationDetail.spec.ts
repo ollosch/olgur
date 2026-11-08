@@ -75,9 +75,9 @@ describe('FormationDetail', () => {
     expect(wrapper.text()).toContain('no steps left')
     expect(wrapper.text()).toContain('Send it to the Dead Pool')
 
-    const send = wrapper.findAll('button').find((button) =>
-      button.text().includes('Send to Dead Pool'),
-    )
+    const send = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('Send to Dead Pool'))
     await send?.trigger('click')
     expect(formation.status).toBe('dead_pool')
   })

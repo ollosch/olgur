@@ -29,15 +29,21 @@ function unitCount(formations: Formation[]): number {
 </script>
 
 <template>
-  <section class="flex min-h-0 min-w-0 flex-1 flex-col bg-card/20">
-    <header class="shrink-0 border-b border-border/70 bg-background/60 px-2.5 py-1.5">
+  <section
+    class="flex min-h-0 min-w-0 flex-1 flex-col bg-gradient-to-b from-card/30 to-background/60"
+  >
+    <header
+      class="shrink-0 border-b border-t-2 border-border/70 bg-gradient-to-b from-card/60 to-card/30 px-2.5 py-1.5"
+      :class="side === 'allies' ? 'border-t-sky-500/70' : 'border-t-amber-500/70'"
+    >
       <div class="flex items-center gap-2">
         <span class="text-[11px] font-bold uppercase tracking-[0.14em]" :class="accentClass(side)">
           {{ SIDE_LABELS[side] }}
         </span>
         <span class="text-[10px] font-semibold tabular-nums text-muted-foreground">
-          {{ formations.length }} fm · {{ unitCount(formations) }} units ·
-          {{ totals.steps }}/{{ totals.startingSteps }}
+          {{ formations.length }} fm · {{ unitCount(formations) }} units · {{ totals.steps }}/{{
+            totals.startingSteps
+          }}
         </span>
         <button
           type="button"

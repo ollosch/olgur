@@ -21,20 +21,20 @@ const isSpent = computed(() => totals.value.steps === 0)
 <template>
   <button
     type="button"
-    class="flex h-full min-h-[76px] w-full flex-col justify-between gap-1 rounded-lg border px-2.5 py-2 text-left transition-colors"
+    class="flex h-full min-h-[72px] w-full flex-col justify-between gap-1 rounded border bg-gradient-to-b px-2.5 py-2 text-left shadow-sm transition-colors"
     :class="
       selected
-        ? 'border-primary/70 bg-primary/10'
+        ? 'border-primary/70 from-primary/15 to-primary/5 ring-1 ring-primary/30'
         : isSpent
-          ? 'border-red-500/40 bg-card/70 active:bg-muted/40'
-          : 'border-border/80 bg-card/70 active:bg-muted/40'
+          ? 'border-red-500/40 from-card/80 to-card/40 active:bg-muted/40'
+          : 'border-border/80 from-card/80 to-card/40 active:bg-muted/40'
     "
     :aria-pressed="selected"
     :title="formation.name"
     :data-formation-id="formation.id"
     @click="emit('select')"
   >
-    <span class="line-clamp-2 text-[13px] font-semibold leading-tight text-foreground">
+    <span class="line-clamp-2 text-[12px] font-semibold leading-tight text-foreground">
       {{ formation.name }}
     </span>
 

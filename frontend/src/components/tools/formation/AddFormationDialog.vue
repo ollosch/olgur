@@ -1,12 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Plus, Swords, X } from '@lucide/vue'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { formationTotals } from '@/lib/formations'
 import { useFormationManagerStore } from '@/stores/formationManager'
 import { SIDE_LABELS, type FormationSide } from '@/types/formation'
@@ -41,9 +36,7 @@ function close(): void {
     >
       <div class="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
         <div>
-          <DialogTitle class="text-sm font-semibold text-foreground">
-            Add formations
-          </DialogTitle>
+          <DialogTitle class="text-sm font-semibold text-foreground"> Add formations </DialogTitle>
           <DialogDescription class="text-xs text-muted-foreground">
             Commit reserve formations to play. {{ SIDE_LABELS[side] }}.
           </DialogDescription>
@@ -72,8 +65,7 @@ function close(): void {
             <div class="min-w-0 flex-1">
               <div class="truncate text-sm font-medium text-foreground">{{ formation.name }}</div>
               <div class="text-[10px] text-muted-foreground">
-                {{ formation.units.length }} units ·
-                {{ formationTotals(formation).steps }} steps
+                {{ formation.units.length }} units · {{ formationTotals(formation).steps }} steps
               </div>
             </div>
             <button

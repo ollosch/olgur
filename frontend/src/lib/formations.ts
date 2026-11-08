@@ -42,7 +42,9 @@ function unitId(formation: string, index: number): string {
 }
 
 export function blueprintFor(id: string): FormationBlueprint | undefined {
-  return FORMATION_BLUEPRINTS.find((blueprint) => formationId(blueprint.side, blueprint.name) === id)
+  return FORMATION_BLUEPRINTS.find(
+    (blueprint) => formationId(blueprint.side, blueprint.name) === id,
+  )
 }
 
 export function formationsForSide(side: FormationSide): FormationBlueprint[] {
@@ -138,7 +140,11 @@ export function totalsFor(formations: Formation[]): StepTotals {
   )
 }
 
-export function formationsFor(formations: Formation[], side: FormationSide, status: FormationStatus): Formation[] {
+export function formationsFor(
+  formations: Formation[],
+  side: FormationSide,
+  status: FormationStatus,
+): Formation[] {
   return formations.filter((formation) => formation.side === side && formation.status === status)
 }
 
@@ -189,11 +195,7 @@ function stringOr(value: unknown, fallback: string): string {
   return typeof value === 'string' ? value : fallback
 }
 
-function normalizeUnit(
-  raw: unknown,
-  formationIdValue: string,
-  index: number,
-): FormationUnit {
+function normalizeUnit(raw: unknown, formationIdValue: string, index: number): FormationUnit {
   if (!isRecord(raw)) {
     throw new ScenarioImportError(`Unit ${index + 1} in ${formationIdValue} is invalid.`)
   }
@@ -208,7 +210,9 @@ function normalizeUnit(
   const dead = raw['dead'] === true
 
   return {
-    id: stringOr(raw['id'], unitId(formationIdValue, index)).trim() || unitId(formationIdValue, index),
+    id:
+      stringOr(raw['id'], unitId(formationIdValue, index)).trim() ||
+      unitId(formationIdValue, index),
     name,
     startingSteps,
     steps: dead ? 0 : clampSteps(steps),

@@ -20,12 +20,10 @@ const addFormationOpen = ref(false)
 const addSide = ref<FormationSide>('allies')
 const rootRef = ref<HTMLElement | null>(null)
 
-const panes = computed(
-  (): Array<{ side: FormationSide; showDetail: boolean }> => [
-    { side: 'allies', showDetail: store.selectedFormation?.side === 'germans' },
-    { side: 'germans', showDetail: store.selectedFormation?.side === 'allies' },
-  ],
-)
+const panes = computed((): Array<{ side: FormationSide; showDetail: boolean }> => [
+  { side: 'allies', showDetail: store.selectedFormation?.side === 'germans' },
+  { side: 'germans', showDetail: store.selectedFormation?.side === 'allies' },
+])
 
 const saveLabel = computed(() => {
   if (store.saveError) return 'Save failed'
@@ -102,10 +100,12 @@ onBeforeUnmount(() => {
 
     <template v-else>
       <!-- Scenario toolbar -->
-      <div class="flex shrink-0 flex-wrap items-center gap-2 border-b border-border px-3 py-2.5">
+      <div
+        class="flex shrink-0 flex-wrap items-center gap-2 border-b border-border bg-card/40 px-3 py-1.5"
+      >
         <button
           type="button"
-          class="inline-flex h-11 items-center gap-1.5 rounded-md border border-border bg-secondary px-3 text-xs font-semibold text-muted-foreground transition-colors active:bg-muted"
+          class="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-secondary px-3 text-xs font-semibold text-muted-foreground transition-colors active:bg-muted"
           @click="backToLibrary"
         >
           <FolderOpen class="h-4 w-4" />
@@ -113,15 +113,20 @@ onBeforeUnmount(() => {
         </button>
 
         <div class="min-w-0 flex-1">
-          <h2 class="truncate text-sm font-semibold text-foreground">{{ store.current.name }}</h2>
-          <p class="text-[10px]" :class="store.saveError ? 'text-red-400' : 'text-muted-foreground'">
+          <h2 class="truncate text-[13px] font-bold uppercase tracking-wide text-foreground">
+            {{ store.current.name }}
+          </h2>
+          <p
+            class="text-[9px] uppercase tracking-wide"
+            :class="store.saveError ? 'text-red-400' : 'text-muted-foreground'"
+          >
             {{ saveLabel }}
           </p>
         </div>
 
         <button
           type="button"
-          class="inline-flex h-11 items-center gap-1.5 rounded-md border border-border bg-secondary px-3 text-xs font-semibold text-muted-foreground transition-colors active:bg-muted"
+          class="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-secondary px-3 text-xs font-semibold text-muted-foreground transition-colors active:bg-muted"
           @click="exportCurrent"
         >
           <Download class="h-4 w-4" />
@@ -129,7 +134,7 @@ onBeforeUnmount(() => {
         </button>
         <button
           type="button"
-          class="inline-flex h-11 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground"
+          class="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground"
           @click="newScenarioOpen = true"
         >
           <Plus class="h-4 w-4" />
@@ -137,7 +142,7 @@ onBeforeUnmount(() => {
         </button>
         <button
           type="button"
-          class="flex h-11 w-11 items-center justify-center rounded-md border border-border bg-secondary text-muted-foreground transition-colors active:bg-muted"
+          class="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-secondary text-muted-foreground transition-colors active:bg-muted"
           aria-label="Close tool"
           @click="toolModal.close()"
         >

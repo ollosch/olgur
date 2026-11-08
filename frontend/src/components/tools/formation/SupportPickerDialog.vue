@@ -1,11 +1,6 @@
 <script setup lang="ts">
 import { X } from '@lucide/vue'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 
 export interface SupportGroup {
   label: string

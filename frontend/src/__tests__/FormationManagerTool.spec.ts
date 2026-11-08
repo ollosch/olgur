@@ -79,5 +79,4 @@ describe('FormationManagerTool', () => {
 
     wrapper.unmount()
   })
-
 })

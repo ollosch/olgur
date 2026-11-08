@@ -2,12 +2,7 @@
 import { computed, ref } from 'vue'
 import { Download, FolderOpen, Plus, Trash2, Upload, X } from '@lucide/vue'
 import { toast } from 'vue-sonner'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { downloadTextFile, safeFilename } from '@/lib/download'
 import { totalsFor } from '@/lib/formations'
 import { useFormationManagerStore } from '@/stores/formationManager'
@@ -146,8 +141,8 @@ function formatDate(iso: string): string {
         <div>
           <p class="text-sm font-semibold text-foreground">No saved scenarios yet</p>
           <p class="mt-1 max-w-sm text-xs text-muted-foreground">
-            Create a scenario, pick the formations that start in play, and the tool keeps your
-            step, fatigue, and support state as you play.
+            Create a scenario, pick the formations that start in play, and the tool keeps your step,
+            fatigue, and support state as you play.
           </p>
         </div>
         <button

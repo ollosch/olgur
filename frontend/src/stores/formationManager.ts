@@ -66,7 +66,9 @@ export const useFormationManagerStore = defineStore('formationManager', () => {
   )
 
   const sides = computed(() => {
-    const sideData = (side: FormationSide): {
+    const sideData = (
+      side: FormationSide,
+    ): {
       inPlay: Formation[]
       reserve: Formation[]
       deadPool: Formation[]

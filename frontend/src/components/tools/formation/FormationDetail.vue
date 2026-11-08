@@ -1,15 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import {
-  Crosshair,
-  Minus,
-  Plus,
-  RotateCcw,
-  Route,
-  ShieldCheck,
-  Skull,
-  X,
-} from '@lucide/vue'
+import { Crosshair, Minus, Plus, RotateCcw, Route, ShieldCheck, Skull, X } from '@lucide/vue'
 import SupportPickerDialog from '@/components/tools/formation/SupportPickerDialog.vue'
 import UnitStepRow from '@/components/tools/formation/UnitStepRow.vue'
 import ValuePickerDialog from '@/components/tools/formation/ValuePickerDialog.vue'
@@ -39,7 +30,10 @@ const totals = computed(() => store.totalsForFormation(props.formation))
 const isSpent = computed(() => totals.value.steps === 0)
 const canReturnToReserve = computed(() => totals.value.steps > 0)
 
-const fatigueOptions = FATIGUE_LEVELS.map((level) => ({ value: String(level), label: fatigueLabel(level) }))
+const fatigueOptions = FATIGUE_LEVELS.map((level) => ({
+  value: String(level),
+  label: fatigueLabel(level),
+}))
 const artilleryOptions = Array.from({ length: ARTILLERY_MAX + 1 }, (_, value) => ({
   value: String(value),
   label: String(value),
@@ -59,9 +53,7 @@ const supportGroups = computed(() => {
 
 const fatigueIndex = computed(() => FATIGUE_LEVELS.indexOf(props.formation.fatigue))
 const canDecreaseFatigue = computed(() => fatigueIndex.value > 0)
-const canIncreaseFatigue = computed(
-  () => fatigueIndex.value < FATIGUE_LEVELS.length - 1,
-)
+const canIncreaseFatigue = computed(() => fatigueIndex.value < FATIGUE_LEVELS.length - 1)
 
 function fatigueShort(fatigue: FatigueLevel): string {
   return fatigue === 'fresh' ? 'Fresh' : String(fatigue)
@@ -85,9 +77,12 @@ function chooseArtillery(value: string): void {
 </script>
 
 <template>
-  <article :data-formation-id="formation.id" class="flex min-h-0 flex-col bg-card/20">
+  <article
+    :data-formation-id="formation.id"
+    class="flex min-h-0 flex-col bg-gradient-to-b from-card/30 to-background/60"
+  >
     <header
-      class="sticky top-0 z-10 shrink-0 border-b border-border/70 bg-background/95 px-2 py-1.5 backdrop-blur"
+      class="sticky top-0 z-10 shrink-0 border-b border-t-2 border-border/70 bg-gradient-to-b from-card/60 to-background/95 px-2 py-1.5 backdrop-blur"
     >
       <div class="flex items-center gap-1.5">
         <div class="min-w-0 flex-1">

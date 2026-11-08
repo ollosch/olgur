@@ -21,9 +21,7 @@ describe('formation charts', () => {
   })
 
   it('builds unique stable formation ids across sides', () => {
-    const ids = FORMATION_BLUEPRINTS.map((blueprint) =>
-      formationId(blueprint.side, blueprint.name),
-    )
+    const ids = FORMATION_BLUEPRINTS.map((blueprint) => formationId(blueprint.side, blueprint.name))
     expect(new Set(ids).size).toBe(ids.length)
     expect(formationId('allies', 'Independent')).not.toBe(formationId('germans', 'Independent'))
   })
@@ -36,10 +34,7 @@ describe('createScenario', () => {
     expect(scenario.name).toBe('Arracourt')
     expect(scenario.scenarioKey).toBe('arracourt')
     const inPlay = scenario.formations.filter((formation) => formation.status === 'in_game')
-    expect(inPlay.map((formation) => formation.name).sort()).toEqual([
-      '11 Pz Div',
-      '2 Cav Grp',
-    ])
+    expect(inPlay.map((formation) => formation.name).sort()).toEqual(['11 Pz Div', '2 Cav Grp'])
     expect(scenario.formations.filter((formation) => formation.status === 'reserve')).toHaveLength(
       15,
     )
@@ -98,15 +93,11 @@ describe('scenario files', () => {
   })
 
   it('rejects scenarios with no formations or units', () => {
-    expect(() => parseScenarioFile(JSON.stringify({ formations: [] }))).toThrow(
-      'has no formations',
-    )
+    expect(() => parseScenarioFile(JSON.stringify({ formations: [] }))).toThrow('has no formations')
     expect(() =>
       parseScenarioFile(
         JSON.stringify({
-          formations: [
-            { name: 'Empty', side: 'allies', units: [] },
-          ],
+          formations: [{ name: 'Empty', side: 'allies', units: [] }],
         }),
       ),
     ).toThrow('has no units')
