@@ -59,7 +59,7 @@ describe('FormationTile', () => {
       props: { formation: makeFormation(), selected: false },
     })
 
-    expect(wrapper.get('button').classes()).toContain('border-border/80')
+    expect(wrapper.get('button').classes()).toContain('border-border')
   })
 
   it('marks the tile as selected and pressed', () => {

@@ -40,7 +40,7 @@ const supportUnits = computed(() =>
           ? 'border-transparent from-card/80 to-card/40 active:bg-muted/40'
           : isSpent
             ? 'border-red-500/40 from-card/80 to-card/40 active:bg-muted/40'
-            : 'border-border/80 from-card/80 to-card/40 active:bg-muted/40'
+            : 'border-border from-card/80 to-card/40 active:bg-muted/40'
     "
     :aria-pressed="selected"
     :title="formation.name"

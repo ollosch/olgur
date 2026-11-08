@@ -13,6 +13,7 @@ import {
   Skull,
   X,
 } from '@lucide/vue'
+import StepBar from '@/components/tools/formation/StepBar.vue'
 import SupportPickerDialog from '@/components/tools/formation/SupportPickerDialog.vue'
 import UnitStepRow from '@/components/tools/formation/UnitStepRow.vue'
 import ValuePickerDialog from '@/components/tools/formation/ValuePickerDialog.vue'
@@ -140,7 +141,7 @@ function chooseArtillery(value: string): void {
           class="flex h-7 min-w-0 flex-1 items-center justify-center gap-1 rounded border px-1.5 text-[10px] font-bold uppercase tracking-wide transition-colors"
           :class="
             formation.completeMsr
-              ? 'border-emerald-500/60 bg-emerald-500/15 text-emerald-400'
+              ? 'border-red-500/60 bg-red-500/15 text-red-400'
               : 'border-border bg-secondary text-muted-foreground'
           "
           :aria-pressed="formation.completeMsr"
@@ -271,9 +272,19 @@ function chooseArtillery(value: string): void {
             :key="unit.name"
             class="flex items-center gap-2 rounded bg-muted/60 px-1.5 py-0.5"
           >
-            <span class="min-w-0 flex-1 truncate text-[10px] font-medium text-foreground">
-              {{ unit.name }}
-            </span>
+            <div class="min-w-0 flex-1">
+              <div class="truncate text-[10px] font-medium text-foreground">
+                {{ unit.name }}
+              </div>
+              <StepBar
+                v-if="unit.steps !== null"
+                :steps="unit.steps"
+                :starting-steps="unit.startingSteps ?? unit.steps"
+                compact
+                class="mt-1 max-w-32"
+                data-support-dots
+              />
+            </div>
             <div v-if="unit.steps !== null" class="ml-auto flex shrink-0 items-center gap-1">
               <button
                 type="button"
@@ -284,12 +295,6 @@ function chooseArtillery(value: string): void {
               >
                 <Minus class="h-3 w-3" />
               </button>
-              <div
-                class="w-8 text-center text-sm font-bold tabular-nums leading-none text-foreground"
-                data-support-steps
-              >
-                {{ unit.steps }}
-              </div>
               <button
                 type="button"
                 class="flex h-6 w-6 items-center justify-center rounded border border-border bg-secondary text-foreground transition-colors active:bg-muted"
