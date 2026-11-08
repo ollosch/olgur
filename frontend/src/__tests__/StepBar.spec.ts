@@ -28,4 +28,23 @@ describe('StepBar', () => {
     expect(rows[0]?.findAll('span')).toHaveLength(20)
     expect(rows[1]?.findAll('span')).toHaveLength(20)
   })
+
+  it('colors each segment like its unit step bar', () => {
+    const wrapper = mount(StepBar, {
+      props: {
+        steps: 6,
+        startingSteps: 8,
+        segments: [
+          { steps: 4, startingSteps: 4 },
+          { steps: 2, startingSteps: 4 },
+        ],
+      },
+    })
+    const pips = wrapper.findAll('[data-step-row] span')
+
+    expect(pips).toHaveLength(8)
+    expect(pips[0]?.classes()).toContain('bg-primary')
+    expect(pips[4]?.classes()).toContain('bg-amber-500')
+    expect(pips[6]?.classes()).toContain('bg-muted-foreground/15')
+  })
 })
