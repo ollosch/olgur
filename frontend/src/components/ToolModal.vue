@@ -39,7 +39,10 @@ function onOpenChange(open: boolean): void {
       <DialogTitle class="sr-only">{{ activeTool?.label ?? 'Tool' }}</DialogTitle>
       <DialogDescription class="sr-only">Game tool</DialogDescription>
 
-      <div class="shrink-0 flex items-center justify-between h-12 px-4 border-b border-border">
+      <div
+        v-if="!activeTool?.chromeless"
+        class="shrink-0 flex items-center justify-between h-12 px-4 border-b border-border"
+      >
         <span class="text-sm font-semibold text-foreground">{{ activeTool?.label }}</span>
         <button
           class="flex items-center justify-center w-8 h-8 rounded hover:bg-muted/50 transition-colors"

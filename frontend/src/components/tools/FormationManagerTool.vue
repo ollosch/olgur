@@ -8,6 +8,7 @@ import {
   Skull,
   Swords,
   Users,
+  X,
 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import FormationTile from '@/components/tools/formation/FormationTile.vue'
@@ -18,9 +19,11 @@ import ScenarioLibrary from '@/components/tools/formation/ScenarioLibrary.vue'
 import { downloadTextFile, safeFilename } from '@/lib/download'
 import { formationTotals } from '@/lib/formations'
 import { useFormationManagerStore } from '@/stores/formationManager'
+import { useToolModalStore } from '@/stores/toolModal'
 import { SIDE_LABELS, type FormationSide } from '@/types/formation'
 
 const store = useFormationManagerStore()
+const toolModal = useToolModalStore()
 
 const newScenarioOpen = ref(false)
 const addFormationOpen = ref(false)
@@ -101,6 +104,7 @@ onBeforeUnmount(() => {
     <ScenarioLibrary
       v-else-if="!store.current"
       @new="newScenarioOpen = true"
+      @close="toolModal.close()"
     />
 
     <template v-else>
@@ -139,6 +143,14 @@ onBeforeUnmount(() => {
         >
           <Plus class="h-4 w-4" />
           New
+        </button>
+        <button
+          type="button"
+          class="flex h-11 w-11 items-center justify-center rounded-md border border-border bg-secondary text-muted-foreground transition-colors active:bg-muted"
+          aria-label="Close tool"
+          @click="toolModal.close()"
+        >
+          <X class="h-5 w-5" />
         </button>
       </div>
 

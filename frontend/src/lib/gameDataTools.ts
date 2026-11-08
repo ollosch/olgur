@@ -12,12 +12,15 @@ export interface GameDataTool {
   /** Compact label for the inline toolbar; falls back to `id`. */
   shortLabel?: string
   component: Component
+  /** Tool renders its own top bar, so the modal header (title + close) is hidden. */
+  chromeless?: boolean
 }
 
 export interface SystemTool {
   label: string
   shortLabel?: string
   component: Component
+  chromeless?: boolean
 }
 
 const TOOL_LABELS: Record<GameDatum['type'], string> = {
@@ -50,6 +53,7 @@ export const SYSTEM_TOOL_COMPONENTS: Record<string, SystemTool> = {
     label: 'Formation Manager',
     shortLabel: 'Formations',
     component: markRaw(FormationManagerTool),
+    chromeless: true,
   },
 }
 
@@ -71,6 +75,7 @@ export function gameDataTools(gameData: GameDatum[], systemSlug?: string): GameD
         label: bespoke.label,
         shortLabel: bespoke.shortLabel ?? bespoke.label,
         component: bespoke.component,
+        chromeless: bespoke.chromeless ?? false,
       })
     }
   }

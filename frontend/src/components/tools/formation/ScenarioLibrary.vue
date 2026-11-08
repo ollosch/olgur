@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Download, FolderOpen, Plus, Trash2, Upload } from '@lucide/vue'
+import { Download, FolderOpen, Plus, Trash2, Upload, X } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import {
   Dialog,
@@ -15,6 +15,7 @@ import { SIDE_LABELS, type Scenario } from '@/types/formation'
 
 const emit = defineEmits<{
   new: []
+  close: []
 }>()
 
 const store = useFormationManagerStore()
@@ -116,6 +117,14 @@ function formatDate(iso: string): string {
         >
           <Plus class="h-4 w-4" />
           New scenario
+        </button>
+        <button
+          type="button"
+          class="flex h-11 w-11 items-center justify-center rounded-md border border-border bg-secondary text-muted-foreground transition-colors active:bg-muted"
+          aria-label="Close tool"
+          @click="emit('close')"
+        >
+          <X class="h-5 w-5" />
         </button>
       </div>
     </div>
