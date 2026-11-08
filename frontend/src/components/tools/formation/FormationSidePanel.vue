@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Plus, Skull, Swords } from '@lucide/vue'
 import FormationTile from '@/components/tools/formation/FormationTile.vue'
-import { formationTotals } from '@/lib/formations'
+import { formationIsDestroyed, formationTotals } from '@/lib/formations'
 import { SIDE_LABELS, type Formation, type FormationSide, type StepTotals } from '@/types/formation'
 
 defineProps<{
@@ -93,6 +93,9 @@ function unitCount(formations: Formation[]): number {
               <div class="text-[9px] tabular-nums text-muted-foreground">
                 {{ formationTotals(formation).steps }} /
                 {{ formationTotals(formation).startingSteps }} steps
+                <span v-if="formationIsDestroyed(formation)" class="text-red-400">
+                  · HQ + Train removed
+                </span>
               </div>
             </div>
             <button

@@ -97,7 +97,7 @@ function chooseArtillery(value: string): void {
           <p class="text-[9px] uppercase tracking-wide text-muted-foreground">
             {{ STATUS_LABELS[formation.status] }} ·
             <span class="tabular-nums">{{ totals.steps }} / {{ totals.startingSteps }}</span>
-            steps
+            steps · HQ · Train
           </p>
         </div>
 

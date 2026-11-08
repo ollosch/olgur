@@ -18,6 +18,7 @@ export interface FormationUnit {
   name: string
   startingSteps: number
   steps: number
+  dead: boolean
 }
 
 export interface Formation {

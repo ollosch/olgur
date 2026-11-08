@@ -137,6 +137,35 @@ describe('formation manager store', () => {
     expect(formation.status).toBe('in_game')
   })
 
+  it('sends single units to the dead pool and removes a destroyed formation', async () => {
+    const store = await freshStore()
+    await store.createNewScenario('Unit losses', ['allies:2 Cav Grp'])
+    const formation = store.current?.formations.find((entry) => entry.name === '2 Cav Grp')
+    if (!formation) throw new Error('missing formation')
+    const firstUnit = formation.units[0]
+    if (!firstUnit) throw new Error('missing unit')
+
+    store.selectFormation(formation.id)
+    store.sendUnitToDeadPool(formation.id, firstUnit.id)
+    expect(firstUnit.dead).toBe(true)
+    expect(firstUnit.steps).toBe(0)
+    expect(formation.status).toBe('in_game')
+
+    store.rebuildUnit(formation.id, firstUnit.id)
+    expect(firstUnit.dead).toBe(false)
+    expect(firstUnit.steps).toBe(firstUnit.startingSteps)
+
+    for (const unit of formation.units) {
+      store.sendUnitToDeadPool(formation.id, unit.id)
+    }
+    expect(formation.status).toBe('dead_pool')
+    expect(store.selectedFormationId).toBeNull()
+
+    store.rebuild(formation.id)
+    expect(formation.status).toBe('in_game')
+    expect(formation.units.every((unit) => !unit.dead)).toBe(true)
+  })
+
   it('exports, imports (with a new id on collision), and deletes scenarios', async () => {
     const store = await freshStore()
     await store.createNewScenario('Original', ['allies:2 Cav Grp'])

@@ -86,6 +86,11 @@ const isSpent = computed(() => totals.value.steps === 0)
       >
         {{ formation.support }}
       </span>
+      <span
+        class="ml-auto shrink-0 rounded bg-muted/40 px-1 py-0.5 text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/70"
+      >
+        HQ · Train
+      </span>
     </span>
   </button>
 </template>
