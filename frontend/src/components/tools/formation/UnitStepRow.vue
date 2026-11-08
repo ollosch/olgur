@@ -53,11 +53,8 @@ const isDead = computed(() => props.unit.steps === 0)
         <Minus class="h-3.5 w-3.5" />
       </button>
 
-      <div class="w-8 text-center">
-        <div class="text-sm font-bold tabular-nums leading-none text-foreground">
-          {{ unit.steps }}
-        </div>
-        <div class="text-[9px] text-muted-foreground">/ {{ unit.startingSteps }}</div>
+      <div class="w-8 text-center text-sm font-bold tabular-nums leading-none text-foreground">
+        {{ unit.steps }}
       </div>
 
       <button

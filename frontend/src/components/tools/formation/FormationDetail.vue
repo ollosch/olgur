@@ -13,7 +13,6 @@ import {
   Skull,
   X,
 } from '@lucide/vue'
-import StepBar from '@/components/tools/formation/StepBar.vue'
 import SupportPickerDialog from '@/components/tools/formation/SupportPickerDialog.vue'
 import UnitStepRow from '@/components/tools/formation/UnitStepRow.vue'
 import ValuePickerDialog from '@/components/tools/formation/ValuePickerDialog.vue'
@@ -285,13 +284,12 @@ function chooseArtillery(value: string): void {
               >
                 <Minus class="h-3 w-3" />
               </button>
-              <span class="w-12 shrink-0" data-support-dots>
-                <StepBar
-                  :steps="unit.steps"
-                  :starting-steps="unit.startingSteps ?? unit.steps"
-                  compact
-                />
-              </span>
+              <div
+                class="w-8 text-center text-sm font-bold tabular-nums leading-none text-foreground"
+                data-support-steps
+              >
+                {{ unit.steps }}
+              </div>
               <button
                 type="button"
                 class="flex h-6 w-6 items-center justify-center rounded border border-border bg-secondary text-foreground transition-colors active:bg-muted"

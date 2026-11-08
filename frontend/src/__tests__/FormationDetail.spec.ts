@@ -57,7 +57,7 @@ describe('FormationDetail', () => {
     document.querySelector<HTMLButtonElement>('[aria-label="Done assigning support"]')?.click()
     await flushPromises()
     expect(store.current?.formations[0]?.support).toEqual(['2 Arm Cav Bn', '2/320 Inf Bn'])
-    expect(wrapper.findAll('[data-support-dots]')).toHaveLength(2)
+    expect(wrapper.findAll('[data-support-steps]')).toHaveLength(2)
 
     await wrapper.get('[aria-label="Prepared Defense"]').trigger('click')
     expect(store.current?.formations[0]?.preparedDefense).toBe(true)
