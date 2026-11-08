@@ -8,7 +8,7 @@ import {
   formationIsDestroyed,
   formationTotals,
   formationsFor,
-  migrateScenarioSupport,
+  migrateScenario,
   newScenarioId,
   nowIso,
   parseScenarioFile,
@@ -169,7 +169,7 @@ export const useFormationManagerStore = defineStore('formationManager', () => {
     if (ready.value) return
     try {
       const stored = await idbGetAll<Scenario>('scenarios')
-      scenarios.value = sortScenarios(stored.map((scenario) => migrateScenarioSupport(scenario)))
+      scenarios.value = sortScenarios(stored.map((scenario) => migrateScenario(scenario)))
       const lastId = await idbGet<string>('scenarioMeta', LAST_SCENARIO_KEY)
       if (lastId) {
         const found = scenarios.value.find((scenario) => scenario.id === lastId)
@@ -347,6 +347,32 @@ export const useFormationManagerStore = defineStore('formationManager', () => {
     touch()
   }
 
+  function setDone(id: string, value: boolean): void {
+    const formation = findFormation(id)
+    if (!formation || formation.done === value) return
+    formation.done = value
+    touch()
+  }
+
+  function adjustSupportUnitSteps(formationId: string, unitName: string, delta: number): void {
+    const formation = findFormation(formationId)
+    if (!formation) return
+
+    const ownUnit = formation.units.find((unit) => unit.name === unitName)
+    if (ownUnit) {
+      setUnitSteps(formation.id, ownUnit.id, ownUnit.steps + delta)
+      return
+    }
+
+    const independent = currentFormations.value.find(
+      (entry) =>
+        entry.side === formation.side && entry.name === 'Independent' && entry.id !== formation.id,
+    )
+    const independentUnit = independent?.units.find((unit) => unit.name === unitName)
+    if (!independent || !independentUnit) return
+    setUnitSteps(independent.id, independentUnit.id, independentUnit.steps + delta)
+  }
+
   function setSupport(id: string, value: string[]): void {
     const formation = findFormation(id)
     if (!formation) return
@@ -408,6 +434,12 @@ export const useFormationManagerStore = defineStore('formationManager', () => {
     setCompleteMsr(id, !formation.completeMsr)
   }
 
+  function toggleDone(id: string): void {
+    const formation = findFormation(id)
+    if (!formation) return
+    setDone(id, !formation.done)
+  }
+
   function setActiveSide(side: FormationSide): void {
     activeSide.value = side
     const selected = selectedFormation.value
@@ -467,14 +499,17 @@ export const useFormationManagerStore = defineStore('formationManager', () => {
     adjustUnitSteps,
     setPreparedDefense,
     setCompleteMsr,
+    setDone,
     setSupport,
     toggleSupport,
     clearSupport,
+    adjustSupportUnitSteps,
     setArtilleryPoints,
     adjustArtilleryPoints,
     setFatigue,
     togglePreparedDefense,
     toggleCompleteMsr,
+    toggleDone,
     // ui
     setActiveSide,
     selectFormation,

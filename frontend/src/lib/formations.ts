@@ -66,6 +66,7 @@ function makeFormation(blueprint: FormationBlueprint, status: FormationStatus): 
     })),
     preparedDefense: false,
     completeMsr: false,
+    done: false,
     support: [],
     artilleryPoints: 0,
     fatigue: 'fresh',
@@ -113,10 +114,11 @@ export function cloneScenario(scenario: Scenario): Scenario {
 }
 
 /** Repair scenarios saved by earlier builds that stored a single support string. */
-export function migrateScenarioSupport(scenario: Scenario): Scenario {
+export function migrateScenario(scenario: Scenario): Scenario {
   const copy = cloneScenario(scenario)
   for (const formation of copy.formations) {
     formation.support = normalizeSupportValue(formation.support as unknown)
+    formation.done = formation.done === true
   }
   return copy
 }
@@ -292,6 +294,7 @@ function normalizeFormation(raw: unknown, index: number): Formation {
     units: unitsRaw.map((unit, unitIndex) => normalizeUnit(unit, id, unitIndex)),
     preparedDefense: raw['preparedDefense'] === true,
     completeMsr: raw['completeMsr'] === true,
+    done: raw['done'] === true,
     support: normalizeSupportValue(raw['support']),
     artilleryPoints: Math.min(nonNegativeInt(raw['artilleryPoints'], 0), ARTILLERY_MAX),
     fatigue: isFatigue(raw['fatigue']) ? raw['fatigue'] : 'fresh',

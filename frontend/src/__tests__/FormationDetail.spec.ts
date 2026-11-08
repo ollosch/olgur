@@ -64,6 +64,9 @@ describe('FormationDetail', () => {
 
     await wrapper.get('[aria-label="Complete MSR"]').trigger('click')
     expect(store.current?.formations[0]?.completeMsr).toBe(true)
+
+    await wrapper.get('[aria-label="Done"]').trigger('click')
+    expect(store.current?.formations[0]?.done).toBe(true)
   })
 
   it('sends a formation to the Dead Pool and warns when it has no steps', async () => {
@@ -104,6 +107,26 @@ describe('FormationDetail', () => {
     document.querySelector<HTMLButtonElement>('[aria-label="Clear support"]')?.click()
     await flushPromises()
     expect(store.current?.formations[0]?.support).toEqual([])
+  })
+
+  it('adjusts assigned support unit steps with plus and minus buttons', async () => {
+    const wrapper = mountDetail()
+    const store = useFormationManagerStore()
+    const formation = store.current?.formations[0]
+    const independent = store.current?.formations.find(
+      (entry) => entry.side === 'allies' && entry.name === 'Independent',
+    )
+    const independentUnit = independent?.units.find((unit) => unit.name === '2/320 Inf Bn')
+    if (!formation || !independentUnit) throw new Error('missing support unit')
+
+    store.setSupport(formation.id, ['2/320 Inf Bn'])
+    await wrapper.vm.$nextTick()
+
+    await wrapper.get('[aria-label="Add one step to support 2/320 Inf Bn"]').trigger('click')
+    expect(independentUnit.steps).toBe(7)
+
+    await wrapper.get('[aria-label="Remove one step from support 2/320 Inf Bn"]').trigger('click')
+    expect(independentUnit.steps).toBe(6)
   })
 
   it('chooses fatigue and artillery points from popup pickers', async () => {

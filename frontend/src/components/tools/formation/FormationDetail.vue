@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import {
+  Check,
   ChevronRight,
   Crosshair,
   Link2,
@@ -120,7 +121,7 @@ function chooseArtillery(value: string): void {
       <div class="mt-1 flex items-center gap-1 overflow-x-auto">
         <button
           type="button"
-          class="flex h-7 shrink-0 items-center justify-center gap-1 rounded border px-1.5 text-[10px] font-bold uppercase tracking-wide transition-colors"
+          class="flex h-7 min-w-0 flex-1 items-center justify-center gap-1 rounded border px-1.5 text-[10px] font-bold uppercase tracking-wide transition-colors"
           :class="
             formation.preparedDefense
               ? 'border-primary/60 bg-primary/20 text-primary'
@@ -137,7 +138,7 @@ function chooseArtillery(value: string): void {
 
         <button
           type="button"
-          class="flex h-7 shrink-0 items-center justify-center gap-1 rounded border px-1.5 text-[10px] font-bold uppercase tracking-wide transition-colors"
+          class="flex h-7 min-w-0 flex-1 items-center justify-center gap-1 rounded border px-1.5 text-[10px] font-bold uppercase tracking-wide transition-colors"
           :class="
             formation.completeMsr
               ? 'border-emerald-500/60 bg-emerald-500/15 text-emerald-400'
@@ -152,8 +153,25 @@ function chooseArtillery(value: string): void {
           MSR
         </button>
 
+        <button
+          type="button"
+          class="flex h-7 min-w-0 flex-1 items-center justify-center gap-1 rounded border px-1.5 text-[10px] font-bold uppercase tracking-wide transition-colors"
+          :class="
+            formation.done
+              ? 'border-emerald-500/60 bg-emerald-500/15 text-emerald-400'
+              : 'border-border bg-secondary text-muted-foreground'
+          "
+          :aria-pressed="formation.done"
+          aria-label="Done"
+          title="Done"
+          @click="store.toggleDone(formation.id)"
+        >
+          <Check class="h-3 w-3" />
+          Done
+        </button>
+
         <div
-          class="flex h-7 shrink-0 items-center rounded border border-border bg-secondary"
+          class="flex h-7 min-w-0 flex-1 items-center rounded border border-border bg-secondary"
           title="Fatigue"
         >
           <button
@@ -186,7 +204,7 @@ function chooseArtillery(value: string): void {
         </div>
 
         <div
-          class="flex h-7 shrink-0 items-center rounded border border-border bg-secondary"
+          class="flex h-7 min-w-0 flex-1 items-center rounded border border-border bg-secondary"
           title="Artillery points"
         >
           <button
@@ -254,14 +272,35 @@ function chooseArtillery(value: string): void {
             :key="unit.name"
             class="flex items-center gap-2 rounded bg-muted/60 px-1.5 py-0.5"
           >
-            <span class="truncate text-[10px] font-medium text-foreground">{{ unit.name }}</span>
-            <span v-if="unit.steps !== null" class="ml-auto w-12 shrink-0" data-support-dots>
-              <StepBar
-                :steps="unit.steps"
-                :starting-steps="unit.startingSteps ?? unit.steps"
-                compact
-              />
+            <span class="min-w-0 flex-1 truncate text-[10px] font-medium text-foreground">
+              {{ unit.name }}
             </span>
+            <div v-if="unit.steps !== null" class="ml-auto flex shrink-0 items-center gap-1">
+              <button
+                type="button"
+                class="flex h-6 w-6 items-center justify-center rounded border border-border bg-secondary text-foreground transition-colors active:bg-muted disabled:opacity-40"
+                :disabled="unit.steps <= 0"
+                :aria-label="`Remove one step from support ${unit.name}`"
+                @click="store.adjustSupportUnitSteps(formation.id, unit.name, -1)"
+              >
+                <Minus class="h-3 w-3" />
+              </button>
+              <span class="w-12 shrink-0" data-support-dots>
+                <StepBar
+                  :steps="unit.steps"
+                  :starting-steps="unit.startingSteps ?? unit.steps"
+                  compact
+                />
+              </span>
+              <button
+                type="button"
+                class="flex h-6 w-6 items-center justify-center rounded border border-border bg-secondary text-foreground transition-colors active:bg-muted"
+                :aria-label="`Add one step to support ${unit.name}`"
+                @click="store.adjustSupportUnitSteps(formation.id, unit.name, 1)"
+              >
+                <Plus class="h-3 w-3" />
+              </button>
+            </div>
           </div>
         </div>
         <p v-else class="mt-0.5 text-[10px] text-muted-foreground">No support assigned</p>
@@ -288,10 +327,10 @@ function chooseArtillery(value: string): void {
         This formation has no steps left. Send it to the Dead Pool when it is destroyed.
       </p>
 
-      <div class="mt-2 flex flex-wrap gap-1.5">
+      <div class="mt-2 grid grid-cols-2 gap-1.5">
         <button
           type="button"
-          class="inline-flex h-8 items-center gap-1.5 rounded border border-border bg-secondary px-2 text-[10px] font-semibold text-muted-foreground transition-colors active:bg-muted disabled:opacity-40"
+          class="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded border border-border bg-secondary px-2 text-[10px] font-semibold text-muted-foreground transition-colors active:bg-muted disabled:opacity-40"
           :disabled="!canReturnToReserve"
           @click="store.returnToReserve(formation.id)"
         >
@@ -300,7 +339,7 @@ function chooseArtillery(value: string): void {
         </button>
         <button
           type="button"
-          class="inline-flex h-8 items-center gap-1.5 rounded border border-red-500/40 bg-red-500/10 px-2 text-[10px] font-semibold text-red-400 transition-colors active:bg-red-500/20"
+          class="inline-flex h-8 w-full items-center justify-center gap-1.5 rounded border border-red-500/40 bg-red-500/10 px-2 text-[10px] font-semibold text-red-400 transition-colors active:bg-red-500/20"
           @click="store.sendToDeadPool(formation.id)"
         >
           <Skull class="h-3.5 w-3.5" />

@@ -49,6 +49,7 @@ describe('formation manager store', () => {
     store.setArtilleryPoints(formation.id, 3)
     store.togglePreparedDefense(formation.id)
     store.toggleCompleteMsr(formation.id)
+    store.toggleDone(formation.id)
     await store.flushSave()
 
     const reloaded = await freshStore()
@@ -60,6 +61,7 @@ describe('formation manager store', () => {
     expect(restored?.artilleryPoints).toBe(3)
     expect(restored?.preparedDefense).toBe(true)
     expect(restored?.completeMsr).toBe(true)
+    expect(restored?.done).toBe(true)
   })
 
   it('clamps steps at zero and allows over-strength units', async () => {
@@ -160,6 +162,25 @@ describe('formation manager store', () => {
     store.rebuild(formation.id)
     expect(formation.status).toBe('in_game')
     expect(formation.units.every((unit) => unit.steps === unit.startingSteps)).toBe(true)
+  })
+
+  it('adjusts support unit steps for own and independent units', async () => {
+    const store = await freshStore()
+    await store.createNewScenario('Support steps', ['allies:2 Cav Grp'])
+    const formation = store.current?.formations.find((entry) => entry.name === '2 Cav Grp')
+    if (!formation) throw new Error('missing formation')
+    const independent = store.current?.formations.find(
+      (entry) => entry.side === 'allies' && entry.name === 'Independent',
+    )
+    const independentUnit = independent?.units.find((unit) => unit.name === '2/320 Inf Bn')
+    if (!independent || !independentUnit) throw new Error('missing independent unit')
+
+    store.setSupport(formation.id, ['2 Arm Cav Bn', '2/320 Inf Bn'])
+    store.adjustSupportUnitSteps(formation.id, '2 Arm Cav Bn', -1)
+    expect(formation.units[0]?.steps).toBe(3)
+
+    store.adjustSupportUnitSteps(formation.id, '2/320 Inf Bn', -2)
+    expect(independentUnit.steps).toBe(4)
   })
 
   it('exports, imports (with a new id on collision), and deletes scenarios', async () => {

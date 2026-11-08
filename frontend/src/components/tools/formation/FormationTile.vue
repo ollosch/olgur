@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Crosshair, ShieldCheck } from '@lucide/vue'
+import { Check, Crosshair, ShieldCheck } from '@lucide/vue'
 import StepBar from '@/components/tools/formation/StepBar.vue'
 import { formationTotals, resolveSupportUnits } from '@/lib/formations'
 import { useFormationManagerStore } from '@/stores/formationManager'
@@ -36,9 +36,11 @@ const supportUnits = computed(() =>
     :class="
       selected
         ? 'border-primary/70 from-primary/15 to-primary/5 ring-1 ring-primary/30'
-        : isSpent
-          ? 'border-red-500/40 from-card/80 to-card/40 active:bg-muted/40'
-          : 'border-border/80 from-card/80 to-card/40 active:bg-muted/40'
+        : formation.done
+          ? 'border-emerald-500/50 from-emerald-500/10 to-card/40 active:bg-muted/40'
+          : isSpent
+            ? 'border-red-500/40 from-card/80 to-card/40 active:bg-muted/40'
+            : 'border-border/80 from-card/80 to-card/40 active:bg-muted/40'
     "
     :aria-pressed="selected"
     :title="formation.name"
@@ -70,6 +72,13 @@ const supportUnits = computed(() =>
     />
 
     <span class="flex min-h-3.5 flex-wrap items-center gap-1 overflow-hidden">
+      <span
+        v-if="formation.done"
+        class="inline-flex items-center gap-0.5 rounded bg-emerald-500/15 px-1 py-0.5 text-[9px] font-semibold text-emerald-400"
+      >
+        <Check class="h-2.5 w-2.5" />
+        Done
+      </span>
       <span
         v-if="formation.preparedDefense"
         class="inline-flex items-center gap-0.5 rounded bg-primary/15 px-1 py-0.5 text-[9px] font-semibold text-primary"

@@ -5,7 +5,7 @@ import {
   cloneScenario,
   createScenario,
   formationId,
-  migrateScenarioSupport,
+  migrateScenario,
   formationsForSide,
   parseScenarioFile,
   serializeScenario,
@@ -69,6 +69,7 @@ describe('scenario files', () => {
     formation.artilleryPoints = 4
     formation.preparedDefense = true
     formation.completeMsr = true
+    formation.done = true
     formation.status = 'dead_pool'
 
     const imported = parseScenarioFile(serializeScenario(scenario), NOW)
@@ -160,7 +161,7 @@ describe('scenario files', () => {
     if (!formation) throw new Error('missing formation')
     ;(formation as unknown as { support: string }).support = '2/37 Arm Bn'
 
-    const migrated = migrateScenarioSupport(scenario)
+    const migrated = migrateScenario(scenario)
     expect(migrated.formations[0]?.support).toEqual(['2/37 Arm Bn'])
   })
 
