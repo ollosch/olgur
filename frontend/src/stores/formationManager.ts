@@ -326,6 +326,13 @@ export const useFormationManagerStore = defineStore('formationManager', () => {
     touch()
   }
 
+  function setCompleteMsr(id: string, value: boolean): void {
+    const formation = findFormation(id)
+    if (!formation || formation.completeMsr === value) return
+    formation.completeMsr = value
+    touch()
+  }
+
   function setSupport(id: string, value: string): void {
     const formation = findFormation(id)
     if (!formation || formation.support === value) return
@@ -359,6 +366,12 @@ export const useFormationManagerStore = defineStore('formationManager', () => {
     const formation = findFormation(id)
     if (!formation) return
     setPreparedDefense(id, !formation.preparedDefense)
+  }
+
+  function toggleCompleteMsr(id: string): void {
+    const formation = findFormation(id)
+    if (!formation) return
+    setCompleteMsr(id, !formation.completeMsr)
   }
 
   function setActiveSide(side: FormationSide): void {
@@ -419,11 +432,13 @@ export const useFormationManagerStore = defineStore('formationManager', () => {
     setUnitSteps,
     adjustUnitSteps,
     setPreparedDefense,
+    setCompleteMsr,
     setSupport,
     setArtilleryPoints,
     adjustArtilleryPoints,
     setFatigue,
     togglePreparedDefense,
+    toggleCompleteMsr,
     // ui
     setActiveSide,
     selectFormation,

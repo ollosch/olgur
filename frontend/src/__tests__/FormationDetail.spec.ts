@@ -56,6 +56,9 @@ describe('FormationDetail', () => {
 
     await wrapper.get('[aria-label="Prepared Defense"]').trigger('click')
     expect(store.current?.formations[0]?.preparedDefense).toBe(true)
+
+    await wrapper.get('[aria-label="Complete MSR"]').trigger('click')
+    expect(store.current?.formations[0]?.completeMsr).toBe(true)
   })
 
   it('sends a formation to the Dead Pool and warns when it has no steps', async () => {

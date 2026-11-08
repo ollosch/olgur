@@ -5,6 +5,7 @@ import {
   Minus,
   Plus,
   RotateCcw,
+  Route,
   ShieldCheck,
   Skull,
   X,
@@ -115,6 +116,23 @@ function chooseArtillery(value: string): void {
         >
           <ShieldCheck class="h-3.5 w-3.5" />
           PD
+        </button>
+
+        <button
+          type="button"
+          class="flex h-8 shrink-0 items-center justify-center gap-1 rounded border px-1.5 text-[10px] font-bold uppercase tracking-wide transition-colors"
+          :class="
+            formation.completeMsr
+              ? 'border-emerald-500/60 bg-emerald-500/15 text-emerald-400'
+              : 'border-border bg-secondary text-muted-foreground'
+          "
+          :aria-pressed="formation.completeMsr"
+          aria-label="Complete MSR"
+          title="Complete MSR"
+          @click="store.toggleCompleteMsr(formation.id)"
+        >
+          <Route class="h-3.5 w-3.5" />
+          MSR
         </button>
 
         <div

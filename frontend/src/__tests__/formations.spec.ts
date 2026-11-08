@@ -71,6 +71,7 @@ describe('scenario files', () => {
     formation.support = '2/37 Arm Bn'
     formation.artilleryPoints = 4
     formation.preparedDefense = true
+    formation.completeMsr = true
     formation.status = 'dead_pool'
 
     const imported = parseScenarioFile(serializeScenario(scenario), NOW)

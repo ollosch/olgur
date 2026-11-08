@@ -62,6 +62,12 @@ const isSpent = computed(() => totals.value.steps === 0)
         Prep
       </span>
       <span
+        v-if="formation.completeMsr"
+        class="inline-flex items-center rounded bg-emerald-500/15 px-1 py-0.5 text-[9px] font-semibold text-emerald-400"
+      >
+        MSR
+      </span>
+      <span
         v-if="formation.fatigue !== 'fresh'"
         class="inline-flex items-center rounded bg-amber-500/15 px-1 py-0.5 text-[9px] font-semibold text-amber-400"
       >

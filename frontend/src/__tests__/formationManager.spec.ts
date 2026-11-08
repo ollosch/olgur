@@ -48,6 +48,7 @@ describe('formation manager store', () => {
     store.setSupport(formation.id, '2/37 Arm Bn')
     store.setArtilleryPoints(formation.id, 3)
     store.togglePreparedDefense(formation.id)
+    store.toggleCompleteMsr(formation.id)
     await store.flushSave()
 
     const reloaded = await freshStore()
@@ -58,6 +59,7 @@ describe('formation manager store', () => {
     expect(restored?.support).toBe('2/37 Arm Bn')
     expect(restored?.artilleryPoints).toBe(3)
     expect(restored?.preparedDefense).toBe(true)
+    expect(restored?.completeMsr).toBe(true)
   })
 
   it('clamps steps at zero and allows over-strength units', async () => {
