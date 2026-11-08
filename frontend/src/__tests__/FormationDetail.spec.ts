@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import FormationDetail from '@/components/tools/formation/FormationDetail.vue'
 import { createScenario } from '@/lib/formations'
@@ -74,6 +74,23 @@ describe('FormationDetail', () => {
     )
     await send?.trigger('click')
     expect(formation.status).toBe('dead_pool')
+  })
+
+  it('chooses fatigue and artillery points from popup pickers', async () => {
+    const wrapper = mountDetail()
+    const store = useFormationManagerStore()
+
+    await wrapper.get('[aria-label="Choose fatigue"]').trigger('click')
+    await flushPromises()
+    document.querySelector<HTMLButtonElement>('[aria-label="Select Fatigue 4"]')?.click()
+    await flushPromises()
+    expect(store.current?.formations[0]?.fatigue).toBe(4)
+
+    await wrapper.get('[aria-label="Choose artillery points"]').trigger('click')
+    await flushPromises()
+    document.querySelector<HTMLButtonElement>('[aria-label="Select 5"]')?.click()
+    await flushPromises()
+    expect(store.current?.formations[0]?.artilleryPoints).toBe(5)
   })
 
   it('emits close from the header button', async () => {

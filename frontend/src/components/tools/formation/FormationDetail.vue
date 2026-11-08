@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import {
   Crosshair,
   Minus,
@@ -11,6 +11,7 @@ import {
 } from '@lucide/vue'
 import { Input } from '@/components/ui/input'
 import UnitStepRow from '@/components/tools/formation/UnitStepRow.vue'
+import ValuePickerDialog from '@/components/tools/formation/ValuePickerDialog.vue'
 import { useFormationManagerStore } from '@/stores/formationManager'
 import {
   ARTILLERY_MAX,
@@ -30,9 +31,17 @@ const emit = defineEmits<{
 }>()
 
 const store = useFormationManagerStore()
+const fatiguePickerOpen = ref(false)
+const artilleryPickerOpen = ref(false)
 const totals = computed(() => store.totalsForFormation(props.formation))
 const isSpent = computed(() => totals.value.steps === 0)
 const canReturnToReserve = computed(() => totals.value.steps > 0)
+
+const fatigueOptions = FATIGUE_LEVELS.map((level) => ({ value: String(level), label: fatigueLabel(level) }))
+const artilleryOptions = Array.from({ length: ARTILLERY_MAX + 1 }, (_, value) => ({
+  value: String(value),
+  label: String(value),
+}))
 
 const fatigueIndex = computed(() => FATIGUE_LEVELS.indexOf(props.formation.fatigue))
 const canDecreaseFatigue = computed(() => fatigueIndex.value > 0)
@@ -47,6 +56,17 @@ function fatigueShort(fatigue: FatigueLevel): string {
 function stepFatigue(delta: number): void {
   const next = FATIGUE_LEVELS[fatigueIndex.value + delta]
   if (next !== undefined) store.setFatigue(props.formation.id, next)
+}
+
+function chooseFatigue(value: string): void {
+  store.setFatigue(
+    props.formation.id,
+    value === 'fresh' ? 'fresh' : (Number(value) as FatigueLevel),
+  )
+}
+
+function chooseArtillery(value: string): void {
+  store.setArtilleryPoints(props.formation.id, Number(value))
 }
 </script>
 
@@ -97,12 +117,15 @@ function stepFatigue(delta: number): void {
           >
             <Minus class="h-3.5 w-3.5" />
           </button>
-          <span
-            class="min-w-8 border-x border-border/70 px-1 text-center text-[11px] font-bold tabular-nums text-foreground"
-            :aria-label="fatigueLabel(formation.fatigue)"
+          <button
+            type="button"
+            class="min-w-8 border-x border-border/70 px-1 text-center text-[11px] font-bold tabular-nums text-foreground transition-colors active:bg-muted"
+            aria-label="Choose fatigue"
+            :title="fatigueLabel(formation.fatigue)"
+            @click="fatiguePickerOpen = true"
           >
             {{ fatigueShort(formation.fatigue) }}
-          </span>
+          </button>
           <button
             type="button"
             class="flex h-full w-6 items-center justify-center text-muted-foreground transition-colors active:bg-muted disabled:opacity-30"
@@ -127,13 +150,16 @@ function stepFatigue(delta: number): void {
           >
             <Minus class="h-3.5 w-3.5" />
           </button>
-          <span
-            class="flex min-w-8 items-center justify-center gap-0.5 border-x border-border/70 px-1 text-[11px] font-bold tabular-nums text-foreground"
-            :aria-label="`Artillery points: ${formation.artilleryPoints}`"
+          <button
+            type="button"
+            class="flex min-w-8 items-center justify-center gap-0.5 border-x border-border/70 px-1 text-[11px] font-bold tabular-nums text-foreground transition-colors active:bg-muted"
+            aria-label="Choose artillery points"
+            :title="`Artillery points: ${formation.artilleryPoints}`"
+            @click="artilleryPickerOpen = true"
           >
             <Crosshair class="h-3 w-3 text-sky-400" />
             {{ formation.artilleryPoints }}
-          </span>
+          </button>
           <button
             type="button"
             class="flex h-full w-6 items-center justify-center text-muted-foreground transition-colors active:bg-muted disabled:opacity-30"
@@ -211,5 +237,22 @@ function stepFatigue(delta: number): void {
         </button>
       </div>
     </div>
+
+    <ValuePickerDialog
+      v-model:open="fatiguePickerOpen"
+      title="Fatigue"
+      description="Fresh, then levels 0 through 4."
+      :options="fatigueOptions"
+      :selected="String(formation.fatigue)"
+      @select="chooseFatigue"
+    />
+    <ValuePickerDialog
+      v-model:open="artilleryPickerOpen"
+      title="Artillery points"
+      description="Usually 0–3, maximum 5."
+      :options="artilleryOptions"
+      :selected="String(formation.artilleryPoints)"
+      @select="chooseArtillery"
+    />
   </article>
 </template>
