@@ -108,7 +108,7 @@ const childRules = computed((): Rule[] => props.childrenMap.get(props.rule.id) ?
 <template>
   <!-- Rule header -->
   <div class="flex items-baseline gap-3 group">
-    <component :is="headingTag(depth)" :class="[headingClass(depth), 'flex-1 min-w-0']">
+    <component :is="headingTag(depth)" :class="[headingClass(depth), 'flex-1 min-w-0 space-x-1']">
       <span class="font-mono text-primary pr-1 cursor-pointer hover:underline" @click="emit('selectRule', rule)">{{
         rule.number }}</span>
       <!-- eslint-disable-next-line vue/no-v-html -->
@@ -140,8 +140,8 @@ const childRules = computed((): Rule[] => props.childrenMap.get(props.rule.id) ?
             : bookmarkStore.addBookmark('rule', rule.id)
           ">
         <Star class="w-3.5 h-3.5 transition-colors" :class="bookmarkStore.isBookmarked('rule', rule.id)
-            ? 'text-yellow-400 fill-yellow-400'
-            : 'text-muted-foreground'
+          ? 'text-yellow-400 fill-yellow-400'
+          : 'text-muted-foreground'
           " />
       </button>
     </div>
@@ -149,8 +149,8 @@ const childRules = computed((): Rule[] => props.childrenMap.get(props.rule.id) ?
 
   <!-- Rule content -->
   <!-- eslint-disable-next-line vue/no-v-html -->
-  <p class="text-foreground/80 text-sm leading-relaxed mb-4 whitespace-pre-wrap" :data-rule-context="rule.module_id"
-    v-html="renderContent(rule.content, {
+  <p class="prose dark:prose-invert text-foreground/80 prose-strong:text-green-400 prose-blockquote:text-foreground/40 max-w-none text-sm leading-relaxed mb-4"
+    :data-rule-context="rule.module_id" v-html="renderContent(rule.content, {
       acronymPopups: appSettings.acronymPopups,
       block: true,
     })
@@ -158,7 +158,7 @@ const childRules = computed((): Rule[] => props.childrenMap.get(props.rule.id) ?
 
   <!-- Children -->
   <template v-if="!standalone">
-    <div v-for="child in childRules" :key="child.id" class="mt-4 prose">
+    <div v-for="child in childRules" :key="child.id" class="mt-4">
       <RuleDetailChildren :rule="child" :children-map="childrenMap" :depth="depth + 1" :toc-depth="tocDepth"
         :can-edit="canEdit" @select-rule="emit('selectRule', $event)" @rule-deleted="emit('ruleDeleted')" />
     </div>
