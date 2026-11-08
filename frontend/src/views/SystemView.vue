@@ -177,16 +177,6 @@ onBeforeUnmount(() => {
 // Handle direct URL navigation between different systems
 watch(systemId, (newId) => loadSystem(newId))
 
-// Re-fetch content when the draft/release view mode changes
-watch(
-  () => contentStore.viewMode,
-  async () => {
-    if (systemStore.currentSystem?.id !== systemId.value) return
-    await contentStore.refreshContent(systemId.value)
-    void loadGlobalModules(systemId.value)
-  },
-)
-
 // Re-fetch content when the "currently played" module selection changes so the
 // composed view (TOC, tree, SOP) reflects the newly scoped active modules.
 watch(
@@ -194,7 +184,10 @@ watch(
   async () => {
     if (loading.value) return
     if (systemStore.currentSystem?.id !== systemId.value) return
-    const loaded = await contentStore.fetchMissingModules(systemId.value, contentStore.activeModules)
+    const loaded = await contentStore.fetchMissingModules(
+      systemId.value,
+      contentStore.activeModules,
+    )
     for (const m of loaded) {
       panelStore.expandedModuleIds.add(m.id)
     }
@@ -245,6 +238,7 @@ watch(
       type: 'rule',
       id: rule.id,
       systemId: id,
+      mode: contentStore.contentModeFor(rule.module_id),
       title: rule.title,
       number: rule.number,
     })
@@ -261,9 +255,7 @@ watch(
     const revealId = panelStore.revealRuleId
     panelStore.revealRuleId = null
 
-    const rule = revealId
-      ? (contentStore.rulesById.get(revealId) ?? null)
-      : selectedRule.value
+    const rule = revealId ? (contentStore.rulesById.get(revealId) ?? null) : selectedRule.value
 
     if (!rule) {
       panelStore.pendingFocusRuleId = '__first__'

@@ -73,7 +73,8 @@ Derived state (composition model):
 - `allIndexEntries` — core plus the singular module (deduped), so the system index stays visible when an expansion module is selected. `singularGameData` — from `singularModule` only (SOP is a single-module surface).
 - `allLoadedRules`, `rulesById`, `rulesByNumber`, `rulesByModuleNumber`, `moduleById`, `moduleBySlug`, `gameDataById`, `indexEntriesById`, `indexEntriesByTerm` power navigation, popup lookup, and search. Lookups cover every loaded module, not just the active reading set.
 - `resolveRuleReference(number, { moduleSlug?, moduleId? })` resolves bare links in the owning module (or system-wide when `globalRuleNumbers`) and qualified `slug:number` / `{{L:slug:n}}` links in the named module. `hasRuleReference` checks both endpoints of a range.
-- `usesLiveContent(moduleId)`, `hasReleasedContent(moduleId)`, `isRuleAvailable` / `isGameDatumAvailable` / `isBookmarkTargetAvailable` decide whether the current source is live draft or released and whether a bookmark target is resolvable.
+- `usesLiveContent(moduleId)`, `contentModeFor(moduleId)`, `effectiveViewMode`, `hasReleasedContent(moduleId)`, `isRuleAvailable` / `isGameDatumAvailable` / `isBookmarkTargetAvailable` decide whether the current source is live draft or released and whether a bookmark target is resolvable.
+- `switchViewMode(mode)` is the UI-facing async mode switch: it sets `viewMode`, reloads the active content, and (for global-rule-number systems) loads the remaining modules. `setViewMode(mode)` only sets the flag and is used by tests.
 - `childrenMap` / `ruleDepths` compute `rule.depth` client-side; `flattenedRulesByModule` provides depth-first order per module.
 - `visibleIndexEntryIds` hides empty index branches unless they or their descendants still have visible content after filtering rule refs to resolvable rules.
 - `canSwitchView` — true when at least one active module has `content.view_live`; gates the Draft/Release toggle (players never see it). `releaseViewEmpty` — true on the Release view when no active module has manifest content.
@@ -126,8 +127,8 @@ Local-first state for the BCS Formation Manager. Scenarios are persisted in Inde
 
 ## Smaller Supporting Stores
 
-- `bookmarks.ts`: persists polymorphic bookmarks (`rule` | `table` | `unit`) into membership config via `PATCH /me/memberships/{system}`. `resolvedBookmarks` labels each entry and flags `available` when the target resolves in the currently loaded source; `availableBookmarks` feeds the toolbar. New bookmarks are only allowed on released content (not live drafts). `isBookmarked` / `addBookmark` / `removeBookmark` are type-aware.
-- `history.ts`: in-memory per-system recent rule history, capped at 20 and cleared on system exit.
+- `bookmarks.ts`: persists polymorphic bookmarks (`rule` | `table` | `unit`) into membership config via `PATCH /me/memberships/{system}`. Each entry carries a `mode` (`draft` | `release`), derived from the target module's real source at creation, plus display (`label`, `sublabel`) snapshots. `resolvedBookmarks` is one list ordered by rule number/name and marks Draft entries; `availableBookmarks` feeds the toolbar with the current source only. Entries from the other mode are clickable and switch the view first. `isBookmarked` / `addBookmark` / `removeBookmark` are type- and mode-aware.
+- `history.ts`: in-memory per-system recent rule history in one newest-first list, with per-mode caps of 20 and a Draft marker; cleared on system exit.
 - `appSettings.ts`: localStorage-backed acronym popup toggle, theme hue, and sidebar pin state.
 - `leftPanel.ts`, `shortcut.ts`: UI shell state — left-panel tab, module/rule expansion, focus; `shortcut.ts` also owns the Super-Search overlay flag.
 - `gameDataModal.ts`: full-screen game-data modal state — `sopOpen`, `tableBrowserOpen`, `selectedTableId`; `openSop`/`closeSop`, `openTableBrowser`/`closeTableBrowser`, `selectTable(id)`.

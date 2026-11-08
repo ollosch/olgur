@@ -1,11 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useSystemStore } from '@/stores/system'
+import type { ContentMode } from '@/types/domain'
 
 export interface HistoryEntry {
   type: 'rule' // extensible later: | 'table' | 'vehicle'
   id: string
   systemId: string
+  mode: ContentMode
   title: string
   number: string
   viewedAt: Date
@@ -18,16 +20,27 @@ export const useHistoryStore = defineStore('history', () => {
   const entries = ref<HistoryEntry[]>([])
 
   /**
-   * Add or move-to-top an entry. Called whenever the user opens an item.
-   * If an entry with the same (type, id, systemId) exists, it is moved to the
-   * front with an updated viewedAt. Otherwise prepended. Cap at MAX_HISTORY.
+   * Add or move-to-top an entry. Draft and released views keep separate
+   * lists, so uniqueness includes the content mode. Each list is capped at
+   * MAX_HISTORY entries.
    */
   function record(entry: Omit<HistoryEntry, 'viewedAt'>): void {
     const filtered = entries.value.filter(
-      (e) => !(e.type === entry.type && e.id === entry.id && e.systemId === entry.systemId),
+      (e) =>
+        !(
+          e.type === entry.type &&
+          e.id === entry.id &&
+          e.systemId === entry.systemId &&
+          e.mode === entry.mode
+        ),
     )
-    filtered.unshift({ ...entry, viewedAt: new Date() })
-    entries.value = filtered.slice(0, MAX_HISTORY)
+    const next = [{ ...entry, viewedAt: new Date() }, ...filtered]
+
+    const counts: Record<ContentMode, number> = { draft: 0, release: 0 }
+    entries.value = next.filter((e) => {
+      counts[e.mode] += 1
+      return counts[e.mode] <= MAX_HISTORY
+    })
   }
 
   /**
@@ -51,5 +64,11 @@ export const useHistoryStore = defineStore('history', () => {
     return forSystem(systemId)
   })
 
-  return { entries, record, clearSystem, forSystem, currentSystemEntries }
+  return {
+    entries,
+    record,
+    clearSystem,
+    forSystem,
+    currentSystemEntries,
+  }
 })

@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\Model;
 final readonly class MembershipConfig implements Castable
 {
     /**
-     * @param  array<int, array{type: string, id: string}>  $bookmarks
+     * @param  array<int, array{type: string, id: string, mode?: string, label?: string, sublabel?: string}>  $bookmarks
      * @param  array<int, string>  $ignoredTags
      * @param  array<int, string>  $boldTags
      */
@@ -45,9 +45,33 @@ final readonly class MembershipConfig implements Castable
         $bookmarks = [];
         if (is_array($data['bookmarks'] ?? null)) {
             foreach ($data['bookmarks'] as $bookmark) {
-                if (is_array($bookmark) && is_string($bookmark['type'] ?? null) && is_string($bookmark['id'] ?? null)) {
-                    $bookmarks[] = ['type' => $bookmark['type'], 'id' => $bookmark['id']];
+                if (! is_array($bookmark)) {
+                    continue;
                 }
+
+                if (! is_string($bookmark['type'] ?? null)) {
+                    continue;
+                }
+
+                if (! is_string($bookmark['id'] ?? null)) {
+                    continue;
+                }
+
+                $entry = ['type' => $bookmark['type'], 'id' => $bookmark['id']];
+
+                if (in_array($bookmark['mode'] ?? null, ['draft', 'release'], true)) {
+                    $entry['mode'] = $bookmark['mode'];
+                }
+
+                if (is_string($bookmark['label'] ?? null)) {
+                    $entry['label'] = $bookmark['label'];
+                }
+
+                if (is_string($bookmark['sublabel'] ?? null)) {
+                    $entry['sublabel'] = $bookmark['sublabel'];
+                }
+
+                $bookmarks[] = $entry;
             }
         }
 

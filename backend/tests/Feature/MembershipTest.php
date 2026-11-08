@@ -133,11 +133,28 @@ test('MembershipConfig::fromArray filters malformed bookmarks', function (): voi
         'bookmarks' => [
             ['type' => 'rule', 'id' => 'abc123'],
             ['type' => 123, 'id' => 'abc123'],
+            ['type' => 'rule', 'id' => 123],
             'not-an-array',
         ],
     ]);
 
     expect($config->bookmarks)->toBe([['type' => 'rule', 'id' => 'abc123']]);
+});
+
+test('MembershipConfig::fromArray preserves bookmark mode and labels', function (): void {
+    $config = MembershipConfig::fromArray([
+        'bookmarks' => [
+            ['type' => 'rule', 'id' => 'abc123', 'mode' => 'draft', 'label' => 'Draft rule', 'sublabel' => '1.1'],
+            ['type' => 'table', 'id' => 'table-1', 'mode' => 'release', 'label' => 'Firepower Table'],
+            ['type' => 'unit', 'id' => 'unit-1', 'mode' => 'invalid'],
+        ],
+    ]);
+
+    expect($config->bookmarks)->toBe([
+        ['type' => 'rule', 'id' => 'abc123', 'mode' => 'draft', 'label' => 'Draft rule', 'sublabel' => '1.1'],
+        ['type' => 'table', 'id' => 'table-1', 'mode' => 'release', 'label' => 'Firepower Table'],
+        ['type' => 'unit', 'id' => 'unit-1'],
+    ]);
 });
 
 test('MembershipConfig::fromArray filters non-string ignored and bold tags', function (): void {

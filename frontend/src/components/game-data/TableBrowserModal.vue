@@ -46,7 +46,9 @@ useModalShortcutGuard(() => gameDataModalStore.tableBrowserOpen)
 
 // Tables are a union over the active set.
 const tables = computed(() =>
-  contentStore.allGameData.filter((d) => d.type === 'table' && isTableVisible(d, FEATURES.aslTables)),
+  contentStore.allGameData.filter(
+    (d) => d.type === 'table' && isTableVisible(d, FEATURES.aslTables),
+  ),
 )
 
 const searchQuery = ref('')
@@ -66,17 +68,14 @@ function tableContent(item: GameDatum): TableContent | null {
   return item.content as unknown as TableContent
 }
 
-function isPinned(tableId: string): boolean {
-  return bookmarkStore.isBookmarked('table', tableId)
-}
-
-function canBookmarkTable(table: GameDatum): boolean {
-  return !contentStore.usesLiveContent(table.module_id)
+function isPinned(table: GameDatum): boolean {
+  return bookmarkStore.isBookmarked('table', table.id, contentStore.contentModeFor(table.module_id))
 }
 
 function togglePin(table: GameDatum): void {
-  if (isPinned(table.id)) {
-    void bookmarkStore.removeBookmark('table', table.id)
+  const mode = contentStore.contentModeFor(table.module_id)
+  if (isPinned(table)) {
+    void bookmarkStore.removeBookmark('table', table.id, mode)
   } else {
     void bookmarkStore.addBookmark('table', table.id)
   }
@@ -118,10 +117,7 @@ function onOpenChange(open: boolean): void {
            control backed by the polymorphic bookmark store. -->
       <div class="flex-1 min-h-0 min-w-0 flex">
         <!-- Browsable table list -->
-        <aside
-          class="w-72 shrink-0 border-r border-border flex flex-col"
-          data-test="table-list"
-        >
+        <aside class="w-72 shrink-0 border-r border-border flex flex-col" data-test="table-list">
           <div class="shrink-0 p-2 border-b border-border">
             <div
               class="flex items-center gap-2 rounded-md border border-input bg-transparent px-3 py-1.5"
@@ -138,10 +134,7 @@ function onOpenChange(open: boolean): void {
             </div>
           </div>
           <div class="flex-1 min-h-0 overflow-y-auto">
-            <div
-              v-if="filteredTables.length === 0"
-              class="px-4 py-4 text-sm text-muted-foreground"
-            >
+            <div v-if="filteredTables.length === 0" class="px-4 py-4 text-sm text-muted-foreground">
               {{ tables.length === 0 ? 'No tables available.' : 'No tables match your search.' }}
             </div>
             <div v-else class="py-2">
@@ -159,19 +152,14 @@ function onOpenChange(open: boolean): void {
                   <span class="truncate block">{{ table.name }}</span>
                 </button>
                 <button
-                  v-if="canBookmarkTable(table) || isPinned(table.id)"
                   class="shrink-0 p-1.5 rounded hover:bg-muted/50 transition-colors"
-                  :title="isPinned(table.id) ? 'Unpin table' : 'Pin table'"
+                  :title="isPinned(table) ? 'Unpin table' : 'Pin table'"
                   :data-pin="table.id"
                   @click.stop="togglePin(table)"
                 >
                   <Bookmark
                     class="w-3.5 h-3.5 transition-colors"
-                    :class="
-                      isPinned(table.id)
-                        ? 'text-primary fill-primary'
-                        : 'text-muted-foreground'
-                    "
+                    :class="isPinned(table) ? 'text-primary fill-primary' : 'text-muted-foreground'"
                   />
                 </button>
               </div>
@@ -230,10 +218,7 @@ function onOpenChange(open: boolean): void {
               </template>
             </div>
           </template>
-          <div
-            v-else
-            class="flex-1 flex items-center justify-center text-sm text-muted-foreground"
-          >
+          <div v-else class="flex-1 flex items-center justify-center text-sm text-muted-foreground">
             No table selected.
           </div>
         </div>

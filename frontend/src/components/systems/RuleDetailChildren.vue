@@ -39,9 +39,9 @@ const canProofread = computed(
     (contentStore.permissionsFor(props.rule.module_id)?.['content.proofread'] ?? false),
 )
 
-const canBookmarkRule = computed(
-  (): boolean => !offline.value && !contentStore.usesLiveContent(props.rule.module_id),
-)
+const canBookmarkRule = computed((): boolean => !offline.value)
+
+const bookmarkMode = computed(() => contentStore.contentModeFor(props.rule.module_id))
 
 const editDialogOpen = ref(false)
 const editingRule = ref<Rule | null>(null)
@@ -132,14 +132,14 @@ const childRules = computed((): Rule[] => props.childrenMap.get(props.rule.id) ?
         <Crosshair class="w-3.5 h-3.5 text-muted-foreground" />
       </button>
       <ProofreadToggle v-if="canProofread" entity-type="rule" :entity-id="rule.id" />
-      <button v-if="canBookmarkRule || bookmarkStore.isBookmarked('rule', rule.id)"
+      <button v-if="canBookmarkRule || bookmarkStore.isBookmarked('rule', rule.id, bookmarkMode)"
         class="p-1 rounded hover:bg-muted/40 transition-colors"
-        :title="bookmarkStore.isBookmarked('rule', rule.id) ? 'Remove bookmark' : 'Bookmark rule'" @click="
-          bookmarkStore.isBookmarked('rule', rule.id)
-            ? bookmarkStore.removeBookmark('rule', rule.id)
+        :title="bookmarkStore.isBookmarked('rule', rule.id, bookmarkMode) ? 'Remove bookmark' : 'Bookmark rule'" @click="
+          bookmarkStore.isBookmarked('rule', rule.id, bookmarkMode)
+            ? bookmarkStore.removeBookmark('rule', rule.id, bookmarkMode)
             : bookmarkStore.addBookmark('rule', rule.id)
           ">
-        <Star class="w-3.5 h-3.5 transition-colors" :class="bookmarkStore.isBookmarked('rule', rule.id)
+        <Star class="w-3.5 h-3.5 transition-colors" :class="bookmarkStore.isBookmarked('rule', rule.id, bookmarkMode)
           ? 'text-yellow-400 fill-yellow-400'
           : 'text-muted-foreground'
           " />

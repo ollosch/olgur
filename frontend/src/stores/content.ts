@@ -16,6 +16,7 @@ import type {
   GameDatum,
   ManifestEntry,
   BookmarkEntry,
+  ContentMode,
   ApiCollection,
   ApiResource,
   UpdateRuleRequest,
@@ -84,7 +85,7 @@ export const useContentStore = defineStore('content', () => {
   const indexEntriesByModule = ref<Record<string, IndexEntry[]>>({})
   const gameDataByModule = ref<Record<string, GameDatum[]>>({})
   const manifestByModule = ref<Record<string, ManifestEntry>>({})
-  const viewMode = ref<'draft' | 'release'>('draft')
+  const viewMode = ref<ContentMode>('draft')
 
   // Monotonic token bumped on every refresh/system-switch. Each fetch captures
   // it at start and discards its writes if a newer refresh has since started.
@@ -94,8 +95,8 @@ export const useContentStore = defineStore('content', () => {
   // Derived state
   // ---------------------------------------------------------------------------
 
-  const selectedModuleId = computed((): string | null =>
-    membershipStore.membership?.config?.selected_module_id ?? null,
+  const selectedModuleId = computed(
+    (): string | null => membershipStore.membership?.config?.selected_module_id ?? null,
   )
 
   /** The system's single core module (identified by `is_core`, else the first module). */
@@ -183,6 +184,11 @@ export const useContentStore = defineStore('content', () => {
     return !offline.value && viewMode.value === 'draft' && canViewLive(moduleId)
   }
 
+  /** The source a module's content is currently served from. */
+  function contentModeFor(moduleId: string): ContentMode {
+    return usesLiveContent(moduleId) ? 'draft' : 'release'
+  }
+
   /**
    * Whether this module has a released snapshot available to read.
    */
@@ -207,8 +213,25 @@ export const useContentStore = defineStore('content', () => {
     return entry.type === 'rule' ? isRuleAvailable(entry.id) : isGameDatumAvailable(entry.id)
   }
 
-  function setViewMode(mode: 'draft' | 'release'): void {
+  function setViewMode(mode: ContentMode): void {
     viewMode.value = mode
+  }
+
+  /**
+   * Switch the global view mode and reload the active content for that source.
+   * UI callers await this so a bookmark/history target is resolvable before
+   * navigation.
+   */
+  async function switchViewMode(mode: ContentMode): Promise<void> {
+    if (viewMode.value === mode) return
+    const systemId = systemStore.currentSystem?.id
+    viewMode.value = mode
+    if (!systemId) return
+
+    await refreshContent(systemId)
+    if (globalRuleNumbers.value) {
+      await fetchMissingModules(systemId, systemStore.modules)
+    }
   }
 
   /**
@@ -224,10 +247,20 @@ export const useContentStore = defineStore('content', () => {
    */
   const canSwitchView = computed(() => activeModules.value.some((m) => canViewLive(m.id)))
 
-  const releaseViewEmpty = computed((): boolean =>
-    viewMode.value === 'release' &&
-    activeModules.value.length > 0 &&
-    activeModules.value.every((m) => !manifestByModule.value[m.id]?.content),
+  /**
+   * The mode the reader is effectively in. Players and offline sessions always
+   * read released content even though `viewMode` defaults to draft.
+   */
+  const effectiveViewMode = computed((): ContentMode => {
+    if (offline.value) return 'release'
+    return viewMode.value === 'draft' && canSwitchView.value ? 'draft' : 'release'
+  })
+
+  const releaseViewEmpty = computed(
+    (): boolean =>
+      viewMode.value === 'release' &&
+      activeModules.value.length > 0 &&
+      activeModules.value.every((m) => !manifestByModule.value[m.id]?.content),
   )
 
   const allRules = computed((): Rule[] =>
@@ -339,8 +372,7 @@ export const useContentStore = defineStore('content', () => {
     const range = parseRuleRange(ref)
     if (range) {
       return (
-        hasSingleRuleReference(range.from, moduleId) &&
-        hasSingleRuleReference(range.to, moduleId)
+        hasSingleRuleReference(range.from, moduleId) && hasSingleRuleReference(range.to, moduleId)
       )
     }
     return hasSingleRuleReference(ref, moduleId)
@@ -885,12 +917,15 @@ export const useContentStore = defineStore('content', () => {
     canViewLive,
     canViewReleased,
     usesLiveContent,
+    contentModeFor,
+    effectiveViewMode,
     hasReleasedContent,
     isUnavailable,
     isRuleAvailable,
     isGameDatumAvailable,
     isBookmarkTargetAvailable,
     setViewMode,
+    switchViewMode,
     canSwitchView,
     releaseViewEmpty,
     canEditModule,

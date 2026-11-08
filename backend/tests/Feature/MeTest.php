@@ -224,6 +224,44 @@ it('accepts table and unit bookmark types on update membership config', function
     expect($fresh?->config?->bookmarks)->toBe($bookmarks);
 });
 
+it('accepts bookmark mode and display labels on update membership config', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    $membership = Membership::factory()->for($user)->for($system)->create();
+    actingAs($user);
+
+    $bookmarks = [
+        ['type' => 'rule', 'id' => 'abcdefghijklmnopqrstuvwxyz', 'mode' => 'draft', 'label' => 'Draft rule', 'sublabel' => '1.1'],
+        ['type' => 'table', 'id' => 'table-1', 'mode' => 'release', 'label' => 'Firepower Table', 'sublabel' => null],
+    ];
+
+    patchJson('/api/me/memberships/'.$system->id, ['config' => ['bookmarks' => $bookmarks]])
+        ->assertSuccessful();
+
+    $fresh = $membership->fresh();
+    expect($fresh?->config?->bookmarks)->toBe([
+        ['type' => 'rule', 'id' => 'abcdefghijklmnopqrstuvwxyz', 'mode' => 'draft', 'label' => 'Draft rule', 'sublabel' => '1.1'],
+        ['type' => 'table', 'id' => 'table-1', 'mode' => 'release', 'label' => 'Firepower Table'],
+    ]);
+});
+
+it('rejects unknown bookmark modes on update membership config', function (): void {
+    $user = User::factory()->create();
+    $system = System::factory()->create();
+    Membership::factory()->for($user)->for($system)->create();
+    actingAs($user);
+
+    patchJson('/api/me/memberships/'.$system->id, [
+        'config' => [
+            'bookmarks' => [
+                ['type' => 'rule', 'id' => 'abc123', 'mode' => 'live'],
+            ],
+        ],
+    ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['config.bookmarks.0.mode']);
+});
+
 it('returns 404 when user has no membership for the system', function (): void {
     $user = User::factory()->create();
     $system = System::factory()->create();

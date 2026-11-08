@@ -79,7 +79,7 @@ When a system is opened:
 
 While inside a system:
 
-- Opening a rule records it in `historyStore`.
+- Opening a rule records it in `historyStore`, tagged with the content source (`draft` or `release`) it was read from.
 - The selected rule drives left-panel highlighting and focus behavior.
 
 ## Content Tiers And Offline Caching

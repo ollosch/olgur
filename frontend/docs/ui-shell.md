@@ -53,7 +53,7 @@ There is no separate public landing shell. The authenticated app is the default 
 
 Primary component: `frontend/src/components/systems/LeftPanelContent.vue`
 
-- Tabs: rules tree, index, bookmarks, history. Unavailable bookmarks (target not in the current source) are disabled but can still be removed.
+- Tabs: rules tree, index, bookmarks, history. Bookmarks and history each show one ordered list; Draft entries carry a badge. An entry from the other mode switches the view before opening. Unavailable targets are disabled but can still be removed.
 - Module expansion state lives in store state and local interaction.
 - Width is resizable and persisted in localStorage.
 - For `global_rule_numbers` systems (e.g. ASL), the rules tree renders as one flat list (`flatRootRules`) with no per-module headers; otherwise rules are nested under per-module headers.

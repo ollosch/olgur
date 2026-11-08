@@ -77,9 +77,14 @@ export interface Module {
   updated_at: string
 }
 
+export type ContentMode = 'draft' | 'release'
+
 export interface BookmarkEntry {
   type: 'rule' | 'table' | 'unit'
   id: string
+  mode?: ContentMode
+  label?: string
+  sublabel?: string | null
 }
 
 export interface UserSubscription {

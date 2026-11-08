@@ -263,21 +263,29 @@ describe('TableBrowserModal — listing and bookmarks', () => {
       useMembershipStore().setMembership('sys1', makeMembership({ bookmarks: [] }))
     })
 
+    const releaseEntry = {
+      type: 'table' as const,
+      id: 't1',
+      mode: 'release' as const,
+      label: 'table t1',
+      sublabel: null,
+    }
+
     mockPatch.mockResolvedValue({
       ok: true,
-      data: { data: makeMembership({ bookmarks: [{ type: 'table', id: 't1' }] }) },
+      data: { data: makeMembership({ bookmarks: [releaseEntry] }) },
     })
 
     const bookmarkStore = useBookmarkStore()
-    expect(bookmarkStore.isBookmarked('table', 't1')).toBe(false)
+    expect(bookmarkStore.isBookmarked('table', 't1', 'release')).toBe(false)
 
     await wrapper.find('[data-pin="t1"]').trigger('click')
     await flushPromises()
 
     expect(mockPatch).toHaveBeenCalledWith('/me/memberships/sys1', {
-      config: { bookmarks: [{ type: 'table', id: 't1' }] },
+      config: { bookmarks: [releaseEntry] },
     })
-    expect(bookmarkStore.isBookmarked('table', 't1')).toBe(true)
+    expect(bookmarkStore.isBookmarked('table', 't1', 'release')).toBe(true)
 
     mockPatch.mockResolvedValue({
       ok: true,
@@ -290,15 +298,34 @@ describe('TableBrowserModal — listing and bookmarks', () => {
     expect(mockPatch).toHaveBeenCalledWith('/me/memberships/sys1', {
       config: { bookmarks: [] },
     })
-    expect(bookmarkStore.isBookmarked('table', 't1')).toBe(false)
+    expect(bookmarkStore.isBookmarked('table', 't1', 'release')).toBe(false)
   })
 
-  it('hides the pin button when the table module serves live content', () => {
+  it('pins a table while the module serves live content', async () => {
     const wrapper = mountBrowser(() => {
       seedContent()
       useSystemStore().modulesBySystem['sys1'] = [makeModule('mod1', true, true)]
+      useMembershipStore().setMembership('sys1', makeMembership({ bookmarks: [] }))
     })
 
-    expect(wrapper.find('[data-pin="t1"]').exists()).toBe(false)
+    mockPatch.mockResolvedValue({
+      ok: true,
+      data: {
+        data: makeMembership({
+          bookmarks: [{ type: 'table', id: 't1', mode: 'draft', label: 'table t1' }],
+        }),
+      },
+    })
+
+    expect(wrapper.find('[data-pin="t1"]').exists()).toBe(true)
+
+    await wrapper.find('[data-pin="t1"]').trigger('click')
+    await flushPromises()
+
+    expect(mockPatch).toHaveBeenCalledWith('/me/memberships/sys1', {
+      config: {
+        bookmarks: [{ type: 'table', id: 't1', mode: 'draft', label: 'table t1', sublabel: null }],
+      },
+    })
   })
 })

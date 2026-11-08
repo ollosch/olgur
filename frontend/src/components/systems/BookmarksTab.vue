@@ -20,8 +20,17 @@ const toolModalStore = useToolModalStore()
 const router = useRouter()
 const route = useRoute()
 
-function navigate(bookmark: ResolvedBookmark): void {
+function displayTitle(bookmark: ResolvedBookmark): string {
+  return bookmark.sublabel ? bookmark.label.replace(bookmark.sublabel + ' ', '') : bookmark.label
+}
+
+async function navigate(bookmark: ResolvedBookmark): Promise<void> {
   if (!bookmark.available) return
+
+  if (!bookmark.isCurrentMode) {
+    await contentStore.switchViewMode(bookmark.mode)
+  }
+
   const systemId = route.params['systemId'] as string
 
   if (bookmark.entry.type === 'rule') {
@@ -56,10 +65,9 @@ function navigate(bookmark: ResolvedBookmark): void {
         No bookmarks yet.
       </div>
 
-      <!-- Bookmark list -->
       <div
         v-for="bookmark in bookmarkStore.resolvedBookmarks"
-        :key="`${bookmark.entry.type}:${bookmark.entry.id}`"
+        :key="`${bookmark.entry.type}:${bookmark.entry.id}:${bookmark.mode}`"
         class="w-full flex items-center gap-1 px-2 py-1.5 hover:bg-muted/30 transition-colors group"
         :class="{ 'opacity-60': !bookmark.available }"
       >
@@ -78,16 +86,20 @@ function navigate(bookmark: ResolvedBookmark): void {
           <span
             class="text-xs truncate"
             :class="bookmark.available ? 'text-foreground/80' : 'text-muted-foreground italic'"
-            >{{
-              bookmark.label.replace(bookmark.sublabel ? bookmark.sublabel + ' ' : '', '')
-            }}</span
+            >{{ displayTitle(bookmark) }}</span
           >
+          <span
+            v-if="bookmark.mode === 'draft'"
+            class="shrink-0 rounded bg-amber-500/15 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400"
+          >
+            Draft
+          </span>
         </button>
         <button
           class="shrink-0 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all"
           :title="`Remove bookmark`"
           @click.stop="
-            bookmarkStore.removeBookmark(bookmark.entry.type, bookmark.entry.id)
+            bookmarkStore.removeBookmark(bookmark.entry.type, bookmark.entry.id, bookmark.mode)
           "
         >
           <X class="w-3 h-3" />

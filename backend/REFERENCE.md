@@ -140,7 +140,7 @@ Current shape in `memberships.config` (typed by `App\Data\MembershipConfig`):
 
 | Key | Type | Meaning |
 |---|---|---|
-| `bookmarks` | `{ type: 'rule' \| 'table' \| 'unit', id: string }[]` | Polymorphic frontend bookmarks stored per system |
+| `bookmarks` | `{ type: 'rule' \| 'table' \| 'unit', id: string, mode?: 'draft' \| 'release', label?: string, sublabel?: string \| null }[]` | Polymorphic frontend bookmarks stored per system; `mode` and display labels are optional for backwards compatibility |
 | `ignored_tags` | `string[]` | SOP topic tags the player has hidden |
 | `bold_tags` | `string[]` | SOP topic tags the player bolds |
 | `acronym_popups` | `boolean` | Whether acronym popups are enabled for this user |
@@ -148,7 +148,7 @@ Current shape in `memberships.config` (typed by `App\Data\MembershipConfig`):
 
 Important current behavior:
 
-- `PATCH /api/me/memberships/{system}` merges the submitted subset into the stored config (`array_merge`); omitted keys are preserved. `UpdateMembershipConfigRequest` validates the submitted keys: `selected_module_id` is a nullable string (max 26), and each bookmark `type` must be one of `rule`, `table`, `unit`.
+- `PATCH /api/me/memberships/{system}` merges the submitted subset into the stored config (`array_merge`); omitted keys are preserved. `UpdateMembershipConfigRequest` validates the submitted keys: `selected_module_id` is a nullable string (max 26), each bookmark `type` must be one of `rule`, `table`, `unit`, `mode` must be `draft` or `release`, and optional `label` / `sublabel` strings are preserved for display.
 - `selected_module_id` is a frontend display preference, not an entitlement: a subscriber is still entitled to read every module they are subscribed to. The selection only scopes which modules contribute to the composed reading view (core always first, plus the selected module). The backend stores it and nulls it when that module's subscription is revoked.
 
 ## Current Business Rules

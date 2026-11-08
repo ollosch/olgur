@@ -1,15 +1,22 @@
 <script setup lang="ts">
 import { useRouter, useRoute } from 'vue-router'
 import { useHistoryStore } from '@/stores/history'
+import { useContentStore } from '@/stores/content'
 import { renderContent } from '@/lib/renderContent'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Clock } from '@lucide/vue'
+import type { HistoryEntry } from '@/stores/history'
 
 const router = useRouter()
 const route = useRoute()
 const historyStore = useHistoryStore()
+const contentStore = useContentStore()
 
-function open(entry: (typeof historyStore.currentSystemEntries)[number]): void {
+async function open(entry: HistoryEntry): Promise<void> {
+  if (entry.mode !== contentStore.effectiveViewMode) {
+    await contentStore.switchViewMode(entry.mode)
+  }
+
   const systemId = route.params['systemId'] as string
   if (entry.type === 'rule') {
     router.push({ name: 'system-rule', params: { systemId, ruleId: entry.id } })
@@ -36,9 +43,10 @@ function relativeTime(date: Date): string {
       >
         No history yet.
       </div>
+
       <button
         v-for="entry in historyStore.currentSystemEntries"
-        :key="entry.id + entry.viewedAt.getTime()"
+        :key="entry.id + entry.mode + entry.viewedAt.getTime()"
         class="w-full flex items-start gap-2 px-3 py-2 hover:bg-muted/30 transition-colors text-left"
         @click="open(entry)"
       >
@@ -48,6 +56,12 @@ function relativeTime(date: Date): string {
             <span class="font-mono text-xs text-primary shrink-0">{{ entry.number }}</span>
             <!-- eslint-disable-next-line vue/no-v-html -->
             <span class="text-xs text-foreground truncate" v-html="renderContent(entry.title)" />
+            <span
+              v-if="entry.mode === 'draft'"
+              class="shrink-0 rounded bg-amber-500/15 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400"
+            >
+              Draft
+            </span>
           </div>
           <span class="text-[10px] text-muted-foreground">{{ relativeTime(entry.viewedAt) }}</span>
         </div>

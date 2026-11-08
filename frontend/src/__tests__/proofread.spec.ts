@@ -367,11 +367,11 @@ describe('RuleDetailChildren proofread gating', () => {
     expect(wrapper.findComponent(ProofreadToggle).exists()).toBe(false)
   })
 
-  it('hides the bookmark button while the module serves live content', () => {
+  it('shows the bookmark button while the module serves live content', () => {
     seedSystem(false)
     const wrapper = mountChildren(makeRule('r1'))
 
-    expect(wrapper.find('button[title="Bookmark rule"]').exists()).toBe(false)
+    expect(wrapper.find('button[title="Bookmark rule"]').exists()).toBe(true)
   })
 
   it('shows the bookmark button for released content', () => {

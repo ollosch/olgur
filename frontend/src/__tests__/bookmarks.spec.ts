@@ -169,51 +169,59 @@ describe('useBookmarkStore', () => {
   it.each(types)('round-trips a %s bookmark through the membership config', async (type) => {
     const { membershipStore, bookmarkStore } = setup()
     seedResolvedContent()
-    const updated = makeMembershipWithBookmarks('sys1', [{ type, id: 'id-1' }])
+    const entry: BookmarkEntry =
+      type === 'rule'
+        ? { type, id: 'id-1', mode: 'release', label: '1.1 Rule id-1', sublabel: '1.1' }
+        : { type, id: 'id-1', mode: 'release', label: 'Firepower Table', sublabel: null }
+    const updated = makeMembershipWithBookmarks('sys1', [entry])
     mockPatch.mockResolvedValue({ ok: true, data: { data: updated } })
 
     await bookmarkStore.addBookmark(type, 'id-1')
 
     expect(mockPatch).toHaveBeenCalledWith('/me/memberships/sys1', {
-      config: { bookmarks: [{ type, id: 'id-1' }] },
+      config: { bookmarks: [entry] },
     })
-    expect(bookmarkStore.bookmarks).toEqual([{ type, id: 'id-1' }])
-    expect(membershipStore.membership?.config?.bookmarks).toEqual([{ type, id: 'id-1' }])
+    expect(bookmarkStore.bookmarks).toEqual([entry])
+    expect(membershipStore.membership?.config?.bookmarks).toEqual([entry])
   })
 
   it('does not duplicate an existing bookmark of the same type and id', async () => {
-    const { bookmarkStore } = setup([{ type: 'table', id: 't1' }])
+    const { bookmarkStore } = setup([{ type: 'table', id: 'id-1', mode: 'release' }])
+    seedResolvedContent()
 
-    await bookmarkStore.addBookmark('table', 't1')
+    await bookmarkStore.addBookmark('table', 'id-1')
 
     expect(mockPatch).not.toHaveBeenCalled()
   })
 
-  it('removes a bookmark by type and id', async () => {
+  it('removes a bookmark by type, id and mode', async () => {
     const { bookmarkStore } = setup([
-      { type: 'rule', id: 'r1' },
-      { type: 'table', id: 't1' },
+      { type: 'rule', id: 'r1', mode: 'release' },
+      { type: 'table', id: 't1', mode: 'release' },
     ])
-    const updated = makeMembershipWithBookmarks('sys1', [{ type: 'rule', id: 'r1' }])
+    const updated = makeMembershipWithBookmarks('sys1', [
+      { type: 'rule', id: 'r1', mode: 'release' },
+    ])
     mockPatch.mockResolvedValue({ ok: true, data: { data: updated } })
 
-    await bookmarkStore.removeBookmark('table', 't1')
+    await bookmarkStore.removeBookmark('table', 't1', 'release')
 
     expect(mockPatch).toHaveBeenCalledWith('/me/memberships/sys1', {
-      config: { bookmarks: [{ type: 'rule', id: 'r1' }] },
+      config: { bookmarks: [{ type: 'rule', id: 'r1', mode: 'release' }] },
     })
-    expect(bookmarkStore.bookmarks).toEqual([{ type: 'rule', id: 'r1' }])
+    expect(bookmarkStore.bookmarks).toEqual([{ type: 'rule', id: 'r1', mode: 'release' }])
   })
 
-  it('reports isBookmarked for table and unit entries', () => {
+  it('reports isBookmarked per mode for table and unit entries', () => {
     const { bookmarkStore } = setup([
-      { type: 'table', id: 't1' },
-      { type: 'unit', id: 'u1' },
+      { type: 'table', id: 't1', mode: 'release' },
+      { type: 'unit', id: 'u1', mode: 'draft' },
     ])
 
-    expect(bookmarkStore.isBookmarked('table', 't1')).toBe(true)
-    expect(bookmarkStore.isBookmarked('unit', 'u1')).toBe(true)
-    expect(bookmarkStore.isBookmarked('rule', 'r1')).toBe(false)
+    expect(bookmarkStore.isBookmarked('table', 't1', 'release')).toBe(true)
+    expect(bookmarkStore.isBookmarked('unit', 'u1', 'draft')).toBe(true)
+    expect(bookmarkStore.isBookmarked('unit', 'u1', 'release')).toBe(false)
+    expect(bookmarkStore.isBookmarked('rule', 'r1', 'release')).toBe(false)
   })
 
   it('resolves table bookmarks to their table names', () => {
@@ -257,12 +265,26 @@ describe('useBookmarkStore', () => {
     expect(missing?.label).not.toBe('missing')
   })
 
-  it('treats targets present in the live source as available', () => {
-    const { bookmarkStore } = setup([{ type: 'rule', id: 'r1' }])
+  it('treats draft targets present in the live source as available', () => {
+    const { bookmarkStore } = setup([{ type: 'rule', id: 'r1', mode: 'draft' }])
     seedResolvedContent(true)
 
     expect(bookmarkStore.resolvedBookmarks[0]?.available).toBe(true)
+    expect(bookmarkStore.resolvedBookmarks[0]?.mode).toBe('draft')
     expect(bookmarkStore.availableBookmarks).toHaveLength(1)
+  })
+
+  it('keeps draft and released entries together in one ordered list', () => {
+    const { bookmarkStore } = setup([
+      { type: 'rule', id: 'id-1', mode: 'draft' },
+      { type: 'rule', id: 'r1', mode: 'release' },
+    ])
+    seedResolvedContent(true)
+
+    expect(bookmarkStore.resolvedBookmarks.map((b) => [b.entry.id, b.mode])).toEqual([
+      ['id-1', 'draft'],
+      ['r1', 'release'],
+    ])
   })
 
   it('excludes unavailable targets from availableBookmarks', () => {
@@ -287,14 +309,25 @@ describe('useBookmarkStore', () => {
     expect(bookmarkStore.bookmarks).toEqual([])
   })
 
-  it('refuses to add a bookmark while the module serves live content', async () => {
+  it('adds a draft bookmark while the module serves live content', async () => {
     const { bookmarkStore } = setup()
     seedResolvedContent(true)
+    const entry: BookmarkEntry = {
+      type: 'rule',
+      id: 'r1',
+      mode: 'draft',
+      label: '1.1 Rule r1',
+      sublabel: '1.1',
+    }
+    const updated = makeMembershipWithBookmarks('sys1', [entry])
+    mockPatch.mockResolvedValue({ ok: true, data: { data: updated } })
 
     await bookmarkStore.addBookmark('rule', 'r1')
 
-    expect(mockPatch).not.toHaveBeenCalled()
-    expect(bookmarkStore.bookmarks).toEqual([])
+    expect(mockPatch).toHaveBeenCalledWith('/me/memberships/sys1', {
+      config: { bookmarks: [entry] },
+    })
+    expect(bookmarkStore.bookmarks).toEqual([entry])
   })
 
   it('hides ASL table bookmarks while retaining the stored entry when the flag is off', () => {

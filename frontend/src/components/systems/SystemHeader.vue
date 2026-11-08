@@ -22,7 +22,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Menu, Search, Table2, ListOrdered, TriangleAlert, Wrench, Bookmark, MoreHorizontal, Settings } from '@lucide/vue'
+import {
+  Menu,
+  Search,
+  Table2,
+  ListOrdered,
+  TriangleAlert,
+  Wrench,
+  Bookmark,
+  MoreHorizontal,
+  Settings,
+} from '@lucide/vue'
 import LeftPanelContent from '@/components/systems/LeftPanelContent.vue'
 import ManageMembersDialog from '@/components/systems/ManageMembersDialog.vue'
 import BrokenLinksDialog from '@/components/systems/BrokenLinksDialog.vue'
@@ -123,7 +133,9 @@ const {
   hiddenBookmarkIds,
 } = useToolbarOverflow(tools, bookmarkItems)
 
-const overflowToolList = computed(() => tools.value.filter((t) => hiddenToolIds.value.includes(t.id)))
+const overflowToolList = computed(() =>
+  tools.value.filter((t) => hiddenToolIds.value.includes(t.id)),
+)
 
 const overflowBookmarkList = computed(() =>
   tableBookmarks.value.filter((b) => hiddenBookmarkIds.value.includes(b.entry.id)),
@@ -138,7 +150,7 @@ function openTableBookmark(tableId: string): void {
 }
 
 function onViewModeChange(value: string | number): void {
-  contentStore.setViewMode(String(value) as 'draft' | 'release')
+  void contentStore.switchViewMode(String(value) as 'draft' | 'release')
 }
 
 function goToRootToc(): void {
