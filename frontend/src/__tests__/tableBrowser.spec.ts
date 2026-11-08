@@ -237,13 +237,39 @@ describe('TableBrowserModal — listing and bookmarks', () => {
     expect(rows.map((r) => r.attributes('data-table-id'))).toEqual(['t2'])
   })
 
-  it('selects a table when its row is clicked', async () => {
+  it('selects a table when its row is clicked and hides the search panel', async () => {
     const wrapper = mountBrowser(seedContent)
 
     await wrapper.find('[data-table-id="t1"]').trigger('click')
 
     expect(wrapper.find('[data-rule-context]').exists()).toBe(true)
     expect(wrapper.text()).toContain('table t1')
+    expect(wrapper.find('[data-test="table-list"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="table-search"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="table-content"]').exists()).toBe(true)
+  })
+
+  it('opens a table selected externally (bookmark) in full-width mode', () => {
+    const wrapper = mountBrowser(() => {
+      seedContent()
+      useGameDataModalStore().selectTable('t1')
+    })
+
+    expect(wrapper.find('[data-test="table-list"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="table-search"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="table-render-area"]').exists()).toBe(true)
+  })
+
+  it('returns to the table list with the back button', async () => {
+    const wrapper = mountBrowser(seedContent)
+
+    await wrapper.find('[data-table-id="t1"]').trigger('click')
+    expect(wrapper.find('[data-test="table-list"]').exists()).toBe(false)
+
+    await wrapper.find('[data-test="table-back"]').trigger('click')
+
+    expect(wrapper.find('[data-test="table-list"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="table-render-area"]').exists()).toBe(false)
   })
 
   it('contains horizontal scroll within the render area', async () => {

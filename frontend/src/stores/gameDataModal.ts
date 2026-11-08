@@ -38,6 +38,11 @@ export const useGameDataModalStore = defineStore('gameDataModal', () => {
     tableBrowserOpen.value = true
   }
 
+  /** Return to the list view without closing the Table Browser. */
+  function clearTableSelection(): void {
+    selectedTableId.value = ''
+  }
+
   return {
     sopOpen,
     tableBrowserOpen,
@@ -47,5 +52,6 @@ export const useGameDataModalStore = defineStore('gameDataModal', () => {
     openTableBrowser,
     closeTableBrowser,
     selectTable,
+    clearTableSelection,
   }
 })

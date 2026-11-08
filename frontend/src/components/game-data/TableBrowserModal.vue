@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
-import { X, Bookmark, Search } from '@lucide/vue'
+import { ArrowLeft, X, Bookmark, Search } from '@lucide/vue'
 import { useContentStore } from '@/stores/content'
 import { useGameDataModalStore } from '@/stores/gameDataModal'
 import { useBookmarkStore } from '@/stores/bookmarks'
@@ -112,12 +112,16 @@ function onOpenChange(open: boolean): void {
         </button>
       </div>
 
-      <!-- Table listing + single-table renderer. The listing is always
-           visible; clicking a table selects it, and each row has a pin/unpin
-           control backed by the polymorphic bookmark store. -->
+      <!-- Table listing + single-table renderer. Selecting a table hides the
+           listing so the table gets the full width; the header offers a way
+           back and the same pin/unpin control. -->
       <div class="flex-1 min-h-0 min-w-0 flex">
         <!-- Browsable table list -->
-        <aside class="w-72 shrink-0 border-r border-border flex flex-col" data-test="table-list">
+        <aside
+          v-if="!selectedTable"
+          class="w-72 shrink-0 border-r border-border flex flex-col"
+          data-test="table-list"
+        >
           <div class="shrink-0 p-2 border-b border-border">
             <div
               class="flex items-center gap-2 rounded-md border border-input bg-transparent px-3 py-1.5"
@@ -168,10 +172,35 @@ function onOpenChange(open: boolean): void {
         </aside>
 
         <!-- Single-table renderer -->
-        <div class="flex-1 min-h-0 min-w-0 overflow-hidden flex flex-col">
+        <div class="flex-1 min-h-0 min-w-0 overflow-hidden flex flex-col" data-test="table-content">
           <template v-if="selectedTable">
-            <div class="shrink-0 flex items-center gap-2 px-4 py-2 border-b border-border">
-              <span class="text-sm font-semibold text-foreground">{{ selectedTable.name }}</span>
+            <div class="shrink-0 flex items-center gap-2 px-3 py-2 border-b border-border">
+              <button
+                class="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                title="Back to table list"
+                data-test="table-back"
+                @click="gameDataModalStore.clearTableSelection()"
+              >
+                <ArrowLeft class="w-3.5 h-3.5" />
+                Tables
+              </button>
+              <span class="text-sm font-semibold text-foreground truncate">
+                {{ selectedTable.name }}
+              </span>
+              <div class="flex-1" />
+              <button
+                class="shrink-0 p-1.5 rounded hover:bg-muted/50 transition-colors"
+                :title="isPinned(selectedTable) ? 'Unpin table' : 'Pin table'"
+                data-test="selected-table-pin"
+                @click.stop="togglePin(selectedTable)"
+              >
+                <Bookmark
+                  class="w-3.5 h-3.5 transition-colors"
+                  :class="
+                    isPinned(selectedTable) ? 'text-primary fill-primary' : 'text-muted-foreground'
+                  "
+                />
+              </button>
             </div>
             <div
               class="flex-1 min-w-0 overflow-auto p-6"
