@@ -1,0 +1,35 @@
+{
+	"mcpServers": {
+		"laravel-boost": {
+			"type": "stdio",
+			"command": "docker",
+			"args": [
+				"compose",
+				"-f",
+				"docker-compose.dev.yml",
+				"exec",
+				"-T",
+				"workspace",
+				"php",
+				"artisan",
+				"boost:mcp"
+			],
+			"tools": [
+				"*"
+			],
+			"env": {
+				"PWD": "/home/ollo/Code/olgur"
+			}
+		},
+		"qmd": {
+			"type": "stdio",
+			"command": "qmd",
+			"args": [
+				"mcp"
+			],
+			"tools": [
+				"*"
+			]
+		}
+	}
+}
