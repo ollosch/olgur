@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Check, Crosshair, ShieldCheck } from '@lucide/vue'
+import { Crosshair, ShieldCheck } from '@lucide/vue'
 import StepBar from '@/components/tools/formation/StepBar.vue'
 import { formationTotals, resolveSupportUnits } from '@/lib/formations'
 import { useFormationManagerStore } from '@/stores/formationManager'
@@ -37,7 +37,7 @@ const supportUnits = computed(() =>
       selected
         ? 'border-primary/70 from-primary/15 to-primary/5 ring-1 ring-primary/30'
         : formation.done
-          ? 'border-emerald-500/50 from-emerald-500/10 to-card/40 active:bg-muted/40'
+          ? 'border-transparent from-card/80 to-card/40 active:bg-muted/40'
           : isSpent
             ? 'border-red-500/40 from-card/80 to-card/40 active:bg-muted/40'
             : 'border-border/80 from-card/80 to-card/40 active:bg-muted/40'
@@ -73,26 +73,6 @@ const supportUnits = computed(() =>
 
     <span class="flex min-h-3.5 flex-wrap items-center gap-1 overflow-hidden">
       <span
-        v-if="formation.done"
-        class="inline-flex items-center gap-0.5 rounded bg-emerald-500/15 px-1 py-0.5 text-[9px] font-semibold text-emerald-400"
-      >
-        <Check class="h-2.5 w-2.5" />
-        Done
-      </span>
-      <span
-        v-if="formation.preparedDefense"
-        class="inline-flex items-center gap-0.5 rounded bg-primary/15 px-1 py-0.5 text-[9px] font-semibold text-primary"
-      >
-        <ShieldCheck class="h-2.5 w-2.5" />
-        PD
-      </span>
-      <span
-        v-if="formation.completeMsr"
-        class="inline-flex items-center rounded bg-emerald-500/15 px-1 py-0.5 text-[9px] font-semibold text-emerald-400"
-      >
-        MSR
-      </span>
-      <span
         class="inline-flex items-center rounded px-1 py-0.5 text-[9px] font-semibold"
         :class="
           formation.fatigue === 'fresh'
@@ -103,11 +83,24 @@ const supportUnits = computed(() =>
         {{ formation.fatigue === 'fresh' ? 'Fresh' : `Fat ${formation.fatigue}` }}
       </span>
       <span
+        v-if="formation.preparedDefense"
+        class="inline-flex items-center gap-0.5 rounded bg-primary/15 px-1 py-0.5 text-[9px] font-semibold text-primary"
+      >
+        <ShieldCheck class="h-2.5 w-2.5" />
+        PD
+      </span>
+      <span
         v-if="formation.artilleryPoints > 0"
         class="inline-flex items-center gap-0.5 rounded bg-sky-500/15 px-1 py-0.5 text-[9px] font-semibold text-sky-400"
       >
         <Crosshair class="h-2.5 w-2.5" />
         {{ formation.artilleryPoints }}
+      </span>
+      <span
+        v-if="formation.completeMsr"
+        class="inline-flex items-center rounded bg-red-500/15 px-1 py-0.5 text-[9px] font-semibold text-red-400"
+      >
+        MSR
       </span>
       <span
         v-for="unit in supportUnits"

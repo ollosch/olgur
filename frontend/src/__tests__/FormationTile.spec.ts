@@ -42,7 +42,7 @@ describe('FormationTile', () => {
     expect(wrapper.get('[role="img"]').attributes('aria-label')).toContain('8 of 8')
   })
 
-  it('shows the done pill and emerald border when complete', () => {
+  it('drops the border when the formation is done', () => {
     const formation = makeFormation()
     formation.done = true
 
@@ -50,8 +50,16 @@ describe('FormationTile', () => {
       props: { formation, selected: false },
     })
 
-    expect(wrapper.text()).toContain('Done')
-    expect(wrapper.get('button').classes()).toContain('border-emerald-500/50')
+    expect(wrapper.text()).not.toContain('Done')
+    expect(wrapper.get('button').classes()).toContain('border-transparent')
+  })
+
+  it('keeps a border while the formation is not done', () => {
+    const wrapper = mount(FormationTile, {
+      props: { formation: makeFormation(), selected: false },
+    })
+
+    expect(wrapper.get('button').classes()).toContain('border-border/80')
   })
 
   it('marks the tile as selected and pressed', () => {
