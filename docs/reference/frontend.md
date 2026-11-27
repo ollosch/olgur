@@ -4,7 +4,7 @@
 
 This file is the entry point into the read-first documentation for `frontend/`. It is designed for LLMs that need the current SPA structure, state flow, and non-obvious UI behavior without scanning every Vue component first.
 
-The documentation is split across this index and four focused maps in `frontend/docs/`. Read the relevant map for the area you are about to change; do not read all of them at once.
+The documentation is split across this index and four focused maps in `docs/reference/frontend/`. Read the relevant map for the area you are about to change; do not read all of them at once.
 
 ## Snapshot
 
@@ -40,10 +40,11 @@ Important environment variables:
 
 | File | Covers |
 |---|---|
-| `docs/types.md` | Domain types exposed to the frontend, and the authorization/permission vocabulary. |
-| `docs/stores.md` | Every Pinia store — auth, system, membership, content composition, cache, proofread, bookmarks, modal/UI state. |
-| `docs/flows.md` | Boot and auth flow, HTTP and error handling, system session flow, content tiers and offline caching, connectivity, PWA, and the versioning workflow. |
-| `docs/ui-shell.md` | Route map and guards, root shell, left panel, top toolbar, full-screen modals, search/popups/content rendering, forms, and theming. |
+| `docs/reference/frontend/types.md` | Domain types exposed to the frontend, and the authorization/permission vocabulary. |
+| `docs/reference/frontend/stores.md` | Every Pinia store — auth, system, membership, content composition, cache, proofread, bookmarks, modal/UI state. |
+| `docs/reference/frontend/flows.md` | Boot and auth flow, HTTP and error handling, system session flow, content tiers and offline caching, connectivity, PWA, and the versioning workflow. |
+| `docs/reference/frontend/ui-shell.md` | Route map and guards, root shell, left panel, top toolbar, full-screen modals, search/popups/content rendering, forms, and theming. |
+| `docs/reference/frontend/tables.md` | ASL table shapes, renderers, import conventions, and toolbar behavior. |
 
 ## Current Non-Obvious Truths
 

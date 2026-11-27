@@ -4,16 +4,15 @@ docker/**/log*
 
 /tmp
 
+# Local tooling / editor config
 .agents
 .github
 .vscode
 .yaak
-/docs
-/plans
-AGENTS.md
-REFERENCE.md
 opencode.json
 skills-lock.json
-/backend/data
+
 # Human-only learning guide (temporary; delete when done)
-docs/developer-guide/
+/docs/developer-guide/
+
+/backend/data
